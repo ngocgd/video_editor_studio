@@ -1,0 +1,37 @@
+HealthStatus:
+  type: object
+  required: [status, version]
+  properties:
+    status:
+      type: string
+      enum: [ok]
+    version:
+      type: string
+ReadyStatus:
+  type: object
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: [ok]
+    checks:
+      type: object
+      additionalProperties:
+        type: string
+# RFC 9457 problem+json error body, shared by every domain.
+Problem:
+  type: object
+  required: [title, status]
+  properties:
+    type:
+      type: string
+      format: uri
+    title:
+      type: string
+    status:
+      type: integer
+    detail:
+      type: string
+    instance:
+      type: string
+      format: uri

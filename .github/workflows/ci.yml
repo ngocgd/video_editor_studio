@@ -1,0 +1,145 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-trixie
+        env:
+          POSTGRES_USER: loomtale
+          POSTGRES_PASSWORD: loomtale
+          POSTGRES_DB: loomtale
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U loomtale" --health-interval 5s --health-timeout 3s --health-retries 10
+      minio:
+        image: bitnamilegacy/minio
+        env:
+          MINIO_ROOT_USER: loomtale-root
+          MINIO_ROOT_PASSWORD: loomtale-root-password
+        ports: ["9000:9000"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: api/go.mod
+      - name: go vet
+        run: go vet ./...
+        working-directory: api
+      - name: golangci-lint
+        run: go tool golangci-lint run ./...
+        working-directory: api
+      - name: go test -race
+        env:
+          DATABASE_URL: postgres://loomtale:loomtale@localhost:5432/loomtale?sslmode=disable
+        run: go test ./... -race -count=1
+        working-directory: api
+      - name: govulncheck
+        run: go tool govulncheck ./...
+        working-directory: api
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: bundle openapi and generate the TS client
+        run: |
+          npx --yes @redocly/cli bundle ../openapi/root.yaml -o ../openapi/openapi.gen.yaml
+          npm run gen
+        working-directory: web
+      - run: npm run typecheck
+        working-directory: web
+      - run: npm run lint
+        working-directory: web
+      - run: npm run test
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npx size-limit
+        working-directory: web
+      - run: npm audit --audit-level=high
+        working-directory: web
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          working-directory: workers-python
+      - run: uv run ruff check .
+        working-directory: workers-python
+      - run: uv run pytest -q
+        working-directory: workers-python
+      - run: uv run pip-audit
+        working-directory: workers-python
+        continue-on-error: true
+
+  gen-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash scripts/tb.sh gen-check
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: create dev-only secrets files for the build
+        run: |
+          mkdir -p secrets
+          echo "ci-root-user" > secrets/minio_root_user.txt
+          echo "ci-root-password-change-me" > secrets/minio_root_password.txt
+      - name: build all images
+        run: docker compose -f deploy/compose.yml build
+      - name: assert non-root USER in every built image
+        run: |
+          for svc in api worker web; do
+            image="loomtale/${svc}:local"
+            user="$(docker inspect --format='{{.Config.User}}' "$image")"
+            if [ -z "$user" ] || [ "$user" = "root" ] || [ "$user" = "0" ]; then
+              echo "service $svc runs as root ($user)"; exit 1
+            fi
+          done
+      - name: assert every compose service declares mem_limit
+        run: |
+          docker compose -f deploy/compose.yml config | python3 - <<'PY'
+          import sys, yaml
+          cfg = yaml.safe_load(sys.stdin)
+          missing = [name for name, svc in cfg.get("services", {}).items() if "mem_limit" not in svc]
+          if missing:
+              print("services missing mem_limit:", missing)
+              sys.exit(1)
+          PY
+      - name: assert no docker.sock mount
+        run: |
+          if docker compose -f deploy/compose.yml config | grep -q "docker.sock"; then
+            echo "a service mounts the docker socket"; exit 1
+          fi

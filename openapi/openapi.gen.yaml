@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: Loomtale Studio API
+  version: 0.1.0
+  description: Internal story-to-YouTube video studio API.
+servers:
+  - url: /api/v1
+paths:
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: Liveness probe
+      tags:
+        - health
+      responses:
+        '200':
+          description: process is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /readyz:
+    get:
+      operationId: getReadyz
+      summary: Readiness probe (checks Postgres and MinIO)
+      tags:
+        - health
+      responses:
+        '200':
+          description: all dependencies are reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyStatus'
+        '503':
+          description: one or more dependencies failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    Problem:
+      type: object
+      required:
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - version
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        version:
+          type: string
+    ReadyStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        checks:
+          type: object
+          additionalProperties:
+            type: string

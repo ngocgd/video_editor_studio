@@ -1,0 +1,18 @@
+:8080 {
+	encode gzip
+
+	# CSP per the approved plan decision: self-only scripts, inline styles
+	# allowed (Tailwind/shadcn), Trusted Types enforced, no plugin objects.
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; require-trusted-types-for 'script'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+	}
+
+	reverse_proxy /api/* api:8080
+
+	root * /srv
+	file_server
+	try_files {path} /index.html
+}

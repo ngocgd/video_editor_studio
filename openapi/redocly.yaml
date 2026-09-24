@@ -1,0 +1,6 @@
+apis:
+  main:
+    root: root.yaml
+lint:
+  extends:
+    - recommended

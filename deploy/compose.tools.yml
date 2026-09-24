@@ -1,0 +1,26 @@
+name: loomtale
+
+services:
+  toolbox:
+    build:
+      context: ..
+      dockerfile: deploy/docker/toolbox.Dockerfile
+    image: loomtale/toolbox:local
+    mem_limit: 2g
+    working_dir: /src
+    volumes:
+      - ..:/src
+      - gomodcache:/root/go/pkg/mod
+      - gobuildcache:/root/.cache/go-build
+      - npmcache:/root/.npm
+    environment:
+      DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
+      # CGO stays enabled here (unlike the production Dockerfiles) because
+      # `go test -race` needs cgo.
+      CGO_ENABLED: "1"
+    network_mode: bridge
+
+volumes:
+  gomodcache:
+  gobuildcache:
+  npmcache:

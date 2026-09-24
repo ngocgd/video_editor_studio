@@ -1,0 +1,16 @@
+title = "loomtale gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "paths excluded from secret scanning"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)dist/''',
+  '''(^|/)api/internal/db/gen/''',
+  '''(^|/)api/internal/httpapi/gen/''',
+  '''(^|/)web/src/api/gen/''',
+  '''(^|/)\.env\.example$''',
+]

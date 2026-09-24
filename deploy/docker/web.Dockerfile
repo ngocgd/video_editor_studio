@@ -1,0 +1,17 @@
+# Multi-stage build: compile the SPA with Node, serve the static bundle with
+# Caddy running as non-root.
+FROM node@sha256:b26b04c123d9ff8ab646ceb18b9d75a1173acf64b9a401094b906d27b29338d4 AS build
+WORKDIR /src
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci
+COPY web/ ./
+COPY openapi/ /openapi/
+RUN npm run build
+
+FROM caddy@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+COPY deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /src/dist /srv
+RUN addgroup -g 1000 caddyapp && adduser -D -u 1000 -G caddyapp caddyapp \
+    && chown -R caddyapp:caddyapp /srv /config /data
+USER caddyapp
+EXPOSE 8080

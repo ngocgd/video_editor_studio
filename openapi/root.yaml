@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Loomtale Studio API
+  version: 0.1.0
+  description: Internal story-to-YouTube video studio API.
+servers:
+  - url: /api/v1
+paths:
+  /healthz:
+    $ref: paths/health.yaml#/healthz
+  /readyz:
+    $ref: paths/health.yaml#/readyz
+components:
+  schemas:
+    Problem:
+      $ref: schemas/health.yaml#/Problem

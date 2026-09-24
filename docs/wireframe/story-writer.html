@@ -1,0 +1,418 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Story writer — Loomtale Studio wireframe</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet"><style>
+/* Loomtale Studio tokens — mirror of docs/design-guidelines.md section 2-4 */
+:root{
+  color-scheme:dark;
+  --well:#0E0F11;--background:#141518;--card:#1B1C20;--popover:#222328;--accent:#2A2B31;--secondary:#222328;--muted:#1B1C20;
+  --border:#34363C;--input:#686A72;
+  --foreground:#E6E4DF;--text-2:#A8A6A0;--muted-foreground:#95928C;
+  --primary:#4DB6A0;--primary-text:#6CC9B4;--ring:#6CC9B4;--primary-foreground:#0E0F11;--primary-muted:rgba(77,182,160,.14);
+  --success:#6BBF73;--warning:#D9A441;--destructive:#EE6B61;--info:#6FA8DC;
+  --success-muted:rgba(107,191,115,.14);--warning-muted:rgba(217,164,65,.14);--destructive-muted:rgba(238,107,97,.14);--info-muted:rgba(111,168,220,.14);
+  --spk-narrator:#95928C;--spk-1:#C9A26B;--spk-2:#7FA7C9;--spk-3:#C98A9E;--spk-4:#9DB57A;
+  --font-sans:"IBM Plex Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,monospace;--font-serif:"Literata",Georgia,serif;
+  --radius-sm:3px;--radius-md:5px;--radius-lg:8px;
+  --shadow-overlay:0 8px 24px rgba(0,0,0,.45),0 0 0 1px #34363C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--background);color:var(--foreground);font:400 13px/18px var(--font-sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted-foreground)}.t2{color:var(--text-2)}
+.xs{font-size:12px;line-height:16px}.eyebrow{font-size:11px;line-height:14px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-foreground)}
+.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.i.sm{width:14px;height:14px}
+.row{display:flex;align-items:center;gap:8px}.grow{flex:1;min-width:0}.between{justify-content:space-between}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Shell ---------- */
+.app{display:grid;grid-template-columns:224px 1fr;grid-template-rows:1fr 28px;height:100vh}
+.app.rail{grid-template-columns:56px 1fr}
+.nav{grid-row:1;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:auto}
+.brand{display:flex;align-items:center;gap:8px;padding:4px 8px 12px;font-weight:600;font-size:14px}
+.brand svg{width:22px;height:22px}
+.nav a{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none;position:relative}
+.nav a:hover{background:var(--accent);color:var(--foreground)}
+.nav a[aria-current]{background:var(--card);color:var(--foreground)}
+.nav a[aria-current]::before{content:"";position:absolute;left:-8px;top:7px;bottom:7px;width:2px;background:var(--primary);border-radius:1px}
+.nav .count{margin-left:auto;font:500 11px var(--font-mono);color:var(--muted-foreground)}
+.nav .group{margin:14px 8px 4px}
+.app.rail .nav a span,.app.rail .nav .group,.app.rail .brand span,.app.rail .nav .count{display:none}
+.main-col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{white-space:nowrap;height:44px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 12px}
+.crumbs{white-space:nowrap;display:flex;align-items:center;gap:6px;color:var(--text-2)}.crumbs b{color:var(--foreground);font-weight:500}
+.crumbs .i{width:14px;height:14px;color:var(--muted-foreground)}
+.tabs{display:flex;gap:2px;margin-left:12px}
+.tabs a{height:28px;display:flex;align-items:center;padding:0 10px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none}
+.tabs a:hover{background:var(--accent)}.tabs a[aria-current]{color:var(--foreground);background:var(--card);box-shadow:inset 0 -2px 0 var(--primary)}
+.work{flex:1;display:grid;grid-template-columns:1fr 360px;min-height:0}
+.work.no-insp{grid-template-columns:1fr}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+.inspector{border-left:1px solid var(--border);overflow:auto;display:flex;flex-direction:column}
+.statusbar{grid-column:1/-1;border-top:1px solid var(--border);background:var(--well);display:flex;align-items:center;gap:16px;padding:0 12px;font-size:12px;color:var(--text-2)}
+.statusbar .sep{width:1px;height:14px;background:var(--border)}
+.meter{width:72px;height:4px;background:var(--accent);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle}
+.meter i{display:block;height:100%;background:var(--info)}
+.meter.warn i{background:var(--warning)}
+
+/* ---------- Controls ---------- */
+.btn{height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--secondary);color:var(--foreground);cursor:pointer;white-space:nowrap;font-weight:500;transition:background .12s ease-out}
+.btn:hover{background:var(--accent)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.btn.primary:hover{background:#5CC3AD}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}.btn.ghost:hover{background:var(--accent);color:var(--foreground)}
+.btn.danger{color:var(--destructive)}
+.btn.icon{width:28px;padding:0;justify-content:center}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{font:500 11px/16px var(--font-mono);padding:0 5px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--popover);color:var(--text-2)}
+.search{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--well);color:var(--muted-foreground);min-width:220px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.label{font-size:12px;color:var(--text-2);font-weight:500}
+.input,.select,.textarea{background:var(--well);border:1px solid var(--input);border-radius:var(--radius-md);padding:5px 8px;min-height:28px;width:100%}
+.select{display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer}
+.textarea{resize:vertical;line-height:20px}
+.seg{display:inline-flex;border:1px solid var(--input);border-radius:var(--radius-md);overflow:hidden;background:var(--well)}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--foreground);box-shadow:inset 0 -2px 0 var(--primary)}
+.switch{width:28px;height:16px;border-radius:8px;background:var(--accent);border:1px solid var(--input);position:relative;display:inline-block}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--text-2)}
+.switch.on{background:var(--primary);border-color:var(--primary)}.switch.on::after{left:14px;background:var(--primary-foreground)}
+
+/* ---------- Status ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;background:var(--accent);color:var(--text-2);white-space:nowrap}
+.badge .i{width:13px;height:13px}
+.badge.ok{background:var(--success-muted);color:var(--success)}
+.badge.run{background:var(--info-muted);color:var(--info)}
+.badge.warn{background:var(--warning-muted);color:var(--warning)}
+.badge.err{background:var(--destructive-muted);color:var(--destructive)}
+.badge.acc{background:var(--primary-muted);color:var(--primary-text)}
+.c-ok{color:var(--success)}.c-run{color:var(--info)}.c-warn{color:var(--warning)}.c-err{color:var(--destructive)}.c-acc{color:var(--primary-text)}
+.bar{height:4px;background:var(--accent);border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;background:var(--info)}
+.bar.err i{background:var(--destructive)}.bar.ok i{background:var(--success)}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Panels / tables ---------- */
+.panel-h{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);font-weight:500}
+.section{padding:12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md)}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:500;color:var(--muted-foreground);text-align:left;padding:0 12px;height:30px;border-bottom:1px solid var(--border)}
+td{padding:0 12px;height:36px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--card)}
+.avatar{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font:600 10px var(--font-mono);color:var(--well);flex:none}
+.mono-tag{font:500 10px/14px var(--font-mono);padding:0 4px;border-radius:var(--radius-sm);border:1px solid currentColor}
+.note{font-size:12px;color:var(--muted-foreground);border-left:2px solid var(--border);padding-left:8px}
+.anno{position:fixed;right:12px;bottom:40px;max-width:300px;background:var(--popover);box-shadow:var(--shadow-overlay);border-radius:var(--radius-lg);padding:10px 12px;font-size:12px;color:var(--text-2);z-index:50}
+.anno b{color:var(--foreground)}
+.anno summary{cursor:pointer;color:var(--foreground);font-weight:500}
+.thumb{background:var(--well);border-radius:var(--radius-sm);overflow:hidden;position:relative;aspect-ratio:16/9}
+.thumb svg.art{width:100%;height:100%;display:block}
+.i.spin{transform-origin:center}
+
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16" />
+  <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M18 17V9" />
+  <path d="M13 17V5" />
+  <path d="M8 17v-3" /></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="i-circle-dashed" viewBox="0 0 24 24"><path d="M10.1 2.182a10 10 0 0 1 3.8 0" />
+  <path d="M13.9 21.818a10 10 0 0 1-3.8 0" />
+  <path d="M17.609 3.721a10 10 0 0 1 2.69 2.7" />
+  <path d="M2.182 13.9a10 10 0 0 1 0-3.8" />
+  <path d="M20.279 17.609a10 10 0 0 1-2.7 2.69" />
+  <path d="M21.818 10.1a10 10 0 0 1 0 3.8" />
+  <path d="M3.721 6.391a10 10 0 0 1 2.7-2.69" />
+  <path d="M6.391 20.279a10 10 0 0 1-2.69-2.7" /></symbol><symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m15 9-6 6" />
+  <path d="m9 9 6 6" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="M12 6v6l4 2" /></symbol><symbol id="i-command" viewBox="0 0 24 24"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></symbol><symbol id="i-cpu" viewBox="0 0 24 24"><path d="M12 20v2" />
+  <path d="M12 2v2" />
+  <path d="M17 20v2" />
+  <path d="M17 2v2" />
+  <path d="M2 12h2" />
+  <path d="M2 17h2" />
+  <path d="M2 7h2" />
+  <path d="M20 12h2" />
+  <path d="M20 17h2" />
+  <path d="M20 7h2" />
+  <path d="M7 20v2" />
+  <path d="M7 2v2" />
+  <rect x="4" y="4" width="16" height="16" rx="2" />
+  <rect x="8" y="8" width="8" height="8" rx="1" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" /></symbol><symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M7 3v18" />
+  <path d="M3 7.5h4" />
+  <path d="M3 12h18" />
+  <path d="M3 16.5h4" />
+  <path d="M17 3v18" />
+  <path d="M17 7.5h4" />
+  <path d="M17 16.5h4" /></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></symbol><symbol id="i-hard-drive" viewBox="0 0 24 24"><path d="M10 16h.01" />
+  <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+  <path d="M21.946 12.013H2.054" />
+  <path d="M6 16h.01" /></symbol><symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" />
+  <path d="M12 7v5l4 2" /></symbol><symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></symbol><symbol id="i-languages" viewBox="0 0 24 24"><path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" /></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /></symbol><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" />
+  <rect width="7" height="5" x="14" y="3" rx="1" />
+  <rect width="7" height="9" x="14" y="12" rx="1" />
+  <rect width="7" height="5" x="3" y="16" rx="1" /></symbol><symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" />
+  <path d="M12 6v14" />
+  <path d="M8 8v12" />
+  <path d="M4 4v16" /></symbol><symbol id="i-list-video" viewBox="0 0 24 24"><path d="M21 5H3" />
+  <path d="M10 12H3" />
+  <path d="M10 19H3" />
+  <path d="M15 12.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997a1 1 0 0 1-1.517-.86z" /></symbol><symbol id="i-loader-circle" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></symbol><symbol id="i-pen-line" viewBox="0 0 24 24"><path d="M13 21h8" />
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" />
+  <path d="M12 5v14" /></symbol><symbol id="i-refresh-ccw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" />
+  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+  <path d="M16 16h5v5" /></symbol><symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" /></symbol><symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" /></symbol><symbol id="i-scroll-text" viewBox="0 0 24 24"><path d="M15 12h-5" />
+  <path d="M15 8h-5" />
+  <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+  <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" />
+  <rect width="20" height="8" x="2" y="14" rx="2" ry="2" />
+  <line x1="6" x2="6.01" y1="6" y2="6" />
+  <line x1="6" x2="6.01" y1="18" y2="18" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-split" viewBox="0 0 24 24"><path d="M16 3h5v5" />
+  <path d="M8 3H3v5" />
+  <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+  <path d="m15 9 6-6" /></symbol><symbol id="i-text-cursor-input" viewBox="0 0 24 24"><path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6" />
+  <path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7" />
+  <path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1" />
+  <path d="M6 4h1a2 2 0 0 1 2 2 2 2 0 0 1 2-2h1" />
+  <path d="M9 6v12" /></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2" />
+  <line x1="12" x2="15" y1="14" y2="11" />
+  <circle cx="12" cy="14" r="8" /></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12" />
+  <path d="m17 8-5-5-5 5" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" /></symbol><symbol id="i-wand-sparkles" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
+  <path d="m14 7 3 3" />
+  <path d="M5 6v4" />
+  <path d="M19 14v4" />
+  <path d="M10 2v2" />
+  <path d="M7 8H3" />
+  <path d="M21 16h-4" />
+  <path d="M11 3H9" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" />
+  <path d="m6 6 12 12" /></symbol></svg>
+<style>
+.writer{flex:1;display:grid;grid-template-columns:264px 232px minmax(0,1fr) 304px;min-height:0}
+.col{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border)}
+.col:last-child{border-right:0}
+.scroll{overflow:auto;flex:1}
+.btabs{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.btabs button{height:24px;padding:0 8px;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--text-2);font-size:12px;cursor:pointer}
+.btabs button[aria-selected=true]{background:var(--card);color:var(--foreground)}
+.bsec{padding:10px 12px;border-bottom:1px solid var(--border)}
+.bsec h3{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bsec p{font-size:12px;line-height:18px;color:var(--text-2)}
+.realm{display:grid;grid-template-columns:18px 1fr auto;gap:6px;align-items:center;height:26px;font-size:12px}
+.realm .n{font:500 11px var(--font-mono);color:var(--muted-foreground)}
+.realm .vi{color:var(--muted-foreground)}
+.realm.cur{color:var(--foreground)}.realm.cur .n{color:var(--primary-text)}
+.person{display:flex;gap:8px;padding:6px 0;align-items:flex-start}
+.person b{font-weight:500;font-size:12px}.person p{font-size:12px;line-height:16px}
+.pin{margin-left:auto;color:var(--primary-text)}
+.pin.off{color:var(--muted-foreground)}
+.beat{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:8px 10px 8px 8px;border-bottom:1px solid var(--border);cursor:pointer;position:relative}
+.beat:hover{background:var(--card)}
+.beat[aria-current]{background:var(--card)}
+.beat[aria-current]::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--primary)}
+.beat .n{font:500 11px var(--font-mono);color:var(--muted-foreground);padding-top:1px}
+.beat b{font-weight:500;font-size:12px;display:block}
+.beat p{font-size:12px;line-height:16px;color:var(--text-2);margin-top:2px}
+.beat .meta{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:11px}
+.doc{overflow:auto;flex:1;background:var(--well);position:relative}
+.page{max-width:68ch;margin:0 auto;padding:24px 28px 120px;font-family:var(--font-serif);font-size:18px;line-height:1.75;color:#DDDAD4}
+.page h1{font:500 26px/1.3 var(--font-serif);color:var(--foreground);margin-bottom:4px}
+.page .sub{font:400 12px var(--font-mono);color:var(--muted-foreground);margin-bottom:24px}
+.page p{margin-bottom:1em}
+.page .beatmark{display:block;font:500 11px var(--font-mono);color:var(--muted-foreground);letter-spacing:.04em;text-transform:uppercase;margin:28px 0 10px;border-top:1px solid var(--border);padding-top:8px}
+.sel{background:rgba(77,182,160,.22);border-radius:2px;box-shadow:0 0 0 1px rgba(77,182,160,.35)}
+.floatbar{position:absolute;display:flex;gap:2px;padding:3px;background:var(--popover);box-shadow:var(--shadow-overlay);border-radius:var(--radius-md);font-family:var(--font-sans);font-size:12px;line-height:18px;z-index:5}
+.floatbar button{height:26px;padding:0 8px;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--foreground);display:flex;align-items:center;gap:6px;cursor:pointer}
+.floatbar button:hover,.floatbar button.on{background:var(--accent)}
+.floatbar .div{width:1px;background:var(--border);margin:3px 2px}
+.proposal{border:1px solid var(--border);border-left:2px solid var(--primary);border-radius:var(--radius-md);background:var(--background);margin:4px 0 16px;font-size:17px}
+.proposal .ph{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);font:500 12px/18px var(--font-sans);color:var(--text-2)}
+.proposal .pb{padding:10px 12px}
+del{color:var(--destructive);text-decoration:line-through;text-decoration-color:rgba(238,107,97,.7);background:var(--destructive-muted)}
+ins{color:#A9DBAE;text-decoration:none;background:var(--success-muted);border-bottom:1px solid rgba(107,191,115,.5)}
+.ghost-text{color:var(--muted-foreground);font-style:italic}
+.caret{display:inline-block;width:2px;height:1.1em;background:var(--primary);vertical-align:-3px;margin-left:1px}
+.edfoot{white-space:nowrap;overflow:hidden;height:32px;flex:none;border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 12px;font-size:12px;color:var(--text-2);background:var(--background)}
+.target{width:120px;height:4px;background:var(--accent);border-radius:2px;position:relative}
+.target i{position:absolute;left:0;top:0;bottom:0;background:var(--success);border-radius:2px}
+.target s{position:absolute;top:-3px;width:1px;height:10px;background:var(--text-2)}
+.prov{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pcard{border:1px solid var(--border);border-radius:var(--radius-md);padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:3px;background:var(--card)}
+.pcard[aria-checked=true]{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.pcard b{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+.pcard span{font-size:11px;color:var(--muted-foreground)}
+.act{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:var(--radius-md);cursor:pointer}
+.act:hover{background:var(--accent)}
+.act .kbd{margin-left:auto}
+.ctx{display:flex;align-items:center;gap:8px;font-size:12px;height:24px}
+.ctx .mono{margin-left:auto;color:var(--muted-foreground);font-size:11px}
+.run{border:1px solid var(--border);border-radius:var(--radius-md);padding:8px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+</style>
+<div class="app rail">
+<nav class="nav" aria-label="Primary"><div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="#1B1C20" stroke="#34363C"/><g stroke="#95928C" stroke-width="1.75" stroke-linecap="round"><line x1="10" y1="7" x2="10" y2="25"/><line x1="22" y1="7" x2="22" y2="25"/></g><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#1B1C20" stroke-width="5" stroke-linecap="round"/><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#4DB6A0" stroke-width="2.25" stroke-linecap="round"/><line x1="16" y1="7" x2="16" y2="25" stroke="#95928C" stroke-width="1.75" stroke-linecap="round"/></svg><span>Loomtale Studio</span></div><div class="group eyebrow">Workspace</div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-layout-dashboard"/></svg><span>Dashboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><span>Projects</span><span class="count">4</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Import</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg><span>Review queue</span><span class="count">2</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-chart-column"/></svg><span>Analytics</span></a><div class="group eyebrow">The Jade Crane Sect</div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-book-open"/></svg><span>Story bible</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg><span>Characters</span><span class="count">9</span></a><a href="#" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg><span>Episodes</span><span class="count">12</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span>Storyboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-list-video"/></svg><span>Render</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Publish</span></a><div style="flex:1"></div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></a></nav>
+<div class="main-col">
+  <header class="topbar">
+    <div class="crumbs"><span>Jade Crane Sect</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span>Ep 07</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><b>Tribulation at Cloudbreak Peak</b></div>
+    <nav class="tabs" aria-label="Episode"><a href="#" aria-current="page">Draft</a><a href="#">Storyboard</a><a href="#">Render</a><a href="#">Publish</a></nav>
+    <span class="grow"></span>
+    <div class="seg" role="group" aria-label="Episode language (Ctrl Alt L)"><button aria-pressed="true">EN</button><button aria-pressed="false">VI</button></div>
+    <span class="badge"><svg class="i" aria-hidden="true"><use href="#i-languages"/></svg>VI draft: 71% translated</span>
+    <button class="btn"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg>Versions</button>
+    <button class="btn primary"><svg class="i" aria-hidden="true"><use href="#i-split"/></svg>Split into scenes</button>
+  </header>
+  <div class="writer">
+    <!-- Story bible -->
+    <aside class="col" aria-label="Story bible">
+      <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-book-open"/></svg>Story bible<span class="grow"></span><span class="xs muted mono">3.4k tok</span></div>
+      <div class="btabs" role="tablist"><button role="tab" aria-selected="false">World</button><button role="tab" aria-selected="true">Realms</button><button role="tab" aria-selected="false">Characters</button><button role="tab" aria-selected="false">Arcs</button></div>
+      <div class="scroll">
+        <div class="bsec">
+          <h3>Cultivation realms<span class="pin"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg></span></h3>
+          <div class="realm"><span class="n">1</span><span>Qi Refining <span class="vi">· Luyện Khí</span></span><span class="mono xs muted">9 lv</span></div>
+          <div class="realm"><span class="n">2</span><span>Foundation <span class="vi">· Trúc Cơ</span></span><span class="mono xs muted">3 st</span></div>
+          <div class="realm cur"><span class="n">3</span><span>Golden Core <span class="vi">· Kết Đan</span></span><span class="badge acc" style="height:18px;font-size:11px">Lin Mo</span></div>
+          <div class="realm"><span class="n">4</span><span>Nascent Soul <span class="vi">· Nguyên Anh</span></span><span></span></div>
+          <div class="realm"><span class="n">5</span><span>Spirit Severing <span class="vi">· Hóa Thần</span></span><span></span></div>
+          <div class="realm"><span class="n">6</span><span>Dao Seeking <span class="vi">· Vấn Đạo</span></span><span></span></div>
+          <p style="margin-top:8px">Each breakthrough past Foundation draws a heavenly tribulation; the number of bolts equals the strength of the karmic debt.</p>
+        </div>
+        <div class="bsec">
+          <h3>Characters in this episode<span class="pin"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg></span></h3>
+          <div class="person"><span class="avatar" style="background:var(--spk-1)">LM</span><div><b>Lin Mo · 林默</b><p class="t2">Outer disciple, broken meridian healed by a stolen pill. Stubborn, quiet, dry humour.</p></div></div>
+          <div class="person"><span class="avatar" style="background:var(--spk-2)">EQ</span><div><b>Elder Qiu Hanshan</b><p class="t2">Pill Hall elder. Knows about the pill; says nothing yet.</p></div></div>
+          <div class="person"><span class="avatar" style="background:var(--spk-3)">SY</span><div><b>Su Yao</b><p class="t2">Inner disciple, Lin Mo's senior sister. Carries sect politics.</p></div></div>
+          <div class="person" style="opacity:.7"><span class="avatar" style="background:var(--spk-4)">HX</span><div><b>Han Xuan</b> <span class="xs muted">not pinned</span><p class="t2">Rival, first appears in Ep 09.</p></div><span class="pin off"><svg class="i sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg></span></div>
+        </div>
+        <div class="bsec">
+          <h3>World<span class="pin"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg></span></h3>
+          <p>Azure Cloud Continent. The Jade Crane Sect holds nine peaks; Cloudbreak Peak is forbidden to outer disciples. Spirit stones are currency; jade slips store techniques.</p>
+        </div>
+        <div class="bsec">
+          <h3>Previously<span class="pin"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg></span></h3>
+          <p>Ep 06: Lin Mo refines the Nine-Turn pill in secret; Su Yao covers for him at the sect assembly.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Outline -->
+    <section class="col" aria-label="Episode outline">
+      <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-scroll-text"/></svg>Outline<span class="grow"></span><button class="btn icon ghost" aria-label="Add beat"><svg class="i sm" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+      <div class="scroll">
+        <div class="beat"><span class="n">01</span><div><b>Return to Cloudbreak</b><p>Lin Mo climbs the forbidden peak at dusk.</p><div class="meta"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Drafted</span><span class="mono muted">812 w</span></div></div></div>
+        <div class="beat"><span class="n">02</span><div><b>Elder Qiu's warning</b><p>"The pill has a price, and heaven collects."</p><div class="meta"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Drafted</span><span class="mono muted">1,104 w</span></div></div></div>
+        <div class="beat"><span class="n">03</span><div><b>Refining the last pill</b><p>Furnace scene; memory of his mother.</p><div class="meta"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Drafted</span><span class="mono muted">1,390 w</span></div></div></div>
+        <div class="beat"><span class="n">04</span><div><b>Su Yao's jade slip</b><p>Message: the Law Hall knows.</p><div class="meta"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Drafted</span><span class="mono muted">966 w</span></div></div></div>
+        <div class="beat" aria-current="true"><span class="n">05</span><div><b>The clouds gather</b><p>Tribulation clouds form; the sect sees.</p><div class="meta"><span class="c-run row"><svg class="i sm" aria-hidden="true"><use href="#i-pen-line"/></svg>Writing</span><span class="mono muted">640 w</span></div></div></div>
+        <div class="beat"><span class="n">06</span><div><b>Nine bolts</b><p>He refuses to kneel; eighth bolt breaks his arm.</p><div class="meta"><span class="row muted"><svg class="i sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Not drafted</span><button class="btn ghost" style="height:22px;font-size:11px;margin-left:auto"><svg class="i sm" aria-hidden="true"><use href="#i-wand-sparkles"/></svg>Expand</button></div></div></div>
+        <div class="beat"><span class="n">07</span><div><b>Golden Core</b><p>Core forms, cracked but stable.</p><div class="meta"><span class="row muted"><svg class="i sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Not drafted</span></div></div></div>
+        <div class="beat"><span class="n">08</span><div><b>Hook: a voice in the lightning</b><p>Something inside the ninth bolt spoke his mother's name.</p><div class="meta"><span class="row muted"><svg class="i sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Not drafted</span></div></div></div>
+      </div>
+    </section>
+
+    <!-- Draft editor -->
+    <section class="col" aria-label="Draft editor">
+      <div class="doc">
+        <article class="page" lang="en">
+          <h1>Tribulation at Cloudbreak Peak</h1>
+          <div class="sub">Episode 07 · EN · last edit 22:41 by you</div>
+          <span class="beatmark">05 · The clouds gather</span>
+          <p>By the third watch the stars above Cloudbreak Peak had gone out one by one, not hidden but <em>taken</em>, as if a hand were gathering coins from a table.</p>
+          <p style="position:relative"><span class="sel">Lin Mo sat very still. He could feel the Nine-Turn pill still burning in his dantian, and the burning was angry, and he was afraid of it.</span> Below him, lamps were lit on all nine peaks of the Jade Crane Sect.
+            <span class="floatbar" style="left:0;top:-44px" role="toolbar" aria-label="AI actions on selection">
+              <button class="on"><svg class="i sm" aria-hidden="true"><use href="#i-pen-line"/></svg>Rewrite <span class="kbd">Ctrl⇧R</span></button><button>Expand</button><button>Shorten</button><button>Make it tenser</button>
+              <span class="div"></span><button><svg class="i sm" aria-hidden="true"><use href="#i-text-cursor-input"/></svg>Custom…</button></span>
+          </p>
+          <div class="proposal" role="region" aria-label="AI proposal">
+            <div class="ph"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-wand-sparkles"/></svg>Rewrite<span class="mono xs muted">gemma4:12b · 3.1s</span><span class="grow"></span>
+              <button class="btn primary" style="height:24px">Accept <span class="kbd" style="background:rgba(14,15,17,.2);color:var(--primary-foreground);border-color:rgba(14,15,17,.3)">Tab</span></button>
+              <button class="btn" style="height:24px">Reject <span class="kbd">Esc</span></button><button class="btn icon ghost" style="height:24px" aria-label="Retry"><svg class="i sm" aria-hidden="true"><use href="#i-refresh-cw"/></svg></button></div>
+            <div class="pb">Lin Mo sat very still. <del>He could feel the Nine-Turn pill still burning in his dantian, and the burning was angry, and he was afraid of it.</del> <ins>In his dantian the Nine-Turn pill still burned, an angry, patient fire, and for the first time since he had stolen it, he was afraid.</ins></div>
+          </div>
+          <p>A bell rang on the Law Hall peak. Then another. Nobody in the sect had heard the tribulation bell since Patriarch Wen ascended, three hundred years ago, and yet every disciple knew the sound the way a child knows thunder.</p>
+          <p>"Senior Brother." Su Yao's voice came thin through the jade slip at his belt. "They are coming up the east stair. All of them."</p>
+          <p>He did not answer. The first cloud had begun to turn above him, slow and deliberate, a wheel of iron grinding the sky<span class="caret"></span></p>
+        </article>
+      </div>
+      <div class="edfoot" role="status">
+        <span><span class="mono" style="color:var(--foreground)">6,412</span> words</span>
+        <span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-timer"/></svg><span class="mono" style="color:var(--foreground)">≈ 42:45</span> <span class="muted">(150 wpm · target 35–45m)</span></span>
+        <span class="row" title="Target 35–45 min"><span class="target" aria-label="Duration vs target"><i style="width:86%"></i><s style="left:70%"></s><s style="left:90%"></s></span></span>
+        <span class="grow"></span>
+        <span class="row c-run"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg>Continue queued · GPU <span class="mono">#1 · ~0:48</span></span>
+        
+    </section>
+
+    <!-- AI panel -->
+    <aside class="col" aria-label="AI assistant">
+      <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-wand-sparkles"/></svg>AI assist<span class="grow"></span><span class="kbd">Ctrl .</span></div>
+      <div class="scroll">
+        <div class="section">
+          <span class="eyebrow">Provider</span>
+          <div class="prov" role="radiogroup" aria-label="LLM provider">
+            <div class="pcard" role="radio" aria-checked="true" tabindex="0"><b><svg class="i sm" aria-hidden="true"><use href="#i-hard-drive"/></svg>Ollama</b><span>Local · free · uses GPU slot</span></div>
+            <div class="pcard" role="radio" aria-checked="false" tabindex="-1"><b><svg class="i sm" aria-hidden="true"><use href="#i-command"/></svg>Claude CLI</b><span>Your subscription · no GPU</span></div>
+          </div>
+          <div class="field"><label>Model</label><div class="select"><span class="mono">gemma4:12b-q6_K</span><svg class="i sm" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+          <div class="row xs"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Loaded</span><span class="muted">·</span><span class="mono t2">~27 tok/s</span><span class="muted">·</span><span class="t2">ctx 32k</span></div>
+          <div class="note">While the LLM holds the GPU, image and voice jobs wait. The current voice job finishes first (est. <span class="mono">0:48</span>).</div>
+        </div>
+        <div class="section">
+          <span class="eyebrow">Actions</span>
+          <div class="act"><svg class="i sm" aria-hidden="true"><use href="#i-pen-line"/></svg>Continue from cursor<span class="kbd">Ctrl ↵</span></div>
+          <div class="act" style="background:var(--card)"><svg class="i sm" aria-hidden="true"><use href="#i-refresh-ccw"/></svg>Rewrite selection<span class="kbd">Ctrl⇧R</span></div>
+          <div class="act"><svg class="i sm" aria-hidden="true"><use href="#i-layers"/></svg>Expand outline beat<span class="kbd">Ctrl⇧E</span></div>
+          <div class="act"><svg class="i sm" aria-hidden="true"><use href="#i-languages"/></svg>Translate beat to VI</div>
+          <div class="field"><label>Instruction (optional)</label><textarea class="textarea" rows="2" placeholder="e.g. keep Su Yao's line, more dread, no new characters"></textarea></div>
+        </div>
+        <div class="section">
+          <div class="row between"><span class="eyebrow">Context sent</span><span class="mono xs muted">5,880 / 32k tok</span></div>
+          <div class="ctx"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-check"/></svg>Realms<span class="mono">410</span></div>
+          <div class="ctx"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-check"/></svg>Characters (3)<span class="mono">920</span></div>
+          <div class="ctx"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-check"/></svg>World<span class="mono">380</span></div>
+          <div class="ctx"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-check"/></svg>Previously (Ep 06)<span class="mono">260</span></div>
+          <div class="ctx"><svg class="i sm c-acc" aria-hidden="true"><use href="#i-check"/></svg>Outline + current beat<span class="mono">3,910</span></div>
+          <div class="ctx muted"><svg class="i sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Han Xuan<span class="mono">—</span></div>
+        </div>
+        <div class="section" style="border-bottom:0">
+          <span class="eyebrow">Recent runs</span>
+          <div class="run"><div class="row"><span class="c-run row"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg>Continue · waiting for GPU slot #1</span><span class="grow"></span><span class="mono muted">now</span></div><div class="bar"><i style="width:0"></i></div><button class="btn ghost" style="height:24px;align-self:flex-start"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg>Stop</button></div>
+          <div class="run"><div class="row"><span class="row t2"><svg class="i sm c-ok" aria-hidden="true"><use href="#i-circle-check"/></svg>Rewrite · pending review</span><span class="grow"></span><span class="mono muted">22:41</span></div></div>
+          <div class="run"><div class="row"><span class="row"><svg class="i sm c-err" aria-hidden="true"><use href="#i-circle-x"/></svg>Expand beat 06</span><span class="grow"></span><span class="mono muted">22:30</span></div>
+            <span class="t2">Claude CLI exited: session expired. Run <span class="mono">claude login</span> in a terminal, then retry.</span>
+            <div class="row"><button class="btn" style="height:24px"><svg class="i sm" aria-hidden="true"><use href="#i-rotate-ccw"/></svg>Retry with Ollama</button></div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+<footer class="statusbar" role="status" aria-live="polite"><span class="row"><span class="mono-tag c-acc">GPU</span><svg class="i sm spin c-run" aria-hidden="true"><use href="#i-loader-circle"/></svg><span>Voice · Ep 7 scene 031</span><span class="meter"><i style="width:61%"></i></span><span class="mono">61%</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="mono">3</span> queued</span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-cpu"/></svg>VRAM <span class="meter"><i style="width:78%"></i></span><span class="mono">12.4/16 GB</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-server"/></svg>Chatterbox (TTS) loaded</span><span class="grow"></span><span class="row">LLM <span class="mono">Ollama · gemma4:12b-q6</span></span><span class="sep"></span><span class="row c-ok"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Saved</span></footer>
+</div>
+</body></html>

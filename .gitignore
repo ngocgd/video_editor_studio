@@ -1,0 +1,38 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/*
+!secrets/.gitkeep
+
+# Node
+node_modules/
+web/dist/
+web/coverage/
+*.tsbuildinfo
+
+# Go
+api/bin/
+api/tmp/
+*.exe
+*.test
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+workers-python/.pytest_cache/
+workers-python/.ruff_cache/
+
+# Toolbox caches (named volumes, not bind mounts, but ignore stray dirs)
+.gocache/
+.gomodcache/
+.npmcache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# gitleaks report artifacts
+gitleaks-report.json

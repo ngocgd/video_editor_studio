@@ -1,0 +1,268 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Review and publish — Loomtale Studio wireframe</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet"><style>
+/* Loomtale Studio tokens — mirror of docs/design-guidelines.md section 2-4 */
+:root{
+  color-scheme:dark;
+  --well:#0E0F11;--background:#141518;--card:#1B1C20;--popover:#222328;--accent:#2A2B31;--secondary:#222328;--muted:#1B1C20;
+  --border:#34363C;--input:#686A72;
+  --foreground:#E6E4DF;--text-2:#A8A6A0;--muted-foreground:#95928C;
+  --primary:#4DB6A0;--primary-text:#6CC9B4;--ring:#6CC9B4;--primary-foreground:#0E0F11;--primary-muted:rgba(77,182,160,.14);
+  --success:#6BBF73;--warning:#D9A441;--destructive:#EE6B61;--info:#6FA8DC;
+  --success-muted:rgba(107,191,115,.14);--warning-muted:rgba(217,164,65,.14);--destructive-muted:rgba(238,107,97,.14);--info-muted:rgba(111,168,220,.14);
+  --spk-narrator:#95928C;--spk-1:#C9A26B;--spk-2:#7FA7C9;--spk-3:#C98A9E;--spk-4:#9DB57A;
+  --font-sans:"IBM Plex Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,monospace;--font-serif:"Literata",Georgia,serif;
+  --radius-sm:3px;--radius-md:5px;--radius-lg:8px;
+  --shadow-overlay:0 8px 24px rgba(0,0,0,.45),0 0 0 1px #34363C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--background);color:var(--foreground);font:400 13px/18px var(--font-sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted-foreground)}.t2{color:var(--text-2)}
+.xs{font-size:12px;line-height:16px}.eyebrow{font-size:11px;line-height:14px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-foreground)}
+.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.i.sm{width:14px;height:14px}
+.row{display:flex;align-items:center;gap:8px}.grow{flex:1;min-width:0}.between{justify-content:space-between}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Shell ---------- */
+.app{display:grid;grid-template-columns:224px 1fr;grid-template-rows:1fr 28px;height:100vh}
+.app.rail{grid-template-columns:56px 1fr}
+.nav{grid-row:1;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:auto}
+.brand{display:flex;align-items:center;gap:8px;padding:4px 8px 12px;font-weight:600;font-size:14px}
+.brand svg{width:22px;height:22px}
+.nav a{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none;position:relative}
+.nav a:hover{background:var(--accent);color:var(--foreground)}
+.nav a[aria-current]{background:var(--card);color:var(--foreground)}
+.nav a[aria-current]::before{content:"";position:absolute;left:-8px;top:7px;bottom:7px;width:2px;background:var(--primary);border-radius:1px}
+.nav .count{margin-left:auto;font:500 11px var(--font-mono);color:var(--muted-foreground)}
+.nav .group{margin:14px 8px 4px}
+.app.rail .nav a span,.app.rail .nav .group,.app.rail .brand span,.app.rail .nav .count{display:none}
+.main-col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{white-space:nowrap;height:44px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 12px}
+.crumbs{white-space:nowrap;display:flex;align-items:center;gap:6px;color:var(--text-2)}.crumbs b{color:var(--foreground);font-weight:500}
+.crumbs .i{width:14px;height:14px;color:var(--muted-foreground)}
+.tabs{display:flex;gap:2px;margin-left:12px}
+.tabs a{height:28px;display:flex;align-items:center;padding:0 10px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none}
+.tabs a:hover{background:var(--accent)}.tabs a[aria-current]{color:var(--foreground);background:var(--card);box-shadow:inset 0 -2px 0 var(--primary)}
+.work{flex:1;display:grid;grid-template-columns:1fr 360px;min-height:0}
+.work.no-insp{grid-template-columns:1fr}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+.inspector{border-left:1px solid var(--border);overflow:auto;display:flex;flex-direction:column}
+.statusbar{grid-column:1/-1;border-top:1px solid var(--border);background:var(--well);display:flex;align-items:center;gap:16px;padding:0 12px;font-size:12px;color:var(--text-2)}
+.statusbar .sep{width:1px;height:14px;background:var(--border)}
+.meter{width:72px;height:4px;background:var(--accent);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle}
+.meter i{display:block;height:100%;background:var(--info)}
+.meter.warn i{background:var(--warning)}
+
+/* ---------- Controls ---------- */
+.btn{height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--secondary);color:var(--foreground);cursor:pointer;white-space:nowrap;font-weight:500;transition:background .12s ease-out}
+.btn:hover{background:var(--accent)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.btn.primary:hover{background:#5CC3AD}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}.btn.ghost:hover{background:var(--accent);color:var(--foreground)}
+.btn.danger{color:var(--destructive)}
+.btn.icon{width:28px;padding:0;justify-content:center}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{font:500 11px/16px var(--font-mono);padding:0 5px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--popover);color:var(--text-2)}
+.search{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--well);color:var(--muted-foreground);min-width:220px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.label{font-size:12px;color:var(--text-2);font-weight:500}
+.input,.select,.textarea{background:var(--well);border:1px solid var(--input);border-radius:var(--radius-md);padding:5px 8px;min-height:28px;width:100%}
+.select{display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer}
+.textarea{resize:vertical;line-height:20px}
+.seg{display:inline-flex;border:1px solid var(--input);border-radius:var(--radius-md);overflow:hidden;background:var(--well)}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--foreground);box-shadow:inset 0 -2px 0 var(--primary)}
+.switch{width:28px;height:16px;border-radius:8px;background:var(--accent);border:1px solid var(--input);position:relative;display:inline-block}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--text-2)}
+.switch.on{background:var(--primary);border-color:var(--primary)}.switch.on::after{left:14px;background:var(--primary-foreground)}
+
+/* ---------- Status ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;background:var(--accent);color:var(--text-2);white-space:nowrap}
+.badge .i{width:13px;height:13px}
+.badge.ok{background:var(--success-muted);color:var(--success)}
+.badge.run{background:var(--info-muted);color:var(--info)}
+.badge.warn{background:var(--warning-muted);color:var(--warning)}
+.badge.err{background:var(--destructive-muted);color:var(--destructive)}
+.badge.acc{background:var(--primary-muted);color:var(--primary-text)}
+.c-ok{color:var(--success)}.c-run{color:var(--info)}.c-warn{color:var(--warning)}.c-err{color:var(--destructive)}.c-acc{color:var(--primary-text)}
+.bar{height:4px;background:var(--accent);border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;background:var(--info)}
+.bar.err i{background:var(--destructive)}.bar.ok i{background:var(--success)}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Panels / tables ---------- */
+.panel-h{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);font-weight:500}
+.section{padding:12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md)}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:500;color:var(--muted-foreground);text-align:left;padding:0 12px;height:30px;border-bottom:1px solid var(--border)}
+td{padding:0 12px;height:36px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--card)}
+.avatar{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font:600 10px var(--font-mono);color:var(--well);flex:none}
+.mono-tag{font:500 10px/14px var(--font-mono);padding:0 4px;border-radius:var(--radius-sm);border:1px solid currentColor}
+.note{font-size:12px;color:var(--muted-foreground);border-left:2px solid var(--border);padding-left:8px}
+.anno{position:fixed;right:12px;bottom:40px;max-width:300px;background:var(--popover);box-shadow:var(--shadow-overlay);border-radius:var(--radius-lg);padding:10px 12px;font-size:12px;color:var(--text-2);z-index:50}
+.anno b{color:var(--foreground)}
+.anno summary{cursor:pointer;color:var(--foreground);font-weight:500}
+.thumb{background:var(--well);border-radius:var(--radius-sm);overflow:hidden;position:relative;aspect-ratio:16/9}
+.thumb svg.art{width:100%;height:100%;display:block}
+.i.spin{transform-origin:center}
+
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16" />
+  <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M18 17V9" />
+  <path d="M13 17V5" />
+  <path d="M8 17v-3" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="M12 6v6l4 2" /></symbol><symbol id="i-cpu" viewBox="0 0 24 24"><path d="M12 20v2" />
+  <path d="M12 2v2" />
+  <path d="M17 20v2" />
+  <path d="M17 2v2" />
+  <path d="M2 12h2" />
+  <path d="M2 17h2" />
+  <path d="M2 7h2" />
+  <path d="M20 12h2" />
+  <path d="M20 17h2" />
+  <path d="M20 7h2" />
+  <path d="M7 20v2" />
+  <path d="M7 2v2" />
+  <rect x="4" y="4" width="16" height="16" rx="2" />
+  <rect x="8" y="8" width="8" height="8" rx="1" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" /></symbol><symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M7 3v18" />
+  <path d="M3 7.5h4" />
+  <path d="M3 12h18" />
+  <path d="M3 16.5h4" />
+  <path d="M17 3v18" />
+  <path d="M17 7.5h4" />
+  <path d="M17 16.5h4" /></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></symbol><symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></symbol><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" />
+  <rect width="7" height="5" x="14" y="3" rx="1" />
+  <rect width="7" height="9" x="14" y="12" rx="1" />
+  <rect width="7" height="5" x="3" y="16" rx="1" /></symbol><symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" />
+  <path d="M12 6v14" />
+  <path d="M8 8v12" />
+  <path d="M4 4v16" /></symbol><symbol id="i-list-video" viewBox="0 0 24 24"><path d="M21 5H3" />
+  <path d="M10 12H3" />
+  <path d="M10 19H3" />
+  <path d="M15 12.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997a1 1 0 0 1-1.517-.86z" /></symbol><symbol id="i-loader-circle" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol><symbol id="i-monitor-play" viewBox="0 0 24 24"><path d="M15.033 9.44a.647.647 0 0 1 0 1.12l-4.065 2.352a.645.645 0 0 1-.968-.56V7.648a.645.645 0 0 1 .967-.56z" />
+  <path d="M12 17v4" />
+  <path d="M8 21h8" />
+  <rect x="2" y="3" width="20" height="14" rx="2" /></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" />
+  <path d="M12 5v14" /></symbol><symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" /></symbol><symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" /></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" />
+  <rect width="20" height="8" x="2" y="14" rx="2" ry="2" />
+  <line x1="6" x2="6.01" y1="6" y2="6" />
+  <line x1="6" x2="6.01" y1="18" y2="18" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+  <path d="M12 9v4" />
+  <path d="M12 17h.01" /></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12" />
+  <path d="m17 8-5-5-5 5" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" /></symbol><symbol id="i-volume-2" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+  <path d="M16 9a5 5 0 0 1 0 6" />
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol></svg>
+<style>
+.rp{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.player{position:relative;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border)}
+.player .thumb{border-radius:0}
+.player .subt{position:absolute;left:0;right:0;bottom:44px;text-align:center;font-family:var(--font-serif);font-size:20px;color:#fff;text-shadow:0 2px 3px rgba(0,0,0,.8)}
+.ctrl{position:absolute;left:0;right:0;bottom:0;height:36px;background:rgba(14,15,17,.85);display:flex;align-items:center;gap:8px;padding:0 10px}
+.scrub{flex:1;height:4px;background:var(--accent);border-radius:2px;position:relative}
+.scrub i{position:absolute;left:0;top:0;bottom:0;width:35%;background:var(--primary)}
+.scrub b{position:absolute;top:-3px;width:2px;height:10px;background:var(--warning)}
+.checklist{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:18px}
+.chk .i{margin-top:1px}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.thumbs .thumb{border:1px solid var(--border)}
+.thumbs .thumb[aria-checked=true]{outline:2px solid var(--primary);outline-offset:-1px}
+.thumbs .t{position:absolute;inset:auto 6px 6px 6px;font:700 13px/1.1 var(--font-sans);color:#F2E6C9;text-transform:uppercase;text-shadow:0 2px 3px #000}
+.radio{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-md)}
+.radio .dot{width:14px;height:14px;border-radius:50%;border:1px solid var(--input);margin-top:2px;flex:none}
+.radio.on{border-color:var(--primary)}.radio.on .dot{border:4px solid var(--primary)}
+.radio.off{opacity:.55}
+.radio b{font-weight:500;display:block}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{height:22px;display:inline-flex;align-items:center;padding:0 6px;border-radius:var(--radius-sm);background:var(--card);border:1px solid var(--border);font-size:12px}
+</style>
+<div class="app">
+<nav class="nav" aria-label="Primary"><div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="#1B1C20" stroke="#34363C"/><g stroke="#95928C" stroke-width="1.75" stroke-linecap="round"><line x1="10" y1="7" x2="10" y2="25"/><line x1="22" y1="7" x2="22" y2="25"/></g><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#1B1C20" stroke-width="5" stroke-linecap="round"/><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#4DB6A0" stroke-width="2.25" stroke-linecap="round"/><line x1="16" y1="7" x2="16" y2="25" stroke="#95928C" stroke-width="1.75" stroke-linecap="round"/></svg><span>Loomtale Studio</span></div><div class="group eyebrow">Workspace</div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-layout-dashboard"/></svg><span>Dashboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><span>Projects</span><span class="count">4</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Import</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg><span>Review queue</span><span class="count">2</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-chart-column"/></svg><span>Analytics</span></a><div class="group eyebrow">The Jade Crane Sect</div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-book-open"/></svg><span>Story bible</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg><span>Characters</span><span class="count">9</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg><span>Episodes</span><span class="count">12</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span>Storyboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-list-video"/></svg><span>Render</span></a><a href="#" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Publish</span></a><div style="flex:1"></div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></a></nav>
+<div class="main-col">
+  <header class="topbar">
+    <div class="crumbs"><span>Jade Crane Sect</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span>Ep 06</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><b>Review &amp; publish</b></div>
+    <nav class="tabs"><a href="#">Draft</a><a href="#">Storyboard</a><a href="#">Render</a><a href="#" aria-current="page">Publish</a></nav>
+    <span class="grow"></span>
+    <button class="btn danger"><svg class="i" aria-hidden="true"><use href="#i-rotate-ccw"/></svg>Send back to storyboard</button>
+    <button class="btn primary"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>Approve &amp; upload as private</button>
+  </header>
+  <div class="work">
+    <section class="pane rp">
+      <div class="player">
+        <div class="thumb"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g4-16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2522"/><stop offset="1" stop-color="#1E1413"/></linearGradient></defs><rect width="160" height="90" fill="url(#g4-16)"/><path d="M20 34h120l-16-14H36Z" fill="#150D0C"/><g fill="#9C3B2E"><rect x="36" y="36" width="6" height="44"/><rect x="62" y="36" width="6" height="44"/><rect x="92" y="36" width="6" height="44"/><rect x="118" y="36" width="6" height="44"/></g><path d="M0 80h160v10H0z" fill="#120B0A"/><circle cx="80" cy="62" r="4" fill="#E6C89A"/></svg></div>
+        <div class="subt">"You carry the scent of a broken meridian."</div>
+        <div class="ctrl"><button class="btn icon ghost" aria-label="Play"><svg class="i sm" aria-hidden="true"><use href="#i-play"/></svg></button><span class="mono xs">14:22 / 41:08</span>
+          <div class="scrub" aria-label="Position; amber marks are review flags"><i></i><b style="left:22%"></b><b style="left:61%"></b></div>
+          <button class="btn icon ghost" aria-label="Volume"><svg class="i sm" aria-hidden="true"><use href="#i-volume-2"/></svg></button></div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Pre-publish checks</span><span class="xs t2">6 of 8 passed · human review required</span></div>
+        <div class="checklist">
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">Subtitles aligned (max drift <span class="mono">0.18s</span>)</span></div>
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">Loudness <span class="mono">-14.2 LUFS</span></span></div>
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">All 52 scenes rendered, no placeholders</span></div>
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">Character consistency ≥ 0.8</span></div>
+          <div class="chk c-warn"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg><span style="color:var(--foreground)">2 scenes flagged low image score (#14, #33) · jump</span></div>
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">Altered/synthetic content flag set</span></div>
+          <div class="chk c-warn"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg><span style="color:var(--foreground)">You have not watched 3 random spot-check segments yet</span></div>
+          <div class="chk c-ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span style="color:var(--foreground)">Title + thumbnail differ from last 5 videos</span></div>
+        </div>
+      </div>
+    </section>
+    <aside class="inspector" aria-label="Publish settings">
+      <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg>YouTube · Ashen Crane Tales</div>
+      <div class="section">
+        <div class="alert" style="display:flex;gap:8px;padding:8px 10px;border-radius:var(--radius-md);background:var(--warning-muted);font-size:12px;line-height:17px"><svg class="i c-warn" aria-hidden="true"><use href="#i-lock"/></svg><div><b>API project not audited yet.</b> YouTube locks every API upload to <b>Private</b>. After upload, switch it to public in YouTube Studio. Audit form: submitted 18 Sep, pending.</div></div>
+        <span class="label">Visibility</span>
+        <div class="radio on"><span class="dot"></span><div><b>Private</b><span class="xs t2">Only you. Publish manually in Studio.</span></div></div>
+        <div class="radio off" aria-disabled="true"><span class="dot"></span><div><b>Scheduled public</b><span class="xs t2">Unavailable until the API audit passes.</span></div></div>
+        <div class="radio off" aria-disabled="true"><span class="dot"></span><div><b>Public</b><span class="xs t2">Unavailable until the API audit passes.</span></div></div>
+      </div>
+      <div class="section">
+        <div class="field"><label>Title <span class="mono muted">62/100</span></label><div class="input">The Pill That Should Not Exist | Jade Crane Sect Ep 6</div></div>
+        <div class="field"><label>Description</label><div class="input xs" style="line-height:18px;min-height:72px">An outer disciple with a shattered meridian steals the one pill that could heal him, and learns what the Pill Hall hides.<br>00:00 The stolen pill · 09:14 Elder Qiu · 21:40 Assembly…</div></div>
+        <div class="field"><label>Tags</label><div class="tags"><span class="tag">xianxia</span><span class="tag">cultivation story</span><span class="tag">audio story</span><span class="tag">fantasy audiobook</span><button class="btn ghost" style="height:22px"><svg class="i sm" aria-hidden="true"><use href="#i-plus"/></svg></button></div></div>
+        <div class="row between"><span>Altered or synthetic content</span><span class="switch on" role="switch" aria-checked="true" aria-label="Altered or synthetic content"></span></div>
+        <div class="row between"><span>Playlist</span><span class="t2">Jade Crane Sect — Season 1</span></div>
+      </div>
+      <div class="section" style="border-bottom:0">
+        <div class="row between"><span class="label">Thumbnail</span><button class="btn ghost" style="height:24px"><svg class="i sm" aria-hidden="true"><use href="#i-refresh-cw"/></svg>New variants</button></div>
+        <div class="thumbs" role="radiogroup" aria-label="Thumbnail variant">
+          <div class="thumb" role="radio" aria-checked="true"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g6-17" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A1C14"/><stop offset="1" stop-color="#150E0A"/></linearGradient></defs><rect width="160" height="90" fill="url(#g6-17)"/><ellipse cx="80" cy="60" rx="34" ry="20" fill="#E08A3C" opacity=".35"/><path d="M64 70h32l-4-20H68Z" fill="#3B2A1E"/><path d="M60 50h40v-6H60z" fill="#4A3526"/><path d="M0 0h160v18C120 30 40 30 0 18Z" fill="#0E0906"/></svg><span class="t">The stolen pill</span></div>
+          <div class="thumb" role="radio" aria-checked="false"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g4-18" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2522"/><stop offset="1" stop-color="#1E1413"/></linearGradient></defs><rect width="160" height="90" fill="url(#g4-18)"/><path d="M20 34h120l-16-14H36Z" fill="#150D0C"/><g fill="#9C3B2E"><rect x="36" y="36" width="6" height="44"/><rect x="62" y="36" width="6" height="44"/><rect x="92" y="36" width="6" height="44"/><rect x="118" y="36" width="6" height="44"/></g><path d="M0 80h160v10H0z" fill="#120B0A"/><circle cx="80" cy="62" r="4" fill="#E6C89A"/></svg><span class="t">He should be dead</span></div>
+          <div class="thumb" role="radio" aria-checked="false"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g7-19" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26262B"/><stop offset="1" stop-color="#141418"/></linearGradient></defs><rect width="160" height="90" fill="url(#g7-19)"/><circle cx="80" cy="34" r="13" fill="#0C0C0F"/><path d="M50 90c4-26 16-38 30-38s26 12 30 38Z" fill="#0C0C0F"/><path d="M67 30c6-10 20-10 26 0" fill="none" stroke="#C9A26B" stroke-width="2"/></svg><span class="t">Broken meridian</span></div>
+        </div>
+        <span class="xs muted mono">Qwen-Image · 1280×720 · text rendered in image</span>
+      </div>
+    </aside>
+  </div>
+</div>
+<footer class="statusbar" role="status" aria-live="polite"><span class="row"><span class="mono-tag c-acc">GPU</span><svg class="i sm spin c-run" aria-hidden="true"><use href="#i-loader-circle"/></svg><span>Voice · Ep 7 scene 031</span><span class="meter"><i style="width:61%"></i></span><span class="mono">61%</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="mono">3</span> queued</span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-cpu"/></svg>VRAM <span class="meter"><i style="width:78%"></i></span><span class="mono">12.4/16 GB</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-server"/></svg>Chatterbox (TTS) loaded</span><span class="grow"></span><span class="row">LLM <span class="mono">Ollama · gemma4:12b-q6</span></span><span class="sep"></span><span class="row c-ok"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Saved</span></footer>
+</div>
+</body></html>

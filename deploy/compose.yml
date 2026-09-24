@@ -1,0 +1,154 @@
+name: loomtale
+
+networks:
+  loomtale_core:
+    driver: bridge
+
+secrets:
+  minio_root_user:
+    file: ../secrets/minio_root_user.txt
+  minio_root_password:
+    file: ../secrets/minio_root_password.txt
+
+services:
+  postgres:
+    image: postgres@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f
+    mem_limit: 1.5g
+    restart: unless-stopped
+    networks: [loomtale_core]
+    environment:
+      POSTGRES_USER: loomtale
+      POSTGRES_PASSWORD: loomtale
+      POSTGRES_DB: loomtale
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "max_wal_size=2GB"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loomtale -d loomtale"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  minio:
+    image: bitnamilegacy/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c
+    mem_limit: 1g
+    restart: unless-stopped
+    networks: [loomtale_core]
+    ports:
+      - "127.0.0.1:9000:9000"
+    secrets: [minio_root_user, minio_root_password]
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
+      MINIO_DEFAULT_BUCKETS: ""
+    volumes:
+      - miniodata:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  minio-init:
+    image: bitnamilegacy/minio-client@sha256:00dcc4e58ada0df45bb7d9ee435af98295f96c27c3c68292ce78ec700a87b511
+    mem_limit: 128m
+    networks: [loomtale_core]
+    secrets: [minio_root_user, minio_root_password]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/init/minio-init.sh"]
+    volumes:
+      - ./minio-init.sh:/init/minio-init.sh:ro
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+    image: loomtale/api:local
+    mem_limit: 512m
+    restart: unless-stopped
+    networks: [loomtale_core]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      API_ADDR: ":8080"
+      API_LOG_LEVEL: info
+      API_SHUTDOWN_TIMEOUT: 25s
+      DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
+      MINIO_ENDPOINT: minio:9000
+      MINIO_BUCKET: loomtale
+      MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:-}
+      MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:-}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/api", "healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/docker/worker.Dockerfile
+    image: loomtale/worker:local
+    mem_limit: 3g
+    cpus: 8
+    restart: unless-stopped
+    networks: [loomtale_core]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      API_LOG_LEVEL: info
+      DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/docker/web.Dockerfile
+    image: loomtale/web:local
+    mem_limit: 128m
+    restart: unless-stopped
+    networks: [loomtale_core]
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+volumes:
+  pgdata:
+  miniodata:

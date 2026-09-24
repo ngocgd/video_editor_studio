@@ -1,0 +1,15 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ../api/internal/workerpb
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: ../api/internal/workerpb
+    opt: paths=source_relative
+  # Python's generated stubs use absolute imports matching the proto package
+  # path (e.g. `from loomtale.worker.v1 import health_pb2`), so the output
+  # root must be workers-python/src, not nested under loomtale_worker.
+  - remote: buf.build/protocolbuffers/python
+    out: ../workers-python/src
+  - remote: buf.build/grpc/python
+    out: ../workers-python/src

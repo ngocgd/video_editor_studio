@@ -1,0 +1,22 @@
+name: loomtale
+
+# Override applied on top of compose.yml when GPU-backed rendering is
+# active. Phase 4/9a add the comfyui, pyworker, ollama and llm-cli services
+# to this file; phase 1 only wires the worker's NVENC device reservation.
+services:
+  worker:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+
+volumes:
+  # Populated out-of-band by the model download step (phase 1b); declared
+  # here so compose.gpu.yml never tries to (re)create it.
+  loomtale_models:
+    external: true

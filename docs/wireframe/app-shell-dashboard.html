@@ -1,0 +1,285 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — Loomtale Studio wireframe</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet"><style>
+/* Loomtale Studio tokens — mirror of docs/design-guidelines.md section 2-4 */
+:root{
+  color-scheme:dark;
+  --well:#0E0F11;--background:#141518;--card:#1B1C20;--popover:#222328;--accent:#2A2B31;--secondary:#222328;--muted:#1B1C20;
+  --border:#34363C;--input:#686A72;
+  --foreground:#E6E4DF;--text-2:#A8A6A0;--muted-foreground:#95928C;
+  --primary:#4DB6A0;--primary-text:#6CC9B4;--ring:#6CC9B4;--primary-foreground:#0E0F11;--primary-muted:rgba(77,182,160,.14);
+  --success:#6BBF73;--warning:#D9A441;--destructive:#EE6B61;--info:#6FA8DC;
+  --success-muted:rgba(107,191,115,.14);--warning-muted:rgba(217,164,65,.14);--destructive-muted:rgba(238,107,97,.14);--info-muted:rgba(111,168,220,.14);
+  --spk-narrator:#95928C;--spk-1:#C9A26B;--spk-2:#7FA7C9;--spk-3:#C98A9E;--spk-4:#9DB57A;
+  --font-sans:"IBM Plex Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,monospace;--font-serif:"Literata",Georgia,serif;
+  --radius-sm:3px;--radius-md:5px;--radius-lg:8px;
+  --shadow-overlay:0 8px 24px rgba(0,0,0,.45),0 0 0 1px #34363C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--background);color:var(--foreground);font:400 13px/18px var(--font-sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted-foreground)}.t2{color:var(--text-2)}
+.xs{font-size:12px;line-height:16px}.eyebrow{font-size:11px;line-height:14px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-foreground)}
+.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.i.sm{width:14px;height:14px}
+.row{display:flex;align-items:center;gap:8px}.grow{flex:1;min-width:0}.between{justify-content:space-between}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Shell ---------- */
+.app{display:grid;grid-template-columns:224px 1fr;grid-template-rows:1fr 28px;height:100vh}
+.app.rail{grid-template-columns:56px 1fr}
+.nav{grid-row:1;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:auto}
+.brand{display:flex;align-items:center;gap:8px;padding:4px 8px 12px;font-weight:600;font-size:14px}
+.brand svg{width:22px;height:22px}
+.nav a{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none;position:relative}
+.nav a:hover{background:var(--accent);color:var(--foreground)}
+.nav a[aria-current]{background:var(--card);color:var(--foreground)}
+.nav a[aria-current]::before{content:"";position:absolute;left:-8px;top:7px;bottom:7px;width:2px;background:var(--primary);border-radius:1px}
+.nav .count{margin-left:auto;font:500 11px var(--font-mono);color:var(--muted-foreground)}
+.nav .group{margin:14px 8px 4px}
+.app.rail .nav a span,.app.rail .nav .group,.app.rail .brand span,.app.rail .nav .count{display:none}
+.main-col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{white-space:nowrap;height:44px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 12px}
+.crumbs{white-space:nowrap;display:flex;align-items:center;gap:6px;color:var(--text-2)}.crumbs b{color:var(--foreground);font-weight:500}
+.crumbs .i{width:14px;height:14px;color:var(--muted-foreground)}
+.tabs{display:flex;gap:2px;margin-left:12px}
+.tabs a{height:28px;display:flex;align-items:center;padding:0 10px;border-radius:var(--radius-md);color:var(--text-2);text-decoration:none}
+.tabs a:hover{background:var(--accent)}.tabs a[aria-current]{color:var(--foreground);background:var(--card);box-shadow:inset 0 -2px 0 var(--primary)}
+.work{flex:1;display:grid;grid-template-columns:1fr 360px;min-height:0}
+.work.no-insp{grid-template-columns:1fr}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+.inspector{border-left:1px solid var(--border);overflow:auto;display:flex;flex-direction:column}
+.statusbar{grid-column:1/-1;border-top:1px solid var(--border);background:var(--well);display:flex;align-items:center;gap:16px;padding:0 12px;font-size:12px;color:var(--text-2)}
+.statusbar .sep{width:1px;height:14px;background:var(--border)}
+.meter{width:72px;height:4px;background:var(--accent);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle}
+.meter i{display:block;height:100%;background:var(--info)}
+.meter.warn i{background:var(--warning)}
+
+/* ---------- Controls ---------- */
+.btn{height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--secondary);color:var(--foreground);cursor:pointer;white-space:nowrap;font-weight:500;transition:background .12s ease-out}
+.btn:hover{background:var(--accent)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.btn.primary:hover{background:#5CC3AD}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}.btn.ghost:hover{background:var(--accent);color:var(--foreground)}
+.btn.danger{color:var(--destructive)}
+.btn.icon{width:28px;padding:0;justify-content:center}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{font:500 11px/16px var(--font-mono);padding:0 5px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--popover);color:var(--text-2)}
+.search{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--well);color:var(--muted-foreground);min-width:220px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.label{font-size:12px;color:var(--text-2);font-weight:500}
+.input,.select,.textarea{background:var(--well);border:1px solid var(--input);border-radius:var(--radius-md);padding:5px 8px;min-height:28px;width:100%}
+.select{display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer}
+.textarea{resize:vertical;line-height:20px}
+.seg{display:inline-flex;border:1px solid var(--input);border-radius:var(--radius-md);overflow:hidden;background:var(--well)}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--foreground);box-shadow:inset 0 -2px 0 var(--primary)}
+.switch{width:28px;height:16px;border-radius:8px;background:var(--accent);border:1px solid var(--input);position:relative;display:inline-block}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--text-2)}
+.switch.on{background:var(--primary);border-color:var(--primary)}.switch.on::after{left:14px;background:var(--primary-foreground)}
+
+/* ---------- Status ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;background:var(--accent);color:var(--text-2);white-space:nowrap}
+.badge .i{width:13px;height:13px}
+.badge.ok{background:var(--success-muted);color:var(--success)}
+.badge.run{background:var(--info-muted);color:var(--info)}
+.badge.warn{background:var(--warning-muted);color:var(--warning)}
+.badge.err{background:var(--destructive-muted);color:var(--destructive)}
+.badge.acc{background:var(--primary-muted);color:var(--primary-text)}
+.c-ok{color:var(--success)}.c-run{color:var(--info)}.c-warn{color:var(--warning)}.c-err{color:var(--destructive)}.c-acc{color:var(--primary-text)}
+.bar{height:4px;background:var(--accent);border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;background:var(--info)}
+.bar.err i{background:var(--destructive)}.bar.ok i{background:var(--success)}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Panels / tables ---------- */
+.panel-h{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);font-weight:500}
+.section{padding:12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md)}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:500;color:var(--muted-foreground);text-align:left;padding:0 12px;height:30px;border-bottom:1px solid var(--border)}
+td{padding:0 12px;height:36px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--card)}
+.avatar{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font:600 10px var(--font-mono);color:var(--well);flex:none}
+.mono-tag{font:500 10px/14px var(--font-mono);padding:0 4px;border-radius:var(--radius-sm);border:1px solid currentColor}
+.note{font-size:12px;color:var(--muted-foreground);border-left:2px solid var(--border);padding-left:8px}
+.anno{position:fixed;right:12px;bottom:40px;max-width:300px;background:var(--popover);box-shadow:var(--shadow-overlay);border-radius:var(--radius-lg);padding:10px 12px;font-size:12px;color:var(--text-2);z-index:50}
+.anno b{color:var(--foreground)}
+.anno summary{cursor:pointer;color:var(--foreground);font-weight:500}
+.thumb{background:var(--well);border-radius:var(--radius-sm);overflow:hidden;position:relative;aspect-ratio:16/9}
+.thumb svg.art{width:100%;height:100%;display:block}
+.i.spin{transform-origin:center}
+
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16" />
+  <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M18 17V9" />
+  <path d="M13 17V5" />
+  <path d="M8 17v-3" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m15 9-6 6" />
+  <path d="m9 9 6 6" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="M12 6v6l4 2" /></symbol><symbol id="i-cpu" viewBox="0 0 24 24"><path d="M12 20v2" />
+  <path d="M12 2v2" />
+  <path d="M17 20v2" />
+  <path d="M17 2v2" />
+  <path d="M2 12h2" />
+  <path d="M2 17h2" />
+  <path d="M2 7h2" />
+  <path d="M20 12h2" />
+  <path d="M20 17h2" />
+  <path d="M20 7h2" />
+  <path d="M7 20v2" />
+  <path d="M7 2v2" />
+  <rect x="4" y="4" width="16" height="16" rx="2" />
+  <rect x="8" y="8" width="8" height="8" rx="1" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+  <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" /></symbol><symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M7 3v18" />
+  <path d="M3 7.5h4" />
+  <path d="M3 12h18" />
+  <path d="M3 16.5h4" />
+  <path d="M17 3v18" />
+  <path d="M17 7.5h4" />
+  <path d="M17 16.5h4" /></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></symbol><symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></symbol><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" />
+  <rect width="7" height="5" x="14" y="3" rx="1" />
+  <rect width="7" height="9" x="14" y="12" rx="1" />
+  <rect width="7" height="5" x="3" y="16" rx="1" /></symbol><symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" />
+  <path d="M12 6v14" />
+  <path d="M8 8v12" />
+  <path d="M4 4v16" /></symbol><symbol id="i-list-video" viewBox="0 0 24 24"><path d="M21 5H3" />
+  <path d="M10 12H3" />
+  <path d="M10 19H3" />
+  <path d="M15 12.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997a1 1 0 0 1-1.517-.86z" /></symbol><symbol id="i-loader-circle" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" />
+  <path d="M12 5v14" /></symbol><symbol id="i-scroll-text" viewBox="0 0 24 24"><path d="M15 12h-5" />
+  <path d="M15 8h-5" />
+  <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+  <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" />
+  <rect width="20" height="8" x="2" y="14" rx="2" ry="2" />
+  <line x1="6" x2="6.01" y1="6" y2="6" />
+  <line x1="6" x2="6.01" y1="18" y2="18" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+  <path d="M12 9v4" />
+  <path d="M12 17h.01" /></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12" />
+  <path d="m17 8-5-5-5 5" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" />
+  <path d="m6 6 12 12" /></symbol></svg>
+<style>
+.dash{flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-content:start}
+.box{background:var(--background);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;flex-direction:column;min-width:0}
+.box .panel-h{height:36px}
+.stat{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.stat .v{font:500 20px/26px var(--font-mono);font-variant-numeric:tabular-nums}
+.stat .d{font-size:12px}
+.spark{height:24px;width:100%}
+.qitem{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border)}
+.qitem:last-child{border-bottom:0}
+.qitem .n{font:500 11px var(--font-mono);color:var(--muted-foreground)}
+.qitem b{font-weight:500}
+.rv{display:grid;grid-template-columns:112px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.rv:last-child{border-bottom:0}
+.checks{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:4px}
+.vr{display:flex;gap:2px;align-items:flex-end;height:48px;padding:0 12px 10px}
+.vr i{flex:1;background:var(--info);opacity:.55;border-radius:1px 1px 0 0}
+.vr i.hi{background:var(--warning);opacity:.8}
+</style>
+<div class="app">
+<nav class="nav" aria-label="Primary"><div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="#1B1C20" stroke="#34363C"/><g stroke="#95928C" stroke-width="1.75" stroke-linecap="round"><line x1="10" y1="7" x2="10" y2="25"/><line x1="22" y1="7" x2="22" y2="25"/></g><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#1B1C20" stroke-width="5" stroke-linecap="round"/><path d="M6 16c2.5-5 4.5-5 7 0s4.5 5 7 0 4.5-5 6 0" fill="none" stroke="#4DB6A0" stroke-width="2.25" stroke-linecap="round"/><line x1="16" y1="7" x2="16" y2="25" stroke="#95928C" stroke-width="1.75" stroke-linecap="round"/></svg><span>Loomtale Studio</span></div><div class="group eyebrow">Workspace</div><a href="#" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-layout-dashboard"/></svg><span>Dashboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><span>Projects</span><span class="count">4</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Import</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg><span>Review queue</span><span class="count">2</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-chart-column"/></svg><span>Analytics</span></a><div class="group eyebrow">The Jade Crane Sect</div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-book-open"/></svg><span>Story bible</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg><span>Characters</span><span class="count">9</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg><span>Episodes</span><span class="count">12</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span>Storyboard</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-list-video"/></svg><span>Render</span></a><a href="#"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Publish</span></a><div style="flex:1"></div><a href="#"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></a></nav>
+<div class="main-col">
+  <header class="topbar">
+    <div class="crumbs"><b>Dashboard</b><span class="muted xs mono">Thu 24 Sep 2026 · 22:45</span></div>
+    <span class="grow"></span>
+    <div class="search"><svg class="i sm" aria-hidden="true"><use href="#i-search"/></svg><span>Search or run a command</span><span class="grow"></span><span class="kbd">Ctrl K</span></div>
+    <button class="btn"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Import story</button>
+    <button class="btn primary"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>New project</button>
+  </header>
+  <div class="work no-insp">
+    <div class="dash">
+      <!-- Channel stats: compact, factual -->
+      <div class="box" style="grid-column:span 3"><div class="stat"><span class="eyebrow">Subscribers · Ashen Crane Tales</span><span class="v">412</span><span class="d c-ok">+38 <span class="muted">last 7 days</span></span></div></div>
+      <div class="box" style="grid-column:span 3"><div class="stat"><span class="eyebrow">Watch hours (12 mo) · YPP</span><span class="v">1,286 <span class="muted" style="font-size:13px">/ 4,000</span></span><div class="bar ok"><i style="width:32%"></i></div></div></div>
+      <div class="box" style="grid-column:span 3"><div class="stat"><span class="eyebrow">Views · 7 days</span><span class="v">18.4k</span>
+        <svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-label="Views trend, rising"><polyline points="0,20 14,18 28,19 42,14 57,15 71,9 85,10 100,4" fill="none" stroke="var(--info)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div></div>
+      <div class="box" style="grid-column:span 3"><div class="stat"><span class="eyebrow">Avg view duration</span><span class="v">11:42</span><span class="d t2">CTR <span class="mono">5.8%</span> · retention @30s <span class="mono">71%</span></span></div></div>
+
+      <!-- Active jobs -->
+      <div class="box" style="grid-column:span 8">
+        <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-list-video"/></svg>Active jobs<span class="mono xs muted">6</span><span class="grow"></span><button class="btn ghost" style="height:24px">Open render queue<svg class="i sm" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+        <table>
+          <thead><tr><th>Job</th><th>Episode</th><th>Step</th><th style="width:180px">Progress</th><th>ETA</th><th></th></tr></thead>
+          <tbody>
+          <tr><td>Voice scene 031</td><td class="t2">Jade Crane · Ep 07</td><td><span class="badge run"><svg class="i spin" aria-hidden="true"><use href="#i-loader-circle"/></svg>TTS</span></td><td><div class="bar"><i style="width:61%"></i></div></td><td class="mono">0:48</td><td><button class="btn icon ghost" aria-label="Cancel"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></td></tr>
+          <tr><td>Continue draft</td><td class="t2">Jade Crane · Ep 07</td><td><span class="badge"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>LLM · GPU #1</span></td><td><div class="bar"><i style="width:0"></i></div></td><td class="mono muted">—</td><td><button class="btn icon ghost" aria-label="Cancel"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></td></tr>
+          <tr><td>Images 029–036</td><td class="t2">Jade Crane · Ep 07</td><td><span class="badge"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Image · GPU #2</span></td><td><div class="bar"><i style="width:12%"></i></div></td><td class="mono">4:10</td><td><button class="btn icon ghost" aria-label="Cancel"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></td></tr>
+          <tr><td>Render 1080p</td><td class="t2">Ashfall Chronicles · Ep 03</td><td><span class="badge run"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>FFmpeg NVENC</span></td><td><div class="bar"><i style="width:84%"></i></div></td><td class="mono">3:02</td><td><button class="btn icon ghost" aria-label="Cancel"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></td></tr>
+          <tr><td>Subtitle align</td><td class="t2">Kiếm Đạo Độc Tôn · Tập 2</td><td><span class="badge err"><svg class="i" aria-hidden="true"><use href="#i-circle-x"/></svg>faster-whisper</span></td><td><div class="bar err"><i style="width:37%"></i></div></td><td class="c-err xs">Failed</td><td><button class="btn" style="height:24px">Retry</button></td></tr>
+          <tr><td>Upload</td><td class="t2">Jade Crane · Ep 05</td><td><span class="badge ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Private</span></td><td><div class="bar ok"><i style="width:100%"></i></div></td><td class="mono muted">done</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- GPU queue -->
+      <div class="box" style="grid-column:span 4">
+        <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-cpu"/></svg>GPU queue<span class="xs muted">1 slot · RTX 5060 Ti</span></div>
+        <div class="qitem"><span class="n">▶</span><div><b>Chatterbox</b> <span class="t2">voice · Ep 07 #031</span><div class="bar" style="margin-top:6px"><i style="width:61%"></i></div></div><span class="mono xs">61%</span></div>
+        <div class="qitem"><span class="n">1</span><div><b>Ollama</b> <span class="t2">gemma4:12b · continue draft</span></div><span class="mono xs muted">~0:48</span></div>
+        <div class="qitem"><span class="n">2</span><div><b>Z-Image Turbo</b> <span class="t2">8 images · Ep 07</span></div><span class="mono xs muted">~1:30</span></div>
+        <div class="qitem"><span class="n">3</span><div><b>VieNeu-TTS</b> <span class="t2">voice · Tập 2 (VI)</span></div><span class="mono xs muted">~6:40</span></div>
+        <div class="panel-h" style="border-top:1px solid var(--border);height:30px;font-size:12px">VRAM, last 10 min<span class="grow"></span><span class="mono xs">12.4 / 16 GB</span></div>
+        <div class="vr" aria-label="VRAM usage history">
+          <i style="height:40%"></i><i style="height:44%"></i><i style="height:80%"></i><i style="height:82%"></i><i class="hi" style="height:94%"></i><i style="height:60%"></i><i style="height:58%"></i><i style="height:76%"></i><i style="height:78%"></i><i style="height:77%"></i><i style="height:52%"></i><i style="height:74%"></i><i style="height:78%"></i><i style="height:78%"></i></div>
+      </div>
+
+      <!-- Review queue -->
+      <div class="box" style="grid-column:span 7">
+        <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>Waiting for review<span class="mono xs muted">2</span></div>
+        <div class="rv"><div class="thumb"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g4-1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2522"/><stop offset="1" stop-color="#1E1413"/></linearGradient></defs><rect width="160" height="90" fill="url(#g4-1)"/><path d="M20 34h120l-16-14H36Z" fill="#150D0C"/><g fill="#9C3B2E"><rect x="36" y="36" width="6" height="44"/><rect x="62" y="36" width="6" height="44"/><rect x="92" y="36" width="6" height="44"/><rect x="118" y="36" width="6" height="44"/></g><path d="M0 80h160v10H0z" fill="#120B0A"/><circle cx="80" cy="62" r="4" fill="#E6C89A"/></svg></div><div><b>The Pill That Should Not Exist</b> <span class="t2">· Jade Crane Ep 06 · EN · <span class="mono">41:08</span></span>
+          <div class="checks"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Subtitles synced</span><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>AI disclosure on</span><span class="c-warn row"><svg class="i sm" aria-hidden="true"><use href="#i-triangle-alert"/></svg>2 scenes low image score</span></div></div>
+          <button class="btn primary">Review</button></div>
+        <div class="rv"><div class="thumb"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g1-2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9A26B"/><stop offset="1" stop-color="#8B6A45"/></linearGradient></defs><rect width="160" height="90" fill="url(#g1-2)"/><path d="M0 62 28 34 46 50 70 22 98 52 118 38 160 66V90H0Z" fill="#3A3128"/><path d="M0 74 40 56 76 70 112 52 160 72V90H0Z" fill="#241F1A"/><circle cx="122" cy="24" r="9" fill="#F0D6A4"/></svg></div><div lang="vi"><b>Kiếm Đạo Độc Tôn — Tập 1: Thiếu niên rời núi</b> <span class="t2">· VI · <span class="mono">36:52</span></span>
+          <div class="checks"><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Phụ đề khớp</span><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>AI disclosure on</span><span class="c-ok row"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Thumbnail</span></div></div>
+          <button class="btn">Review</button></div>
+      </div>
+
+      <!-- Recent uploads -->
+      <div class="box" style="grid-column:span 5">
+        <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>Recent uploads<span class="grow"></span><span class="badge warn"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>API not audited · private only</span></div>
+        <table><tbody>
+          <tr><td>Ep 05 · A Crack in the Meridian</td><td><span class="badge"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Private</span></td><td class="t2 xs">publish in YouTube Studio</td></tr>
+          <tr><td>Ep 04 · Outer Disciple Trials</td><td><span class="badge ok"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg>Public</span></td><td class="mono xs">3.1k views</td></tr>
+          <tr><td>Ep 03 · The Nameless Grave</td><td><span class="badge ok"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg>Public</span></td><td class="mono xs">5.7k views</td></tr>
+        </tbody></table>
+        <p class="note" style="margin:10px 12px">Public items were switched to public manually in YouTube Studio.</p>
+      </div>
+      <!-- Projects -->
+      <div class="box" style="grid-column:span 12">
+        <div class="panel-h"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Projects<span class="mono xs muted">4</span><span class="grow"></span><button class="btn ghost" style="height:24px">All projects<svg class="i sm" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+        <table>
+          <thead><tr><th>Series</th><th>Lang</th><th>Source</th><th>Episodes</th><th>Next step</th><th>Updated</th></tr></thead>
+          <tbody>
+          <tr><td><b style="font-weight:500">The Jade Crane Sect</b></td><td><span class="badge acc mono">EN</span></td><td class="t2">Original</td><td class="mono">7 / 12 · 5 public</td><td><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-film"/></svg>Ep 07 storyboard · 19 scenes missing</span></td><td class="mono xs t2">22:44</td></tr>
+          <tr><td lang="vi"><b style="font-weight:500">Kiếm Đạo Độc Tôn</b></td><td><span class="badge mono">VI</span></td><td class="t2">Original</td><td class="mono">2 / 20</td><td><span class="row c-err"><svg class="i sm" aria-hidden="true"><use href="#i-circle-x"/></svg>Tập 2 subtitle align failed</span></td><td class="mono xs t2">22:15</td></tr>
+          <tr><td><b style="font-weight:500">Ashfall Chronicles</b></td><td><span class="badge acc mono">EN</span></td><td class="t2">Imported · 38 ch</td><td class="mono">3 / 38</td><td><span class="row c-run"><svg class="i sm spin" aria-hidden="true"><use href="#i-loader-circle"/></svg>Ep 03 rendering</span></td><td class="mono xs t2">22:31</td></tr>
+          <tr><td><b style="font-weight:500">Nine Lanterns (pilot)</b></td><td><span class="badge acc mono">EN</span></td><td class="t2">Original</td><td class="mono">0 / 1</td><td><span class="row t2"><svg class="i sm" aria-hidden="true"><use href="#i-scroll-text"/></svg>Outline not started</span></td><td class="mono xs t2">19 Sep</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<footer class="statusbar" role="status" aria-live="polite"><span class="row"><span class="mono-tag c-acc">GPU</span><svg class="i sm spin c-run" aria-hidden="true"><use href="#i-loader-circle"/></svg><span>Voice · Ep 7 scene 031</span><span class="meter"><i style="width:61%"></i></span><span class="mono">61%</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="mono">3</span> queued</span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-cpu"/></svg>VRAM <span class="meter"><i style="width:78%"></i></span><span class="mono">12.4/16 GB</span></span><span class="sep"></span><span class="row"><svg class="i sm" aria-hidden="true"><use href="#i-server"/></svg>Chatterbox (TTS) loaded</span><span class="grow"></span><span class="row">LLM <span class="mono">Ollama · gemma4:12b-q6</span></span><span class="sep"></span><span class="row c-ok"><svg class="i sm" aria-hidden="true"><use href="#i-circle-check"/></svg>Saved</span></footer>
+</div>
+</body></html>
