@@ -812,6 +812,122 @@ export const GpuStatusSchema = {
             items: {
                 type: 'string'
             }
+        },
+        workerOnline: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const LLMActionOverridesSchema = {
+    type: 'object',
+    properties: {
+        outline: {
+            type: 'string'
+        },
+        draft: {
+            type: 'string'
+        },
+        rewrite: {
+            type: 'string'
+        },
+        translate: {
+            type: 'string'
+        },
+        scene_split: {
+            type: 'string'
+        },
+        summary: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const ProviderStatusSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'available'
+    ],
+    properties: {
+        name: {
+            type: 'string'
+        },
+        available: {
+            type: 'boolean'
+        },
+        configured: {
+            type: 'boolean'
+        },
+        disabledReason: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const LLMSettingsSchema = {
+    type: 'object',
+    required: [
+        'default',
+        'overrides',
+        'providers'
+    ],
+    properties: {
+        default: {
+            type: 'string'
+        },
+        overrides: {
+            $ref: '#/components/schemas/LLMActionOverrides'
+        },
+        providers: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ProviderStatus'
+            }
+        }
+    }
+} as const;
+
+export const LLMSettingsUpdateSchema = {
+    type: 'object',
+    required: [
+        'default'
+    ],
+    properties: {
+        default: {
+            type: 'string'
+        },
+        overrides: {
+            $ref: '#/components/schemas/LLMActionOverrides'
+        }
+    }
+} as const;
+
+export const LLMSettingsTestRequestSchema = {
+    type: 'object',
+    properties: {
+        provider: {
+            type: 'string',
+            description: 'Provider name to test; defaults to the tenant\'s current default.'
+        }
+    }
+} as const;
+
+export const LLMSettingsTestResultSchema = {
+    type: 'object',
+    required: [
+        'provider',
+        'ok'
+    ],
+    properties: {
+        provider: {
+            type: 'string'
+        },
+        ok: {
+            type: 'boolean'
+        },
+        detail: {
+            type: 'string'
         }
     }
 } as const;

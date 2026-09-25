@@ -82,6 +82,8 @@ MINIO_APP_SECRET_KEY="$(rand_alnum)"
 MINIO_BACKUP_ACCESS_KEY="loomtale-backup"
 MINIO_BACKUP_SECRET_KEY="$(rand_alnum)"
 MASTER_KEY="$(rand_b64_32)"
+LLMCLI_BEARER_TOKEN="$(rand_alnum)"
+PYWORKER_BEARER_TOKEN="$(rand_alnum)"
 
 write_secret_file postgres_superuser_password.txt "$SUPERUSER_PASSWORD"
 write_secret_file postgres_owner_password.txt "$OWNER_PASSWORD"
@@ -90,6 +92,18 @@ write_secret_file postgres_backup_password.txt "$BACKUP_PASSWORD"
 write_secret_file minio_root_user.txt "$MINIO_ROOT_USER"
 write_secret_file minio_root_password.txt "$MINIO_ROOT_PASSWORD"
 write_secret_file master_key.txt "$MASTER_KEY"
+write_secret_file llmcli_bearer_token.txt "$LLMCLI_BEARER_TOKEN"
+write_secret_file pyworker_bearer_token.txt "$PYWORKER_BEARER_TOKEN"
+# claude_oauth_token.txt is never auto-generated: it must come from the
+# operator running `claude setup-token` on a machine with an active
+# subscription login. An empty placeholder lets the stack still boot
+# (the llm-cli self-check fails loudly and disables the provider until
+# a real token is written here) instead of failing compose's secret
+# file-not-found check outright.
+if [ ! -f secrets/claude_oauth_token.txt ]; then
+    write_secret_file claude_oauth_token.txt ""
+    echo "NOTE: secrets/claude_oauth_token.txt is empty. Run 'claude setup-token' and paste the result into that file to enable the claude-cli provider."
+fi
 if [ ! -s secrets/backup_encryption_key.txt ]; then
     write_secret_file backup_encryption_key.txt "$(gen_age_identity)"
 else

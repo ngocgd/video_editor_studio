@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CreateRunData, CreateRunErrors, CreateRunResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses } from './types.gen';
+import type { CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CreateRunData, CreateRunErrors, CreateRunResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -150,6 +150,35 @@ export const listJobs = <ThrowOnError extends boolean = false>(options?: Options
  * Current GPU residency, queue and VRAM status for this tenant
  */
 export const getGpuStatus = <ThrowOnError extends boolean = false>(options?: Options<GetGpuStatusData, ThrowOnError>): RequestResult<GetGpuStatusResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetGpuStatusResponses, unknown, ThrowOnError>({ url: '/gpu', ...options });
+
+/**
+ * The active tenant's LLM provider default and per-action overrides
+ */
+export const getLlmSettings = <ThrowOnError extends boolean = false>(options?: Options<GetLlmSettingsData, ThrowOnError>): RequestResult<GetLlmSettingsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetLlmSettingsResponses, unknown, ThrowOnError>({ url: '/settings/llm', ...options });
+
+/**
+ * Switch the active tenant's default LLM provider or an action override (AC8)
+ */
+export const putLlmSettings = <ThrowOnError extends boolean = false>(options: Options<PutLlmSettingsData, ThrowOnError>): RequestResult<PutLlmSettingsResponses, PutLlmSettingsErrors, ThrowOnError> => (options.client ?? client).put<PutLlmSettingsResponses, PutLlmSettingsErrors, ThrowOnError>({
+    url: '/settings/llm',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Run a 1-token prompt against a provider to confirm it is reachable and configured
+ */
+export const testLlmSettings = <ThrowOnError extends boolean = false>(options?: Options<TestLlmSettingsData, ThrowOnError>): RequestResult<TestLlmSettingsResponses, TestLlmSettingsErrors, ThrowOnError> => (options?.client ?? client).post<TestLlmSettingsResponses, TestLlmSettingsErrors, ThrowOnError>({
+    url: '/settings/llm/test',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
 
 /**
  * Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).

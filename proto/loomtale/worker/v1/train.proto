@@ -1,0 +1,44 @@
+// Fine-tuning/LoRA training RPC (the ai-toolkit engine arrives in phase
+// 9c). Streams progress and log lines separately from the final result so
+// a caller can show a live log tail without polling.
+syntax = "proto3";
+
+package loomtale.worker.v1;
+
+option go_package = "loomtale/api/internal/workerpb/loomtale/worker/v1;workerv1";
+
+service Train {
+  rpc Train(TrainRequest) returns (stream TrainEvent);
+}
+
+message TrainRequest {
+  string engine = 1;
+  string base_model = 2;
+  string dataset_get_url = 3; // presigned GET for the training dataset archive
+  string output_put_url = 4;  // presigned PUT for the resulting weights archive
+  map<string, string> params = 5;
+}
+
+message TrainProgress {
+  int32 pct = 1;
+  int32 eta_s = 2;
+  int32 step = 3;
+  int32 total_steps = 4;
+}
+
+message TrainLog {
+  string line = 1;
+}
+
+message TrainResult {
+  string output_key = 1;
+  map<string, string> metadata = 2;
+}
+
+message TrainEvent {
+  oneof event {
+    TrainProgress progress = 1;
+    TrainLog log = 2;
+    TrainResult result = 3;
+  }
+}

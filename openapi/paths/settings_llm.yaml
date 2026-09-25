@@ -1,0 +1,61 @@
+llmSettings:
+  get:
+    operationId: getLLMSettings
+    summary: The active tenant's LLM provider default and per-action overrides
+    tags: [settings]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: current LLM settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/providers.yaml#/LLMSettings"
+  put:
+    operationId: putLLMSettings
+    summary: Switch the active tenant's default LLM provider or an action override (AC8)
+    tags: [settings]
+    x-min-role: owner
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/providers.yaml#/LLMSettingsUpdate"
+    responses:
+      "200":
+        description: settings saved; the next matching call uses the new provider
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/providers.yaml#/LLMSettings"
+      "400":
+        description: unknown provider name
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+testLLMSettings:
+  post:
+    operationId: testLLMSettings
+    summary: Run a 1-token prompt against a provider to confirm it is reachable and configured
+    tags: [settings]
+    x-min-role: editor
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/providers.yaml#/LLMSettingsTestRequest"
+    responses:
+      "200":
+        description: test result
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/providers.yaml#/LLMSettingsTestResult"
+      "429":
+        description: rate limited (per tenant)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

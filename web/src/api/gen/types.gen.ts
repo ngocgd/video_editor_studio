@@ -219,6 +219,47 @@ export type GpuStatus = {
     backends: Array<GpuBackendStatus>;
     encoder?: GpuEncoder;
     capabilities: Array<string>;
+    workerOnline?: boolean;
+};
+
+export type LlmActionOverrides = {
+    outline?: string;
+    draft?: string;
+    rewrite?: string;
+    translate?: string;
+    scene_split?: string;
+    summary?: string;
+};
+
+export type ProviderStatus = {
+    name: string;
+    available: boolean;
+    configured?: boolean;
+    disabledReason?: string;
+};
+
+export type LlmSettings = {
+    default: string;
+    overrides: LlmActionOverrides;
+    providers: Array<ProviderStatus>;
+};
+
+export type LlmSettingsUpdate = {
+    default: string;
+    overrides?: LlmActionOverrides;
+};
+
+export type LlmSettingsTestRequest = {
+    /**
+     * Provider name to test; defaults to the tenant's current default.
+     */
+    provider?: string;
+};
+
+export type LlmSettingsTestResult = {
+    provider: string;
+    ok: boolean;
+    detail?: string;
 };
 
 export type GetHealthzData = {
@@ -732,6 +773,72 @@ export type GetGpuStatusResponses = {
 };
 
 export type GetGpuStatusResponse = GetGpuStatusResponses[keyof GetGpuStatusResponses];
+
+export type GetLlmSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/settings/llm';
+};
+
+export type GetLlmSettingsResponses = {
+    /**
+     * current LLM settings
+     */
+    200: LlmSettings;
+};
+
+export type GetLlmSettingsResponse = GetLlmSettingsResponses[keyof GetLlmSettingsResponses];
+
+export type PutLlmSettingsData = {
+    body: LlmSettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/settings/llm';
+};
+
+export type PutLlmSettingsErrors = {
+    /**
+     * unknown provider name
+     */
+    400: Problem;
+};
+
+export type PutLlmSettingsError = PutLlmSettingsErrors[keyof PutLlmSettingsErrors];
+
+export type PutLlmSettingsResponses = {
+    /**
+     * settings saved; the next matching call uses the new provider
+     */
+    200: LlmSettings;
+};
+
+export type PutLlmSettingsResponse = PutLlmSettingsResponses[keyof PutLlmSettingsResponses];
+
+export type TestLlmSettingsData = {
+    body?: LlmSettingsTestRequest;
+    path?: never;
+    query?: never;
+    url: '/settings/llm/test';
+};
+
+export type TestLlmSettingsErrors = {
+    /**
+     * rate limited (per tenant)
+     */
+    429: Problem;
+};
+
+export type TestLlmSettingsError = TestLlmSettingsErrors[keyof TestLlmSettingsErrors];
+
+export type TestLlmSettingsResponses = {
+    /**
+     * test result
+     */
+    200: LlmSettingsTestResult;
+};
+
+export type TestLlmSettingsResponse = TestLlmSettingsResponses[keyof TestLlmSettingsResponses];
 
 export type StreamEventsData = {
     body?: never;

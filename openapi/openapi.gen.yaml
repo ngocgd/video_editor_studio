@@ -537,6 +537,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GpuStatus'
+  /settings/llm:
+    get:
+      operationId: getLLMSettings
+      summary: The active tenant's LLM provider default and per-action overrides
+      tags:
+        - settings
+      x-min-role: viewer
+      responses:
+        '200':
+          description: current LLM settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMSettings'
+    put:
+      operationId: putLLMSettings
+      summary: Switch the active tenant's default LLM provider or an action override (AC8)
+      tags:
+        - settings
+      x-min-role: owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMSettingsUpdate'
+      responses:
+        '200':
+          description: settings saved; the next matching call uses the new provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMSettings'
+        '400':
+          description: unknown provider name
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /settings/llm/test:
+    post:
+      operationId: testLLMSettings
+      summary: Run a 1-token prompt against a provider to confirm it is reachable and configured
+      tags:
+        - settings
+      x-min-role: editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMSettingsTestRequest'
+      responses:
+        '200':
+          description: test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMSettingsTestResult'
+        '429':
+          description: rate limited (per tenant)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /events:
     get:
       operationId: streamEvents
@@ -1137,3 +1201,76 @@ components:
           type: array
           items:
             type: string
+        workerOnline:
+          type: boolean
+    LLMActionOverrides:
+      type: object
+      properties:
+        outline:
+          type: string
+        draft:
+          type: string
+        rewrite:
+          type: string
+        translate:
+          type: string
+        scene_split:
+          type: string
+        summary:
+          type: string
+    ProviderStatus:
+      type: object
+      required:
+        - name
+        - available
+      properties:
+        name:
+          type: string
+        available:
+          type: boolean
+        configured:
+          type: boolean
+        disabledReason:
+          type: string
+    LLMSettings:
+      type: object
+      required:
+        - default
+        - overrides
+        - providers
+      properties:
+        default:
+          type: string
+        overrides:
+          $ref: '#/components/schemas/LLMActionOverrides'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderStatus'
+    LLMSettingsUpdate:
+      type: object
+      required:
+        - default
+      properties:
+        default:
+          type: string
+        overrides:
+          $ref: '#/components/schemas/LLMActionOverrides'
+    LLMSettingsTestRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Provider name to test; defaults to the tenant's current default.
+    LLMSettingsTestResult:
+      type: object
+      required:
+        - provider
+        - ok
+      properties:
+        provider:
+          type: string
+        ok:
+          type: boolean
+        detail:
+          type: string

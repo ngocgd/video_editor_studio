@@ -90,3 +90,9 @@ GpuStatus:
       type: array
       items:
         type: string
+    # True when the worker's own worker_status heartbeat row is fresh
+    # (phase 4: the api process cannot reach gpu_net directly, so this
+    # is the only liveness signal it has for the worker). Omitted when
+    # no worker has ever reported (a fresh install before first boot).
+    workerOnline:
+      type: boolean

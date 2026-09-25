@@ -48,6 +48,10 @@ paths:
     $ref: paths/jobs.yaml#/listJobs
   /gpu:
     $ref: paths/gpu.yaml#/getGpuStatus
+  /settings/llm:
+    $ref: paths/settings_llm.yaml#/llmSettings
+  /settings/llm/test:
+    $ref: paths/settings_llm.yaml#/testLLMSettings
   /events:
     $ref: paths/events.yaml#/events
 components:

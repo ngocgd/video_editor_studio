@@ -70,7 +70,9 @@ type Querier interface {
 	// tenant-scoped (unlike the version this replaces).
 	GetDependencies(ctx context.Context, arg GetDependenciesParams) ([]GetDependenciesRow, error)
 	GetDependents(ctx context.Context, arg GetDependentsParams) ([]pgtype.UUID, error)
+	GetLLMSettings(ctx context.Context, tenantID pgtype.UUID) (LlmSetting, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
+	GetLatestWorkerStatus(ctx context.Context) (WorkerStatus, error)
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
@@ -186,7 +188,9 @@ type Querier interface {
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
+	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)
