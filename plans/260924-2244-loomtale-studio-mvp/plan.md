@@ -142,3 +142,16 @@ Remaining contradictions (unresolved): none found in the plan files. `docs/tech-
 - 2026-09-25: phase 4 merged after review ([review](../reports/code-reviewer-260925-1830-phase-04-providers-review.md)). All High and Medium findings were fixed, and the llm-cli sidecar and egress-proxy isolation were verified live. A `worker_status` heartbeat table now feeds `/gpu` and provider availability. Anthropic and Gemini use direct REST, which was accepted. Process-wide BYOK is refused in SaaS mode, and per-tenant keys come in phase 6. MinIO has an internal alias on the GPU network. The live Claude path is still gated on the user running `claude setup-token`, and the host-side fallback is built but has not been tested live. The WSL VM was lowered to 12GB with autoMemoryReclaim so the user could game; raise it back to 20GB before phase 9a (ComfyUI).
 - WSL VM back at 20GB (autoMemoryReclaim=gradual and sparseVhd kept), so phase 9a's ComfyUI budget holds again.
 - 2026-09-25: phase 5 merged after review ([review](../reports/code-reviewer-260925-2141-phase-05-frontend-review.md)). All findings were fixed. First paint is 124–139KB gzip, and the SSE bridge now handles leader-tab handoff, reconnects after a clean close, caps topics at 50, and gates on version. Known gaps: dashboard stat cards and the GPU bar lag live SSE by up to 15s (they are polled), and the GPU panel is polled rather than pushed, which needs a tenant GPU topic in the API later.
+
+## Resume checkpoint: phase 6 (2026-09-26 ~01:00)
+
+- Phase 6 code is on local branch `feat/story-writer-import` (not pushed). The branch lives in worktree `C:/Users/ADMIN/orca/projects/aff-ytb-ntNocj/.claude/worktrees/agent-aabe929bc40d9c7df`. Commits: `c520c07` (feature bulk), `dd7287d` and `835a776` (WIP: GetAiActionResult endpoint). Everything is committed.
+- Remaining steps:
+  1. Run `cd web; npm run gen` to pick up GetAiActionResult.
+  2. Change `web/src/features/writer/use-ai-action.ts` to poll GetAiActionResult (~400ms while pending/queued/running) instead of the dead `llm.delta` SSE path.
+  3. Squash the WIP commits into conventional commits.
+  4. Run the full verification: tb ci; the integration suite on `-p loomtale-p6` (note the known login-rate-limit bucket artifact when running the whole suite); web typecheck, lint, test, build and budget; and the Playwright spec `web/e2e/writer-import-settings.spec.ts`.
+  5. Save screenshots into `reports/phase-06-screens/`.
+  6. Write the cook report `reports/cook-260925-phase-06-story-writer.md`.
+  7. Review, merge and push, the same way as phases 2â€“5.
+- Why this stopped: the subagent first hit its weekly limit (since reset). After that, the Bash tool in this session failed on every command with `line 166: expor: command not found`, because the harness had cached a truncated session-env script. Restarting Claude Code fixes it. The session-env hook files were deduplicated, and the backups are `*.bak` next to them.
