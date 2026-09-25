@@ -81,8 +81,8 @@ img.save('/out/smoke-ref-1024.png')
 "
 docker cp "$OUT_DIR/smoke-ref-1024.png" loomtale-comfyui-1:/app/ComfyUI/input/smoke-ref-1024.png
 
-log "step 4: submit Qwen-Image-Edit-2509 workflow, poll VRAM every 1s, wait for completion"
-printf '{"prompt": %s}' "$(cat comfyui/workflows/qwen-image-edit-2509-smoke.json)" > "$OUT_DIR/qwen-payload.json"
+log "step 4: submit Qwen-Image-Edit-2511 workflow (2509 weights were removed from the volume), poll VRAM every 1s, wait for completion"
+printf '{"prompt": %s}' "$(cat comfyui/workflows/qwen-image-edit-2511-smoke.json)" > "$OUT_DIR/qwen-payload.json"
 docker cp "$OUT_DIR/qwen-payload.json" loomtale-comfyui-1:/tmp/qwen-payload.json
 QWEN_SUBMIT=$(cexec curl -fsS -X POST "$COMFY_URL/prompt" -H 'Content-Type: application/json' --data-binary @/tmp/qwen-payload.json)
 echo "$QWEN_SUBMIT" | tee "$OUT_DIR/04-qwen-submit.json"
