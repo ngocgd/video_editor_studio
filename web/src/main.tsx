@@ -1,10 +1,23 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { App } from "./app";
+import "./api/client";
+import { queryClient } from "./api/client";
+import { installTrustedTypesPolicy } from "./lib/trusted-types";
+import { routeTree } from "./routeTree.gen";
+import "./styles/app.css";
 
-const queryClient = new QueryClient();
+installTrustedTypesPolicy();
+
+const router = createRouter({ routeTree, context: { queryClient } });
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
@@ -14,7 +27,7 @@ if (!rootEl) {
 createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <RouterProvider router={router} />
     </QueryClientProvider>
   </StrictMode>,
 );
