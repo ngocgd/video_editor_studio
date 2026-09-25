@@ -22,20 +22,20 @@ func New(rpc workerv1.TrainClient) *Client { return &Client{RPC: rpc} }
 
 // Request is the caller-facing training request.
 type Request struct {
-	Engine         string
-	BaseModel      string
-	DatasetGetURL  string
-	OutputPutURL   string
-	Params         map[string]string
+	Engine        string
+	BaseModel     string
+	DatasetGetURL string
+	OutputPutURL  string
+	Params        map[string]string
 }
 
 // Progress reports training-step-level progress, richer than the
 // generic pct/etaS pair the other clients report.
 type Progress struct {
-	Pct         int
-	EtaS        int
-	Step        int
-	TotalSteps  int
+	Pct        int
+	EtaS       int
+	Step       int
+	TotalSteps int
 }
 
 // Result is the train call's final outcome.

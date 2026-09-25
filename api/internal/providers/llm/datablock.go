@@ -27,12 +27,13 @@ func NewNonce() (string, error) {
 // fence. The nonce is random per request (see NewNonce), so a block cannot
 // know it in advance.
 func RenderDataBlocks(nonce string, blocks []DataBlock) string {
-	open := "<data-" + nonce + ">"
+	openPrefix := "<data-" + nonce // no trailing '>': an optional label attribute goes before it
+	open := openPrefix + ">"
 	close_ := "</data-" + nonce + ">"
 
 	var b strings.Builder
 	for _, blk := range blocks {
-		b.WriteString(open)
+		b.WriteString(openPrefix)
 		if blk.Label != "" {
 			b.WriteString(" label=\"")
 			b.WriteString(escapeAttr(blk.Label))

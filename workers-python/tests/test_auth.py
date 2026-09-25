@@ -9,9 +9,19 @@ import grpc
 import pytest
 
 from loomtale.worker.v1 import health_pb2, health_pb2_grpc
+from loomtale_worker.auth import BearerTokenInterceptor
 from loomtale_worker.engines.registry import EngineRegistry
 from loomtale_worker.model_manager import ModelManager
 from loomtale_worker.server import build_server
+
+
+def test_bearer_token_interceptor_rejects_empty_token():
+    """An empty token would make "Bearer {token}" match any caller
+    sending a literal "Bearer " (missing-credential) header; this must
+    fail at construction instead.
+    """
+    with pytest.raises(ValueError):
+        BearerTokenInterceptor("")
 
 
 @pytest.fixture

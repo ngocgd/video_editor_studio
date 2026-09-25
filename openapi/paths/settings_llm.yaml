@@ -40,7 +40,7 @@ testLLMSettings:
     operationId: testLLMSettings
     summary: Run a 1-token prompt against a provider to confirm it is reachable and configured
     tags: [settings]
-    x-min-role: owner
+    x-min-role: editor
     requestBody:
       content:
         application/json:
@@ -53,3 +53,9 @@ testLLMSettings:
           application/json:
             schema:
               $ref: "../schemas/providers.yaml#/LLMSettingsTestResult"
+      "429":
+        description: rate limited (per tenant)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

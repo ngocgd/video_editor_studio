@@ -38,6 +38,23 @@ const (
 // resolves to the llm queue with no GPU involvement.
 const ProviderOllama = "ollama"
 
+// KnownProviders is the fixed set of provider names the settings API
+// accepts, independent of whether this process happens to have a
+// constructed adapter for one right now (e.g. Ollama's adapter only
+// exists once OLLAMA_MODEL is set in phase 9b, but "ollama" is always a
+// valid value to select as a default or override).
+var KnownProviders = []string{ProviderOllama, "claude-cli", "anthropic-api", "gemini-api"}
+
+// IsKnownProvider reports whether name is one of KnownProviders.
+func IsKnownProvider(name string) bool {
+	for _, p := range KnownProviders {
+		if p == name {
+			return true
+		}
+	}
+	return false
+}
+
 // Settings is a tenant's resolved LLM provider configuration.
 type Settings struct {
 	Default   string

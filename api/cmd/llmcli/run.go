@@ -3,13 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"loomtale/api/internal/obs/scrub"
@@ -91,17 +89,13 @@ func (rn *runner) Run(ctx context.Context, req runRequest, onDelta func(string))
 	cmd.Dir = workdir
 	cmd.Env = filterCLIEnv(req.OAuthToken)
 	cmd.WaitDelay = waitDelay
-	// Kill the whole process group on cancellation/timeout, not just the
+	// Kill the whole process tree on cancellation/timeout, not just the
 	// immediate child: the CLI may spawn its own subprocesses (e.g. the
-	// Node runtime), and a lone SIGKILL to the parent pid would leave
-	// them running past the request's own lifetime.
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		if cmd.Process == nil {
-			return nil
-		}
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
-	}
+	// Node runtime), and killing only the parent pid would leave them
+	// running past the request's own lifetime. configureProcGroup is
+	// platform-specific (process-group SIGTERM on Unix, taskkill /T on
+	// Windows — the host-side fallback runs natively on Windows).
+	configureProcGroup(cmd)
 
 	cmd.Stdin = strings.NewReader(req.Prompt)
 
@@ -118,22 +112,23 @@ func (rn *runner) Run(ctx context.Context, req runRequest, onDelta func(string))
 
 	parsed, parseErr := parseNDJSONStream(stdout, onDelta)
 
-	if errors.Is(parseErr, ErrToolsEnabled) {
-		// Kill immediately: the CLI reported tools/MCP servers enabled,
-		// which must never be allowed to keep running.
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
+	if parseErr != nil {
+		// Any parse failure (tools-enabled, an oversized response, a
+		// malformed line, an event arriving before system/init, or ctx
+		// cancellation itself closing the stdout pipe and surfacing as a
+		// read error here) means stdout can no longer be trusted and the
+		// process must die immediately. Leaving it running relies on the
+		// 10-minute context timeout to eventually reap it, which stalls
+		// the whole semaphore slot (default 2 concurrent) and keeps
+		// burning subscription quota in the meantime.
+		killProcessGroup(cmd)
 		_ = cmd.Wait()
-		return runResult{StderrTail: scrub.Text(stderrBuf.String())}, ErrToolsEnabled
+		return runResult{StderrTail: scrub.Text(stderrBuf.String())}, parseErr
 	}
 
 	waitErr := cmd.Wait()
 	result := runResult{parseResult: parsed, StderrTail: scrub.Text(stderrBuf.String())}
 
-	if parseErr != nil {
-		return result, parseErr
-	}
 	if waitErr != nil {
 		return result, fmt.Errorf("llmcli: claude process failed: %w (stderr: %s)", waitErr, result.StderrTail)
 	}

@@ -5,8 +5,16 @@ import "os"
 // allowedEnvVars is the exact env passthrough allowlist for the spawned
 // claude process, per the phase 4 contract: everything else in the
 // sidecar's own environment (there should be nothing sensitive there
-// besides the token, which is threaded in separately) is dropped.
-var allowedEnvVars = []string{"PATH", "HOME", "LANG", "HTTPS_PROXY"}
+// besides the token, which is threaded in separately) is dropped. The
+// three DISABLE_* vars turn off the CLI's own telemetry/error-reporting/
+// non-essential-model-call traffic (documented at
+// https://code.claude.com/docs/en/env-vars), which is why the egress
+// proxy's allowlist only needs api.anthropic.com and not
+// statsig.anthropic.com/sentry.io.
+var allowedEnvVars = []string{
+	"PATH", "HOME", "LANG", "HTTPS_PROXY",
+	"DISABLE_TELEMETRY", "DISABLE_ERROR_REPORTING", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+}
 
 // filterCLIEnv builds the exact env slice for the spawned claude process:
 // only allowedEnvVars are passed through from the sidecar's own

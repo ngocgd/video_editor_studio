@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 REQUIRED_OFFLINE_ENV = ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")
 
+# Bounds concurrent in-flight RPCs so a burst of requests cannot exhaust
+# this process's threads/memory; generous since only one engine can ever
+# be resident (loading serializes on ModelManager's own lock regardless).
+MAX_CONCURRENT_RPCS = 32
+
 
 def assert_offline_env() -> None:
     """Refuses to start unless HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE are
@@ -63,7 +68,10 @@ def build_server(bearer_token: str, manager: ModelManager) -> grpc.aio.Server:
     callers (serve(), or a test fixture that needs the ephemeral port
     add_insecure_port returns) call that themselves.
     """
-    server = grpc.aio.server(interceptors=[BearerTokenInterceptor(bearer_token)])
+    server = grpc.aio.server(
+        interceptors=[BearerTokenInterceptor(bearer_token)],
+        maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
+    )
     health_pb2_grpc.add_WorkerHealthServicer_to_server(_AsyncWorkerHealthServicer(), server)
     worker_service.register(server, manager)
     tts_service.register(server, manager)
@@ -96,6 +104,8 @@ def main() -> None:
         raise SystemExit("--bearer-token-path (or PYWORKER_BEARER_TOKEN_PATH) is required")
     with open(args.bearer_token_path, encoding="utf-8") as f:
         token = f.read().strip()
+    if not token:
+        raise SystemExit(f"{args.bearer_token_path} is empty; refusing to start with no token")
 
     asyncio.run(serve(args.bind, token))
 

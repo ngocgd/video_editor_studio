@@ -4,7 +4,9 @@ before phase 9b; see tts_service.py for the identical honesty pattern.
 
 from __future__ import annotations
 
-from loomtale.worker.v1 import align_pb2, align_pb2_grpc
+import grpc
+
+from loomtale.worker.v1 import align_pb2_grpc
 from loomtale_worker.model_manager import (
     EngineNotInstalledError,
     GpuOomError,
@@ -27,7 +29,12 @@ class AlignServicer(align_pb2_grpc.AlignServicer):
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
             return
-        yield align_pb2.AlignEvent(result=align_pb2.AlignResult(output_key=""))
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            f"engine {request.engine!r} has no Align implementation wired",
+        )
+        return
+        yield  # pragma: no cover - unreachable, makes this an async generator
 
 
 def register(server, manager: ModelManager) -> None:

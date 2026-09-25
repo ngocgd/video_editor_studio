@@ -72,6 +72,7 @@ type Querier interface {
 	GetDependents(ctx context.Context, arg GetDependentsParams) ([]pgtype.UUID, error)
 	GetLLMSettings(ctx context.Context, tenantID pgtype.UUID) (LlmSetting, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
+	GetLatestWorkerStatus(ctx context.Context) (WorkerStatus, error)
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
@@ -189,6 +190,7 @@ type Querier interface {
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
+	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)

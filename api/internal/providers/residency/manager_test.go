@@ -2,12 +2,15 @@ package residency
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"loomtale/api/internal/pipeline"
 )
+
+var errFakeUnreachable = errors.New("fake: backend unreachable")
 
 // fakeProbe reports a fixed free VRAM until Advance is called, so tests
 // can simulate VRAM only becoming available after N polls.
@@ -28,21 +31,27 @@ func (p *fakeProbe) Snapshot(context.Context) (pipeline.GpuSnapshot, error) {
 }
 
 type fakeBackend struct {
-	name         string
-	loadedModel  atomic.Value // string
-	unloadCalled atomic.Bool
-	loadCalled   atomic.Bool
-	loadErr      error
+	name          string
+	loadedModel   atomic.Value // string
+	unloadCalled  atomic.Bool
+	loadCalled    atomic.Bool
+	loadCallCount atomic.Int64
+	loadErr       error
+	unloadErr     error
 }
 
 func (b *fakeBackend) Name() string { return b.name }
 func (b *fakeBackend) Unload(context.Context) error {
 	b.unloadCalled.Store(true)
+	if b.unloadErr != nil {
+		return b.unloadErr
+	}
 	b.loadedModel.Store("")
 	return nil
 }
 func (b *fakeBackend) Load(_ context.Context, model string) (int64, error) {
 	b.loadCalled.Store(true)
+	b.loadCallCount.Add(1)
 	if b.loadErr != nil {
 		return 0, b.loadErr
 	}
@@ -144,6 +153,50 @@ func TestUnloadAllClearsCurrentAndCallsEveryBackend(t *testing.T) {
 	}
 	if mgr.Current() != nil {
 		t.Fatal("expected Current() to be nil after UnloadAll")
+	}
+}
+
+// TestEnsureShortCircuitsWhenAlreadyResident is H7 fix 1: a second
+// Ensure() for the same already-resident target must not unload/reload.
+func TestEnsureShortCircuitsWhenAlreadyResident(t *testing.T) {
+	probe := newFakeProbe(8000)
+	backend := &fakeBackend{name: "ollama"}
+	mgr := &Manager{Probe: probe, Backends: map[string]Backend{"ollama": backend}}
+	target := pipeline.ModelRef{Backend: "ollama", Model: "llama3"}
+
+	if err := mgr.Ensure(context.Background(), target); err != nil {
+		t.Fatal(err)
+	}
+	if backend.loadCallCount.Load() != 1 {
+		t.Fatalf("expected 1 Load call after the first Ensure, got %d", backend.loadCallCount.Load())
+	}
+	backend.unloadCalled.Store(false)
+
+	if err := mgr.Ensure(context.Background(), target); err != nil {
+		t.Fatal(err)
+	}
+	if backend.loadCallCount.Load() != 1 {
+		t.Fatalf("expected Load to still be called only once (short-circuited), got %d", backend.loadCallCount.Load())
+	}
+	if backend.unloadCalled.Load() {
+		t.Fatal("expected Unload not to be called when the target is already resident")
+	}
+}
+
+// TestEnsureTreatsUnreachableBackendAsAlreadyUnloaded is H7 fix 2: an
+// unreachable backend (e.g. the manually-started ComfyUI spike service
+// being down) must not fail Ensure for an unrelated target backend.
+func TestEnsureTreatsUnreachableBackendAsAlreadyUnloaded(t *testing.T) {
+	probe := newFakeProbe(8000)
+	comfy := &fakeBackend{name: "comfyui", unloadErr: errFakeUnreachable}
+	ollama := &fakeBackend{name: "ollama"}
+	mgr := &Manager{Probe: probe, Backends: map[string]Backend{"comfyui": comfy, "ollama": ollama}}
+
+	if err := mgr.Ensure(context.Background(), pipeline.ModelRef{Backend: "ollama", Model: "llama3"}); err != nil {
+		t.Fatalf("expected Ensure to succeed despite comfyui being unreachable, got %v", err)
+	}
+	if !ollama.loadCalled.Load() {
+		t.Fatal("expected ollama Load to be called")
 	}
 }
 

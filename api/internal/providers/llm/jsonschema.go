@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
+
+	"loomtale/api/internal/pipeline"
 )
 
 // ErrSchemaValidation is wrapped by ValidateJSON's returned error so
@@ -38,6 +41,17 @@ func ValidateJSON(schemaText, text string) error {
 	if err := dec.Decode(&instance); err != nil {
 		return fmt.Errorf("%w: response is not valid JSON: %v", ErrSchemaValidation, err)
 	}
+	// Reject anything after the JSON value except whitespace: a response
+	// like `{"a":1} extra prose` decodes its first value successfully,
+	// but is not itself valid JSON and must not pass as structured
+	// output. Decoding again and requiring io.EOF is the standard
+	// "no trailing data" idiom for encoding/json.
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("%w: unexpected trailing content after the JSON value", ErrSchemaValidation)
+	} else if err == nil {
+		return fmt.Errorf("%w: unexpected trailing content after the JSON value", ErrSchemaValidation)
+	}
 	if err := schema.Validate(instance); err != nil {
 		return fmt.Errorf("%w: %v", ErrSchemaValidation, err)
 	}
@@ -46,7 +60,10 @@ func ValidateJSON(schemaText, text string) error {
 
 // GenerateStructured calls gen once, and on a JSON-schema validation
 // failure retries exactly once with a corrective follow-up message
-// appended, per the phase 4 contract ("one retry"). gen is normally
+// appended, per the phase 4 contract ("one retry"). The retried
+// response is validated too: a second consecutive schema failure is
+// permanent (wrapped as pipeline.ErrValidation) rather than being
+// handed back to the caller as if it were valid. gen is normally
 // Provider.Generate; passed in so this helper has no direct Provider
 // dependency and is trivially testable with a stub.
 func GenerateStructured(ctx context.Context, req Request, gen func(context.Context, Request) (Response, error)) (Response, error) {
@@ -57,16 +74,25 @@ func GenerateStructured(ctx context.Context, req Request, gen func(context.Conte
 	if req.JSONSchema == "" {
 		return resp, nil
 	}
-	if verr := ValidateJSON(req.JSONSchema, resp.Text); verr == nil {
+	verr := ValidateJSON(req.JSONSchema, resp.Text)
+	if verr == nil {
 		return resp, nil
-	} else if !errors.Is(verr, ErrSchemaValidation) {
-		return Response{}, verr
-	} else {
-		retryReq := req
-		retryReq.Messages = append(append([]Message{}, req.Messages...), Message{
-			Role: "user",
-			Text: "Your previous response did not match the required JSON schema (" + verr.Error() + "). Reply again with only corrected JSON matching the schema.",
-		})
-		return gen(ctx, retryReq)
 	}
+	if !errors.Is(verr, ErrSchemaValidation) {
+		return Response{}, verr
+	}
+
+	retryReq := req
+	retryReq.Messages = append(append([]Message{}, req.Messages...), Message{Role: "assistant", Text: resp.Text}, Message{
+		Role: "user",
+		Text: "Your previous response did not match the required JSON schema (" + verr.Error() + "). Reply again with only corrected JSON matching the schema.",
+	})
+	retryResp, err := gen(ctx, retryReq)
+	if err != nil {
+		return Response{}, err
+	}
+	if verr := ValidateJSON(req.JSONSchema, retryResp.Text); verr != nil {
+		return Response{}, fmt.Errorf("%w: retry still failed schema validation: %v", pipeline.ErrValidation, verr)
+	}
+	return retryResp, nil
 }

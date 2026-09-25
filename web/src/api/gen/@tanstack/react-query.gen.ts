@@ -4,7 +4,7 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 
 import { client } from '../client.gen';
 import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getLlmSettings, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, putLlmSettings, retryStep, switchTenant, testLlmSettings } from '../sdk.gen';
-import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsResponse } from '../types.gen';
+import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -595,8 +595,8 @@ export const putLlmSettingsMutation = (options?: Partial<Options<PutLlmSettingsD
 /**
  * Run a 1-token prompt against a provider to confirm it is reachable and configured
  */
-export const testLlmSettingsMutation = (options?: Partial<Options<TestLlmSettingsData>>): UseMutationOptions<TestLlmSettingsResponse, DefaultError, Options<TestLlmSettingsData>> => {
-    const mutationOptions: UseMutationOptions<TestLlmSettingsResponse, DefaultError, Options<TestLlmSettingsData>> = {
+export const testLlmSettingsMutation = (options?: Partial<Options<TestLlmSettingsData>>): UseMutationOptions<TestLlmSettingsResponse, TestLlmSettingsError, Options<TestLlmSettingsData>> => {
+    const mutationOptions: UseMutationOptions<TestLlmSettingsResponse, TestLlmSettingsError, Options<TestLlmSettingsData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await testLlmSettings({
                 ...options,

@@ -5,7 +5,9 @@ engine_not_installed rather than faking a result.
 
 from __future__ import annotations
 
-from loomtale.worker.v1 import tts_pb2, tts_pb2_grpc
+import grpc
+
+from loomtale.worker.v1 import tts_pb2_grpc
 from loomtale_worker.model_manager import (
     EngineNotInstalledError,
     GpuOomError,
@@ -28,11 +30,17 @@ class TTSServicer(tts_pb2_grpc.TTSServicer):
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
             return
-        # Real synthesis (progress events, upload to output_put_url) is
-        # implemented by the engine registered in phase 9b; reaching
-        # here means an engine was somehow marked installed without a
-        # run() implementation wired, which is itself a bug to surface.
-        yield tts_pb2.SynthesizeEvent(result=tts_pb2.SynthesizeResult(output_key=""))
+        # Reaching here means an engine reported itself installed and
+        # loaded without a run() implementation wired (phase 9b adds
+        # both together); aborting loudly is safer than faking a
+        # zero-byte "success" result that a caller would store as real
+        # output.
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            f"engine {request.engine!r} has no Synthesize implementation wired",
+        )
+        return
+        yield  # pragma: no cover - unreachable, makes this an async generator
 
 
 def register(server, manager: ModelManager) -> None:

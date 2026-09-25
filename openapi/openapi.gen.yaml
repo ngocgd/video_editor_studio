@@ -582,7 +582,7 @@ paths:
       summary: Run a 1-token prompt against a provider to confirm it is reachable and configured
       tags:
         - settings
-      x-min-role: owner
+      x-min-role: editor
       requestBody:
         content:
           application/json:
@@ -595,6 +595,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LLMSettingsTestResult'
+        '429':
+          description: rate limited (per tenant)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /events:
     get:
       operationId: streamEvents
@@ -1195,6 +1201,8 @@ components:
           type: array
           items:
             type: string
+        workerOnline:
+          type: boolean
     LLMActionOverrides:
       type: object
       properties:

@@ -50,7 +50,10 @@ func TestParseNDJSONStreamRejectsMCPServersEnabled(t *testing.T) {
 }
 
 func TestParseNDJSONStreamPropagatesIsError(t *testing.T) {
-	stream := `{"type":"result","is_error":true,"result":"rate limited"}`
+	stream := strings.Join([]string{
+		`{"type":"system","subtype":"init","tools":[],"mcp_servers":[]}`,
+		`{"type":"result","is_error":true,"result":"rate limited"}`,
+	}, "\n")
 	res, err := parseNDJSONStream(strings.NewReader(stream), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -61,12 +64,31 @@ func TestParseNDJSONStreamPropagatesIsError(t *testing.T) {
 }
 
 func TestParseNDJSONStreamFallsBackToResultTextWhenNoDeltas(t *testing.T) {
-	stream := `{"type":"result","is_error":false,"result":"final only"}`
+	stream := strings.Join([]string{
+		`{"type":"system","subtype":"init","tools":[],"mcp_servers":[]}`,
+		`{"type":"result","is_error":false,"result":"final only"}`,
+	}, "\n")
 	res, err := parseNDJSONStream(strings.NewReader(stream), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Text != "final only" {
 		t.Fatalf("text = %q", res.Text)
+	}
+}
+
+func TestParseNDJSONStreamRejectsAssistantEventBeforeInit(t *testing.T) {
+	stream := `{"type":"assistant","message":{"content":[{"type":"text","text":"early"}]}}`
+	_, err := parseNDJSONStream(strings.NewReader(stream), nil)
+	if !errors.Is(err, ErrEventBeforeInit) {
+		t.Fatalf("expected ErrEventBeforeInit, got %v", err)
+	}
+}
+
+func TestParseNDJSONStreamRejectsResultEventBeforeInit(t *testing.T) {
+	stream := `{"type":"result","is_error":false,"result":"too early"}`
+	_, err := parseNDJSONStream(strings.NewReader(stream), nil)
+	if !errors.Is(err, ErrEventBeforeInit) {
+		t.Fatalf("expected ErrEventBeforeInit, got %v", err)
 	}
 }

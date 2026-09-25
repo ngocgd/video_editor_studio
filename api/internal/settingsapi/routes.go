@@ -3,12 +3,22 @@ package settingsapi
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/providers/llm"
 	"loomtale/api/internal/providers/registry"
 	"loomtale/api/internal/tenant"
 )
+
+// testCallTimeout bounds a synchronous /settings/llm/test call: it can
+// otherwise hold the request open for as long as claude-cli's own
+// 10-minute runner timeout.
+const testCallTimeout = 30 * time.Second
+
+// testMaxTokens hard-caps the probe prompt's response size regardless of
+// what a future caller passes in.
+const testMaxTokens = 8
 
 // GetLLMSettings implements gen.StrictServerInterface.
 func (h *SettingsAPI) GetLLMSettings(ctx context.Context, _ gen.GetLLMSettingsRequestObject) (gen.GetLLMSettingsResponseObject, error) {
@@ -27,6 +37,10 @@ func (h *SettingsAPI) GetLLMSettings(ctx context.Context, _ gen.GetLLMSettingsRe
 // PutLLMSettings implements gen.StrictServerInterface. AC8: the very next
 // resolved call (Registry.Resolve) sees the new provider, since
 // registry.Store reads straight from llm_settings with no cache.
+// Validated against registry.KnownProviders (the fixed provider-name
+// set), not against which adapters this process happens to have
+// constructed right now: Ollama, for instance, is always a valid
+// selection even though its adapter lives in cmd/worker, not here.
 func (h *SettingsAPI) PutLLMSettings(ctx context.Context, request gen.PutLLMSettingsRequestObject) (gen.PutLLMSettingsResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 	body := request.Body
@@ -37,15 +51,15 @@ func (h *SettingsAPI) PutLLMSettings(ctx context.Context, request gen.PutLLMSett
 	}
 	s := registry.Settings{Default: body.Default, Overrides: overrides}
 
-	if _, ok := h.Registry.Providers[s.Default]; !ok {
-		detail := fmt.Sprintf("unknown or unconfigured provider %q", s.Default)
+	if !registry.IsKnownProvider(s.Default) {
+		detail := fmt.Sprintf("unknown provider %q", s.Default)
 		return gen.PutLLMSettings400ApplicationProblemPlusJSONResponse{
 			Title: "invalid default provider", Status: 400, Detail: &detail,
 		}, nil
 	}
 	for action, provider := range overrides {
-		if _, ok := h.Registry.Providers[provider]; !ok {
-			detail := fmt.Sprintf("unknown or unconfigured provider %q for action %q", provider, action)
+		if !registry.IsKnownProvider(provider) {
+			detail := fmt.Sprintf("unknown provider %q for action %q", provider, action)
 			return gen.PutLLMSettings400ApplicationProblemPlusJSONResponse{
 				Title: "invalid override provider", Status: 400, Detail: &detail,
 			}, nil
@@ -55,6 +69,7 @@ func (h *SettingsAPI) PutLLMSettings(ctx context.Context, request gen.PutLLMSett
 	if err := h.Store.Put(ctx, info.ID, s); err != nil {
 		return nil, err
 	}
+	h.recordSettingsAudit(ctx, "llm_settings.update")
 	return gen.PutLLMSettings200JSONResponse(gen.LLMSettings{
 		Default:   s.Default,
 		Overrides: toActionOverrides(s.Overrides),
@@ -66,9 +81,24 @@ func (h *SettingsAPI) PutLLMSettings(ctx context.Context, request gen.PutLLMSett
 // fixed 1-token prompt against the requested (or current default)
 // provider and reports whether it succeeded, with no tenant-authored
 // content ever sent (the test prompt is a fixed server string, exactly
-// like every other System value).
+// like every other System value). Rate limited per tenant, bounded by
+// testCallTimeout regardless of what the underlying provider would
+// otherwise wait for, and audit-logged.
 func (h *SettingsAPI) TestLLMSettings(ctx context.Context, request gen.TestLLMSettingsRequestObject) (gen.TestLLMSettingsResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
+
+	if h.TestRateLimit != nil {
+		allowed, err := h.TestRateLimit.Allow(ctx, info.ID.String())
+		if err != nil {
+			return nil, err
+		}
+		if !allowed {
+			detail := "too many /settings/llm/test calls; try again shortly"
+			return gen.TestLLMSettings429ApplicationProblemPlusJSONResponse{
+				Title: "rate limited", Status: 429, Detail: &detail,
+			}, nil
+		}
+	}
 
 	providerName := ""
 	if request.Body != nil && request.Body.Provider != nil {
@@ -82,15 +112,19 @@ func (h *SettingsAPI) TestLLMSettings(ctx context.Context, request gen.TestLLMSe
 		providerName = s.Default
 	}
 
+	h.recordSettingsAudit(ctx, "llm_settings.test")
+
 	provider, ok := h.Registry.Providers[providerName]
 	if !ok {
 		detail := "provider not configured"
 		return gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: false, Detail: &detail}, nil
 	}
 
-	_, err := provider.Generate(ctx, llm.Request{
+	testCtx, cancel := context.WithTimeout(ctx, testCallTimeout)
+	defer cancel()
+	_, err := provider.Generate(testCtx, llm.Request{
 		Messages:  []llm.Message{{Role: "user", Text: "Reply with a single word: OK."}},
-		MaxTokens: 8,
+		MaxTokens: testMaxTokens,
 	})
 	if err != nil {
 		detail := err.Error()

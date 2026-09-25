@@ -178,3 +178,11 @@ type User struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
+
+type WorkerStatus struct {
+	WorkerID    string             `json:"worker_id"`
+	Gpu         []byte             `json:"gpu"`
+	ResidentRef pgtype.Text        `json:"resident_ref"`
+	Providers   []byte             `json:"providers"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}

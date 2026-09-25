@@ -9,13 +9,33 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
+	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/llm"
 )
+
+// ErrStreamIncomplete is returned when the NDJSON stream ends without a
+// final done:true chunk, so a dropped connection is never mistaken for
+// a completed response.
+var ErrStreamIncomplete = errors.New("ollama: stream ended without a done:true chunk")
+
+// classifyMidStreamError handles a {"error":"..."} chunk arriving after
+// an already-200 response, where there is no HTTP status code to key
+// off: llm.ClassifyOllamaError's OOM string match still applies, but a
+// non-OOM message falls back to a plain (transient-by-default) error
+// rather than a fabricated status code.
+func classifyMidStreamError(message string) error {
+	if err := llm.ClassifyOllamaError(0, message); errors.Is(err, pipeline.ErrGPUOOM) {
+		return err
+	}
+	return fmt.Errorf("ollama: mid-stream error: %s", message)
+}
 
 // Provider talks to a single Ollama server over HTTP.
 type Provider struct {
@@ -40,10 +60,10 @@ type chatMessage struct {
 // chatRequest mirrors Ollama's /api/chat body. KeepAlive is set to "0" by
 // Unload so residency.Ensure can force this backend out of VRAM.
 type chatRequest struct {
-	Model     string        `json:"model"`
-	Messages  []chatMessage `json:"messages"`
-	Stream    bool          `json:"stream"`
-	KeepAlive string        `json:"keep_alive,omitempty"`
+	Model     string         `json:"model"`
+	Messages  []chatMessage  `json:"messages"`
+	Stream    bool           `json:"stream"`
+	KeepAlive string         `json:"keep_alive,omitempty"`
 	Options   map[string]any `json:"options,omitempty"`
 }
 
@@ -52,6 +72,9 @@ type chatResponseChunk struct {
 	Done       bool        `json:"done"`
 	EvalCount  int         `json:"eval_count"`
 	PromptEval int         `json:"prompt_eval_count"`
+	// Error is Ollama's own mid-stream error shape: a line like
+	// {"error":"..."} instead of the usual {"message":...,"done":...}.
+	Error string `json:"error"`
 }
 
 func (p *Provider) buildRequest(req llm.Request, stream bool) (chatRequest, error) {
@@ -109,11 +132,12 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return llm.Response{}, fmt.Errorf("ollama: unexpected status %d: %s", resp.StatusCode, b)
+		return llm.Response{}, llm.ClassifyOllamaError(resp.StatusCode, string(b))
 	}
 
 	var text bytes.Buffer
 	var final chatResponseChunk
+	var sawDone bool
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
@@ -125,6 +149,9 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 		if err := json.Unmarshal(line, &chunk); err != nil {
 			return llm.Response{}, fmt.Errorf("ollama: decode chunk: %w", err)
 		}
+		if chunk.Error != "" {
+			return llm.Response{}, classifyMidStreamError(chunk.Error)
+		}
 		if chunk.Message.Content != "" {
 			text.WriteString(chunk.Message.Content)
 			if onDelta != nil {
@@ -133,10 +160,14 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 		}
 		if chunk.Done {
 			final = chunk
+			sawDone = true
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return llm.Response{}, fmt.Errorf("ollama: stream read: %w", err)
+	}
+	if !sawDone {
+		return llm.Response{}, ErrStreamIncomplete
 	}
 
 	return llm.Response{
@@ -194,9 +225,16 @@ func (p *Provider) Loaded(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("ollama: decode /api/ps: %w", err)
 	}
 	for _, m := range out.Models {
-		if m.Name == p.Model {
+		if normalizeModelTag(m.Name) == normalizeModelTag(p.Model) {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+// normalizeModelTag strips Ollama's implicit ":latest" tag so a
+// configured model name without an explicit tag still matches what
+// /api/ps reports (it always includes a tag, defaulting to "latest").
+func normalizeModelTag(name string) string {
+	return strings.TrimSuffix(name, ":latest")
 }

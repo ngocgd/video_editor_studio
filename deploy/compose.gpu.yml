@@ -7,6 +7,16 @@ name: loomtale
 # the worker's NVENC device reservation above; this file adds the
 # inference backends).
 services:
+  # Joins loomtale_gpu (internal) so pyworker can reach the presigned
+  # URLs storage.Internal issues it: the protos pass URLs, never bytes,
+  # over gRPC, so pyworker still holds no MinIO credentials, only
+  # network reachability to the presign target host. comfyui and ollama
+  # gain reachability to minio too as a result (they are on the same
+  # internal network); this is an accepted trade-off (see the plan's
+  # phase 4 review) over proxying every byte through the Go worker.
+  minio:
+    networks: [loomtale_core, loomtale_gpu]
+
   worker:
     networks: [loomtale_core, loomtale_llm, loomtale_gpu]
     secrets: [pyworker_bearer_token]
@@ -76,11 +86,15 @@ services:
     environment:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       OLLAMA_HOST: 0.0.0.0:11434
-      # No model exists on the models volume until phase 9b's pull step;
       # Ollama itself needs no offline env (it manages its own model
       # store), unlike the HF-based engines.
     volumes:
-      - loomtale_models:/root/.ollama/models
+      # Ollama's own volume, never the shared read-only loomtale_models
+      # tree: Ollama needs to write into its model store (`ollama pull`,
+      # phase 9b), and a writable mount into the same tree ComfyUI loads
+      # .safetensors/.gguf from would let it place arbitrary files
+      # (including pickle-capable .ckpt) somewhere ComfyUI might load.
+      - ollama_models:/root/.ollama/models
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -111,7 +125,16 @@ services:
     volumes:
       - loomtale_models:/models:ro
     # No host ports, including loopback: reachable only from the worker,
-    # exactly like comfyui/ollama, via loomtale_gpu (internal).
+    # exactly like comfyui/ollama, via loomtale_gpu (internal). The
+    # healthcheck is a bare TCP connect (python is already the
+    # entrypoint's own interpreter): it proves the gRPC port is
+    # listening, not a full protocol handshake.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 9090), 2).close()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -125,7 +148,13 @@ networks:
 
 volumes:
   # Populated out-of-band by the model download step (phase 1b/9a);
-  # declared here so compose.gpu.yml never tries to (re)create it. Ollama
-  # and pyworker mount the same volume the ComfyUI spike already uses.
+  # declared here so compose.gpu.yml never tries to (re)create it.
+  # pyworker mounts it read-only alongside comfyui; ollama gets its own
+  # volume below (see the ollama service's own comment for why it must
+  # not share this one).
   loomtale_models:
     external: true
+  # Ollama-only, compose-managed (not external): its own model store,
+  # separate from loomtale_models so Ollama's writes can never place a
+  # file (including a pickle-capable .ckpt) somewhere ComfyUI loads from.
+  ollama_models:

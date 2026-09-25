@@ -5,7 +5,9 @@ honesty pattern.
 
 from __future__ import annotations
 
-from loomtale.worker.v1 import train_pb2, train_pb2_grpc
+import grpc
+
+from loomtale.worker.v1 import train_pb2_grpc
 from loomtale_worker.model_manager import (
     EngineNotInstalledError,
     GpuOomError,
@@ -28,7 +30,12 @@ class TrainServicer(train_pb2_grpc.TrainServicer):
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
             return
-        yield train_pb2.TrainEvent(result=train_pb2.TrainResult(output_key=""))
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            f"engine {request.engine!r} has no Train implementation wired",
+        )
+        return
+        yield  # pragma: no cover - unreachable, makes this an async generator
 
 
 def register(server, manager: ModelManager) -> None:

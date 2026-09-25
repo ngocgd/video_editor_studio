@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -55,25 +56,45 @@ type Manager struct {
 	// BudgetMB is set once at boot (see NewManagerWithBudget) from the
 	// measured free VRAM minus RenderReserveMB.
 	BudgetMB int64
+	// OnChange, if set, is called after Ensure succeeds and after every
+	// UnloadAll, so a caller (cmd/worker) can push an immediate
+	// worker_status update instead of waiting for the next heartbeat
+	// tick.
+	OnChange func()
 
+	// opMu serializes Ensure/UnloadAll as a whole: without it, two
+	// concurrent calls could interleave their unload/load steps and
+	// leave current inconsistent with what is actually resident.
+	opMu    sync.Mutex
 	mu      sync.Mutex
 	current *pipeline.ModelRef
 }
 
-// NewManagerWithBudget measures free VRAM once via probe and returns a
-// Manager with BudgetMB = free - renderReserveMB, per the contract ("at
-// boot with nothing loaded, the probe measures free VRAM ... and sets
-// budget_mb = free - render_reserve_mb").
+// NewManagerWithBudget unloads every backend first (a prior process
+// crash could leave something resident, which would otherwise
+// understate the true budget), then measures free VRAM via probe and
+// returns a Manager with BudgetMB = free - renderReserveMB, per the
+// contract ("at boot with nothing loaded, the probe measures free VRAM
+// ... and sets budget_mb = free - render_reserve_mb"). A probe failure
+// (no GPU, nvidia-smi missing) is logged, not silently swallowed into a
+// budget of 0.
 func NewManagerWithBudget(ctx context.Context, probe pipeline.GpuProbe, backends map[string]Backend, manifests map[string]int64, renderReserveMB int64) (*Manager, error) {
+	m := &Manager{Probe: probe, Backends: backends, Manifests: manifests}
+	m.unloadAllLocked(ctx)
+
 	snap, err := probe.Snapshot(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("residency: initial VRAM measurement: %w", err)
+	}
+	if snap.TotalMB == 0 {
+		slog.WarnContext(ctx, "residency: GPU probe reported no GPU at boot; budget set to 0", "render_reserve_mb", renderReserveMB)
 	}
 	budget := snap.FreeMB - renderReserveMB
 	if budget < 0 {
 		budget = 0
 	}
-	return &Manager{Probe: probe, Backends: backends, Manifests: manifests, BudgetMB: budget}, nil
+	m.BudgetMB = budget
+	return m, nil
 }
 
 // Snapshot implements pipeline.GpuProbe by delegating to Probe and
@@ -116,10 +137,25 @@ func (m *Manager) Current() *pipeline.ModelRef {
 // for the target model's VRAM budget to actually free up (polling the
 // probe, never trusting an immediate unload call to mean the memory is
 // already released), load the target, then prove residency app-side.
+//
+// If target is already resident (Current() matches and the backend's
+// own status agrees), Ensure returns immediately without touching any
+// backend: unload-then-reload on every chunk would otherwise cost
+// 5-15s per chunk even when nothing needs to change, defeating the
+// gpu_executor's own resident-model preference.
 func (m *Manager) Ensure(ctx context.Context, target pipeline.ModelRef) error {
-	if err := m.UnloadAll(ctx); err != nil {
-		return err
+	m.opMu.Lock()
+	defer m.opMu.Unlock()
+
+	if current := m.Current(); current != nil && *current == target {
+		if backend, ok := m.Backends[target.Backend]; ok {
+			if resident, err := backend.Resident(ctx, target.Model); err == nil && resident {
+				return nil
+			}
+		}
 	}
+
+	m.unloadAllLocked(ctx)
 
 	if needed := m.Manifests[target.Backend+":"+target.Model]; needed > 0 {
 		if err := m.waitForFreeVRAM(ctx, needed); err != nil {
@@ -143,22 +179,39 @@ func (m *Manager) Ensure(ctx context.Context, target pipeline.ModelRef) error {
 	ref := target
 	m.current = &ref
 	m.mu.Unlock()
+	if m.OnChange != nil {
+		m.OnChange()
+	}
 	return nil
 }
 
 // UnloadAll implements pipeline.ModelResidency, used both by Ensure
 // before a switch and directly by the phase 3 gpu_oom retry policy.
 func (m *Manager) UnloadAll(ctx context.Context) error {
-	var firstErr error
+	m.opMu.Lock()
+	m.unloadAllLocked(ctx)
+	m.opMu.Unlock()
+	if m.OnChange != nil {
+		m.OnChange()
+	}
+	return nil
+}
+
+// unloadAllLocked does the actual work, assuming opMu is already held.
+// An unreachable backend (e.g. the manually-started ComfyUI spike
+// service being down) is treated as already unloaded rather than as a
+// failure: an optional backend being offline must never fail every
+// step that targets a different backend (e.g. every Ollama step,
+// simply because ComfyUI's Free call errored).
+func (m *Manager) unloadAllLocked(ctx context.Context) {
 	for _, b := range m.Backends {
-		if err := b.Unload(ctx); err != nil && firstErr == nil {
-			firstErr = fmt.Errorf("residency: unload %s: %w", b.Name(), err)
+		if err := b.Unload(ctx); err != nil {
+			slog.WarnContext(ctx, "residency: backend unload failed, treating as already unloaded", "backend", b.Name(), "error", err)
 		}
 	}
 	m.mu.Lock()
 	m.current = nil
 	m.mu.Unlock()
-	return firstErr
 }
 
 // waitForFreeVRAM polls Probe every vramPollInterval until at least

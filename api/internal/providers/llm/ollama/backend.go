@@ -54,5 +54,5 @@ func (b *Backend) Resident(ctx context.Context, model string) (bool, error) {
 	if err != nil || !loaded {
 		return false, err
 	}
-	return b.Provider.Model == model, nil
+	return normalizeModelTag(b.Provider.Model) == normalizeModelTag(model), nil
 }

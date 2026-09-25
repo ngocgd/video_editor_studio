@@ -8,19 +8,58 @@ package settingsapi
 import (
 	"context"
 
+	"github.com/google/uuid"
+
+	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/providers/registry"
+	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/tenant"
 )
 
 // SettingsAPI implements the settings/llm slice of gen.StrictServerInterface.
 type SettingsAPI struct {
 	Registry *registry.Registry
-	Store    *registry.Store
+	// Store is narrowed to settingsStore (registry.Store's Get/Put
+	// methods) so this package is testable against a fake without a
+	// database; Queries below carries the one DB dependency audit
+	// logging still needs.
+	Store   settingsStore
+	Queries *dbgen.Queries
 	// Secrets reports whether a given provider name has a configured API
 	// key (kind="llm_api_key" in the envelope-encrypted secrets table),
 	// without ever returning the key itself.
 	Secrets SecretsChecker
+	// WorkerStatus supplies Ollama's real availability (the process that
+	// actually calls it, per the phase review): this process's own
+	// Registry.Providers only ever contains claude-cli/anthropic-api/
+	// gemini-api, never ollama (that adapter lives in cmd/worker).
+	WorkerStatus workerStatusReader
+	// TestRateLimit bounds POST /settings/llm/test per tenant (decision:
+	// 5/min), since it spends real provider tokens/quota synchronously.
+	TestRateLimit RateLimiter
+}
+
+// settingsStore is the subset of *registry.Store this package depends
+// on.
+type settingsStore interface {
+	Get(ctx context.Context, tenantID uuid.UUID) (registry.Settings, error)
+	Put(ctx context.Context, tenantID uuid.UUID, s registry.Settings) error
+}
+
+// RateLimiter is the subset of *ratelimit.DBBucket TestLLMSettings
+// depends on.
+type RateLimiter interface {
+	Allow(ctx context.Context, key string) (bool, error)
+}
+
+var _ settingsStore = (*registry.Store)(nil)
+
+// workerStatusReader is narrowed to an interface (mirroring
+// pipelineapi's own workerStatusReader) so this package does not import
+// a database-backed concrete type into its test surface.
+type workerStatusReader interface {
+	Get(ctx context.Context) (workerstatus.Status, error)
 }
 
 // SecretsChecker abstracts the envelope-encrypted secrets lookup so this
@@ -69,14 +108,16 @@ func fromActionOverrides(o gen.LLMActionOverrides) map[string]string {
 	return out
 }
 
-// providerStatuses lists every known provider (from h.Registry.Providers,
-// which only contains successfully constructed adapters) plus whichever
-// named providers the caller's settings reference but are not
-// constructed, so a misconfigured override is visible rather than
-// silently absent from the response.
+// providerStatuses reports every known provider name (registry.KnownProviders,
+// not just the ones this process happens to have adapters for), plus any
+// extra name a tenant's own settings reference. Availability for
+// ollama comes from WorkerStatus (the worker is the process that
+// actually calls it); every other provider's availability comes from
+// this process's own Registry.Providers, since those adapters really do
+// live and get called here.
 func (h *SettingsAPI) providerStatuses(ctx context.Context, tenantID string, s registry.Settings) []gen.ProviderStatus {
 	names := map[string]struct{}{}
-	for name := range h.Registry.Providers {
+	for _, name := range registry.KnownProviders {
 		names[name] = struct{}{}
 	}
 	names[s.Default] = struct{}{}
@@ -84,18 +125,41 @@ func (h *SettingsAPI) providerStatuses(ctx context.Context, tenantID string, s r
 		names[v] = struct{}{}
 	}
 
+	var workerProviders map[string]workerstatus.ProviderInfo
+	var workerFresh bool
+	if h.WorkerStatus != nil {
+		if ws, err := h.WorkerStatus.Get(ctx); err == nil {
+			workerProviders = ws.Providers
+			workerFresh = ws.Fresh
+		}
+	}
+
 	statuses := make([]gen.ProviderStatus, 0, len(names))
 	for name := range names {
-		_, available := h.Registry.Providers[name]
-		status := gen.ProviderStatus{Name: name, Available: available}
+		status := gen.ProviderStatus{Name: name}
+		if name == registry.ProviderOllama {
+			status.Available = workerFresh && workerProviders[registry.ProviderOllama].Available
+			if !status.Available {
+				reason := "worker_offline or ollama has no model configured (see OLLAMA_MODEL)"
+				if workerFresh {
+					if info, ok := workerProviders[registry.ProviderOllama]; ok && info.DisabledReason != "" {
+						reason = info.DisabledReason
+					}
+				}
+				status.DisabledReason = &reason
+			}
+		} else {
+			_, available := h.Registry.Providers[name]
+			status.Available = available
+			if !available {
+				reason := "no adapter constructed for this provider (missing API key, disabled in saas mode, or self-check failed)"
+				status.DisabledReason = &reason
+			}
+		}
 		if h.Secrets != nil {
 			if configured, err := h.Secrets.Configured(ctx, tenantID, name); err == nil {
 				status.Configured = &configured
 			}
-		}
-		if !available {
-			reason := "no adapter constructed for this provider (missing API key or self-check failed)"
-			status.DisabledReason = &reason
 		}
 		statuses = append(statuses, status)
 	}

@@ -812,6 +812,9 @@ export const GpuStatusSchema = {
             items: {
                 type: 'string'
             }
+        },
+        workerOnline: {
+            type: 'boolean'
         }
     }
 } as const;

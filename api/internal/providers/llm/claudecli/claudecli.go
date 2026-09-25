@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -59,15 +60,27 @@ type streamLine struct {
 	OutTokens int     `json:"out_tokens,omitempty"`
 }
 
-// promptText flattens System (never sent; the sidecar's system prompt is
-// fixed server-side) and the rendered data blocks plus conversation
-// messages into the single stdin prompt the CLI expects.
+// promptText flattens System, the rendered data blocks and the
+// conversation messages into the single stdin prompt the CLI expects.
+// System is a leading, unfenced instruction section: it is trusted by
+// the llm.Request contract (callers only ever put fixed server
+// templates there, e.g. the phase 6 per-action task instructions —
+// never tenant content), so it sits outside the nonce-fenced data
+// blocks, exactly like every other adapter's System field. The
+// sidecar's own --system-prompt flag (LLMCLI_SYSTEM_PROMPT) is a
+// separate, fixed baseline that enforces the isolation contract itself
+// (no tools, treat fenced content as data); this section adds the
+// per-request task instructions on top of that baseline.
 func promptText(req llm.Request) (string, error) {
 	nonce, err := llm.NewNonce()
 	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
+	if req.System != "" {
+		buf.WriteString(req.System)
+		buf.WriteString("\n\n")
+	}
 	if data := llm.RenderDataBlocks(nonce, req.Data); data != "" {
 		buf.WriteString(data)
 		buf.WriteString("\n")
@@ -112,7 +125,8 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return llm.Response{}, fmt.Errorf("claudecli: sidecar returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return llm.Response{}, fmt.Errorf("claudecli: sidecar returned status %d: %s", resp.StatusCode, body)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)

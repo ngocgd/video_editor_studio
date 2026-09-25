@@ -307,6 +307,12 @@ services:
       LLMCLI_BEARER_TOKEN_PATH: /run/secrets/llmcli_bearer_token
       HTTPS_PROXY: http://egress-proxy:8888
       HOME: /tmp
+      # Turns off the CLI's own telemetry/error-reporting/non-essential
+      # model-call traffic (see api/cmd/llmcli/env.go), so the egress
+      # proxy's allowlist only ever needs api.anthropic.com.
+      DISABLE_TELEMETRY: "1"
+      DISABLE_ERROR_REPORTING: "1"
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
     healthcheck:
       test: ["CMD", "/usr/local/bin/llmcli", "healthcheck"]
       interval: 15s
@@ -315,6 +321,11 @@ services:
       start_period: 20s
     read_only: true
     tmpfs: ["/tmp"]
+    # init: true reaps orphaned grandchildren (the CLI spawns its own
+    # Node subprocesses); pids_limit bounds a runaway CLI from forking
+    # enough processes to exhaust the host's pid table.
+    init: true
+    pids_limit: 128
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 

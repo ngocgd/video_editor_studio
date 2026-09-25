@@ -5,7 +5,9 @@ pattern.
 
 from __future__ import annotations
 
-from loomtale.worker.v1 import vision_pb2, vision_pb2_grpc
+import grpc
+
+from loomtale.worker.v1 import vision_pb2_grpc
 from loomtale_worker.model_manager import (
     EngineNotInstalledError,
     GpuOomError,
@@ -28,7 +30,11 @@ class VisionServicer(vision_pb2_grpc.VisionServicer):
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
             return None
-        return vision_pb2.ScoreResponse(score=0.0)
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            f"engine {request.engine!r} has no Score implementation wired",
+        )
+        return None
 
     async def Depth(self, request, context):  # noqa: N802
         try:
@@ -39,7 +45,11 @@ class VisionServicer(vision_pb2_grpc.VisionServicer):
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
             return None
-        return vision_pb2.DepthResponse(output_key="")
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            f"engine {request.engine!r} has no Depth implementation wired",
+        )
+        return None
 
 
 def register(server, manager: ModelManager) -> None:

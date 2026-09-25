@@ -6,6 +6,7 @@
 package netguard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -63,10 +64,13 @@ func hostAllowed(cfg Config, host string) bool {
 	return false
 }
 
-// Client builds an *http.Client whose transport blocks metadata/link-local
-// addresses on every dial and never follows redirects (a redirect to a
-// blocked address must be rejected exactly like a direct request to it,
-// not silently followed).
+// Client builds an *http.Client whose transport enforces the allowlist
+// twice: once on the pre-resolution hostname (DialContext, below, before
+// any DNS lookup happens) and once per resolved address (dialControl),
+// so neither a hostname the allowlist never covers nor an IP a hostname
+// happens to resolve to can slip through. It never follows redirects (a
+// redirect to a blocked address must be rejected exactly like a direct
+// request to it, not silently followed).
 func Client(cfg Config) *http.Client {
 	if cfg.DialTimeout == 0 {
 		cfg.DialTimeout = 5 * time.Second
@@ -76,7 +80,16 @@ func Client(cfg Config) *http.Client {
 		Control: dialControl(cfg),
 	}
 	transport := &http.Transport{
-		DialContext: dialer.DialContext,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				host = addr
+			}
+			if !hostAllowed(cfg, host) {
+				return nil, fmt.Errorf("%w: host %q is not in ALLOWED_PROVIDER_HOSTS", ErrBlockedHost, host)
+			}
+			return dialer.DialContext(ctx, network, addr)
+		},
 	}
 	return &http.Client{
 		Transport: transport,
@@ -112,15 +125,23 @@ func dialControl(cfg Config) func(network, address string, c syscall.RawConn) er
 	}
 }
 
+// awsIMDSv6 is AWS's fixed IPv6 metadata address (fd00:ec2::254), a
+// unique local address (fc00::/7) so it is not caught by
+// IsLinkLocalUnicast (fe80::/10) the way the IPv4 IMDS address is.
+var awsIMDSv6 = net.ParseIP("fd00:ec2::254")
+
 // isBlockedIP reports whether ip is link-local metadata space
-// (169.254.0.0/16 and its IPv6-mapped form), the unspecified address, or
-// otherwise not a routable unicast address a provider endpoint should
-// ever resolve to.
+// (169.254.0.0/16 and its IPv6-mapped form), the AWS IPv6 metadata
+// address, the unspecified address, or otherwise not a routable unicast
+// address a provider endpoint should ever resolve to.
 func isBlockedIP(ip net.IP) bool {
 	if ip.IsUnspecified() {
 		return true
 	}
 	if ip.IsLinkLocalUnicast() {
+		return true
+	}
+	if ip.Equal(awsIMDSv6) {
 		return true
 	}
 	if ip4 := ip.To4(); ip4 != nil {

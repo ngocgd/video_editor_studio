@@ -66,6 +66,23 @@ func TestRenderDataBlocksEscapesInjectedOpenTag(t *testing.T) {
 	}
 }
 
+// TestRenderDataBlocksLabelProducesWellFormedTag is a regression test:
+// the open tag must be a single well-formed
+// <data-{nonce} label="...">, not <data-{nonce}> label="...">
+// with the label left as stray text after an early '>'.
+func TestRenderDataBlocksLabelProducesWellFormedTag(t *testing.T) {
+	out := RenderDataBlocks("deadbeefcafef00d", []DataBlock{
+		{Label: "draft", Text: "hi", Origin: OriginUser},
+	})
+	want := `<data-deadbeefcafef00d label="draft">`
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected a well-formed labeled open tag %q, got: %s", want, out)
+	}
+	if strings.Contains(out, `> label="draft">`) {
+		t.Fatalf("label leaked as stray text after an early close: %s", out)
+	}
+}
+
 func TestAnyTainted(t *testing.T) {
 	if AnyTainted([]DataBlock{{Tainted: false}}) {
 		t.Fatal("expected false for no tainted blocks")

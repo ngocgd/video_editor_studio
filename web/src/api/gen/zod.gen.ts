@@ -248,7 +248,8 @@ export const zGpuStatus = z.object({
     vram: zGpuVram.optional(),
     backends: z.array(zGpuBackendStatus),
     encoder: zGpuEncoder.optional(),
-    capabilities: z.array(z.string())
+    capabilities: z.array(z.string()),
+    workerOnline: z.boolean().optional()
 });
 
 export const zLlmActionOverrides = z.object({

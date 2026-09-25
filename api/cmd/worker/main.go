@@ -78,10 +78,11 @@ func run() error {
 	// cmd/worker wiring change once they exist; phase 3 ships the engine
 	// with none.
 
-	residency, _, err := buildResidency(ctx, cfg)
+	residency, probe, residencyManager, err := buildResidency(ctx, cfg)
 	if err != nil {
 		return err
 	}
+	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)
 
 	// A worker with no registered handler for any kind must never fetch a
 	// job at all: claiming a step it cannot run destroys it (the CAS

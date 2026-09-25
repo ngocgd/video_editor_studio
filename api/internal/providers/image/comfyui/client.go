@@ -103,4 +103,3 @@ func (c *Client) Submit(ctx context.Context, workflow map[string]any, clientID s
 	}
 	return out.PromptID, nil
 }
-

@@ -10,12 +10,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/secretstr"
 
 	"loomtale/api/internal/providers/llm"
@@ -25,6 +27,24 @@ const (
 	defaultBaseURL   = "https://api.anthropic.com"
 	anthropicVersion = "2023-06-01"
 )
+
+// ErrStreamIncomplete is returned when the SSE stream ends (EOF or a
+// mid-stream "error" event, e.g. overloaded_error) without a
+// message_stop, so a truncated/partial response is never mistaken for a
+// finished one. Left unwrapped: pipeline.Classify's default (transient)
+// is the right policy for a dropped connection or an overload.
+var ErrStreamIncomplete = errors.New("anthropic: stream ended without a terminal event")
+
+// ErrRefused wraps pipeline.ErrValidation (permanent, no retry): the
+// model declined to answer (stop_reason "refusal"), and retrying the
+// identical prompt would refuse again.
+var ErrRefused = fmt.Errorf("%w: anthropic: request refused", pipeline.ErrValidation)
+
+// ErrMaxTokensTruncated is returned when the model stopped because it
+// hit MaxTokens: transient by default classification (a caller may
+// choose to retry with a larger budget), never stored as if it were a
+// complete response.
+var ErrMaxTokensTruncated = errors.New("anthropic: response truncated at max_tokens")
 
 // Pricing is per-million-token USD cost, used only for CostUSD reporting;
 // callers may override via WithPricing for a specific model.
@@ -74,9 +94,23 @@ type contentBlockDeltaEvent struct {
 
 type messageDeltaEvent struct {
 	Type  string `json:"type"`
+	Delta struct {
+		StopReason string `json:"stop_reason"`
+	} `json:"delta"`
 	Usage struct {
 		OutputTokens int `json:"output_tokens"`
 	} `json:"usage"`
+}
+
+// errorEvent is Anthropic's mid-stream SSE "error" event (e.g. type
+// overloaded_error), distinct from an HTTP-level failure since it can
+// arrive after a 200 response has already started streaming.
+type errorEvent struct {
+	Type  string `json:"type"`
+	Error struct {
+		Type    string `json:"type"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 type messageStartEvent struct {
@@ -144,11 +178,13 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return llm.Response{}, fmt.Errorf("anthropic: unexpected status %d: %s", resp.StatusCode, b)
+		return llm.Response{}, llm.ClassifyHTTP(resp.StatusCode, "anthropic", string(b))
 	}
 
 	var text bytes.Buffer
 	var usage llm.Usage
+	var stopReason string
+	var sawMessageStop bool
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
@@ -181,11 +217,29 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 			var ev messageDeltaEvent
 			if err := json.Unmarshal([]byte(data), &ev); err == nil {
 				usage.Out = ev.Usage.OutputTokens
+				if ev.Delta.StopReason != "" {
+					stopReason = ev.Delta.StopReason
+				}
 			}
+		case "message_stop":
+			sawMessageStop = true
+		case "error":
+			var ev errorEvent
+			_ = json.Unmarshal([]byte(data), &ev)
+			return llm.Response{}, fmt.Errorf("anthropic: mid-stream error (%s): %s", ev.Error.Type, ev.Error.Message)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return llm.Response{}, fmt.Errorf("anthropic: stream read: %w", err)
+	}
+	if !sawMessageStop {
+		return llm.Response{}, ErrStreamIncomplete
+	}
+	if stopReason == "refusal" {
+		return llm.Response{}, ErrRefused
+	}
+	if stopReason == "max_tokens" {
+		return llm.Response{}, fmt.Errorf("%w: stopped at max_tokens=%d", ErrMaxTokensTruncated, req.MaxTokens)
 	}
 
 	cost := float64(usage.In)/1_000_000*p.Pricing.InPerMTok + float64(usage.Out)/1_000_000*p.Pricing.OutPerMTok

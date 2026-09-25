@@ -34,9 +34,9 @@ type Request struct {
 
 // Result is the synthesize call's final outcome.
 type Result struct {
-	OutputKey  string
-	DurationS  float64
-	Metadata   map[string]string
+	OutputKey string
+	DurationS float64
+	Metadata  map[string]string
 }
 
 // Synthesize streams progress to onProgress(pct, etaS) and returns the

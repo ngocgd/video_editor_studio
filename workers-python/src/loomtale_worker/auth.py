@@ -20,6 +20,12 @@ class BearerTokenInterceptor(grpc.aio.ServerInterceptor):
     """
 
     def __init__(self, token: str) -> None:
+        if not token:
+            # An empty token would make expected == "Bearer " match any
+            # caller that literally sends that (missing-credential)
+            # header value; fail at construction instead of silently
+            # accepting it at call time.
+            raise ValueError("BearerTokenInterceptor requires a non-empty token")
         self._token = token
 
     async def intercept_service(self, continuation, handler_call_details):

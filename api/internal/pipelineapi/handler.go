@@ -29,8 +29,12 @@ type PipelineAPI struct {
 	Engine    *pipeline.Engine
 	Storage   *storage.Internal
 	Hub       *sse.Hub
-	Probe     pipeline.GpuProbe       // nil until phase 4 wires a real one
+	Probe     pipeline.GpuProbe       // always nil for cmd/api (see WorkerStatus): this process has no gpu_net route
 	Residency pipeline.ModelResidency // NoopResidency when WORKER_GPU=false
+	// WorkerStatus is GetGpuStatus's live-data source when Probe is nil:
+	// cmd/api cannot reach gpu_net directly, so it reads the worker's own
+	// heartbeat row instead (see api/internal/providers/workerstatus).
+	WorkerStatus workerStatusReader
 
 	// ShutdownSignal is cancelled (via http.Server.RegisterOnShutdown, in
 	// cmd/api/main.go) when the process starts a graceful shutdown. A

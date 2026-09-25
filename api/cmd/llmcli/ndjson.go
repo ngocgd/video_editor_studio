@@ -25,6 +25,12 @@ var ErrToolsEnabled = errors.New("cli_tools_enabled")
 // exceeds maxTotalOutput.
 var ErrOutputTooLarge = errors.New("llmcli: streamed output exceeded the total size cap")
 
+// ErrEventBeforeInit is returned when an assistant or result event
+// arrives before system/init has confirmed tools/mcp_servers are empty:
+// relaying any text to the caller before that assertion runs would let
+// output from a not-yet-verified process reach SSE.
+var ErrEventBeforeInit = errors.New("llmcli: assistant/result event received before system/init")
+
 // initEvent is the system/init event's shape.
 type initEvent struct {
 	Type       string   `json:"type"`
@@ -108,6 +114,9 @@ func parseNDJSONStream(r io.Reader, onDelta func(string)) (parseResult, error) {
 				res.InitOK = true
 			}
 		case "assistant":
+			if !res.InitOK {
+				return res, ErrEventBeforeInit
+			}
 			var ev assistantEvent
 			if err := json.Unmarshal(line, &ev); err != nil {
 				return res, fmt.Errorf("llmcli: decode assistant event: %w", err)
@@ -126,6 +135,9 @@ func parseNDJSONStream(r io.Reader, onDelta func(string)) (parseResult, error) {
 				}
 			}
 		case "result":
+			if !res.InitOK {
+				return res, ErrEventBeforeInit
+			}
 			var ev resultEvent
 			if err := json.Unmarshal(line, &ev); err != nil {
 				return res, fmt.Errorf("llmcli: decode result event: %w", err)

@@ -39,8 +39,10 @@ type config struct {
 
 	// AllowedProviderHosts is netguard's allowlist for user-configurable
 	// provider endpoints (Ollama today; ComfyUI is dialed only from the
-	// worker, not this process).
-	AllowedProviderHosts []string `env:"ALLOWED_PROVIDER_HOSTS" envSeparator:","`
+	// worker, not this process). Defaults to the compose-internal Ollama
+	// hostname so a default install validates out of the box; an
+	// operator pointing OLLAMA_URL somewhere else must also update this.
+	AllowedProviderHosts []string `env:"ALLOWED_PROVIDER_HOSTS" envSeparator:"," envDefault:"ollama"`
 
 	OllamaURL   string `env:"OLLAMA_URL" envDefault:"http://ollama:11434"`
 	OllamaModel string `env:"OLLAMA_MODEL" envDefault:""`

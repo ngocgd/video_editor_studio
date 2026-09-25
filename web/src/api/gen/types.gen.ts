@@ -219,6 +219,7 @@ export type GpuStatus = {
     backends: Array<GpuBackendStatus>;
     encoder?: GpuEncoder;
     capabilities: Array<string>;
+    workerOnline?: boolean;
 };
 
 export type LlmActionOverrides = {
@@ -820,6 +821,15 @@ export type TestLlmSettingsData = {
     query?: never;
     url: '/settings/llm/test';
 };
+
+export type TestLlmSettingsErrors = {
+    /**
+     * rate limited (per tenant)
+     */
+    429: Problem;
+};
+
+export type TestLlmSettingsError = TestLlmSettingsErrors[keyof TestLlmSettingsErrors];
 
 export type TestLlmSettingsResponses = {
     /**

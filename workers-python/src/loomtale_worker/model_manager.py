@@ -54,22 +54,25 @@ class ModelManager:
         Raises EngineNotInstalledError for an unknown/uninstalled engine,
         GpuOomError on a CUDA OOM during load.
         """
+        async with self._lock:
+            return await self._load_locked(name)
+
+    async def _load_locked(self, name: str) -> int:
+        """Assumes self._lock is already held by the caller."""
         engine = self._registry.get(name)
         if engine is None or not engine.installed():
             raise EngineNotInstalledError(name)
-
-        async with self._lock:
-            if self._resident_name and self._resident_name != name:
-                await self._unload_locked()
-            try:
-                held_mb = await engine.load()
-            except Exception as exc:  # noqa: BLE001 - narrowed by is_cuda_oom below
-                if _is_cuda_oom(exc):
-                    raise GpuOomError(str(exc)) from exc
-                raise
-            self._resident_name = name
-            self._resident_vram_mb = held_mb
-            return held_mb
+        if self._resident_name and self._resident_name != name:
+            await self._unload_locked()
+        try:
+            held_mb = await engine.load()
+        except Exception as exc:  # noqa: BLE001 - narrowed by is_cuda_oom below
+            if _is_cuda_oom(exc):
+                raise GpuOomError(str(exc)) from exc
+            raise
+        self._resident_name = name
+        self._resident_vram_mb = held_mb
+        return held_mb
 
     async def unload(self, name: str | None = None) -> None:
         """Unloads the resident engine if it matches name (or
@@ -90,18 +93,24 @@ class ModelManager:
 
     async def run(self, name: str, request: object) -> object:
         """Runs request against engine `name`, auto-loading it first if
-        it is not already resident."""
-        if self._resident_name != name:
-            await self.load(name)
-        engine = self._registry.get(name)
-        if engine is None:
-            raise EngineNotInstalledError(name)
-        try:
-            return await engine.run(request)
-        except Exception as exc:  # noqa: BLE001 - narrowed by is_cuda_oom below
-            if _is_cuda_oom(exc):
-                raise GpuOomError(str(exc)) from exc
-            raise
+        it is not already resident. Holds the lock for the whole
+        load-then-run sequence (not just the load): otherwise a
+        concurrent load(B) could unload engine A mid-run, contradicting
+        the "one resident engine at a time" invariant this class exists
+        to enforce.
+        """
+        async with self._lock:
+            if self._resident_name != name:
+                await self._load_locked(name)
+            engine = self._registry.get(name)
+            if engine is None:
+                raise EngineNotInstalledError(name)
+            try:
+                return await engine.run(request)
+            except Exception as exc:  # noqa: BLE001 - narrowed by is_cuda_oom below
+                if _is_cuda_oom(exc):
+                    raise GpuOomError(str(exc)) from exc
+                raise
 
 
 def _is_cuda_oom(exc: Exception) -> bool:

@@ -11,10 +11,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -59,9 +62,24 @@ func run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	oauthToken, err := readSecretFile(cfg.OAuthTokenPath)
-	if err != nil {
-		return err
+	if cfg.HostFallback {
+		if err := requireLoopbackBind(cfg.Addr); err != nil {
+			return fmt.Errorf("llmcli: LLMCLI_HOST_FALLBACK requires a loopback-only bind address: %w", err)
+		}
+		slog.Warn("llmcli running in host-fallback mode: using the host's own claude login, never reading its credential file directly", "addr", cfg.Addr)
+	}
+
+	// In host-fallback mode CLAUDE_OAUTH_TOKEN_PATH is deliberately
+	// unset: the spawned claude process resolves auth from the host
+	// user's own existing login, and this process never opens that
+	// credential file itself.
+	var oauthToken string
+	var err error
+	if !cfg.HostFallback {
+		oauthToken, err = readSecretFile(cfg.OAuthTokenPath)
+		if err != nil {
+			return err
+		}
 	}
 	bearerToken, err := readSecretFile(cfg.BearerTokenPath)
 	if err != nil {
@@ -73,21 +91,37 @@ func run() error {
 
 	version, checkErr := selfCheck(ctx, cfg.Binary, cfg.PinnedVersion)
 	disabledReason := ""
-	if checkErr != nil {
+	switch {
+	case checkErr != nil:
 		disabledReason = checkErr.Error()
 		slog.Error("llmcli self-check failed; provider will report unhealthy", "error", checkErr)
-	} else {
+	case cfg.HostFallback:
+		// No token check here: auth comes from the host's own claude
+		// login, which this process cannot observe in advance the way
+		// it can check a mounted token file. A real /v1/run call will
+		// surface an auth failure through the CLI's own error output if
+		// the host session is not actually logged in.
+		slog.Info("llmcli self-check passed (host-fallback mode)", "version", version)
+	case oauthToken == "":
+		// A missing/empty token means every real call would fail
+		// authentication anyway; report that now instead of a healthy
+		// status that turns into a confusing per-call failure. The
+		// binary/flag self-check above still ran (and is still logged),
+		// so an operator gets both signals distinctly.
+		disabledReason = "no CLAUDE_CODE_OAUTH_TOKEN configured (run 'claude setup-token' and write the result to the mounted secret file)"
+		slog.Warn("llmcli oauth token is empty; provider will report unhealthy", "version", version)
+	default:
 		slog.Info("llmcli self-check passed", "version", version)
 	}
 
 	rn := newRunner(cfg.Binary, cfg.WorkRoot, cfg.MaxConcurrent, cfg.Timeout)
 	h := &handler{
-		runner:          rn,
-		model:           cfg.Model,
-		systemPrompt:    cfg.SystemPrompt,
-		oauthToken:      oauthToken,
-		bearerToken:     bearerToken,
-		disabledReason:  disabledReason,
+		runner:         rn,
+		model:          cfg.Model,
+		systemPrompt:   cfg.SystemPrompt,
+		oauthToken:     oauthToken,
+		bearerToken:    bearerToken,
+		disabledReason: disabledReason,
 	}
 
 	mux := http.NewServeMux()
@@ -117,6 +151,26 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return server.Shutdown(shutdownCtx)
+}
+
+// requireLoopbackBind refuses any bind address whose host part is not
+// empty (":8090", which the OS resolves to all interfaces — not safe for
+// host-fallback mode), 127.0.0.1 or localhost.
+func requireLoopbackBind(addr string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("invalid address %q: %w", addr, err)
+	}
+	if host == "" {
+		return fmt.Errorf("address %q binds all interfaces; use 127.0.0.1:<port>", addr)
+	}
+	if host != "127.0.0.1" && !strings.EqualFold(host, "localhost") {
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			return fmt.Errorf("address %q is not loopback", addr)
+		}
+	}
+	return nil
 }
 
 func readSecretFile(path string) (string, error) {

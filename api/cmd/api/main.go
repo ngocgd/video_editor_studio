@@ -33,6 +33,7 @@ import (
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
@@ -176,7 +177,10 @@ func run() error {
 		}
 	}
 
-	llmRegistry, llmStore := buildRegistry(cfg, queries)
+	llmRegistry, llmStore, err := buildRegistry(cfg, queries)
+	if err != nil {
+		return err
+	}
 
 	srv := &server{
 		Handler: &health.Handler{
@@ -203,16 +207,24 @@ func run() error {
 		},
 		AuditAPI: &auditapi.AuditAPI{Queries: queries},
 		PipelineAPI: &pipelineapi.PipelineAPI{
-			Engine:         engine,
-			Storage:        internalStore,
-			Hub:            hub,
-			Probe:          nil, // wired by phase 4
-			Residency:      nil, // wired by phase 4
+			Engine:  engine,
+			Storage: internalStore,
+			Hub:     hub,
+			// This process has no network path to gpu_net (only the
+			// worker joins it, see deploy/compose.gpu.yml), so Probe and
+			// Residency stay nil; GetGpuStatus falls back to
+			// WorkerStatus, the worker's own heartbeat row.
+			Probe:          nil,
+			Residency:      nil,
+			WorkerStatus:   &workerstatus.Store{Queries: queries},
 			ShutdownSignal: shutdownSignal,
 		},
 		SettingsAPI: &settingsapi.SettingsAPI{
-			Registry: llmRegistry,
-			Store:    llmStore,
+			Registry:      llmRegistry,
+			Store:         llmStore,
+			Queries:       queries,
+			WorkerStatus:  &workerstatus.Store{Queries: queries},
+			TestRateLimit: ratelimit.NewDBBucket(queries, 5, 5.0/60),
 		},
 	}
 
