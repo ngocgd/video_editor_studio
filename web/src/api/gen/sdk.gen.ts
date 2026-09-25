@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CancelRunData, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CreateRunData, CreateRunErrors, CreateRunResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListJobsData, ListJobsResponses, ListRunStepsData, ListRunStepsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses } from './types.gen';
+import type { CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CreateRunData, CreateRunErrors, CreateRunResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -119,12 +119,12 @@ export const getRun = <ThrowOnError extends boolean = false>(options: Options<Ge
 /**
  * Cursor-paginated list of a run's steps
  */
-export const listRunSteps = <ThrowOnError extends boolean = false>(options: Options<ListRunStepsData, ThrowOnError>): RequestResult<ListRunStepsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListRunStepsResponses, unknown, ThrowOnError>({ url: '/runs/{id}/steps', ...options });
+export const listRunSteps = <ThrowOnError extends boolean = false>(options: Options<ListRunStepsData, ThrowOnError>): RequestResult<ListRunStepsResponses, ListRunStepsErrors, ThrowOnError> => (options.client ?? client).get<ListRunStepsResponses, ListRunStepsErrors, ThrowOnError>({ url: '/runs/{id}/steps', ...options });
 
 /**
  * Cancel every non-terminal step in a run
  */
-export const cancelRun = <ThrowOnError extends boolean = false>(options: Options<CancelRunData, ThrowOnError>): RequestResult<CancelRunResponses, unknown, ThrowOnError> => (options.client ?? client).post<CancelRunResponses, unknown, ThrowOnError>({ url: '/runs/{id}/cancel', ...options });
+export const cancelRun = <ThrowOnError extends boolean = false>(options: Options<CancelRunData, ThrowOnError>): RequestResult<CancelRunResponses, CancelRunErrors, ThrowOnError> => (options.client ?? client).post<CancelRunResponses, CancelRunErrors, ThrowOnError>({ url: '/runs/{id}/cancel', ...options });
 
 /**
  * Reset a failed or canceled step to queued and re-enqueue it
@@ -144,7 +144,7 @@ export const getStepLog = <ThrowOnError extends boolean = false>(options: Option
 /**
  * Cursor-paginated list of the tenant's steps, optionally filtered
  */
-export const listJobs = <ThrowOnError extends boolean = false>(options?: Options<ListJobsData, ThrowOnError>): RequestResult<ListJobsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListJobsResponses, unknown, ThrowOnError>({ url: '/jobs', ...options });
+export const listJobs = <ThrowOnError extends boolean = false>(options?: Options<ListJobsData, ThrowOnError>): RequestResult<ListJobsResponses, ListJobsErrors, ThrowOnError> => (options?.client ?? client).get<ListJobsResponses, ListJobsErrors, ThrowOnError>({ url: '/jobs', ...options });
 
 /**
  * Current GPU residency, queue and VRAM status for this tenant

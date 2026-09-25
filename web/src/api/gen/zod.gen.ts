@@ -119,20 +119,24 @@ export const zAuditList = z.object({
 });
 
 export const zCreateStepSpec = z.object({
-    id: z.string().uuid(),
+    clientRef: z.string().min(1).max(64),
     kind: z.string(),
     scopeKind: z.string(),
     scopeId: z.string().uuid(),
-    priority: z.number().int().gte(1).lte(4),
-    dependsOn: z.array(z.string().uuid()).optional()
+    dependsOn: z.array(z.string()).max(500).optional()
 });
 
 export const zCreateRunRequest = z.object({
-    id: z.string().uuid().optional(),
     scopeKind: z.string(),
     scopeId: z.string().uuid(),
     kind: z.string(),
-    steps: z.array(zCreateStepSpec).min(1)
+    priorityClass: z.enum([
+        'interactive',
+        'scene',
+        'batch',
+        'train_bench'
+    ]),
+    steps: z.array(zCreateStepSpec).min(1).max(500)
 });
 
 export const zPipelineRun = z.object({

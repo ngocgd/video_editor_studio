@@ -387,16 +387,17 @@ export const AuditListSchema = {
 export const CreateStepSpecSchema = {
     type: 'object',
     required: [
-        'id',
+        'clientRef',
         'kind',
         'scopeKind',
-        'scopeId',
-        'priority'
+        'scopeId'
     ],
     properties: {
-        id: {
+        clientRef: {
             type: 'string',
-            format: 'uuid'
+            description: 'Caller-chosen token, unique within this request, used only to wire dependsOn between steps of the same request. The server always generates the step\'s real id; a client can never choose one, which is what keeps a colliding id from ever being usable as a cross-tenant existence oracle.',
+            minLength: 1,
+            maxLength: 64
         },
         kind: {
             type: 'string'
@@ -408,16 +409,12 @@ export const CreateStepSpecSchema = {
             type: 'string',
             format: 'uuid'
         },
-        priority: {
-            type: 'integer',
-            minimum: 1,
-            maximum: 4
-        },
         dependsOn: {
             type: 'array',
+            maxItems: 500,
             items: {
                 type: 'string',
-                format: 'uuid'
+                description: 'Another step\'s clientRef in this same request.'
             }
         }
     }
@@ -429,13 +426,10 @@ export const CreateRunRequestSchema = {
         'scopeKind',
         'scopeId',
         'kind',
+        'priorityClass',
         'steps'
     ],
     properties: {
-        id: {
-            type: 'string',
-            format: 'uuid'
-        },
         scopeKind: {
             type: 'string'
         },
@@ -446,9 +440,20 @@ export const CreateRunRequestSchema = {
         kind: {
             type: 'string'
         },
+        priorityClass: {
+            type: 'string',
+            description: 'The run\'s urgency class, applied server-side to every step in it (see api/internal/pipeline priority constants); a client can never set a raw numeric priority, which is what stops any editor from marking batch work interactive and starving every other tenant on the single GPU.',
+            enum: [
+                'interactive',
+                'scene',
+                'batch',
+                'train_bench'
+            ]
+        },
         steps: {
             type: 'array',
             minItems: 1,
+            maxItems: 500,
             items: {
                 $ref: '#/components/schemas/CreateStepSpec'
             }

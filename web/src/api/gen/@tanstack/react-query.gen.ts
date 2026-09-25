@@ -4,7 +4,7 @@ import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOption
 
 import { client } from '../client.gen';
 import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, retryStep, switchTenant } from '../sdk.gen';
-import type { CancelRunData, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsResponse, ListRunStepsData, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse } from '../types.gen';
+import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -379,7 +379,7 @@ export const listRunStepsQueryKey = (options: Options<ListRunStepsData>) => crea
 /**
  * Cursor-paginated list of a run's steps
  */
-export const listRunStepsOptions = (options: Options<ListRunStepsData>) => queryOptions<ListRunStepsResponse, DefaultError, ListRunStepsResponse, ReturnType<typeof listRunStepsQueryKey>>({
+export const listRunStepsOptions = (options: Options<ListRunStepsData>) => queryOptions<ListRunStepsResponse, ListRunStepsError, ListRunStepsResponse, ReturnType<typeof listRunStepsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await listRunSteps({
             ...options,
@@ -398,7 +398,7 @@ export const listRunStepsInfiniteQueryKey = (options: Options<ListRunStepsData>)
  * Cursor-paginated list of a run's steps
  */
 export const listRunStepsInfiniteOptions = (options: Options<ListRunStepsData>) => {
-    const opts = infiniteQueryOptions<ListRunStepsResponse, DefaultError, InfiniteData<ListRunStepsResponse>, QueryKey<Options<ListRunStepsData>>, string | Pick<QueryKey<Options<ListRunStepsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    const opts = infiniteQueryOptions<ListRunStepsResponse, ListRunStepsError, InfiniteData<ListRunStepsResponse>, QueryKey<Options<ListRunStepsData>>, string | Pick<QueryKey<Options<ListRunStepsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
     // @ts-ignore
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
@@ -425,8 +425,8 @@ export const listRunStepsInfiniteOptions = (options: Options<ListRunStepsData>) 
 /**
  * Cancel every non-terminal step in a run
  */
-export const cancelRunMutation = (options?: Partial<Options<CancelRunData>>): UseMutationOptions<CancelRunResponse, DefaultError, Options<CancelRunData>> => {
-    const mutationOptions: UseMutationOptions<CancelRunResponse, DefaultError, Options<CancelRunData>> = {
+export const cancelRunMutation = (options?: Partial<Options<CancelRunData>>): UseMutationOptions<CancelRunResponse, CancelRunError, Options<CancelRunData>> => {
+    const mutationOptions: UseMutationOptions<CancelRunResponse, CancelRunError, Options<CancelRunData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await cancelRun({
                 ...options,
@@ -496,7 +496,7 @@ export const listJobsQueryKey = (options?: Options<ListJobsData>) => createQuery
 /**
  * Cursor-paginated list of the tenant's steps, optionally filtered
  */
-export const listJobsOptions = (options?: Options<ListJobsData>) => queryOptions<ListJobsResponse, DefaultError, ListJobsResponse, ReturnType<typeof listJobsQueryKey>>({
+export const listJobsOptions = (options?: Options<ListJobsData>) => queryOptions<ListJobsResponse, ListJobsError, ListJobsResponse, ReturnType<typeof listJobsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await listJobs({
             ...options,
@@ -515,7 +515,7 @@ export const listJobsInfiniteQueryKey = (options?: Options<ListJobsData>): Query
  * Cursor-paginated list of the tenant's steps, optionally filtered
  */
 export const listJobsInfiniteOptions = (options?: Options<ListJobsData>) => {
-    const opts = infiniteQueryOptions<ListJobsResponse, DefaultError, InfiniteData<ListJobsResponse>, QueryKey<Options<ListJobsData>>, string | Pick<QueryKey<Options<ListJobsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    const opts = infiniteQueryOptions<ListJobsResponse, ListJobsError, InfiniteData<ListJobsResponse>, QueryKey<Options<ListJobsData>>, string | Pick<QueryKey<Options<ListJobsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
     // @ts-ignore
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {

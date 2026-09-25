@@ -114,19 +114,24 @@ export type AuditList = {
 };
 
 export type CreateStepSpec = {
-    id: string;
+    /**
+     * Caller-chosen token, unique within this request, used only to wire dependsOn between steps of the same request. The server always generates the step's real id; a client can never choose one, which is what keeps a colliding id from ever being usable as a cross-tenant existence oracle.
+     */
+    clientRef: string;
     kind: string;
     scopeKind: string;
     scopeId: string;
-    priority: number;
     dependsOn?: Array<string>;
 };
 
 export type CreateRunRequest = {
-    id?: string;
     scopeKind: string;
     scopeId: string;
     kind: string;
+    /**
+     * The run's urgency class, applied server-side to every step in it (see api/internal/pipeline priority constants); a client can never set a raw numeric priority, which is what stops any editor from marking batch work interactive and starving every other tenant on the single GPU.
+     */
+    priorityClass: 'interactive' | 'scene' | 'batch' | 'train_bench';
     steps: Array<CreateStepSpec>;
 };
 
@@ -552,6 +557,15 @@ export type ListRunStepsData = {
     url: '/runs/{id}/steps';
 };
 
+export type ListRunStepsErrors = {
+    /**
+     * invalid cursor
+     */
+    400: Problem;
+};
+
+export type ListRunStepsError = ListRunStepsErrors[keyof ListRunStepsErrors];
+
 export type ListRunStepsResponses = {
     /**
      * page of steps
@@ -569,6 +583,15 @@ export type CancelRunData = {
     query?: never;
     url: '/runs/{id}/cancel';
 };
+
+export type CancelRunErrors = {
+    /**
+     * run not found in this tenant, or already finished
+     */
+    404: Problem;
+};
+
+export type CancelRunError = CancelRunErrors[keyof CancelRunErrors];
 
 export type CancelRunResponses = {
     /**
@@ -590,9 +613,13 @@ export type RetryStepData = {
 
 export type RetryStepErrors = {
     /**
-     * step not found, or not in a retryable state
+     * step not found
      */
     404: Problem;
+    /**
+     * step exists but cannot be retried right now (unmet dependency, or its run is not active)
+     */
+    409: Problem;
 };
 
 export type RetryStepError = RetryStepErrors[keyof RetryStepErrors];
@@ -671,6 +698,15 @@ export type ListJobsData = {
     };
     url: '/jobs';
 };
+
+export type ListJobsErrors = {
+    /**
+     * invalid cursor
+     */
+    400: Problem;
+};
+
+export type ListJobsError = ListJobsErrors[keyof ListJobsErrors];
 
 export type ListJobsResponses = {
     /**
