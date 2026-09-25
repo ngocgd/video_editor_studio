@@ -7,7 +7,7 @@
 - Depends on phase 1 (Docker restarted with the new limits). Runs in parallel with phase 2 (disjoint files).
 
 ## Overview
-- Priority: P1 (de-risks phases 9a–9c) · Status: pending · Effort: 2h engineering + download time
+- Priority: P1 (de-risks phases 9a–9c) · Status: done, conditional go (see [results](reports/cook-260925-phase-01b-smoke-spike.md)) · Effort: 2h engineering + download time
 - The riskiest assumption in the plan is that ComfyUI on PyTorch cu128 runs on Blackwell `sm_120` inside WSL2 Docker, and that Qwen-Image-Edit fits the measured VRAM (≈10.9GB free) and the 20GB VM RAM. The original plan tested this at hour ~150. This spike tests it at hour ~14 with the smallest possible download, and produces a go/no-go record before phases 3–8 invest in the image path.
 
 ## Requirements
@@ -36,11 +36,11 @@ Throwaway harness, no app code: `deploy/docker/comfyui.Dockerfile` (draft; pinne
 - **No-go:** a CUDA or kernel failure on `sm_120`, or OOM at the Q4 level. Stop and escalate to the user: the contract §6 paid-API fallback for character sheets becomes a user decision before phase 9a starts.
 
 ## Todo checklist
-- [ ] ComfyUI cu128 image builds; `sm_120` smoke passes
-- [ ] VRAM free baseline recorded
-- [ ] User approved download list (or spike marked partial)
-- [ ] One Qwen-Image-Edit run measured
-- [ ] Go/no-go record written
+- [x] ComfyUI cu128 image builds; `sm_120` smoke passes
+- [x] VRAM free baseline recorded
+- [x] User approved download list (or spike marked partial) — N/A, weights already downloaded and approved in a prior task; this spike consumed them read-only (see [model download report](../../reports/spike-260924-model-downloads.md))
+- [x] One Qwen-Image-Edit run measured (plus a Z-Image Turbo int8 run, per this task's override)
+- [x] Go/no-go record written — [conditional go](reports/cook-260925-phase-01b-smoke-spike.md)
 
 ## Performance budget checks
 - Container RSS ≤10GB (the phase 1 `mem_limit`), VRAM peak ≤ measured free VRAM, time per edit ≤90s.

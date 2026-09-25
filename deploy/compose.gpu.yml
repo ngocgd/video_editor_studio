@@ -1,8 +1,10 @@
 name: loomtale
 
 # Override applied on top of compose.yml when GPU-backed rendering is
-# active. Phase 4/9a add the comfyui, pyworker, ollama and llm-cli services
-# to this file; phase 1 only wires the worker's NVENC device reservation.
+# active. Phase 4/9a add the pyworker, ollama and llm-cli services to this
+# file; phase 1 wires the worker's NVENC device reservation. Phase 1b adds
+# the comfyui spike/stub service below; phase 9a hardens it further
+# (read_only rootfs, resource limits tuned from this spike's measurements).
 services:
   worker:
     deploy:
@@ -14,6 +16,49 @@ services:
               capabilities: [gpu]
     environment:
       NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+
+  # Blackwell (sm_120) + Qwen-Image-Edit smoke spike (phase 1b). Not started
+  # by `make up`; run explicitly with
+  # `docker compose -f deploy/compose.yml -f deploy/compose.gpu.yml up -d comfyui`.
+  comfyui:
+    build:
+      context: ..
+      dockerfile: deploy/docker/comfyui.Dockerfile
+    image: loomtale/comfyui-spike:local
+    mem_limit: 10g
+    networks: [loomtale_comfyui]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - loomtale_models:/app/ComfyUI/models:ro
+    # No published ports, including on loopback: the internal-only network
+    # already blocks NAT/port-forwarding for this service (verified during
+    # the spike: a 127.0.0.1 publish was silently dropped by Docker because
+    # the network is `internal: true`). The smoke-test script and phase 9a
+    # both talk to ComfyUI with `docker exec ... curl http://127.0.0.1:8188/...`
+    # from inside the container's own network namespace instead.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: "no"
+
+networks:
+  # Separate from loomtale_core and marked internal: the comfyui container
+  # has no need to reach postgres/minio/api, and HF_HUB_OFFLINE=1 means it
+  # has no need to reach the internet either. Host access still works
+  # through the published loopback port (DNAT happens before the internal
+  # flag would block outbound routing).
+  loomtale_comfyui:
+    driver: bridge
+    internal: true
 
 volumes:
   # Populated out-of-band by the model download step (phase 1b); declared
