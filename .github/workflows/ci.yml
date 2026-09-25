@@ -179,9 +179,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
-        env:
-          GITLEAKS_CONFIG: .gitleaks.toml
+      # The gitleaks CLI (MIT) directly, pinned by checksum; the gitleaks-action
+      # wrapper now requires a paid license key.
+      - name: gitleaks (full history)
+        run: |
+          V=8.30.1
+          curl -sSL -o /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${V}/gitleaks_${V}_linux_x64.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tgz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          /tmp/gitleaks git --config .gitleaks.toml --redact --no-banner --exit-code 1 .
 
   docker:
     runs-on: ubuntu-latest
