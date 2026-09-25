@@ -196,7 +196,7 @@ jobs:
           echo "BACKUP_TARGET=https://ci-placeholder.invalid" >> .env
           echo "BACKUP_TARGET_BUCKET=ci-placeholder" >> .env
       - name: build all images
-        run: docker compose -f deploy/compose.yml --env-file .env build
+        run: docker compose -f deploy/compose.yml --env-file .env --profile claude-cli build
       - name: assert non-root USER in every built image
         run: |
           for svc in api worker web llmcli egress-proxy; do
@@ -208,7 +208,7 @@ jobs:
           done
       - name: assert every compose service declares mem_limit
         run: |
-          docker compose -f deploy/compose.yml --env-file .env config > /tmp/compose-rendered.yml
+          docker compose -f deploy/compose.yml --env-file .env --profile claude-cli config > /tmp/compose-rendered.yml
           python3 - /tmp/compose-rendered.yml <<'PY'
           import sys, yaml
           with open(sys.argv[1]) as f:
@@ -220,6 +220,6 @@ jobs:
           PY
       - name: assert no docker.sock mount
         run: |
-          if docker compose -f deploy/compose.yml --env-file .env config | grep -q "docker.sock"; then
+          if docker compose -f deploy/compose.yml --env-file .env --profile claude-cli config | grep -q "docker.sock"; then
             echo "a service mounts the docker socket"; exit 1
           fi

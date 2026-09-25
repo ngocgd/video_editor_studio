@@ -41,6 +41,13 @@ func TestEnqueue300StepsWithDepsMeetsLatencyBudget(t *testing.T) {
 	engine.Estimator = func(string) time.Duration { return 30 * time.Second }
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "perf-tenant")
+	// The enqueued runs are never worked; delete their tenant (cascading
+	// to steps) so later tests' reconciler sweeps don't inherit them.
+	t.Cleanup(func() {
+		if _, err := ownerPool(t).Exec(context.Background(), `DELETE FROM tenants WHERE id = $1`, tenantID); err != nil {
+			t.Errorf("cleanup perf-test tenant: %v", err)
+		}
+	})
 
 	const pairs = 150 // 150 leaves + 150 dependents = 300 steps, 150 dep rows
 	samples := make([]time.Duration, 0, enqueueSamples)
