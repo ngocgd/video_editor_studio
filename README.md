@@ -72,3 +72,14 @@ scripts/        tb.sh / tb.ps1 toolbox wrappers
 One `toolbox` image (Go, Node 22, uv, buf, sqlc, goose, oapi-codegen, golangci-lint,
 govulncheck, air, make) runs every Go-side command: `scripts/tb.sh <make-target>`. Generated
 code is committed; `make gen-check` (inside the toolbox) fails CI on drift.
+
+## Enabling the Claude CLI provider
+
+The `llm-cli` sidecar is opt-in because it needs a Claude subscription token:
+
+1. On the host, run `claude setup-token` and save the printed token into
+   `secrets/claude_oauth_token.txt` (gitignored; never commit it).
+2. Add `COMPOSE_PROFILES=claude-cli` to `.env`.
+3. `docker compose -f deploy/compose.yml --env-file .env up -d --wait`
+
+Without these steps the stack runs normally and the LLM settings report `claude-cli` as unavailable.

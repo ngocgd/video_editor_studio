@@ -124,10 +124,24 @@ jobs:
           export BACKUP_DATABASE_URL="postgres://loomtale_backup:${POSTGRES_BACKUP_PASSWORD}@127.0.0.1:5432/loomtale?sslmode=disable"
           go test -tags=integration ./internal/integration/... -race -count=1 -v
         working-directory: api
-      - name: llm-cli sidecar is healthy (self-check passed, no token required)
+      - name: start the opt-in llm-cli sidecar (no token in CI, so it stays unhealthy by design)
         run: |
-          docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \
+          docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env --profile claude-cli up -d --no-deps llm-cli
+          for _ in $(seq 1 30); do
+            state=$(docker inspect -f '{{.State.Status}}' loomtale-llm-cli-1 2>/dev/null || true)
+            [ "$state" = "running" ] && break
+            sleep 2
+          done
+          [ "$state" = "running" ] || { echo "llm-cli did not start"; exit 1; }
+      - name: llm-cli reports unhealthy without a token (fails closed)
+        run: |
+          if docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \
             node -e "fetch('http://127.0.0.1:8090/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          then
+            echo "FAIL: llm-cli reported healthy with no token"; exit 1
+          else
+            echo "OK: llm-cli fails closed without a token"
+          fi
       - name: llm-cli cannot reach postgres:5432 (not on its network)
         run: |
           if docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \

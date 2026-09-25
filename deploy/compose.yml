@@ -285,7 +285,10 @@ services:
   # mounted (see the security checklist in the phase 4 report). Disabled
   # entirely in APP_MODE=saas (LLMCLI_APP_MODE below), enforced by the
   # api/worker-side claudecli adapter, not by this container itself.
+  # Opt-in: its healthcheck fails without a token, so it only starts when
+  # COMPOSE_PROFILES includes claude-cli (set after `claude setup-token`).
   llm-cli:
+    profiles: ["claude-cli"]
     build:
       context: ..
       dockerfile: deploy/docker/llmcli.Dockerfile
