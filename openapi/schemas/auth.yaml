@@ -1,0 +1,63 @@
+LoginRequest:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      minLength: 8
+TenantMembership:
+  type: object
+  required: [tenantId, tenantName, role]
+  properties:
+    tenantId:
+      type: string
+      format: uuid
+    tenantName:
+      type: string
+    role:
+      $ref: "#/Role"
+Role:
+  type: string
+  enum: [owner, editor, viewer]
+Me:
+  type: object
+  required: [userId, email, tenants]
+  properties:
+    userId:
+      type: string
+      format: uuid
+    email:
+      type: string
+    activeTenantId:
+      type: string
+      format: uuid
+    activeRole:
+      $ref: "#/Role"
+    tenants:
+      type: array
+      items:
+        $ref: "#/TenantMembership"
+LoginResponse:
+  type: object
+  required: [me, csrfToken]
+  properties:
+    me:
+      $ref: "#/Me"
+    csrfToken:
+      type: string
+SwitchTenantRequest:
+  type: object
+  required: [tenantId]
+  properties:
+    tenantId:
+      type: string
+      format: uuid
+CsrfToken:
+  type: object
+  required: [token]
+  properties:
+    token:
+      type: string

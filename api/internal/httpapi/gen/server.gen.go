@@ -9,15 +9,64 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for AssetStatus.
+const (
+	Failed  AssetStatus = "failed"
+	Pending AssetStatus = "pending"
+	Ready   AssetStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the AssetStatus enum.
+func (e AssetStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Pending:
+		return true
+	case Ready:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AssetKind.
+const (
+	Audio    AssetKind = "audio"
+	Document AssetKind = "document"
+	Image    AssetKind = "image"
+	Video    AssetKind = "video"
+)
+
+// Valid indicates whether the value is a known member of the AssetKind enum.
+func (e AssetKind) Valid() bool {
+	switch e {
+	case Audio:
+		return true
+	case Document:
+		return true
+	case Image:
+		return true
+	case Video:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for HealthStatusStatus.
 const (
@@ -49,6 +98,76 @@ func (e ReadyStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for Role.
+const (
+	Editor Role = "editor"
+	Owner  Role = "owner"
+	Viewer Role = "viewer"
+)
+
+// Valid indicates whether the value is a known member of the Role enum.
+func (e Role) Valid() bool {
+	switch e {
+	case Editor:
+		return true
+	case Owner:
+		return true
+	case Viewer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Asset defines model for Asset.
+type Asset struct {
+	Bytes       *int64             `json:"bytes,omitempty"`
+	CreatedAt   time.Time          `json:"createdAt"`
+	DownloadUrl *string            `json:"downloadUrl,omitempty"`
+	DurationMs  *int               `json:"durationMs,omitempty"`
+	Height      *int               `json:"height,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	Kind        AssetKind          `json:"kind"`
+	Mime        string             `json:"mime"`
+	Sha256      *string            `json:"sha256,omitempty"`
+	Status      AssetStatus        `json:"status"`
+	Width       *int               `json:"width,omitempty"`
+}
+
+// AssetStatus defines model for Asset.Status.
+type AssetStatus string
+
+// AssetKind defines model for AssetKind.
+type AssetKind string
+
+// AssetList defines model for AssetList.
+type AssetList struct {
+	Items      []Asset `json:"items"`
+	NextCursor *string `json:"nextCursor,omitempty"`
+}
+
+// AuditEntry defines model for AuditEntry.
+type AuditEntry struct {
+	Action      string                  `json:"action"`
+	ActorUserId *openapi_types.UUID     `json:"actorUserId,omitempty"`
+	CreatedAt   time.Time               `json:"createdAt"`
+	Id          openapi_types.UUID      `json:"id"`
+	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
+	TargetId    *string                 `json:"targetId,omitempty"`
+	TargetType  *string                 `json:"targetType,omitempty"`
+}
+
+// AuditList defines model for AuditList.
+type AuditList struct {
+	Items      []AuditEntry `json:"items"`
+	NextCursor *string      `json:"nextCursor,omitempty"`
+}
+
+// CsrfToken defines model for CsrfToken.
+type CsrfToken struct {
+	Token string `json:"token"`
+}
+
 // HealthStatus defines model for HealthStatus.
 type HealthStatus struct {
 	Status  HealthStatusStatus `json:"status"`
@@ -57,6 +176,43 @@ type HealthStatus struct {
 
 // HealthStatusStatus defines model for HealthStatus.Status.
 type HealthStatusStatus string
+
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	CsrfToken string `json:"csrfToken"`
+	Me        Me     `json:"me"`
+}
+
+// Me defines model for Me.
+type Me struct {
+	ActiveRole     *Role               `json:"activeRole,omitempty"`
+	ActiveTenantId *openapi_types.UUID `json:"activeTenantId,omitempty"`
+	Email          string              `json:"email"`
+	Tenants        []TenantMembership  `json:"tenants"`
+	UserId         openapi_types.UUID  `json:"userId"`
+}
+
+// PresignRequest defines model for PresignRequest.
+type PresignRequest struct {
+	Bytes    int64     `json:"bytes"`
+	Filename *string   `json:"filename,omitempty"`
+	Kind     AssetKind `json:"kind"`
+	Mime     string    `json:"mime"`
+}
+
+// PresignResponse defines model for PresignResponse.
+type PresignResponse struct {
+	AssetId   openapi_types.UUID `json:"assetId"`
+	ExpiresAt time.Time          `json:"expiresAt"`
+	Fields    map[string]string  `json:"fields"`
+	UploadUrl string             `json:"uploadUrl"`
+}
 
 // Problem defines model for Problem.
 type Problem struct {
@@ -76,8 +232,74 @@ type ReadyStatus struct {
 // ReadyStatusStatus defines model for ReadyStatus.Status.
 type ReadyStatusStatus string
 
+// Role defines model for Role.
+type Role string
+
+// SwitchTenantRequest defines model for SwitchTenantRequest.
+type SwitchTenantRequest struct {
+	TenantId openapi_types.UUID `json:"tenantId"`
+}
+
+// TenantMembership defines model for TenantMembership.
+type TenantMembership struct {
+	Role       Role               `json:"role"`
+	TenantId   openapi_types.UUID `json:"tenantId"`
+	TenantName string             `json:"tenantName"`
+}
+
+// ListAssetsParams defines parameters for ListAssets.
+type ListAssetsParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAuditParams defines parameters for ListAudit.
+type ListAuditParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// PresignAssetJSONRequestBody defines body for PresignAsset for application/json ContentType.
+type PresignAssetJSONRequestBody = PresignRequest
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
+// SwitchTenantJSONRequestBody defines body for SwitchTenant for application/json ContentType.
+type SwitchTenantJSONRequestBody = SwitchTenantRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ListAssets Cursor-paginated list of the active tenant's assets
+	// (GET /assets)
+	ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams)
+	// PresignAsset Create a pending asset row and a browser upload URL for it
+	// (POST /assets/presign)
+	PresignAsset(w http.ResponseWriter, r *http.Request)
+	// GetAsset Asset metadata, with a fresh browser download URL if ready
+	// (GET /assets/{id})
+	GetAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// FinalizeAsset Verify an uploaded object and mark the asset ready
+	// (POST /assets/{id}/finalize)
+	FinalizeAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListAudit Cursor-paginated audit log for the active tenant (owner only)
+	// (GET /audit)
+	ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams)
+	// GetCsrf The CSRF token for the current session
+	// (GET /auth/csrf)
+	GetCsrf(w http.ResponseWriter, r *http.Request)
+	// Login Start a session with email + password
+	// (POST /auth/login)
+	Login(w http.ResponseWriter, r *http.Request)
+	// Logout End the current session
+	// (POST /auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+	// GetMe The caller's identity and tenant memberships
+	// (GET /auth/me)
+	GetMe(w http.ResponseWriter, r *http.Request)
+	// SwitchTenant Switch the session's active tenant (must be a member)
+	// (POST /auth/switch-tenant)
+	SwitchTenant(w http.ResponseWriter, r *http.Request)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
@@ -89,6 +311,66 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// ListAssets Cursor-paginated list of the active tenant's assets
+// (GET /assets)
+func (_ Unimplemented) ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PresignAsset Create a pending asset row and a browser upload URL for it
+// (POST /assets/presign)
+func (_ Unimplemented) PresignAsset(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAsset Asset metadata, with a fresh browser download URL if ready
+// (GET /assets/{id})
+func (_ Unimplemented) GetAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// FinalizeAsset Verify an uploaded object and mark the asset ready
+// (POST /assets/{id}/finalize)
+func (_ Unimplemented) FinalizeAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListAudit Cursor-paginated audit log for the active tenant (owner only)
+// (GET /audit)
+func (_ Unimplemented) ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCsrf The CSRF token for the current session
+// (GET /auth/csrf)
+func (_ Unimplemented) GetCsrf(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Login Start a session with email + password
+// (POST /auth/login)
+func (_ Unimplemented) Login(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Logout End the current session
+// (POST /auth/logout)
+func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMe The caller's identity and tenant memberships
+// (GET /auth/me)
+func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SwitchTenant Switch the session's active tenant (must be a member)
+// (POST /auth/switch-tenant)
+func (_ Unimplemented) SwitchTenant(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GetHealthz Liveness probe
 // (GET /healthz)
@@ -110,6 +392,234 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListAssets operation middleware
+func (siw *ServerInterfaceWrapper) ListAssets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAssetsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAssets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PresignAsset operation middleware
+func (siw *ServerInterfaceWrapper) PresignAsset(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PresignAsset(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAsset operation middleware
+func (siw *ServerInterfaceWrapper) GetAsset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAsset(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// FinalizeAsset operation middleware
+func (siw *ServerInterfaceWrapper) FinalizeAsset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FinalizeAsset(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudit operation middleware
+func (siw *ServerInterfaceWrapper) ListAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudit(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCsrf operation middleware
+func (siw *ServerInterfaceWrapper) GetCsrf(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCsrf(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMe operation middleware
+func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SwitchTenant operation middleware
+func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SwitchTenant(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetHealthz operation middleware
 func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Request) {
@@ -258,8 +768,347 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/readyz", wrapper.GetReadyz)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/login", wrapper.Login)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/auth/me", wrapper.GetMe)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/switch-tenant", wrapper.SwitchTenant)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/auth/csrf", wrapper.GetCsrf)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/assets/presign", wrapper.PresignAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/assets/{id}/finalize", wrapper.FinalizeAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/assets/{id}", wrapper.GetAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/assets", wrapper.ListAssets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/audit", wrapper.ListAudit)
+	})
 
 	return r
+}
+
+type ListAssetsRequestObject struct {
+	Params ListAssetsParams
+}
+
+type ListAssetsResponseObject interface {
+	VisitListAssetsResponse(w http.ResponseWriter) error
+}
+
+type ListAssets200JSONResponse AssetList
+
+func (response ListAssets200JSONResponse) VisitListAssetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PresignAssetRequestObject struct {
+	Body *PresignAssetJSONRequestBody
+}
+
+type PresignAssetResponseObject interface {
+	VisitPresignAssetResponse(w http.ResponseWriter) error
+}
+
+type PresignAsset201JSONResponse PresignResponse
+
+func (response PresignAsset201JSONResponse) VisitPresignAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PresignAsset400ApplicationProblemPlusJSONResponse Problem
+
+func (response PresignAsset400ApplicationProblemPlusJSONResponse) VisitPresignAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAssetRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetAssetResponseObject interface {
+	VisitGetAssetResponse(w http.ResponseWriter) error
+}
+
+type GetAsset200JSONResponse Asset
+
+func (response GetAsset200JSONResponse) VisitGetAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAsset404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAsset404ApplicationProblemPlusJSONResponse) VisitGetAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FinalizeAssetRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type FinalizeAssetResponseObject interface {
+	VisitFinalizeAssetResponse(w http.ResponseWriter) error
+}
+
+type FinalizeAsset200JSONResponse Asset
+
+func (response FinalizeAsset200JSONResponse) VisitFinalizeAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FinalizeAsset404ApplicationProblemPlusJSONResponse Problem
+
+func (response FinalizeAsset404ApplicationProblemPlusJSONResponse) VisitFinalizeAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FinalizeAsset422ApplicationProblemPlusJSONResponse Problem
+
+func (response FinalizeAsset422ApplicationProblemPlusJSONResponse) VisitFinalizeAssetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditRequestObject struct {
+	Params ListAuditParams
+}
+
+type ListAuditResponseObject interface {
+	VisitListAuditResponse(w http.ResponseWriter) error
+}
+
+type ListAudit200JSONResponse AuditList
+
+func (response ListAudit200JSONResponse) VisitListAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCsrfRequestObject struct {
+}
+
+type GetCsrfResponseObject interface {
+	VisitGetCsrfResponse(w http.ResponseWriter) error
+}
+
+type GetCsrf200JSONResponse CsrfToken
+
+func (response GetCsrf200JSONResponse) VisitGetCsrfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoginRequestObject struct {
+	Body *LoginJSONRequestBody
+}
+
+type LoginResponseObject interface {
+	VisitLoginResponse(w http.ResponseWriter) error
+}
+
+type Login200JSONResponse LoginResponse
+
+func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Login401ApplicationProblemPlusJSONResponse Problem
+
+func (response Login401ApplicationProblemPlusJSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Login429ApplicationProblemPlusJSONResponse Problem
+
+func (response Login429ApplicationProblemPlusJSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LogoutRequestObject struct {
+}
+
+type LogoutResponseObject interface {
+	VisitLogoutResponse(w http.ResponseWriter) error
+}
+
+type Logout204Response struct {
+}
+
+func (response Logout204Response) VisitLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GetMeRequestObject struct {
+}
+
+type GetMeResponseObject interface {
+	VisitGetMeResponse(w http.ResponseWriter) error
+}
+
+type GetMe200JSONResponse Me
+
+func (response GetMe200JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchTenantRequestObject struct {
+	Body *SwitchTenantJSONRequestBody
+}
+
+type SwitchTenantResponseObject interface {
+	VisitSwitchTenantResponse(w http.ResponseWriter) error
+}
+
+type SwitchTenant200JSONResponse Me
+
+func (response SwitchTenant200JSONResponse) VisitSwitchTenantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchTenant404ApplicationProblemPlusJSONResponse Problem
+
+func (response SwitchTenant404ApplicationProblemPlusJSONResponse) VisitSwitchTenantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type GetHealthzRequestObject struct {
@@ -320,6 +1169,36 @@ func (response GetReadyz503ApplicationProblemPlusJSONResponse) VisitGetReadyzRes
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ListAssets Cursor-paginated list of the active tenant's assets
+	// (GET /assets)
+	ListAssets(ctx context.Context, request ListAssetsRequestObject) (ListAssetsResponseObject, error)
+	// PresignAsset Create a pending asset row and a browser upload URL for it
+	// (POST /assets/presign)
+	PresignAsset(ctx context.Context, request PresignAssetRequestObject) (PresignAssetResponseObject, error)
+	// GetAsset Asset metadata, with a fresh browser download URL if ready
+	// (GET /assets/{id})
+	GetAsset(ctx context.Context, request GetAssetRequestObject) (GetAssetResponseObject, error)
+	// FinalizeAsset Verify an uploaded object and mark the asset ready
+	// (POST /assets/{id}/finalize)
+	FinalizeAsset(ctx context.Context, request FinalizeAssetRequestObject) (FinalizeAssetResponseObject, error)
+	// ListAudit Cursor-paginated audit log for the active tenant (owner only)
+	// (GET /audit)
+	ListAudit(ctx context.Context, request ListAuditRequestObject) (ListAuditResponseObject, error)
+	// GetCsrf The CSRF token for the current session
+	// (GET /auth/csrf)
+	GetCsrf(ctx context.Context, request GetCsrfRequestObject) (GetCsrfResponseObject, error)
+	// Login Start a session with email + password
+	// (POST /auth/login)
+	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+	// Logout End the current session
+	// (POST /auth/logout)
+	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// GetMe The caller's identity and tenant memberships
+	// (GET /auth/me)
+	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// SwitchTenant Switch the session's active tenant (must be a member)
+	// (POST /auth/switch-tenant)
+	SwitchTenant(ctx context.Context, request SwitchTenantRequestObject) (SwitchTenantResponseObject, error)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
@@ -365,6 +1244,275 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ListAssets operation middleware
+func (sh *strictHandler) ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams) {
+	var request ListAssetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAssets(ctx, request.(ListAssetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAssets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAssetsResponseObject); ok {
+		if err := validResponse.VisitListAssetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PresignAsset operation middleware
+func (sh *strictHandler) PresignAsset(w http.ResponseWriter, r *http.Request) {
+	var request PresignAssetRequestObject
+
+	var body PresignAssetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PresignAsset(ctx, request.(PresignAssetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PresignAsset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PresignAssetResponseObject); ok {
+		if err := validResponse.VisitPresignAssetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAsset operation middleware
+func (sh *strictHandler) GetAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetAssetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAsset(ctx, request.(GetAssetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAsset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAssetResponseObject); ok {
+		if err := validResponse.VisitGetAssetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// FinalizeAsset operation middleware
+func (sh *strictHandler) FinalizeAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request FinalizeAssetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.FinalizeAsset(ctx, request.(FinalizeAssetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "FinalizeAsset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(FinalizeAssetResponseObject); ok {
+		if err := validResponse.VisitFinalizeAssetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudit operation middleware
+func (sh *strictHandler) ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams) {
+	var request ListAuditRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudit(ctx, request.(ListAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAuditResponseObject); ok {
+		if err := validResponse.VisitListAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCsrf operation middleware
+func (sh *strictHandler) GetCsrf(w http.ResponseWriter, r *http.Request) {
+	var request GetCsrfRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCsrf(ctx, request.(GetCsrfRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCsrf")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCsrfResponseObject); ok {
+		if err := validResponse.VisitGetCsrfResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Login operation middleware
+func (sh *strictHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var request LoginRequestObject
+
+	var body LoginJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Login(ctx, request.(LoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Login")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LoginResponseObject); ok {
+		if err := validResponse.VisitLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Logout operation middleware
+func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var request LogoutRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Logout(ctx, request.(LogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Logout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LogoutResponseObject); ok {
+		if err := validResponse.VisitLogoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMe operation middleware
+func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	var request GetMeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMe(ctx, request.(GetMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMeResponseObject); ok {
+		if err := validResponse.VisitGetMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SwitchTenant operation middleware
+func (sh *strictHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
+	var request SwitchTenantRequestObject
+
+	var body SwitchTenantJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SwitchTenant(ctx, request.(SwitchTenantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SwitchTenant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SwitchTenantResponseObject); ok {
+		if err := validResponse.VisitSwitchTenantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetHealthz operation middleware
@@ -420,15 +1568,38 @@ func (sh *strictHandler) GetReadyz(w http.ResponseWriter, r *http.Request) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

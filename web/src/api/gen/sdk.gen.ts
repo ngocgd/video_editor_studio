@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthzData, GetHealthzResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses } from './types.gen';
+import type { FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetHealthzData, GetHealthzResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -27,3 +27,74 @@ export const getHealthz = <ThrowOnError extends boolean = false>(options?: Optio
  * Readiness probe (checks Postgres and MinIO)
  */
 export const getReadyz = <ThrowOnError extends boolean = false>(options?: Options<GetReadyzData, ThrowOnError>): RequestResult<GetReadyzResponses, GetReadyzErrors, ThrowOnError> => (options?.client ?? client).get<GetReadyzResponses, GetReadyzErrors, ThrowOnError>({ url: '/readyz', ...options });
+
+/**
+ * Start a session with email + password
+ */
+export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>): RequestResult<LoginResponses, LoginErrors, ThrowOnError> => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
+    url: '/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * End the current session
+ */
+export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>): RequestResult<LogoutResponses, unknown, ThrowOnError> => (options?.client ?? client).post<LogoutResponses, unknown, ThrowOnError>({ url: '/auth/logout', ...options });
+
+/**
+ * The caller's identity and tenant memberships
+ */
+export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, unknown, ThrowOnError>({ url: '/auth/me', ...options });
+
+/**
+ * Switch the session's active tenant (must be a member)
+ */
+export const switchTenant = <ThrowOnError extends boolean = false>(options: Options<SwitchTenantData, ThrowOnError>): RequestResult<SwitchTenantResponses, SwitchTenantErrors, ThrowOnError> => (options.client ?? client).post<SwitchTenantResponses, SwitchTenantErrors, ThrowOnError>({
+    url: '/auth/switch-tenant',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The CSRF token for the current session
+ */
+export const getCsrf = <ThrowOnError extends boolean = false>(options?: Options<GetCsrfData, ThrowOnError>): RequestResult<GetCsrfResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetCsrfResponses, unknown, ThrowOnError>({ url: '/auth/csrf', ...options });
+
+/**
+ * Create a pending asset row and a browser upload URL for it
+ */
+export const presignAsset = <ThrowOnError extends boolean = false>(options: Options<PresignAssetData, ThrowOnError>): RequestResult<PresignAssetResponses, PresignAssetErrors, ThrowOnError> => (options.client ?? client).post<PresignAssetResponses, PresignAssetErrors, ThrowOnError>({
+    url: '/assets/presign',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Verify an uploaded object and mark the asset ready
+ */
+export const finalizeAsset = <ThrowOnError extends boolean = false>(options: Options<FinalizeAssetData, ThrowOnError>): RequestResult<FinalizeAssetResponses, FinalizeAssetErrors, ThrowOnError> => (options.client ?? client).post<FinalizeAssetResponses, FinalizeAssetErrors, ThrowOnError>({ url: '/assets/{id}/finalize', ...options });
+
+/**
+ * Asset metadata, with a fresh browser download URL if ready
+ */
+export const getAsset = <ThrowOnError extends boolean = false>(options: Options<GetAssetData, ThrowOnError>): RequestResult<GetAssetResponses, GetAssetErrors, ThrowOnError> => (options.client ?? client).get<GetAssetResponses, GetAssetErrors, ThrowOnError>({ url: '/assets/{id}', ...options });
+
+/**
+ * Cursor-paginated list of the active tenant's assets
+ */
+export const listAssets = <ThrowOnError extends boolean = false>(options?: Options<ListAssetsData, ThrowOnError>): RequestResult<ListAssetsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListAssetsResponses, unknown, ThrowOnError>({ url: '/assets', ...options });
+
+/**
+ * Cursor-paginated audit log for the active tenant (owner only)
+ */
+export const listAudit = <ThrowOnError extends boolean = false>(options?: Options<ListAuditData, ThrowOnError>): RequestResult<ListAuditResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListAuditResponses, unknown, ThrowOnError>({ url: '/audit', ...options });

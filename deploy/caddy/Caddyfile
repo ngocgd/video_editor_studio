@@ -1,26 +1,29 @@
 :8080 {
 	encode gzip
 
-	# CSP per the approved plan decision: self-only scripts, inline styles
-	# allowed (Tailwind/shadcn), Trusted Types enforced, no plugin objects.
-	header {
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; require-trusted-types-for 'script'"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "no-referrer"
+	# `handle` blocks are mutually exclusive and match top to bottom, so
+	# /api/* responses carry only the API's own security headers
+	# (api/internal/secheaders) unmodified, and static SPA responses carry
+	# only Caddy's copy below. Stacking both sets of headers on the same
+	# response (the previous `header` + `route`/reverse_proxy shape did
+	# this) is invalid: a client seeing two Content-Security-Policy
+	# headers must enforce the most restrictive of an ambiguous set,
+	# which is not what either side intended.
+	handle /api/* {
+		reverse_proxy api:8080
 	}
 
-	# `route` preserves the written order below. Without it, Caddy's default
-	# directive sort runs `try_files` before `reverse_proxy`, so it rewrites
-	# any non-static path (including /api/v1/healthz) to /index.html before
-	# the proxy matcher ever sees the original path.
-	route {
-		# A trailing `*` as the final path segment is Caddy's greedy form
-		# and matches the rest of the path across additional slashes (unlike
-		# a `*` elsewhere, which only matches within one segment). `**` is
-		# not special syntax here and only matched a single segment.
-		reverse_proxy /api/* api:8080
-
+	handle {
+		# Enforcing CSP, never Report-Only. {$MEDIA_ORIGIN} is the same env
+		# var the API reads for its own copy of this header
+		# (api/internal/secheaders), so both always send byte-identical
+		# values on their own responses.
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; object-src 'none'; img-src 'self' blob: data: {$MEDIA_ORIGIN}; media-src 'self' blob: {$MEDIA_ORIGIN}; connect-src 'self' {$MEDIA_ORIGIN}; font-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; require-trusted-types-for 'script'; trusted-types default dompurify"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "strict-origin-when-cross-origin"
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		}
 		root * /srv
 		try_files {path} /index.html
 		file_server

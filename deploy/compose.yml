@@ -9,6 +9,28 @@ secrets:
     file: ../secrets/minio_root_user.txt
   minio_root_password:
     file: ../secrets/minio_root_password.txt
+  # Postgres role passwords, read only by the postgres container's own
+  # init script (deploy/postgres/init-roles.sh, via docker-entrypoint-initdb.d)
+  # to create loomtale_owner/loomtale_app on first boot. The API/worker/
+  # migrate/backup services connect using the same values from
+  # POSTGRES_OWNER_PASSWORD/POSTGRES_APP_PASSWORD in .env, the same
+  # operator-provisioned-once pattern already used for the MinIO app key
+  # below (never generated at runtime, never requiring a post-boot
+  # copy-paste from logs).
+  postgres_owner_password:
+    file: ../secrets/postgres_owner_password.txt
+  postgres_app_password:
+    file: ../secrets/postgres_app_password.txt
+  # Envelope-encryption KEK: 32 raw bytes, base64-encoded. The process
+  # refuses to start without it (api/internal/crypto/envelope).
+  master_key:
+    file: ../secrets/master_key.txt
+  # Client-side encryption key + credentials for the nightly backup's
+  # upload to the cloud backup bucket (deploy/backup/backup.sh).
+  backup_encryption_key:
+    file: ../secrets/backup_encryption_key.txt
+  backup_target_credentials:
+    file: ../secrets/backup_target_credentials.txt
 
 services:
   postgres:
@@ -16,6 +38,7 @@ services:
     mem_limit: 1.5g
     restart: unless-stopped
     networks: [loomtale_core]
+    secrets: [postgres_owner_password, postgres_app_password]
     environment:
       POSTGRES_USER: loomtale
       POSTGRES_PASSWORD: loomtale
@@ -26,8 +49,11 @@ services:
       - "shared_buffers=512MB"
       - "-c"
       - "max_wal_size=2GB"
+      - "-c"
+      - "wal_compression=on"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./postgres/init-roles.sh:/docker-entrypoint-initdb.d/init-roles.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U loomtale -d loomtale"]
       interval: 5s
@@ -68,12 +94,39 @@ services:
     mem_limit: 128m
     networks: [loomtale_core]
     secrets: [minio_root_user, minio_root_password]
+    environment:
+      MINIO_BUCKET: loomtale
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://127.0.0.1:8080}
+      # Provisioned once by the operator in .env (never generated at
+      # runtime), the same values the api service reads below: this is
+      # what lets a fresh `docker compose up --wait` reach a healthy
+      # /readyz with no manual post-boot step.
+      APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:?set MINIO_APP_ACCESS_KEY in .env, see .env.example}
+      APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:?set MINIO_APP_SECRET_KEY in .env, see .env.example}
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: ["/bin/bash", "/init/minio-init.sh"]
     volumes:
       - ./minio-init.sh:/init/minio-init.sh:ro
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: "no"
+
+  migrate:
+    image: loomtale/api:local
+    build:
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+    mem_limit: 256m
+    networks: [loomtale_core]
+    environment:
+      DATABASE_URL: postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
+    entrypoint: ["/usr/local/bin/loomtale", "migrate", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     restart: "no"
@@ -91,15 +144,23 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    secrets: [master_key]
     environment:
       API_ADDR: ":8080"
       API_LOG_LEVEL: info
       API_SHUTDOWN_TIMEOUT: 25s
-      DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
+      DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
       MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: 127.0.0.1:9000
       MINIO_BUCKET: loomtale
-      MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:-}
-      MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:-}
+      MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:?set MINIO_APP_ACCESS_KEY in .env, see .env.example}
+      MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:?set MINIO_APP_SECRET_KEY in .env, see .env.example}
+      MASTER_KEY_PATH: /run/secrets/master_key
+      ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://127.0.0.1:8080}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
     healthcheck:
       test: ["CMD", "/usr/local/bin/api", "healthcheck"]
       interval: 5s
@@ -121,9 +182,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       API_LOG_LEVEL: info
-      DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
+      DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
@@ -146,6 +209,8 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:8080:8080"
+    environment:
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
       interval: 5s
@@ -153,6 +218,37 @@ services:
       retries: 10
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+
+  backup:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backup.Dockerfile
+    image: loomtale/backup:local
+    mem_limit: 512m
+    networks: [loomtale_core]
+    secrets: [minio_root_user, minio_root_password, backup_encryption_key, backup_target_credentials]
+    environment:
+      TZ: Asia/Bangkok
+      DATABASE_URL: postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
+      MINIO_ENDPOINT: minio:9000
+      MINIO_BUCKET: loomtale
+      BACKUP_TARGET: ${BACKUP_TARGET:-}
+      # Nightly at 03:00 Asia/Bangkok; the container's own TZ (set above)
+      # makes crond interpret this schedule in local time.
+      BACKUP_SCHEDULE: "0 3 * * *"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/spool/cron
+      - /var/run
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
 
 volumes:
   pgdata:

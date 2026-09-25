@@ -5,12 +5,116 @@
 package gen
 
 import (
+	"net/netip"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Asset struct {
+	ID         pgtype.UUID        `json:"id"`
+	TenantID   pgtype.UUID        `json:"tenant_id"`
+	Kind       string             `json:"kind"`
+	StorageKey string             `json:"storage_key"`
+	Mime       string             `json:"mime"`
+	Bytes      pgtype.Int8        `json:"bytes"`
+	Sha256     pgtype.Text        `json:"sha256"`
+	Width      pgtype.Int4        `json:"width"`
+	Height     pgtype.Int4        `json:"height"`
+	DurationMs pgtype.Int4        `json:"duration_ms"`
+	Variants   []byte             `json:"variants"`
+	Status     string             `json:"status"`
+	CreatedBy  pgtype.UUID        `json:"created_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AuditLog struct {
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	ActorUserID pgtype.UUID        `json:"actor_user_id"`
+	Action      string             `json:"action"`
+	TargetType  pgtype.Text        `json:"target_type"`
+	TargetID    pgtype.Text        `json:"target_id"`
+	Metadata    []byte             `json:"metadata"`
+	Ip          *netip.Addr        `json:"ip"`
+	UserAgent   pgtype.Text        `json:"user_agent"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type BackupRun struct {
+	ID         pgtype.UUID        `json:"id"`
+	StartedAt  pgtype.Timestamptz `json:"started_at"`
+	FinishedAt pgtype.Timestamptz `json:"finished_at"`
+	Status     string             `json:"status"`
+	Detail     pgtype.Text        `json:"detail"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
 
 type GooseDbVersion struct {
 	ID        int32            `json:"id"`
 	VersionID int64            `json:"version_id"`
 	IsApplied bool             `json:"is_applied"`
 	Tstamp    pgtype.Timestamp `json:"tstamp"`
+}
+
+type Membership struct {
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Role      string             `json:"role"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RateLimitBucket struct {
+	BucketKey string             `json:"bucket_key"`
+	Tokens    float32            `json:"tokens"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Secret struct {
+	ID         pgtype.UUID        `json:"id"`
+	TenantID   pgtype.UUID        `json:"tenant_id"`
+	Kind       string             `json:"kind"`
+	OwnerRef   string             `json:"owner_ref"`
+	KeyID      string             `json:"key_id"`
+	WrappedDek []byte             `json:"wrapped_dek"`
+	Nonce      []byte             `json:"nonce"`
+	Ciphertext []byte             `json:"ciphertext"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Session struct {
+	ID             pgtype.UUID        `json:"id"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	ActiveTenantID pgtype.UUID        `json:"active_tenant_id"`
+	TokenHash      []byte             `json:"token_hash"`
+	CsrfTokenHash  []byte             `json:"csrf_token_hash"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	LastSeenAt     pgtype.Timestamptz `json:"last_seen_at"`
+	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt      pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type Tenant struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TenantQuota struct {
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	MaxRendersPerDay pgtype.Int4        `json:"max_renders_per_day"`
+	MaxStorageBytes  pgtype.Int8        `json:"max_storage_bytes"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type User struct {
+	ID           pgtype.UUID        `json:"id"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }

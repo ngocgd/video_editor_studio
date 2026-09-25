@@ -8,15 +8,23 @@ import (
 	"loomtale/api/internal/httpapi/gen"
 )
 
-// Handler implements the generated strict server interface for the health
-// domain (/healthz, /readyz).
+// Handler implements the health slice of the generated strict server
+// interface (/healthz, /readyz). The full interface is satisfied by the
+// composite server in cmd/api, which embeds every domain handler.
 type Handler struct {
 	Version string
 	DB      Pinger
 	Storage Pinger
+	// Backup is optional (nil in tests): it reports nightly backup
+	// freshness as a /readyz detail, never as a gating failure, since a
+	// stale backup should page an operator, not take the API down.
+	Backup BackupStatus
 }
 
-var _ gen.StrictServerInterface = (*Handler)(nil)
+// BackupStatus reports the freshness of the most recent backup run.
+type BackupStatus interface {
+	Status(ctx context.Context) string
+}
 
 // GetHealthz answers the liveness probe: process is up, no dependency check.
 func (h *Handler) GetHealthz(ctx context.Context, _ gen.GetHealthzRequestObject) (gen.GetHealthzResponseObject, error) {
@@ -47,6 +55,10 @@ func (h *Handler) GetReadyz(ctx context.Context, _ gen.GetReadyzRequestObject) (
 		ready = false
 	} else {
 		checks["storage"] = "ok"
+	}
+
+	if h.Backup != nil {
+		checks["backup"] = h.Backup.Status(ctx)
 	}
 
 	if !ready {

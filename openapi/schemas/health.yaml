@@ -18,20 +18,3 @@ ReadyStatus:
       type: object
       additionalProperties:
         type: string
-# RFC 9457 problem+json error body, shared by every domain.
-Problem:
-  type: object
-  required: [title, status]
-  properties:
-    type:
-      type: string
-      format: uri
-    title:
-      type: string
-    status:
-      type: integer
-    detail:
-      type: string
-    instance:
-      type: string
-      format: uri

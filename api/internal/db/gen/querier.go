@@ -6,12 +6,65 @@ package gen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	CompleteBackupRun(ctx context.Context, arg CompleteBackupRunParams) error
+	// Consumes one token if at least one is available; the caller checks the
+	// returned row count (1 = allowed, 0 = the bucket was already empty).
+	ConsumeRateLimitBucket(ctx context.Context, bucketKey string) (int64, error)
+	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
+	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
+	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteSession(ctx context.Context, id pgtype.UUID) error
+	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
+	// Used to check ownership of a key before signing or finalizing it.
+	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
+	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
+	// Every cross-tenant lookup goes through this query so an attacker probing
+	// another tenant's resources gets the same "not found" as a real 404.
+	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	// Placeholder query proving the sqlc -> pgx/v5 pipeline against goose's own
 	// version table. Later phases add domain queries here and in sibling files.
 	GetSchemaVersion(ctx context.Context) (GetSchemaVersionRow, error)
+	GetSecret(ctx context.Context, arg GetSecretParams) (Secret, error)
+	GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error)
+	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
+	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	// lint-tenant-queries:allow: by design this lists every tenant the user
+	// belongs to (e.g. to populate the tenant switcher); it is scoped by
+	// user_id, not tenant_id, because no single tenant is selected yet.
+	ListMembershipsForUser(ctx context.Context, userID pgtype.UUID) ([]ListMembershipsForUserRow, error)
+	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
+	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	// Upserts a token bucket, refilling it by elapsed time since its last
+	// update, and returns the refilled token count. Deliberately a separate
+	// statement from the conditional decrement in ConsumeRateLimitBucket: a
+	// data-modifying CTE and a second statement/CTE both targeting the same
+	// table within one query execute against the same MVCC snapshot (see
+	// "WITH Queries" in the Postgres docs), so a brand-new bucket's insert is
+	// never visible to a sibling write in that same statement. Two
+	// round-trip statements sidestep that entirely, at the cost of a small
+	// race window under heavy concurrent load on the same key, which a login
+	// rate limiter does not need to close precisely.
+	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
+	// Used on login (session fixation defence) and on tenant switch.
+	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	// Refreshes only the CSRF token, leaving the session's own token_hash (and
+	// therefore the client's cookie) untouched.
+	UpdateSessionCSRF(ctx context.Context, arg UpdateSessionCSRFParams) error
+	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 }
 
 var _ Querier = (*Queries)(nil)

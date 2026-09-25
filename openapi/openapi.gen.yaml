@@ -12,6 +12,7 @@ paths:
       summary: Liveness probe
       tags:
         - health
+      x-min-role: public
       responses:
         '200':
           description: process is alive
@@ -25,6 +26,7 @@ paths:
       summary: Readiness probe (checks Postgres and MinIO)
       tags:
         - health
+      x-min-role: public
       responses:
         '200':
           description: all dependencies are reachable
@@ -38,6 +40,238 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /auth/login:
+    post:
+      operationId: login
+      summary: Start a session with email + password
+      tags:
+        - auth
+      x-min-role: public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: session established; the session cookie is set via Set-Cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: invalid credentials
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: too many attempts
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: End the current session
+      tags:
+        - auth
+      x-min-role: viewer
+      responses:
+        '204':
+          description: session ended
+  /auth/me:
+    get:
+      operationId: getMe
+      summary: The caller's identity and tenant memberships
+      tags:
+        - auth
+      x-min-role: viewer
+      responses:
+        '200':
+          description: current identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+  /auth/switch-tenant:
+    post:
+      operationId: switchTenant
+      summary: Switch the session's active tenant (must be a member)
+      tags:
+        - auth
+      x-min-role: viewer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchTenantRequest'
+      responses:
+        '200':
+          description: active tenant switched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '404':
+          description: not a member of that tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /auth/csrf:
+    get:
+      operationId: getCsrf
+      summary: The CSRF token for the current session
+      tags:
+        - auth
+      x-min-role: viewer
+      responses:
+        '200':
+          description: current CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+  /assets/presign:
+    post:
+      operationId: presignAsset
+      summary: Create a pending asset row and a browser upload URL for it
+      tags:
+        - assets
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignRequest'
+      responses:
+        '201':
+          description: pending asset created with a presigned POST policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignResponse'
+        '400':
+          description: unsupported kind/mime or size over the per-kind cap
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /assets/{id}/finalize:
+    post:
+      operationId: finalizeAsset
+      summary: Verify an uploaded object and mark the asset ready
+      tags:
+        - assets
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: asset verified and marked ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '404':
+          description: asset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: object missing, MIME sniff mismatch, or size/type not allowed for kind
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /assets/{id}:
+    get:
+      operationId: getAsset
+      summary: Asset metadata, with a fresh browser download URL if ready
+      tags:
+        - assets
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: asset metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '404':
+          description: asset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /assets:
+    get:
+      operationId: listAssets
+      summary: Cursor-paginated list of the active tenant's assets
+      tags:
+        - assets
+      x-min-role: viewer
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: page of assets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetList'
+  /audit:
+    get:
+      operationId: listAudit
+      summary: Cursor-paginated audit log for the active tenant (owner only)
+      tags:
+        - audit
+      x-min-role: owner
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: page of audit entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditList'
 components:
   schemas:
     Problem:
@@ -83,3 +317,212 @@ components:
           type: object
           additionalProperties:
             type: string
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    Role:
+      type: string
+      enum:
+        - owner
+        - editor
+        - viewer
+    TenantMembership:
+      type: object
+      required:
+        - tenantId
+        - tenantName
+        - role
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantName:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+    Me:
+      type: object
+      required:
+        - userId
+        - email
+        - tenants
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        activeTenantId:
+          type: string
+          format: uuid
+        activeRole:
+          $ref: '#/components/schemas/Role'
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantMembership'
+    LoginResponse:
+      type: object
+      required:
+        - me
+        - csrfToken
+      properties:
+        me:
+          $ref: '#/components/schemas/Me'
+        csrfToken:
+          type: string
+    SwitchTenantRequest:
+      type: object
+      required:
+        - tenantId
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+    CsrfToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+    AssetKind:
+      type: string
+      enum:
+        - image
+        - audio
+        - video
+        - document
+    PresignRequest:
+      type: object
+      required:
+        - kind
+        - mime
+        - bytes
+      properties:
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        mime:
+          type: string
+        bytes:
+          type: integer
+          format: int64
+          minimum: 1
+        filename:
+          type: string
+    PresignResponse:
+      type: object
+      required:
+        - assetId
+        - uploadUrl
+        - fields
+        - expiresAt
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+          format: uri
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
+    Asset:
+      type: object
+      required:
+        - id
+        - kind
+        - mime
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        mime:
+          type: string
+        bytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        durationMs:
+          type: integer
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - failed
+        downloadUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+    AssetList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+        nextCursor:
+          type: string
+    AuditEntry:
+      type: object
+      required:
+        - id
+        - action
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    AuditList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        nextCursor:
+          type: string

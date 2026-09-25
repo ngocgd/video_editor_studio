@@ -33,15 +33,20 @@ gen-check: gen
 lint:
 	cd api && go vet ./...
 	cd api && golangci-lint run ./...
+	cd tools && go vet ./...
+	cd tools && go build -o ../api/bin/tenantctx ./tenantctx/cmd/tenantctx
+	cd api && ./bin/tenantctx ./...
+	bash scripts/lint-tenant-queries.sh
 	cd workers-python && uv run ruff check .
 	cd web && npm run lint
 
 test:
 	cd api && go test ./... -race -count=1
+	cd tools && go test ./... -race -count=1
 	cd workers-python && uv run pytest -q
 
 test-integration:
-	cd api && go test ./internal/workerpb/... -tags=integration -run "$(RUN)" -v -count=1
+	cd api && go test ./internal/workerpb/... ./internal/integration/... -tags=integration -run "$(RUN)" -v -count=1
 
 vuln:
 	cd api && go tool govulncheck ./...

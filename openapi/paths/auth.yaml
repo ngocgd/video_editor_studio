@@ -1,0 +1,91 @@
+login:
+  post:
+    operationId: login
+    summary: Start a session with email + password
+    tags: [auth]
+    x-min-role: public
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/auth.yaml#/LoginRequest"
+    responses:
+      "200":
+        description: session established; the session cookie is set via Set-Cookie
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/LoginResponse"
+      "401":
+        description: invalid credentials
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: too many attempts
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+logout:
+  post:
+    operationId: logout
+    summary: End the current session
+    tags: [auth]
+    x-min-role: viewer
+    responses:
+      "204":
+        description: session ended
+me:
+  get:
+    operationId: getMe
+    summary: The caller's identity and tenant memberships
+    tags: [auth]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: current identity
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/Me"
+switchTenant:
+  post:
+    operationId: switchTenant
+    summary: Switch the session's active tenant (must be a member)
+    tags: [auth]
+    x-min-role: viewer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/auth.yaml#/SwitchTenantRequest"
+    responses:
+      "200":
+        description: active tenant switched
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/Me"
+      "404":
+        description: not a member of that tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+csrf:
+  get:
+    operationId: getCsrf
+    summary: The CSRF token for the current session
+    tags: [auth]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: current CSRF token
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/auth.yaml#/CsrfToken"

@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"loomtale/api/internal/obs/scrub"
 )
 
 // NewLogger returns a JSON slog.Logger reading its level from the given
@@ -23,7 +25,8 @@ func NewLogger(level string) *slog.Logger {
 	}
 
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: lvl,
+		Level:       lvl,
+		ReplaceAttr: scrub.ReplaceAttr,
 	})
 	return slog.New(handler)
 }
