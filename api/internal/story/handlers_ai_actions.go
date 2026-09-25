@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	authpkg "loomtale/api/internal/auth"
+	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/pipeline"
