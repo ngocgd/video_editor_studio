@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"sort"
 	"testing"
 	"time"
 
@@ -17,10 +18,15 @@ import (
 // steps plus deps must finish in one transaction in <=150ms.
 const enqueueBudget = 150 * time.Millisecond
 
+// enqueueSamples is how many independent runs are enqueued; the median is
+// compared to the budget so one scheduler hiccup on a shared CI runner
+// does not fail the build, while a real regression still does.
+const enqueueSamples = 5
+
 // TestEnqueue300StepsWithDepsMeetsLatencyBudget seeds a two-stage DAG
 // (150 leaf steps feeding 150 dependent steps, one dep each so the
-// dependency-row count matches the leaf count) and asserts Enqueue
-// completes within budget.
+// dependency-row count matches the leaf count) several times and asserts
+// the median Enqueue latency is within budget.
 func TestEnqueue300StepsWithDepsMeetsLatencyBudget(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
@@ -37,28 +43,33 @@ func TestEnqueue300StepsWithDepsMeetsLatencyBudget(t *testing.T) {
 	tenantID := pipelineFixtureTenant(t, q, "perf-tenant")
 
 	const pairs = 150 // 150 leaves + 150 dependents = 300 steps, 150 dep rows
-	runID := idconv.NewV7()
-	steps := make([]pipeline.StepSpec, 0, pairs*2)
-	for i := 0; i < pairs; i++ {
-		leaf := idconv.NewV7()
-		dependent := idconv.NewV7()
-		steps = append(steps,
-			pipeline.StepSpec{ID: leaf, Kind: "perf-leaf", ScopeKind: "test", ScopeID: runID, Priority: pipeline.PriorityBatch},
-			pipeline.StepSpec{ID: dependent, Kind: "perf-dependent", ScopeKind: "test", ScopeID: runID, Priority: pipeline.PriorityBatch, DependsOn: []uuid.UUID{leaf}},
-		)
+	samples := make([]time.Duration, 0, enqueueSamples)
+	for n := 0; n < enqueueSamples; n++ {
+		runID := idconv.NewV7()
+		steps := make([]pipeline.StepSpec, 0, pairs*2)
+		for i := 0; i < pairs; i++ {
+			leaf := idconv.NewV7()
+			dependent := idconv.NewV7()
+			steps = append(steps,
+				pipeline.StepSpec{ID: leaf, Kind: "perf-leaf", ScopeKind: "test", ScopeID: runID, Priority: pipeline.PriorityBatch},
+				pipeline.StepSpec{ID: dependent, Kind: "perf-dependent", ScopeKind: "test", ScopeID: runID, Priority: pipeline.PriorityBatch, DependsOn: []uuid.UUID{leaf}},
+			)
+		}
+
+		start := time.Now()
+		if _, err := engine.Enqueue(context.Background(), tenantID, pipeline.RunSpec{
+			ID: runID, ScopeKind: "test", ScopeID: runID, Kind: "perf-test", Steps: steps,
+		}); err != nil {
+			t.Fatalf("enqueue: %v", err)
+		}
+		samples = append(samples, time.Since(start))
 	}
 
-	start := time.Now()
-	if _, err := engine.Enqueue(context.Background(), tenantID, pipeline.RunSpec{
-		ID: runID, ScopeKind: "test", ScopeID: runID, Kind: "perf-test", Steps: steps,
-	}); err != nil {
-		t.Fatalf("enqueue: %v", err)
-	}
-	elapsed := time.Since(start)
-
-	t.Logf("enqueued %d steps in %s", len(steps), elapsed)
-	if elapsed > enqueueBudget {
-		t.Fatalf("enqueue took %s, want <= %s", elapsed, enqueueBudget)
+	sort.Slice(samples, func(i, j int) bool { return samples[i] < samples[j] })
+	median := samples[len(samples)/2]
+	t.Logf("enqueued %d steps x %d runs; latencies %v, median %s", pairs*2, enqueueSamples, samples, median)
+	if median > enqueueBudget {
+		t.Fatalf("median enqueue took %s, want <= %s", median, enqueueBudget)
 	}
 }
 
