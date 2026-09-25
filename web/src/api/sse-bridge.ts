@@ -1,8 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { streamEvents } from "./gen/sdk.gen";
 import { SseCachePatcher, type StepEvent } from "./sse-cache";
+import { SseConnection, type StreamStatus } from "./sse-connection";
 import { broadcastChannelSupported, CHANNEL_NAME, electLeader } from "./sse-leader";
+import { TopicRegistry } from "./sse-topic-registry";
+
+export type { StreamStatus } from "./sse-connection";
 
 type ChannelMessage =
   | { kind: "subscribe"; tabId: string; topics: string[] }
@@ -11,36 +14,59 @@ type ChannelMessage =
   | { kind: "event"; event: string; data: unknown }
   | { kind: "resync" };
 
-const TAB_ID = crypto.randomUUID();
 const REBUILD_DEBOUNCE_MS = 300;
 
 /**
  * The single realtime path (guidelines "reuse points"): one leader tab owns
- * the actual SSE connection and fans events out over a BroadcastChannel so
- * every tab, including the leader, stays under the server's per-user cap of
- * 6 concurrent streams (RT#2). Every tab runs its own bridge instance; only
- * the leader's instance opens a network connection.
+ * the actual SSE connection (see ./sse-connection) and fans events out over
+ * a BroadcastChannel so every tab, including the leader, stays under the
+ * server's per-user cap of 6 concurrent streams (RT#2). Every tab runs its
+ * own bridge instance; only the leader's instance opens a network connection.
  */
 export class SseBridge {
-  private readonly queryClient: QueryClient;
+  // Generated per instance (not module scope) so a real page load and a
+  // test process that constructs several bridges to simulate several tabs
+  // both get one distinct id per bridge.
+  private readonly tabId = crypto.randomUUID();
   private readonly channel: BroadcastChannel | null;
   private readonly patcher: SseCachePatcher;
+  private readonly connection: SseConnection;
   private readonly consumers = new Map<string, Set<string>>();
-  private readonly tabTopics = new Map<string, Set<string>>();
+  private readonly topicRegistry = new TopicRegistry();
   private readonly readyListeners = new Set<() => void>();
+  private readonly statusListeners = new Set<(status: StreamStatus) => void>();
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
   private isLeader = false;
   private ready = false;
-  private streamAbort: AbortController | null = null;
+  private status: StreamStatus = "idle";
   private currentTopicsKey = "";
 
   constructor(queryClient: QueryClient) {
-    this.queryClient = queryClient;
     this.patcher = new SseCachePatcher(queryClient);
+    this.connection = new SseConnection({
+      onEvent: (event) => {
+        const name = event.event ?? "message";
+        this.channel?.postMessage({ kind: "event", event: name, data: event.data } satisfies ChannelMessage);
+        this.applyEvent(name, event.data);
+      },
+      onStatusChange: (status) => this.setStatus(status),
+      onResync: () => {
+        this.channel?.postMessage({ kind: "resync" } satisfies ChannelMessage);
+        this.invalidateActiveSnapshots();
+      },
+    });
     this.channel = broadcastChannelSupported() ? new BroadcastChannel(CHANNEL_NAME) : null;
     this.channel?.addEventListener("message", (event: MessageEvent<ChannelMessage>) => {
       this.onChannelMessage(event.data);
     });
+    if (typeof window !== "undefined") {
+      // pagehide (not beforeunload, which hurts bfcache) reliably fires on
+      // tab close/navigation and lets the leader drop this tab's topics
+      // from the union instead of leaking them forever (review M3a).
+      window.addEventListener("pagehide", () => {
+        this.channel?.postMessage({ kind: "unsubscribe", tabId: this.tabId } satisfies ChannelMessage);
+      });
+    }
     electLeader(() => this.becomeLeader());
   }
 
@@ -48,9 +74,23 @@ export class SseBridge {
     return this.ready;
   }
 
+  getStatus(): StreamStatus {
+    return this.status;
+  }
+
   onReady(listener: () => void): () => void {
     this.readyListeners.add(listener);
     return () => this.readyListeners.delete(listener);
+  }
+
+  onStatusChange(listener: (status: StreamStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    return () => this.statusListeners.delete(listener);
+  }
+
+  /** A job-completion announcement (done/failed/canceled), for the status bar's live region. */
+  onCompletion(listener: (evt: StepEvent) => void): () => void {
+    return this.patcher.onCompletion(listener);
   }
 
   /** Registers a consumer's topic set (pipeline run ids); returns an unsubscribe function. */
@@ -63,6 +103,12 @@ export class SseBridge {
     };
   }
 
+  private setStatus(status: StreamStatus): void {
+    if (this.status === status) return;
+    this.status = status;
+    for (const listener of this.statusListeners) listener(status);
+  }
+
   private ownTopicUnion(): string[] {
     const set = new Set<string>();
     for (const topics of this.consumers.values()) {
@@ -73,8 +119,8 @@ export class SseBridge {
 
   private publishOwnTopics(): void {
     const topics = this.ownTopicUnion();
-    this.tabTopics.set(TAB_ID, new Set(topics));
-    this.channel?.postMessage({ kind: "subscribe", tabId: TAB_ID, topics } satisfies ChannelMessage);
+    this.topicRegistry.set(this.tabId, topics);
+    this.channel?.postMessage({ kind: "subscribe", tabId: this.tabId, topics } satisfies ChannelMessage);
     if (this.isLeader) this.scheduleRebuild();
   }
 
@@ -82,13 +128,19 @@ export class SseBridge {
     switch (message.kind) {
       case "subscribe":
         if (this.isLeader) {
-          this.tabTopics.set(message.tabId, new Set(message.topics));
+          this.topicRegistry.set(message.tabId, message.topics);
           this.scheduleRebuild();
+          // A tab joining (or re-announcing) while the topic union is
+          // unchanged would otherwise never see a "ready" event and its
+          // queries would stay gated forever (review M3b); replay it.
+          if (this.ready) {
+            this.channel?.postMessage({ kind: "event", event: "ready", data: null } satisfies ChannelMessage);
+          }
         }
         break;
       case "unsubscribe":
         if (this.isLeader) {
-          this.tabTopics.delete(message.tabId);
+          this.topicRegistry.delete(message.tabId);
           this.scheduleRebuild();
         }
         break;
@@ -105,73 +157,31 @@ export class SseBridge {
     }
   }
 
-  private becomeLeader(): () => void {
+  private becomeLeader(): void {
     this.isLeader = true;
-    this.tabTopics.set(TAB_ID, new Set(this.ownTopicUnion()));
+    this.topicRegistry.set(this.tabId, this.ownTopicUnion());
     this.channel?.postMessage({ kind: "leader-ready" } satisfies ChannelMessage);
     this.scheduleRebuild();
-    return () => {
-      this.isLeader = false;
-      this.streamAbort?.abort();
-      this.streamAbort = null;
-    };
   }
 
   private scheduleRebuild(): void {
     if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
-    this.rebuildTimer = setTimeout(() => void this.rebuildStream(), REBUILD_DEBOUNCE_MS);
+    this.rebuildTimer = setTimeout(() => this.applyDesiredTopics(), REBUILD_DEBOUNCE_MS);
   }
 
-  private unionTopics(): string[] {
-    const set = new Set<string>();
-    for (const topics of this.tabTopics.values()) {
-      for (const topic of topics) set.add(topic);
-    }
-    return [...set];
-  }
-
-  private async rebuildStream(): Promise<void> {
+  private applyDesiredTopics(): void {
     if (!this.isLeader) return;
-    const topics = this.unionTopics();
+    const topics = this.topicRegistry.unionCapped();
     const key = topics.slice().sort().join(",");
     if (key === this.currentTopicsKey) return;
     this.currentTopicsKey = key;
 
-    this.streamAbort?.abort();
     if (topics.length === 0) {
-      this.streamAbort = null;
+      this.connection.stop();
+      this.setStatus("idle");
       return;
     }
-
-    const controller = new AbortController();
-    this.streamAbort = controller;
-    try {
-      const { stream } = await streamEvents({
-        query: { topics: key },
-        signal: controller.signal,
-        onSseEvent: (event) => {
-          this.channel?.postMessage({
-            kind: "event",
-            event: event.event ?? "message",
-            data: event.data,
-          } satisfies ChannelMessage);
-          this.applyEvent(event.event ?? "message", event.data);
-        },
-        onSseError: () => {
-          this.channel?.postMessage({ kind: "resync" } satisfies ChannelMessage);
-          this.invalidateActiveSnapshots();
-        },
-      });
-      // The generator drives onSseEvent as a side effect; draining it keeps
-      // the connection (and its retry loop) alive for the stream's lifetime.
-      const iterator = stream[Symbol.asyncIterator]();
-      while (!controller.signal.aborted) {
-        const { done } = await iterator.next();
-        if (done) break;
-      }
-    } catch {
-      // Aborted by a topic rebuild or leader handoff; nothing to report.
-    }
+    this.connection.start(key);
   }
 
   private applyEvent(eventName: string, data: unknown): void {
@@ -190,17 +200,7 @@ export class SseBridge {
 
   private invalidateActiveSnapshots(): void {
     this.ready = false;
-    this.patcher.reset();
-    const isSnapshotQuery = (query: { queryKey: readonly unknown[] }) => {
-      const first = query.queryKey[0];
-      const id = typeof first === "object" && first !== null ? (first as { _id?: string })._id : undefined;
-      return id === "listJobs" || id === "listRunSteps";
-    };
-    void this.queryClient.invalidateQueries({ predicate: isSnapshotQuery, refetchType: "none" });
-    const unsubscribe = this.onReady(() => {
-      unsubscribe();
-      void this.queryClient.refetchQueries({ predicate: isSnapshotQuery, type: "active" });
-    });
+    this.patcher.invalidateSnapshots((listener) => this.onReady(listener));
   }
 }
 

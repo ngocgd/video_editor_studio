@@ -57,8 +57,10 @@ export function VirtualTable<T>({
     }
   }
 
+  const activeRowId = rows[activeIndex] ? getRowId(rows[activeIndex]) : undefined;
+
   return (
-    <div role="table" aria-label={ariaLabel} className="flex flex-col overflow-hidden rounded-md border border-border">
+    <div role="grid" aria-label={ariaLabel} className="flex flex-col overflow-hidden rounded-md border border-border">
       <div role="row" className="flex border-b border-border bg-background text-2xs uppercase tracking-[0.04em] text-text-2">
         {columns.map((column) => (
           <div key={column.key} role="columnheader" className={column.className ?? "flex-1 px-3 py-2"}>
@@ -66,7 +68,14 @@ export function VirtualTable<T>({
           </div>
         ))}
       </div>
-      <div ref={scrollRef} className="max-h-[560px] overflow-auto" tabIndex={0} onKeyDown={onKeyDown}>
+      <div
+        ref={scrollRef}
+        role="rowgroup"
+        className="max-h-[560px] overflow-auto"
+        tabIndex={0}
+        aria-activedescendant={activeRowId}
+        onKeyDown={onKeyDown}
+      >
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
@@ -74,9 +83,9 @@ export function VirtualTable<T>({
             return (
               <div
                 key={getRowId(row)}
+                id={getRowId(row)}
                 role="row"
                 aria-selected={isActive}
-                tabIndex={-1}
                 style={{
                   position: "absolute",
                   top: 0,

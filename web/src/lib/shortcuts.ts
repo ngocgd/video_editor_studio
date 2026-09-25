@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Global shortcut registry (guidelines §8). Each screen registers its own
@@ -11,7 +11,7 @@ export type ShortcutHandler = (event: KeyboardEvent) => void;
 interface RegisteredShortcut {
   scope: string;
   keys: string;
-  handler: ShortcutHandler;
+  handlerRef: { current: ShortcutHandler };
 }
 
 const registry: RegisteredShortcut[] = [];
@@ -33,9 +33,15 @@ export function popShortcutScope(scope: string): void {
 function normalizeKeys(event: KeyboardEvent): string {
   const parts: string[] = [];
   if (event.ctrlKey || event.metaKey) parts.push("ctrl");
-  if (event.shiftKey) parts.push("shift");
   if (event.altKey) parts.push("alt");
   const key = event.key.toLowerCase();
+  // A plain Shift + printable key (e.g. Shift+/ => "?") already reflects
+  // the shift state in `event.key` itself; only add an explicit "shift"
+  // segment when it is combined with another modifier or a non-printable
+  // named key, otherwise "?" would never match a registered "?" shortcut
+  // (review M7).
+  const isPlainPrintable = key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey;
+  if (event.shiftKey && !isPlainPrintable) parts.push("shift");
   if (!["control", "shift", "alt", "meta"].includes(key)) {
     parts.push(key);
   }
@@ -79,7 +85,7 @@ function handleKeydown(event: KeyboardEvent): void {
     const entry = registry[i];
     if (entry.scope === topScope && entry.keys === effectiveCombo) {
       event.preventDefault();
-      entry.handler(event);
+      entry.handlerRef.current(event);
       return;
     }
   }
@@ -92,17 +98,24 @@ function ensureListener(): void {
 }
 
 /**
- * Registers a keyboard shortcut for the component's lifetime.
- * `keys` is a normalized combo string, e.g. "ctrl+k", "?", "g d".
+ * Registers a keyboard shortcut for the component's lifetime. `keys` is a
+ * normalized combo string, e.g. "ctrl+k", "?", "g d". `handler` is kept in
+ * a ref and always called at its latest identity, so passing a fresh
+ * inline arrow function on every render (the common case) does not
+ * unregister and re-register the listener on every render (review M7).
  */
 export function useShortcut(scope: string, keys: string, handler: ShortcutHandler): void {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
   useEffect(() => {
     ensureListener();
-    const entry: RegisteredShortcut = { scope, keys, handler };
+    const entry: RegisteredShortcut = { scope, keys, handlerRef };
     registry.push(entry);
     return () => {
       const index = registry.indexOf(entry);
       if (index >= 0) registry.splice(index, 1);
     };
-  }, [scope, keys, handler]);
+    // handlerRef is intentionally stable across renders; only scope/keys identity re-registers.
+  }, [scope, keys]);
 }

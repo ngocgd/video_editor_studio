@@ -1,8 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, ListChecks, PanelLeft, Search, Settings } from "lucide-react";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import { useShortcut } from "../../lib/shortcuts";
+import { setCommandPaletteOpen } from "./command-palette-state";
 import { StatusBar } from "./status-bar";
 import { TopBar } from "./top-bar";
 
@@ -26,8 +27,12 @@ const NAV_ITEMS = [
 export function AppShell({ inspector, children }: { inspector?: ReactNode; children: ReactNode }) {
   const [railExpanded, setRailExpanded] = useState(true);
   const routerState = useRouterState();
+  const navigate = useNavigate();
 
   useShortcut("global", "ctrl+\\", () => setRailExpanded((value) => !value));
+  useShortcut("global", "g d", () => void navigate({ to: "/" }));
+  useShortcut("global", "g r", () => void navigate({ to: "/jobs" }));
+  useShortcut("global", "g s", () => void navigate({ to: "/settings/account" }));
 
   return (
     <div className="grid h-dvh grid-rows-[1fr_auto]">
@@ -36,28 +41,31 @@ export function AppShell({ inspector, children }: { inspector?: ReactNode; child
           aria-label="Primary"
           className="flex flex-col gap-1 border-r border-border bg-background p-2 transition-[width] duration-[180ms] ease-out"
         >
-          <button
-            type="button"
-            onClick={() => setRailExpanded((value) => !value)}
-            aria-label={railExpanded ? "Collapse navigation" : "Expand navigation"}
-            className="flex h-8 items-center gap-2 rounded-md px-2 text-text-2 hover:bg-accent"
-          >
-            <PanelLeft size={16} strokeWidth={1.75} aria-hidden="true" />
-            {railExpanded && <span className="text-sm">Loomtale Studio</span>}
-          </button>
+          <div className="mb-1 flex h-8 items-center gap-2 px-2">
+            <button
+              type="button"
+              onClick={() => setRailExpanded((value) => !value)}
+              aria-label={railExpanded ? "Collapse navigation" : "Expand navigation"}
+              className="rounded-md p-1 text-text-2 hover:bg-accent hover:text-foreground"
+            >
+              <PanelLeft size={16} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+            {railExpanded && <img src="/logo.svg" alt="Loomtale Studio" width={140} height={23} />}
+          </div>
           {NAV_ITEMS.map((item) => {
             const active = routerState.location.pathname === item.to;
             return (
               <Link
                 key={item.to}
                 to={item.to}
+                title={railExpanded ? undefined : item.label}
                 className={`flex h-8 items-center gap-2 rounded-md px-2 text-sm ${
                   active ? "bg-accent text-foreground" : "text-text-2 hover:bg-accent hover:text-foreground"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
                 <item.icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                {railExpanded && item.label}
+                <span className={railExpanded ? undefined : "sr-only"}>{item.label}</span>
               </Link>
             );
           })}
@@ -83,11 +91,12 @@ export function CommandPaletteTrigger() {
   return (
     <button
       type="button"
-      onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
+      onClick={() => setCommandPaletteOpen(true)}
       className="flex h-7 items-center gap-2 rounded-md border border-border bg-well px-2 text-xs text-text-2 hover:text-foreground"
     >
       <Search size={14} strokeWidth={1.75} aria-hidden="true" />
       Search
+      <kbd className="hidden rounded-sm border border-border px-1 font-mono text-[10px] text-muted-foreground sm:inline">Ctrl K</kbd>
     </button>
   );
 }

@@ -3,12 +3,13 @@
  * browser, not per tab. The tab that wins `navigator.locks.request('lt-sse')`
  * owns the actual stream and fans events out over a BroadcastChannel; every
  * tab (leader included) listens on the same channel for its own events.
- * When the leader tab closes, the lock is released and another tab picks it
- * up automatically, re-establishing the stream.
+ * When the leader tab closes, the browser releases the lock automatically
+ * (a lock's holding promise never has to resolve for that to happen), and
+ * another waiting tab is granted it, re-establishing the stream.
  *
- * Fallback: if the Web Locks API or BroadcastChannel is unavailable, every
- * tab runs its own stream (still bounded by the server's 6-stream-per-user
- * cap, see StreamEventsErrors 429 in openapi/paths/events.yaml).
+ * Fallback: if the Web Locks API is unavailable, every tab runs its own
+ * stream (still bounded by the server's 6-stream-per-user cap, see
+ * StreamEventsErrors 429 in openapi/paths/events.yaml).
  */
 
 export const LOCK_NAME = "lt-sse";
@@ -23,26 +24,24 @@ export function broadcastChannelSupported(): boolean {
 }
 
 /**
- * Requests the leader lock and holds it until `onAcquired`'s returned
- * cleanup is invoked or the tab unloads. `onAcquired` is called once this
- * tab becomes the leader; it should start the stream and return a function
- * that stops it. Resolves once the lock request has been issued (the lock
- * itself is held for the browser session, not awaited here).
+ * Requests the leader lock; `onAcquired` runs once this tab wins it and
+ * should start the stream. Without Web Locks support every tab calls
+ * `onAcquired` immediately (the documented fallback). A tab that becomes
+ * leader stays leader until the browser tears down its JS context (tab
+ * close/navigation), which is also when the lock and the stream both go
+ * away together — there is deliberately no `beforeunload` listener here
+ * (it would only race the browser's own release and would defeat bfcache).
  */
-export function electLeader(onAcquired: () => () => void): void {
+export function electLeader(onAcquired: () => void): void {
   if (!locksSupported()) {
+    onAcquired();
     return;
   }
 
-  navigator.locks.request(LOCK_NAME, { mode: "exclusive" }, () => {
-    const release = onAcquired();
-    return new Promise<void>((resolve) => {
-      window.addEventListener("beforeunload", () => {
-        release();
-        resolve();
-      });
-      // The lock is held until this promise resolves, which only happens on
-      // unload; a tab that becomes leader stays leader until it closes.
+  void navigator.locks.request(LOCK_NAME, { mode: "exclusive" }, () => {
+    onAcquired();
+    return new Promise<void>(() => {
+      // Intentionally never resolves: held for the tab's lifetime.
     });
   });
 }

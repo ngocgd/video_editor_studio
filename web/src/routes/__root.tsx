@@ -1,12 +1,20 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 
-import { Toaster } from "../components/ui/toaster";
+import type { RouterContext } from "../router-context";
 
-export const Route = createRootRoute({
+// sonner's Toaster is only relevant once a background completion actually
+// fires (guidelines: "Toasts only for background completions"); loading it
+// lazily keeps it out of every route's first-paint bundle.
+const Toaster = lazy(() => import("../components/ui/toaster").then((m) => ({ default: m.Toaster })));
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
     <>
       <Outlet />
-      <Toaster />
+      <Suspense fallback={null}>
+        <Toaster />
+      </Suspense>
     </>
   ),
 });

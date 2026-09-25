@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useShortcut } from "../../lib/shortcuts";
+import { popShortcutScope, pushShortcutScope, useShortcut } from "../../lib/shortcuts";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Kbd } from "./kbd";
 
 const GLOBAL_SHORTCUTS: Array<{ keys: string[]; description: string }> = [
   { keys: ["Ctrl", "K"], description: "Open command palette" },
   { keys: ["Ctrl", "\\"], description: "Toggle nav rail" },
-  { keys: ["Ctrl", "."], description: "Toggle inspector" },
   { keys: ["G", "D"], description: "Go to Dashboard" },
   { keys: ["G", "R"], description: "Go to Render Queue" },
   { keys: ["G", "S"], description: "Go to Settings" },
@@ -18,6 +17,15 @@ const GLOBAL_SHORTCUTS: Array<{ keys: string[]; description: string }> = [
 export function ShortcutSheet() {
   const [open, setOpen] = useState(false);
   useShortcut("global", "?", () => setOpen(true));
+
+  // While open, every "global"-scoped shortcut (including this same "?")
+  // stops firing behind the dialog (review M7: "global shortcuts fire
+  // behind open dialogs").
+  useEffect(() => {
+    if (!open) return;
+    pushShortcutScope("dialog");
+    return () => popShortcutScope("dialog");
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

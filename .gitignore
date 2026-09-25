@@ -9,6 +9,9 @@ secrets/*
 node_modules/
 web/dist/
 web/coverage/
+web/bundle-stats.html
+web/test-results/
+web/playwright-report/
 *.tsbuildinfo
 
 # Go

@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
 import { LayoutDashboard, ListChecks, Settings } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useShortcut } from "../../lib/shortcuts";
+import { popShortcutScope, pushShortcutScope, useShortcut } from "../../lib/shortcuts";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { isCommandPaletteOpen, onCommandPaletteOpenChange, setCommandPaletteOpen } from "./command-palette-state";
 
 interface CommandItem {
   id: string;
@@ -21,13 +22,20 @@ const ITEMS: CommandItem[] = [
 
 /** `Ctrl K` global command palette (guidelines §8). */
 export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isCommandPaletteOpen);
   const navigate = useNavigate();
 
-  useShortcut("global", "ctrl+k", () => setOpen(true));
+  useEffect(() => onCommandPaletteOpenChange(setOpen), []);
+  useShortcut("global", "ctrl+k", () => setCommandPaletteOpen(true));
+
+  useEffect(() => {
+    if (!open) return;
+    pushShortcutScope("dialog");
+    return () => popShortcutScope("dialog");
+  }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setCommandPaletteOpen}>
       <DialogContent className="max-w-md p-0" showClose={false}>
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <Command label="Command palette" className="overflow-hidden rounded-lg">
@@ -45,7 +53,7 @@ export function CommandPalette() {
                 key={item.id}
                 value={item.label}
                 onSelect={() => {
-                  setOpen(false);
+                  setCommandPaletteOpen(false);
                   void navigate({ to: item.to });
                 }}
                 className="flex cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-sm data-[selected=true]:bg-accent"

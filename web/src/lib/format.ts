@@ -46,3 +46,16 @@ export function formatMb(mb: number): string {
 export function formatPercent(value: number): string {
   return `${Math.round(value)}%`;
 }
+
+/**
+ * Turns a raw step/run `kind` (a snake_case backend identifier, e.g.
+ * "render_episode") into a human sentence-case label ("Render episode").
+ * The raw kind should still be shown somewhere (mono, in a tooltip or
+ * detail row) for debugging (design fidelity review: "raw render_episode
+ * ... show as name and step").
+ */
+export function humanizeKind(kind: string): string {
+  const words = kind.split(/[_-]+/).filter(Boolean);
+  if (words.length === 0) return kind;
+  return words.map((word, index) => (index === 0 ? word[0].toUpperCase() + word.slice(1) : word)).join(" ");
+}
