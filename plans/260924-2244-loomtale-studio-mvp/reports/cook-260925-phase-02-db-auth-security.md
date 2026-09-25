@@ -1,6 +1,6 @@
 # Phase 02 cook report: DB, auth, RBAC, audit, storage, secrets, backups
 
-Branch: `feat/db-auth-security-foundation`. Final commit: `42befbab794b41816057cd0f887b48adeee82126`. Not pushed, not merged (controller merges).
+Branch: `feat/db-auth-security-foundation`. Final commit: `1580aa31879c2a448f077038e100721328b3f2c1` (implementation: `42befbab794b41816057cd0f887b48adeee82126`; this report + `plan.md` progress notes: `1580aa3`). Not pushed, not merged (controller merges).
 
 ## What was built
 
