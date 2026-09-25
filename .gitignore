@@ -39,3 +39,6 @@ gitleaks-report.json
 
 # Spike scratch output (phase 1b comfyui smoke; not committed)
 spike-out/
+
+# Local agent state
+.claude/
