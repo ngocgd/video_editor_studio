@@ -56,3 +56,33 @@ No files are shared between the models. Qwen uses qwen_2.5_vl_7b + qwen_image_va
 - Is the int8 Z-Image model OK, or should bf16 be added (+12.3GB)? The pinned ComfyUI commit must support int8_convrot. Check this in phase 1b/9a.
 - The phase 1b and 9a docs name the volume `models`, but the actual volume is `loomtale_models`. The plan or compose file needs to match.
 - What freed about 98GB on C: and restarted or killed Docker mid-run? It was not this task.
+
+## Batch 2 (2026-09-25): Qwen-Image-Edit-2511, Illustrious-XL, xianxia LoRA
+
+Approved by the user in the task brief (download the 2511 GGUF, then delete 2509 after a passing smoke; Illustrious-XL plus one xianxia LoRA with commercial image rights; budget ≤25GB). Same method as batch 1: a throwaway `python:3.12-slim` container and anonymous `hf_hub_download(..., revision=<sha>, token=False)`. The Civitai file was fetched over plain HTTPS with no account or token. Files were staged in `/models/.staging`, and sha256 was computed inside the container and compared with the HF LFS sha256 or the Civitai API `hashes.SHA256` before each file was moved into place. The script refuses anything other than `.safetensors`/`.gguf`. `/models/.staging` was removed after the run.
+
+| Model | Task | Licence | Repo / source | Revision / version id | Path in volume | Size (bytes) | sha256 | Status |
+|---|---|---|---|---|---|---|---|---|
+| Qwen-Image-Edit-2511 Q4_K_M | char sheets / ref edit | Apache-2.0 (repo + base `Qwen/Qwen-Image-Edit-2511` @ 6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9) | unsloth/Qwen-Image-Edit-2511-GGUF | 0d33d9692b4b26212297240d87b0d4719aa4fd06 | /models/diffusion_models/qwen-image-edit-2511-Q4_K_M.gguf | 13244758624 | 8677bac90627adbbc11efab87b1870e701c4eb3689ee865a3de8ab81b705a723 | verified; smoke passed |
+| Illustrious-XL v1.1 | anime/donghua txt2img (SDXL) | SDXL licence (CreativeML Open RAIL++-M), per the repo's `license_link` | OnomaAIResearch/Illustrious-XL-v1.1 | 8d966ec810874502d56a22ec9130dab6ef74c5ff | /models/checkpoints/Illustrious-XL-v1.1.safetensors | 6938040728 | 536863e9f0c13b0ce834e2f8a19ada425ee4f722c0ad3d0051ec7e6adaa8156c | verified |
+| Xianxia Art Style (LoRA, Illustrious) | xianxia style | Civitai permissions: commercial use Image/Rent/RentCivit/Sell/SellMerge, no credit required | https://civitai.com/models/1955005 (creator dfdfr232) | modelVersion 2212667, fileId 2109022 | /models/loras/Xianxia_Art_Style.safetensors | 228462452 | d2608c08cb73422447316f60753cce2f7f9b3166496abf9585c9adb77140570f | verified (Civitai pickle/virus scan: Success) |
+
+**Batch 2 total: 20,411,261,804 bytes (≈20.41 GB), 3 files.** This is under the 25GB budget.
+
+### Why these sources
+- **The 2511 GGUF comes from unsloth, not QuantStack.** `QuantStack/Qwen-Image-Edit-2511-GGUF` does not exist on HF: the API returns a not-found/401 error. unsloth has the most-used 2511 GGUF (≈413k downloads). It is Apache-2.0 with `base_model: Qwen/Qwen-Image-Edit-2511`, and its card says it was built with city96's ComfyUI-GGUF tooling. It is a real 2511 quant: the GGUF metadata shows `general.architecture=qwen_image`, `file_type=15` (Q4_K_M) and 1934 tensors. It also contains the `__index_timestep_zero__` marker tensor, which ComfyUI's `model_detection.py` uses to recognise 2511.
+- **Illustrious-XL v1.1 was chosen over v0.1.** v0.1 (`Illustrious-xl-early-release-v0`) is under FAIPL-1.0-SD. That licence claims no rights over outputs, but the v0.1 card calls the model "research-only purpose" and says it "discourages the usage of model over monetization purpose". v1.0 and v1.1 are official OnomaAI releases under the SDXL licence, which says "Licensor claims no rights in the Output You generate" and limits use only through the Attachment A restrictions. v1.1 has the higher ELO (1617 vs 1571 for v1.0, per its card), and the v1.0 card says v0.1 LoRAs work natively. **Monetized YouTube use of the outputs is allowed**, subject to the Attachment A use restrictions. v2.0 was not chosen because it only carries a `creativeml-openrail-m` tag and has no licence file in the repo.
+- **LoRA: "Xianxia Art Style" V1** (trigger `xianxia style`; 787 downloads and 80 up / 0 down votes as of 2026-09-25). It was the only xianxia *style* LoRA for Illustrious I found (not a character/IP LoRA) whose permissions include commercial use of generated images. Skipped:
+  - `漢服/Hanfu` (441397): the most popular, with 6.3k downloads, but its commercial use is `RentCivit` only, with no `Image`.
+  - `CC's Chinese Fantasy`: no `Image` permission.
+  - Character LoRAs from donghua IPs: copyright risk.
+
+  The anonymous download worked (a 307 redirect to a signed B2 URL), so no token was used.
+
+### Deleted (user-approved)
+- `/models/diffusion_models/Qwen-Image-Edit-2509-Q4_K_M.gguf` (13,065,746,976 B, sha 08f27cdf…d808425) was deleted after the 2511 smoke passed. Nothing else was deleted. `comfyui/workflows/qwen-image-edit-2509-smoke.json` was removed, and `scripts/comfyui-smoke-spike.sh` now points at `qwen-image-edit-2511-smoke.json`.
+- Volume after: `du -sb /models` = 45,409,930,851 B. The expected figure is 38,064,383,255 + 20,411,261,804 − 13,065,746,976 = 45,409,898,083 B; the ~33KB difference is new directory entries.
+
+### Disk (C:)
+- Before batch 2: 232,470,863,872 B free. After the download and the deletion: 215,498,772,480 B free (−16.97 GB).
+- The WSL2 vhdx does not hand the ~13GB freed by deleting 2509 back to Windows until the disk is compacted. That space can still be reused inside the VM.
