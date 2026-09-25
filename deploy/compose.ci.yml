@@ -8,3 +8,6 @@ services:
   postgres:
     ports:
       - "127.0.0.1:5432:5432"
+  # GitHub-hosted runners have 4 vCPUs; Docker rejects a cpus limit above the host count.
+  worker:
+    cpus: 2
