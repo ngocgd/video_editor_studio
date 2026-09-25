@@ -35,6 +35,25 @@ cd web && npm ci && npm run dev
 After the first `up`, read the `minio-init` container logs once for the generated
 `MINIO_APP_ACCESS_KEY` / `MINIO_APP_SECRET_KEY` pair and put them in `.env` (not committed).
 
+### Integration tests without host Go
+
+`api/internal/integration` (build tag `integration`) drives a real running stack over HTTP and
+Postgres. CI runs it directly on the runner (`.github/workflows/ci.yml`'s `integration` job).
+Locally, run it from inside a container on the stack's own network instead — no Go on the host
+needed, and it uses your own compose project name so it never collides with another stack:
+
+```bash
+docker compose -p loomtale-dev -f deploy/compose.yml -f deploy/compose.integration.yml \
+    --env-file .env up -d --wait --build
+PROJECT=loomtale-dev scripts/test-integration-toolbox.sh
+docker compose -p loomtale-dev -f deploy/compose.yml -f deploy/compose.integration.yml \
+    --env-file .env down -v
+```
+
+`deploy/compose.integration.yml` is a local-only override (never used in production or CI) that
+points the api service's presigned-URL MinIO endpoint at MinIO's container hostname, since the
+test-runner container can't reach the host's published `127.0.0.1:9000`.
+
 ## Repository layout
 
 ```

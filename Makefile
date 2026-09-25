@@ -1,4 +1,4 @@
-.PHONY: gen gen-check lint test test-integration vuln audit build up down logs migrate ci gen-openapi gen-sqlc gen-proto gen-migrations-sync
+.PHONY: gen gen-check lint test test-integration test-integration-toolbox vuln audit build up down logs migrate ci gen-openapi gen-sqlc gen-proto gen-migrations-sync
 
 GOFLAGS := -mod=mod
 
@@ -47,6 +47,16 @@ test:
 
 test-integration:
 	cd api && go test ./internal/workerpb/... ./internal/integration/... -tags=integration -run "$(RUN)" -v -count=1
+
+## Runs the integration suite against a running stack from inside a
+## container on its own network, so it needs no Go on the host. Bring the
+## stack up first with deploy/compose.integration.yml applied and pass the
+## same project name here, e.g.:
+##   docker compose -p loomtale-dev -f deploy/compose.yml -f deploy/compose.integration.yml --env-file .env up -d --wait --build
+##   PROJECT=loomtale-dev make test-integration-toolbox
+##   docker compose -p loomtale-dev -f deploy/compose.yml -f deploy/compose.integration.yml --env-file .env down -v
+test-integration-toolbox:
+	bash scripts/test-integration-toolbox.sh
 
 vuln:
 	cd api && go tool govulncheck ./...

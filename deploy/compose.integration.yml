@@ -1,0 +1,16 @@
+name: loomtale
+
+# Local-only override for scripts/test-integration-toolbox.sh: runs the
+# integration suite from inside a container attached to loomtale_core
+# instead of on the host, so verifying a test change never requires Go on
+# the host. That container can reach every other service by its container
+# hostname, but not the host's own loopback, so the api service's
+# browser-facing (presigned URL) MinIO endpoint is pointed at minio's
+# container hostname here instead of the host-published 127.0.0.1:9000 a
+# real browser would use. Never applied in production, and never applied in
+# CI (CI runs `go test` directly on the runner via compose.ci.yml's
+# published ports, which the runner's own loopback can reach).
+services:
+  api:
+    environment:
+      MINIO_PUBLIC_ENDPOINT: minio:9000

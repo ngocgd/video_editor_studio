@@ -254,10 +254,18 @@ func TestUploadFinalizeAndReuploadIsIsolatedByVersion(t *testing.T) {
 
 	finalizeResp := sess.do(http.MethodPost, "/assets/"+presigned.AssetId+"/finalize", nil)
 	requireStatus(t, finalizeResp, http.StatusOK)
+
+	// finalize's response deliberately never carries a downloadUrl (see
+	// assetsapi.FinalizeAsset, which builds its DTO with a nil download
+	// URL); only GetAsset computes and presigns one, and only once the
+	// asset's status is "ready". Fetch it that way, exactly as a real
+	// client would after finalizing.
+	getAssetResp := sess.do(http.MethodGet, "/assets/"+presigned.AssetId, nil)
+	requireStatus(t, getAssetResp, http.StatusOK)
 	var finalized struct {
 		DownloadUrl string `json:"downloadUrl"`
 	}
-	decodeJSON(t, finalizeResp, &finalized)
+	decodeJSON(t, getAssetResp, &finalized)
 	if finalized.DownloadUrl == "" {
 		t.Fatal("expected a downloadUrl once the asset is ready")
 	}
