@@ -998,6 +998,39 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /episodes/{id}/ai-actions/{stepId}:
+    get:
+      operationId: getAiActionResult
+      summary: Poll an AI action step's status and, once done, its generated text
+      tags:
+        - episodes
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: current step status, with text once done
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiActionResult'
+        '404':
+          description: episode or step not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /episodes/{id}/drafts/{lang}:
     get:
       operationId: getDraft
@@ -2216,6 +2249,31 @@ components:
         runId:
           type: string
           format: uuid
+    AiActionResult:
+      type: object
+      description: 'The step''s current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step''s SSE transition and then fetches this once the step reaches a terminal status.'
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+            - queued
+            - running
+            - done
+            - failed
+            - canceled
+        provider:
+          type: string
+        lang:
+          $ref: '#/components/schemas/TargetLanguage'
+        text:
+          type: string
+        tainted:
+          type: boolean
+        errorDetail:
+          type: string
     DraftParagraph:
       type: object
       required:

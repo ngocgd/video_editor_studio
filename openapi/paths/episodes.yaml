@@ -142,6 +142,38 @@ createAiAction:
           application/problem+json:
             schema:
               $ref: "../schemas/problem.yaml#/Problem"
+getAiActionResult:
+  get:
+    operationId: getAiActionResult
+    summary: Poll an AI action step's status and, once done, its generated text
+    tags: [episodes]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: stepId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: current step status, with text once done
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/AiActionResult"
+      "404":
+        description: episode or step not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
 episodeDraft:
   get:
     operationId: getDraft
