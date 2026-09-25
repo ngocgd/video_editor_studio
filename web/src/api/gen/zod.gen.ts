@@ -118,6 +118,135 @@ export const zAuditList = z.object({
     nextCursor: z.string().optional()
 });
 
+export const zCreateStepSpec = z.object({
+    id: z.string().uuid(),
+    kind: z.string(),
+    scopeKind: z.string(),
+    scopeId: z.string().uuid(),
+    priority: z.number().int().gte(1).lte(4),
+    dependsOn: z.array(z.string().uuid()).optional()
+});
+
+export const zCreateRunRequest = z.object({
+    id: z.string().uuid().optional(),
+    scopeKind: z.string(),
+    scopeId: z.string().uuid(),
+    kind: z.string(),
+    steps: z.array(zCreateStepSpec).min(1)
+});
+
+export const zPipelineRun = z.object({
+    id: z.string().uuid(),
+    scopeKind: z.string(),
+    scopeId: z.string().uuid(),
+    kind: z.string(),
+    status: z.enum([
+        'active',
+        'done',
+        'failed',
+        'canceled',
+        'superseded'
+    ]),
+    supersededBy: z.string().uuid().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zPipelineStep = z.object({
+    id: z.string().uuid(),
+    runId: z.string().uuid(),
+    scopeKind: z.string(),
+    scopeId: z.string().uuid(),
+    kind: z.string(),
+    queue: z.enum([
+        'gpu',
+        'cpu',
+        'llm',
+        'render',
+        'io'
+    ]),
+    providerRef: z.string().optional(),
+    priority: z.number().int(),
+    status: z.enum([
+        'pending',
+        'queued',
+        'running',
+        'done',
+        'failed',
+        'canceled'
+    ]),
+    attempt: z.number().int(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    remainingDeps: z.number().int(),
+    progress: z.number().int(),
+    etaS: z.number().int().optional(),
+    errorCode: z.string().optional(),
+    errorMsg: z.string().optional(),
+    logAssetId: z.string().uuid().optional(),
+    startedAt: z.string().datetime().optional(),
+    finishedAt: z.string().datetime().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zPipelineStepList = z.object({
+    items: z.array(zPipelineStep),
+    nextCursor: z.string().optional()
+});
+
+export const zStepLogUrl = z.object({
+    url: z.string().url(),
+    expiresAt: z.string().datetime()
+});
+
+export const zStepSummary = z.object({
+    id: z.string().uuid(),
+    kind: z.string(),
+    status: z.enum([
+        'pending',
+        'queued',
+        'running',
+        'done',
+        'failed',
+        'canceled'
+    ]),
+    priority: z.number().int(),
+    progress: z.number().int(),
+    etaS: z.number().int().optional()
+});
+
+export const zGpuResident = z.object({
+    backend: z.string(),
+    model: z.string()
+});
+
+export const zGpuVram = z.object({
+    totalMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    freeMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    budgetMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    renderReserveMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    measuredAt: z.string().datetime()
+});
+
+export const zGpuBackendStatus = z.object({
+    name: z.string(),
+    reachable: z.boolean(),
+    loaded: z.array(z.string())
+});
+
+export const zGpuEncoder = z.object({
+    name: z.string(),
+    hw: z.boolean()
+});
+
+export const zGpuStatus = z.object({
+    running: zStepSummary.optional(),
+    queue: z.array(zStepSummary),
+    resident: zGpuResident.optional(),
+    vram: zGpuVram.optional(),
+    backends: z.array(zGpuBackendStatus),
+    encoder: zGpuEncoder.optional(),
+    capabilities: z.array(z.string())
+});
+
 /**
  * process is alive
  */
@@ -201,3 +330,95 @@ export const zListAuditQuery = z.object({
  * page of audit entries
  */
 export const zListAuditResponse = zAuditList;
+
+export const zCreateRunBody = zCreateRunRequest;
+
+/**
+ * run created, ready steps enqueued
+ */
+export const zCreateRunResponse = zPipelineRun;
+
+export const zGetRunPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * run
+ */
+export const zGetRunResponse = zPipelineRun;
+
+export const zListRunStepsPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zListRunStepsQuery = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of steps
+ */
+export const zListRunStepsResponse = zPipelineStepList;
+
+export const zCancelRunPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * run canceled
+ */
+export const zCancelRunResponse = z.void();
+
+export const zRetryStepPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * step re-queued
+ */
+export const zRetryStepResponse = zPipelineStep;
+
+export const zCancelStepPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * step canceled
+ */
+export const zCancelStepResponse = zPipelineStep;
+
+export const zGetStepLogPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * presigned log URL
+ */
+export const zGetStepLogResponse = zStepLogUrl;
+
+export const zListJobsQuery = z.object({
+    status: z.string().optional(),
+    queue: z.string().optional(),
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of steps
+ */
+export const zListJobsResponse = zPipelineStepList;
+
+/**
+ * GPU status
+ */
+export const zGetGpuStatusResponse = zGpuStatus;
+
+export const zStreamEventsQuery = z.object({
+    topics: z.string()
+});
+
+/**
+ * text/event-stream of step events
+ */
+export const zStreamEventsResponse = z.string();

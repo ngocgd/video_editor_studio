@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { finalizeAsset, getAsset, getCsrf, getHealthz, getMe, getReadyz, listAssets, listAudit, login, logout, type Options, presignAsset, switchTenant } from '../sdk.gen';
-import type { FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetHealthzData, GetHealthzResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse } from '../types.gen';
+import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, retryStep, switchTenant } from '../sdk.gen';
+import type { CancelRunData, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsResponse, ListRunStepsData, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -338,3 +338,221 @@ export const listAuditInfiniteOptions = (options?: Options<ListAuditData>) => {
     });
     return opts as Omit<typeof opts, 'initialData'>;
 };
+
+/**
+ * Create a pipeline run and its steps
+ */
+export const createRunMutation = (options?: Partial<Options<CreateRunData>>): UseMutationOptions<CreateRunResponse, CreateRunError, Options<CreateRunData>> => {
+    const mutationOptions: UseMutationOptions<CreateRunResponse, CreateRunError, Options<CreateRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRunQueryKey = (options: Options<GetRunData>) => createQueryKey('getRun', options);
+
+/**
+ * Get a pipeline run
+ */
+export const getRunOptions = (options: Options<GetRunData>) => queryOptions<GetRunResponse, GetRunError, GetRunResponse, ReturnType<typeof getRunQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRun({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRunQueryKey(options)
+});
+
+export const listRunStepsQueryKey = (options: Options<ListRunStepsData>) => createQueryKey('listRunSteps', options);
+
+/**
+ * Cursor-paginated list of a run's steps
+ */
+export const listRunStepsOptions = (options: Options<ListRunStepsData>) => queryOptions<ListRunStepsResponse, DefaultError, ListRunStepsResponse, ReturnType<typeof listRunStepsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRunSteps({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRunStepsQueryKey(options)
+});
+
+export const listRunStepsInfiniteQueryKey = (options: Options<ListRunStepsData>): QueryKey<Options<ListRunStepsData>> => createQueryKey('listRunSteps', options, true);
+
+/**
+ * Cursor-paginated list of a run's steps
+ */
+export const listRunStepsInfiniteOptions = (options: Options<ListRunStepsData>) => {
+    const opts = infiniteQueryOptions<ListRunStepsResponse, DefaultError, InfiniteData<ListRunStepsResponse>, QueryKey<Options<ListRunStepsData>>, string | Pick<QueryKey<Options<ListRunStepsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListRunStepsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listRunSteps({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listRunStepsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Cancel every non-terminal step in a run
+ */
+export const cancelRunMutation = (options?: Partial<Options<CancelRunData>>): UseMutationOptions<CancelRunResponse, DefaultError, Options<CancelRunData>> => {
+    const mutationOptions: UseMutationOptions<CancelRunResponse, DefaultError, Options<CancelRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await cancelRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Reset a failed or canceled step to queued and re-enqueue it
+ */
+export const retryStepMutation = (options?: Partial<Options<RetryStepData>>): UseMutationOptions<RetryStepResponse, RetryStepError, Options<RetryStepData>> => {
+    const mutationOptions: UseMutationOptions<RetryStepResponse, RetryStepError, Options<RetryStepData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await retryStep({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Cancel one step
+ */
+export const cancelStepMutation = (options?: Partial<Options<CancelStepData>>): UseMutationOptions<CancelStepResponse, CancelStepError, Options<CancelStepData>> => {
+    const mutationOptions: UseMutationOptions<CancelStepResponse, CancelStepError, Options<CancelStepData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await cancelStep({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getStepLogQueryKey = (options: Options<GetStepLogData>) => createQueryKey('getStepLog', options);
+
+/**
+ * Presigned URL for a step's scrubbed log, editor or owner only
+ */
+export const getStepLogOptions = (options: Options<GetStepLogData>) => queryOptions<GetStepLogResponse, GetStepLogError, GetStepLogResponse, ReturnType<typeof getStepLogQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStepLog({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStepLogQueryKey(options)
+});
+
+export const listJobsQueryKey = (options?: Options<ListJobsData>) => createQueryKey('listJobs', options);
+
+/**
+ * Cursor-paginated list of the tenant's steps, optionally filtered
+ */
+export const listJobsOptions = (options?: Options<ListJobsData>) => queryOptions<ListJobsResponse, DefaultError, ListJobsResponse, ReturnType<typeof listJobsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listJobs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listJobsQueryKey(options)
+});
+
+export const listJobsInfiniteQueryKey = (options?: Options<ListJobsData>): QueryKey<Options<ListJobsData>> => createQueryKey('listJobs', options, true);
+
+/**
+ * Cursor-paginated list of the tenant's steps, optionally filtered
+ */
+export const listJobsInfiniteOptions = (options?: Options<ListJobsData>) => {
+    const opts = infiniteQueryOptions<ListJobsResponse, DefaultError, InfiniteData<ListJobsResponse>, QueryKey<Options<ListJobsData>>, string | Pick<QueryKey<Options<ListJobsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListJobsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listJobs({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listJobsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getGpuStatusQueryKey = (options?: Options<GetGpuStatusData>) => createQueryKey('getGpuStatus', options);
+
+/**
+ * Current GPU residency, queue and VRAM status for this tenant
+ */
+export const getGpuStatusOptions = (options?: Options<GetGpuStatusData>) => queryOptions<GetGpuStatusResponse, DefaultError, GetGpuStatusResponse, ReturnType<typeof getGpuStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getGpuStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getGpuStatusQueryKey(options)
+});

@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -25,19 +26,19 @@ import (
 
 // Defines values for AssetStatus.
 const (
-	Failed  AssetStatus = "failed"
-	Pending AssetStatus = "pending"
-	Ready   AssetStatus = "ready"
+	AssetStatusFailed  AssetStatus = "failed"
+	AssetStatusPending AssetStatus = "pending"
+	AssetStatusReady   AssetStatus = "ready"
 )
 
 // Valid indicates whether the value is a known member of the AssetStatus enum.
 func (e AssetStatus) Valid() bool {
 	switch e {
-	case Failed:
+	case AssetStatusFailed:
 		return true
-	case Pending:
+	case AssetStatusPending:
 		return true
-	case Ready:
+	case AssetStatusReady:
 		return true
 	default:
 		return false
@@ -83,6 +84,90 @@ func (e HealthStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for PipelineRunStatus.
+const (
+	PipelineRunStatusActive     PipelineRunStatus = "active"
+	PipelineRunStatusCanceled   PipelineRunStatus = "canceled"
+	PipelineRunStatusDone       PipelineRunStatus = "done"
+	PipelineRunStatusFailed     PipelineRunStatus = "failed"
+	PipelineRunStatusSuperseded PipelineRunStatus = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the PipelineRunStatus enum.
+func (e PipelineRunStatus) Valid() bool {
+	switch e {
+	case PipelineRunStatusActive:
+		return true
+	case PipelineRunStatusCanceled:
+		return true
+	case PipelineRunStatusDone:
+		return true
+	case PipelineRunStatusFailed:
+		return true
+	case PipelineRunStatusSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineStepQueue.
+const (
+	Cpu    PipelineStepQueue = "cpu"
+	Gpu    PipelineStepQueue = "gpu"
+	Io     PipelineStepQueue = "io"
+	Llm    PipelineStepQueue = "llm"
+	Render PipelineStepQueue = "render"
+)
+
+// Valid indicates whether the value is a known member of the PipelineStepQueue enum.
+func (e PipelineStepQueue) Valid() bool {
+	switch e {
+	case Cpu:
+		return true
+	case Gpu:
+		return true
+	case Io:
+		return true
+	case Llm:
+		return true
+	case Render:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipelineStepStatus.
+const (
+	PipelineStepStatusCanceled PipelineStepStatus = "canceled"
+	PipelineStepStatusDone     PipelineStepStatus = "done"
+	PipelineStepStatusFailed   PipelineStepStatus = "failed"
+	PipelineStepStatusPending  PipelineStepStatus = "pending"
+	PipelineStepStatusQueued   PipelineStepStatus = "queued"
+	PipelineStepStatusRunning  PipelineStepStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the PipelineStepStatus enum.
+func (e PipelineStepStatus) Valid() bool {
+	switch e {
+	case PipelineStepStatusCanceled:
+		return true
+	case PipelineStepStatusDone:
+		return true
+	case PipelineStepStatusFailed:
+		return true
+	case PipelineStepStatusPending:
+		return true
+	case PipelineStepStatusQueued:
+		return true
+	case PipelineStepStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReadyStatusStatus.
 const (
 	ReadyStatusStatusOk ReadyStatusStatus = "ok"
@@ -113,6 +198,36 @@ func (e Role) Valid() bool {
 	case Owner:
 		return true
 	case Viewer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepSummaryStatus.
+const (
+	StepSummaryStatusCanceled StepSummaryStatus = "canceled"
+	StepSummaryStatusDone     StepSummaryStatus = "done"
+	StepSummaryStatusFailed   StepSummaryStatus = "failed"
+	StepSummaryStatusPending  StepSummaryStatus = "pending"
+	StepSummaryStatusQueued   StepSummaryStatus = "queued"
+	StepSummaryStatusRunning  StepSummaryStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the StepSummaryStatus enum.
+func (e StepSummaryStatus) Valid() bool {
+	switch e {
+	case StepSummaryStatusCanceled:
+		return true
+	case StepSummaryStatusDone:
+		return true
+	case StepSummaryStatusFailed:
+		return true
+	case StepSummaryStatusPending:
+		return true
+	case StepSummaryStatusQueued:
+		return true
+	case StepSummaryStatusRunning:
 		return true
 	default:
 		return false
@@ -164,9 +279,67 @@ type AuditList struct {
 	NextCursor *string      `json:"nextCursor,omitempty"`
 }
 
+// CreateRunRequest defines model for CreateRunRequest.
+type CreateRunRequest struct {
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	Kind      string              `json:"kind"`
+	ScopeId   openapi_types.UUID  `json:"scopeId"`
+	ScopeKind string              `json:"scopeKind"`
+	Steps     []CreateStepSpec    `json:"steps"`
+}
+
+// CreateStepSpec defines model for CreateStepSpec.
+type CreateStepSpec struct {
+	DependsOn *[]openapi_types.UUID `json:"dependsOn,omitempty"`
+	Id        openapi_types.UUID    `json:"id"`
+	Kind      string                `json:"kind"`
+	Priority  int                   `json:"priority"`
+	ScopeId   openapi_types.UUID    `json:"scopeId"`
+	ScopeKind string                `json:"scopeKind"`
+}
+
 // CsrfToken defines model for CsrfToken.
 type CsrfToken struct {
 	Token string `json:"token"`
+}
+
+// GpuBackendStatus defines model for GpuBackendStatus.
+type GpuBackendStatus struct {
+	Loaded    []string `json:"loaded"`
+	Name      string   `json:"name"`
+	Reachable bool     `json:"reachable"`
+}
+
+// GpuEncoder defines model for GpuEncoder.
+type GpuEncoder struct {
+	Hw   bool   `json:"hw"`
+	Name string `json:"name"`
+}
+
+// GpuResident defines model for GpuResident.
+type GpuResident struct {
+	Backend string `json:"backend"`
+	Model   string `json:"model"`
+}
+
+// GpuStatus defines model for GpuStatus.
+type GpuStatus struct {
+	Backends     []GpuBackendStatus `json:"backends"`
+	Capabilities []string           `json:"capabilities"`
+	Encoder      *GpuEncoder        `json:"encoder,omitempty"`
+	Queue        []StepSummary      `json:"queue"`
+	Resident     *GpuResident       `json:"resident,omitempty"`
+	Running      *StepSummary       `json:"running,omitempty"`
+	Vram         *GpuVram           `json:"vram,omitempty"`
+}
+
+// GpuVram defines model for GpuVram.
+type GpuVram struct {
+	BudgetMb        int64     `json:"budgetMb"`
+	FreeMb          int64     `json:"freeMb"`
+	MeasuredAt      time.Time `json:"measuredAt"`
+	RenderReserveMb int64     `json:"renderReserveMb"`
+	TotalMb         int64     `json:"totalMb"`
 }
 
 // HealthStatus defines model for HealthStatus.
@@ -197,6 +370,56 @@ type Me struct {
 	Email          string              `json:"email"`
 	Tenants        []TenantMembership  `json:"tenants"`
 	UserId         openapi_types.UUID  `json:"userId"`
+}
+
+// PipelineRun defines model for PipelineRun.
+type PipelineRun struct {
+	CreatedAt    time.Time           `json:"createdAt"`
+	Id           openapi_types.UUID  `json:"id"`
+	Kind         string              `json:"kind"`
+	ScopeId      openapi_types.UUID  `json:"scopeId"`
+	ScopeKind    string              `json:"scopeKind"`
+	Status       PipelineRunStatus   `json:"status"`
+	SupersededBy *openapi_types.UUID `json:"supersededBy,omitempty"`
+}
+
+// PipelineRunStatus defines model for PipelineRun.Status.
+type PipelineRunStatus string
+
+// PipelineStep defines model for PipelineStep.
+type PipelineStep struct {
+	Attempt       int                 `json:"attempt"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	ErrorCode     *string             `json:"errorCode,omitempty"`
+	ErrorMsg      *string             `json:"errorMsg,omitempty"`
+	EtaS          *int                `json:"etaS,omitempty"`
+	FinishedAt    *time.Time          `json:"finishedAt,omitempty"`
+	Id            openapi_types.UUID  `json:"id"`
+	Kind          string              `json:"kind"`
+	LogAssetId    *openapi_types.UUID `json:"logAssetId,omitempty"`
+	Priority      int                 `json:"priority"`
+	Progress      int                 `json:"progress"`
+	ProviderRef   *string             `json:"providerRef,omitempty"`
+	Queue         PipelineStepQueue   `json:"queue"`
+	RemainingDeps int                 `json:"remainingDeps"`
+	RunId         openapi_types.UUID  `json:"runId"`
+	ScopeId       openapi_types.UUID  `json:"scopeId"`
+	ScopeKind     string              `json:"scopeKind"`
+	StartedAt     *time.Time          `json:"startedAt,omitempty"`
+	Status        PipelineStepStatus  `json:"status"`
+	Version       int64               `json:"version"`
+}
+
+// PipelineStepQueue defines model for PipelineStep.Queue.
+type PipelineStepQueue string
+
+// PipelineStepStatus defines model for PipelineStep.Status.
+type PipelineStepStatus string
+
+// PipelineStepList defines model for PipelineStepList.
+type PipelineStepList struct {
+	Items      []PipelineStep `json:"items"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
 }
 
 // PresignRequest defines model for PresignRequest.
@@ -236,6 +459,25 @@ type ReadyStatusStatus string
 // Role defines model for Role.
 type Role string
 
+// StepLogUrl defines model for StepLogUrl.
+type StepLogUrl struct {
+	ExpiresAt time.Time `json:"expiresAt"`
+	Url       string    `json:"url"`
+}
+
+// StepSummary defines model for StepSummary.
+type StepSummary struct {
+	EtaS     *int               `json:"etaS,omitempty"`
+	Id       openapi_types.UUID `json:"id"`
+	Kind     string             `json:"kind"`
+	Priority int                `json:"priority"`
+	Progress int                `json:"progress"`
+	Status   StepSummaryStatus  `json:"status"`
+}
+
+// StepSummaryStatus defines model for StepSummary.Status.
+type StepSummaryStatus string
+
 // SwitchTenantRequest defines model for SwitchTenantRequest.
 type SwitchTenantRequest struct {
 	TenantId openapi_types.UUID `json:"tenantId"`
@@ -260,6 +502,26 @@ type ListAuditParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// StreamEventsParams defines parameters for StreamEvents.
+type StreamEventsParams struct {
+	// Topics Comma-separated pipeline run ids.
+	Topics string `form:"topics" json:"topics"`
+}
+
+// ListJobsParams defines parameters for ListJobs.
+type ListJobsParams struct {
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+	Queue  *string `form:"queue,omitempty" json:"queue,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListRunStepsParams defines parameters for ListRunSteps.
+type ListRunStepsParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // PresignAssetJSONRequestBody defines body for PresignAsset for application/json ContentType.
 type PresignAssetJSONRequestBody = PresignRequest
 
@@ -268,6 +530,9 @@ type LoginJSONRequestBody = LoginRequest
 
 // SwitchTenantJSONRequestBody defines body for SwitchTenant for application/json ContentType.
 type SwitchTenantJSONRequestBody = SwitchTenantRequest
+
+// CreateRunJSONRequestBody defines body for CreateRun for application/json ContentType.
+type CreateRunJSONRequestBody = CreateRunRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -301,12 +566,44 @@ type ServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(w http.ResponseWriter, r *http.Request)
+	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
+	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
+	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
+	// (GET /events)
+	StreamEvents(w http.ResponseWriter, r *http.Request, params StreamEventsParams)
+	// GetGpuStatus Current GPU residency, queue and VRAM status for this tenant
+	// (GET /gpu)
+	GetGpuStatus(w http.ResponseWriter, r *http.Request)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
+	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
+	// (GET /jobs)
+	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
 	// GetReadyz Readiness probe (checks Postgres and MinIO)
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
+	// CreateRun Create a pipeline run and its steps
+	// (POST /runs)
+	CreateRun(w http.ResponseWriter, r *http.Request)
+	// GetRun Get a pipeline run
+	// (GET /runs/{id})
+	GetRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// CancelRun Cancel every non-terminal step in a run
+	// (POST /runs/{id}/cancel)
+	CancelRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListRunSteps Cursor-paginated list of a run's steps
+	// (GET /runs/{id}/steps)
+	ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams)
+	// CancelStep Cancel one step
+	// (POST /steps/{id}/cancel)
+	CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GetStepLog Presigned URL for a step's scrubbed log, editor or owner only
+	// (GET /steps/{id}/log)
+	GetStepLog(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// RetryStep Reset a failed or canceled step to queued and re-enqueue it
+	// (POST /steps/{id}/retry)
+	RetryStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -373,15 +670,77 @@ func (_ Unimplemented) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
+// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
+// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
+// (GET /events)
+func (_ Unimplemented) StreamEvents(w http.ResponseWriter, r *http.Request, params StreamEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetGpuStatus Current GPU residency, queue and VRAM status for this tenant
+// (GET /gpu)
+func (_ Unimplemented) GetGpuStatus(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetHealthz Liveness probe
 // (GET /healthz)
 func (_ Unimplemented) GetHealthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
+// (GET /jobs)
+func (_ Unimplemented) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetReadyz Readiness probe (checks Postgres and MinIO)
 // (GET /readyz)
 func (_ Unimplemented) GetReadyz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateRun Create a pipeline run and its steps
+// (POST /runs)
+func (_ Unimplemented) CreateRun(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetRun Get a pipeline run
+// (GET /runs/{id})
+func (_ Unimplemented) GetRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelRun Cancel every non-terminal step in a run
+// (POST /runs/{id}/cancel)
+func (_ Unimplemented) CancelRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListRunSteps Cursor-paginated list of a run's steps
+// (GET /runs/{id}/steps)
+func (_ Unimplemented) ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelStep Cancel one step
+// (POST /steps/{id}/cancel)
+func (_ Unimplemented) CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetStepLog Presigned URL for a step's scrubbed log, editor or owner only
+// (GET /steps/{id}/log)
+func (_ Unimplemented) GetStepLog(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RetryStep Reset a failed or canceled step to queued and re-enqueue it
+// (POST /steps/{id}/retry)
+func (_ Unimplemented) RetryStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -622,6 +981,53 @@ func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// StreamEvents operation middleware
+func (siw *ServerInterfaceWrapper) StreamEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StreamEventsParams
+
+	// ------------- Required query parameter "topics" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "topics", r.URL.Query(), &params.Topics, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "topics"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "topics", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StreamEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetGpuStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetGpuStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetGpuStatus(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealthz operation middleware
 func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Request) {
 
@@ -636,11 +1042,282 @@ func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// ListJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListJobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListJobsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "queue" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "queue", r.URL.Query(), &params.Queue, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "queue"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "queue", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListJobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetReadyz operation middleware
 func (siw *ServerInterfaceWrapper) GetReadyz(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetReadyz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRun operation middleware
+func (siw *ServerInterfaceWrapper) CreateRun(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRun(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRun operation middleware
+func (siw *ServerInterfaceWrapper) GetRun(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRun(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelRun operation middleware
+func (siw *ServerInterfaceWrapper) CancelRun(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelRun(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRunSteps operation middleware
+func (siw *ServerInterfaceWrapper) ListRunSteps(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRunStepsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRunSteps(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelStep operation middleware
+func (siw *ServerInterfaceWrapper) CancelStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelStep(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStepLog operation middleware
+func (siw *ServerInterfaceWrapper) GetStepLog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStepLog(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryStep operation middleware
+func (siw *ServerInterfaceWrapper) RetryStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryStep(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -798,6 +1475,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/audit", wrapper.ListAudit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/runs", wrapper.CreateRun)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/runs/{id}", wrapper.GetRun)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/runs/{id}/steps", wrapper.ListRunSteps)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/runs/{id}/cancel", wrapper.CancelRun)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/steps/{id}/retry", wrapper.RetryStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/steps/{id}/cancel", wrapper.CancelStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/steps/{id}/log", wrapper.GetStepLog)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/jobs", wrapper.ListJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/gpu", wrapper.GetGpuStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/events", wrapper.StreamEvents)
 	})
 
 	return r
@@ -1112,6 +1819,106 @@ func (response SwitchTenant404ApplicationProblemPlusJSONResponse) VisitSwitchTen
 	return err
 }
 
+type StreamEventsRequestObject struct {
+	Params StreamEventsParams
+}
+
+type StreamEventsResponseObject interface {
+	VisitStreamEventsResponse(w http.ResponseWriter) error
+}
+
+type StreamEvents200TexteventStreamResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response StreamEvents200TexteventStreamResponse) VisitStreamEventsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		// If w doesn't support flushing, fall back to io.Copy.
+		_, err := io.Copy(w, response.Body)
+		return err
+	}
+	// text/event-stream messages are typically small; use a
+	// modest buffer and flush after each chunk so clients see
+	// events immediately instead of waiting on OS buffering.
+	buf := make([]byte, 4096)
+	for {
+		n, err := response.Body.Read(buf)
+		if n > 0 {
+			if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+				return writeErr
+			}
+			flusher.Flush()
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+type StreamEvents403ApplicationProblemPlusJSONResponse Problem
+
+func (response StreamEvents403ApplicationProblemPlusJSONResponse) VisitStreamEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StreamEvents429ApplicationProblemPlusJSONResponse Problem
+
+func (response StreamEvents429ApplicationProblemPlusJSONResponse) VisitStreamEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetGpuStatusRequestObject struct {
+}
+
+type GetGpuStatusResponseObject interface {
+	VisitGetGpuStatusResponse(w http.ResponseWriter) error
+}
+
+type GetGpuStatus200JSONResponse GpuStatus
+
+func (response GetGpuStatus200JSONResponse) VisitGetGpuStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthzRequestObject struct {
 }
 
@@ -1122,6 +1929,28 @@ type GetHealthzResponseObject interface {
 type GetHealthz200JSONResponse HealthStatus
 
 func (response GetHealthz200JSONResponse) VisitGetHealthzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListJobsRequestObject struct {
+	Params ListJobsParams
+}
+
+type ListJobsResponseObject interface {
+	VisitListJobsResponse(w http.ResponseWriter) error
+}
+
+type ListJobs200JSONResponse PipelineStepList
+
+func (response ListJobs200JSONResponse) VisitListJobsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -1168,6 +1997,253 @@ func (response GetReadyz503ApplicationProblemPlusJSONResponse) VisitGetReadyzRes
 	return err
 }
 
+type CreateRunRequestObject struct {
+	Body *CreateRunJSONRequestBody
+}
+
+type CreateRunResponseObject interface {
+	VisitCreateRunResponse(w http.ResponseWriter) error
+}
+
+type CreateRun201JSONResponse PipelineRun
+
+func (response CreateRun201JSONResponse) VisitCreateRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRun400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateRun400ApplicationProblemPlusJSONResponse) VisitCreateRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRun429ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateRun429ApplicationProblemPlusJSONResponse) VisitCreateRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRun507ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateRun507ApplicationProblemPlusJSONResponse) VisitCreateRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(507)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRunRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetRunResponseObject interface {
+	VisitGetRunResponse(w http.ResponseWriter) error
+}
+
+type GetRun200JSONResponse PipelineRun
+
+func (response GetRun200JSONResponse) VisitGetRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRun404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetRun404ApplicationProblemPlusJSONResponse) VisitGetRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRunRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type CancelRunResponseObject interface {
+	VisitCancelRunResponse(w http.ResponseWriter) error
+}
+
+type CancelRun204Response struct {
+}
+
+func (response CancelRun204Response) VisitCancelRunResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ListRunStepsRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	Params ListRunStepsParams
+}
+
+type ListRunStepsResponseObject interface {
+	VisitListRunStepsResponse(w http.ResponseWriter) error
+}
+
+type ListRunSteps200JSONResponse PipelineStepList
+
+func (response ListRunSteps200JSONResponse) VisitListRunStepsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelStepRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type CancelStepResponseObject interface {
+	VisitCancelStepResponse(w http.ResponseWriter) error
+}
+
+type CancelStep200JSONResponse PipelineStep
+
+func (response CancelStep200JSONResponse) VisitCancelStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelStep404ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelStep404ApplicationProblemPlusJSONResponse) VisitCancelStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStepLogRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetStepLogResponseObject interface {
+	VisitGetStepLogResponse(w http.ResponseWriter) error
+}
+
+type GetStepLog200JSONResponse StepLogUrl
+
+func (response GetStepLog200JSONResponse) VisitGetStepLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStepLog404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetStepLog404ApplicationProblemPlusJSONResponse) VisitGetStepLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetryStepRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type RetryStepResponseObject interface {
+	VisitRetryStepResponse(w http.ResponseWriter) error
+}
+
+type RetryStep200JSONResponse PipelineStep
+
+func (response RetryStep200JSONResponse) VisitRetryStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetryStep404ApplicationProblemPlusJSONResponse Problem
+
+func (response RetryStep404ApplicationProblemPlusJSONResponse) VisitRetryStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// ListAssets Cursor-paginated list of the active tenant's assets
@@ -1200,12 +2276,44 @@ type StrictServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(ctx context.Context, request SwitchTenantRequestObject) (SwitchTenantResponseObject, error)
+	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
+	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
+	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
+	// (GET /events)
+	StreamEvents(ctx context.Context, request StreamEventsRequestObject) (StreamEventsResponseObject, error)
+	// GetGpuStatus Current GPU residency, queue and VRAM status for this tenant
+	// (GET /gpu)
+	GetGpuStatus(ctx context.Context, request GetGpuStatusRequestObject) (GetGpuStatusResponseObject, error)
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
+	// (GET /jobs)
+	ListJobs(ctx context.Context, request ListJobsRequestObject) (ListJobsResponseObject, error)
 	// GetReadyz Readiness probe (checks Postgres and MinIO)
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
+	// CreateRun Create a pipeline run and its steps
+	// (POST /runs)
+	CreateRun(ctx context.Context, request CreateRunRequestObject) (CreateRunResponseObject, error)
+	// GetRun Get a pipeline run
+	// (GET /runs/{id})
+	GetRun(ctx context.Context, request GetRunRequestObject) (GetRunResponseObject, error)
+	// CancelRun Cancel every non-terminal step in a run
+	// (POST /runs/{id}/cancel)
+	CancelRun(ctx context.Context, request CancelRunRequestObject) (CancelRunResponseObject, error)
+	// ListRunSteps Cursor-paginated list of a run's steps
+	// (GET /runs/{id}/steps)
+	ListRunSteps(ctx context.Context, request ListRunStepsRequestObject) (ListRunStepsResponseObject, error)
+	// CancelStep Cancel one step
+	// (POST /steps/{id}/cancel)
+	CancelStep(ctx context.Context, request CancelStepRequestObject) (CancelStepResponseObject, error)
+	// GetStepLog Presigned URL for a step's scrubbed log, editor or owner only
+	// (GET /steps/{id}/log)
+	GetStepLog(ctx context.Context, request GetStepLogRequestObject) (GetStepLogResponseObject, error)
+	// RetryStep Reset a failed or canceled step to queued and re-enqueue it
+	// (POST /steps/{id}/retry)
+	RetryStep(ctx context.Context, request RetryStepRequestObject) (RetryStepResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1516,6 +2624,56 @@ func (sh *strictHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StreamEvents operation middleware
+func (sh *strictHandler) StreamEvents(w http.ResponseWriter, r *http.Request, params StreamEventsParams) {
+	var request StreamEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StreamEvents(ctx, request.(StreamEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StreamEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StreamEventsResponseObject); ok {
+		if err := validResponse.VisitStreamEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetGpuStatus operation middleware
+func (sh *strictHandler) GetGpuStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetGpuStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetGpuStatus(ctx, request.(GetGpuStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetGpuStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetGpuStatusResponseObject); ok {
+		if err := validResponse.VisitGetGpuStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHealthz operation middleware
 func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 	var request GetHealthzRequestObject
@@ -1533,6 +2691,32 @@ func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
 		if err := validResponse.VisitGetHealthzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListJobs operation middleware
+func (sh *strictHandler) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
+	var request ListJobsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListJobs(ctx, request.(ListJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListJobsResponseObject); ok {
+		if err := validResponse.VisitListJobsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1564,44 +2748,262 @@ func (sh *strictHandler) GetReadyz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateRun operation middleware
+func (sh *strictHandler) CreateRun(w http.ResponseWriter, r *http.Request) {
+	var request CreateRunRequestObject
+
+	var body CreateRunJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRun(ctx, request.(CreateRunRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRun")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRunResponseObject); ok {
+		if err := validResponse.VisitCreateRunResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRun operation middleware
+func (sh *strictHandler) GetRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetRunRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRun(ctx, request.(GetRunRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRun")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRunResponseObject); ok {
+		if err := validResponse.VisitGetRunResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelRun operation middleware
+func (sh *strictHandler) CancelRun(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request CancelRunRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelRun(ctx, request.(CancelRunRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelRun")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelRunResponseObject); ok {
+		if err := validResponse.VisitCancelRunResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRunSteps operation middleware
+func (sh *strictHandler) ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams) {
+	var request ListRunStepsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRunSteps(ctx, request.(ListRunStepsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRunSteps")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRunStepsResponseObject); ok {
+		if err := validResponse.VisitListRunStepsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelStep operation middleware
+func (sh *strictHandler) CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request CancelStepRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelStep(ctx, request.(CancelStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelStepResponseObject); ok {
+		if err := validResponse.VisitCancelStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStepLog operation middleware
+func (sh *strictHandler) GetStepLog(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetStepLogRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStepLog(ctx, request.(GetStepLogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStepLog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStepLogResponseObject); ok {
+		if err := validResponse.VisitGetStepLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetryStep operation middleware
+func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request RetryStepRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetryStep(ctx, request.(RetryStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetryStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetryStepResponseObject); ok {
+		if err := validResponse.VisitRetryStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"8MvD/wcAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -1,0 +1,152 @@
+PipelineRun:
+  type: object
+  required: [id, scopeKind, scopeId, kind, status, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    scopeKind:
+      type: string
+    scopeId:
+      type: string
+      format: uuid
+    kind:
+      type: string
+    status:
+      type: string
+      enum: [active, done, failed, canceled, superseded]
+    supersededBy:
+      type: string
+      format: uuid
+    createdAt:
+      type: string
+      format: date-time
+PipelineStep:
+  type: object
+  required:
+    - id
+    - runId
+    - scopeKind
+    - scopeId
+    - kind
+    - queue
+    - priority
+    - status
+    - attempt
+    - version
+    - remainingDeps
+    - progress
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+    runId:
+      type: string
+      format: uuid
+    scopeKind:
+      type: string
+    scopeId:
+      type: string
+      format: uuid
+    kind:
+      type: string
+    queue:
+      type: string
+      enum: [gpu, cpu, llm, render, io]
+    providerRef:
+      type: string
+    priority:
+      type: integer
+    status:
+      type: string
+      enum: [pending, queued, running, done, failed, canceled]
+    attempt:
+      type: integer
+    version:
+      type: integer
+      format: int64
+    remainingDeps:
+      type: integer
+    progress:
+      type: integer
+    etaS:
+      type: integer
+    errorCode:
+      type: string
+    errorMsg:
+      type: string
+    logAssetId:
+      type: string
+      format: uuid
+    startedAt:
+      type: string
+      format: date-time
+    finishedAt:
+      type: string
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+PipelineStepList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/PipelineStep"
+    nextCursor:
+      type: string
+CreateStepSpec:
+  type: object
+  required: [id, kind, scopeKind, scopeId, priority]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      type: string
+    scopeKind:
+      type: string
+    scopeId:
+      type: string
+      format: uuid
+    priority:
+      type: integer
+      minimum: 1
+      maximum: 4
+    dependsOn:
+      type: array
+      items:
+        type: string
+        format: uuid
+CreateRunRequest:
+  type: object
+  required: [scopeKind, scopeId, kind, steps]
+  properties:
+    id:
+      type: string
+      format: uuid
+    scopeKind:
+      type: string
+    scopeId:
+      type: string
+      format: uuid
+    kind:
+      type: string
+    steps:
+      type: array
+      minItems: 1
+      items:
+        $ref: "#/CreateStepSpec"
+StepLogUrl:
+  type: object
+  required: [url, expiresAt]
+  properties:
+    url:
+      type: string
+      format: uri
+    expiresAt:
+      type: string
+      format: date-time

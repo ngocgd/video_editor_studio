@@ -1,0 +1,58 @@
+# GET /api/v1/events goes through the generated strict server like every
+# other route (so request validation and x-min-role RBAC still apply),
+# but its response is a hand-written gen.StreamEventsResponseObject (see
+# api/internal/pipelineapi/events.go) that takes over the
+# http.ResponseWriter and streams SSE frames for the life of the
+# connection, because a chunked text/event-stream body does not fit the
+# single-JSON-value response model oapi-codegen otherwise generates.
+events:
+  get:
+    operationId: streamEvents
+    summary: >-
+      Server-sent events for pipeline step progress and state changes.
+      Cookie-authenticated, tenant-filtered. Requires a "topics" query
+      parameter: a comma-separated list of pipeline run ids the caller's
+      tenant owns (checked against pipeline_runs at subscribe time; an
+      unknown or foreign topic is rejected with 403).
+
+      The first event on every stream is "ready"; a client must subscribe
+      before fetching its own initial snapshot (GET /runs/{id}/steps) and
+      discard any event whose "version" is <= the snapshot's, so no event
+      that arrived between snapshot and subscribe is lost.
+
+      Progress-only updates are coalesced to at most one per step id per
+      250ms; every state transition (queued/running/done/failed/canceled)
+      is delivered individually and is never dropped or coalesced. If the
+      hub's own LISTEN connection drops and reconnects, every subscriber
+      receives a "resync" event and must refetch its snapshot. A 15s
+      heartbeat comment line keeps idle connections alive through
+      proxies. A user may hold at most 6 concurrent streams (429 beyond
+      that); the web client shares one stream across browser tabs.
+    tags: [jobs]
+    x-min-role: viewer
+    parameters:
+      - name: topics
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Comma-separated pipeline run ids.
+    responses:
+      "200":
+        description: text/event-stream of step events
+        content:
+          text/event-stream:
+            schema:
+              type: string
+      "403":
+        description: an unknown or foreign topic was requested
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: too many concurrent streams for this user
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

@@ -1,0 +1,13 @@
+getGpuStatus:
+  get:
+    operationId: getGpuStatus
+    summary: Current GPU residency, queue and VRAM status for this tenant
+    tags: [jobs]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: GPU status
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/gpu.yaml#/GpuStatus"

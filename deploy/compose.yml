@@ -218,6 +218,16 @@ services:
     environment:
       API_LOG_LEVEL: info
       DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
+      # Step logs flush straight to object storage (see
+      # pipeline.AssetLogSink), through the same in-network MinIO client
+      # the api service uses; the worker never needs the browser-facing
+      # presign client, so only these four are set (unlike api's five).
+      MINIO_ENDPOINT: minio:9000
+      MINIO_BUCKET: loomtale
+      MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:?set MINIO_APP_ACCESS_KEY in .env, see .env.example}
+      MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:?set MINIO_APP_SECRET_KEY in .env, see .env.example}
+      # WORKER_GPU defaults to false in code; phase 4 sets it to true only
+      # on the worker service in compose.gpu.yml.
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s

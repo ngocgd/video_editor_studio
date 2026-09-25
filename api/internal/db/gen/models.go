@@ -67,6 +67,54 @@ type Membership struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type PipelineRun struct {
+	ID           pgtype.UUID        `json:"id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ScopeKind    string             `json:"scope_kind"`
+	ScopeID      pgtype.UUID        `json:"scope_id"`
+	Kind         string             `json:"kind"`
+	Status       string             `json:"status"`
+	SupersededBy pgtype.UUID        `json:"superseded_by"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PipelineStep struct {
+	ID            pgtype.UUID        `json:"id"`
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	RunID         pgtype.UUID        `json:"run_id"`
+	ScopeKind     string             `json:"scope_kind"`
+	ScopeID       pgtype.UUID        `json:"scope_id"`
+	Kind          string             `json:"kind"`
+	Queue         string             `json:"queue"`
+	ProviderRef   string             `json:"provider_ref"`
+	Priority      int16              `json:"priority"`
+	Status        string             `json:"status"`
+	Attempt       int32              `json:"attempt"`
+	Version       int64              `json:"version"`
+	RemainingDeps int32              `json:"remaining_deps"`
+	ClaimedJobID  pgtype.Int8        `json:"claimed_job_id"`
+	InputHash     string             `json:"input_hash"`
+	Progress      int16              `json:"progress"`
+	EtaS          pgtype.Int4        `json:"eta_s"`
+	Output        []byte             `json:"output"`
+	ErrorCode     pgtype.Text        `json:"error_code"`
+	ErrorMsg      pgtype.Text        `json:"error_msg"`
+	LogAssetID    pgtype.UUID        `json:"log_asset_id"`
+	HeartbeatAt   pgtype.Timestamptz `json:"heartbeat_at"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	FinishedAt    pgtype.Timestamptz `json:"finished_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PipelineStepDep struct {
+	TenantID        pgtype.UUID `json:"tenant_id"`
+	StepID          pgtype.UUID `json:"step_id"`
+	DependsOnStepID pgtype.UUID `json:"depends_on_step_id"`
+}
+
 type RateLimitBucket struct {
 	BucketKey string             `json:"bucket_key"`
 	Tokens    float32            `json:"tokens"`
@@ -110,6 +158,7 @@ type TenantQuota struct {
 	MaxStorageBytes  pgtype.Int8        `json:"max_storage_bytes"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	MaxActiveSteps   pgtype.Int4        `json:"max_active_steps"`
 }
 
 type User struct {

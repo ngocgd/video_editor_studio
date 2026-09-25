@@ -11,16 +11,33 @@ import (
 )
 
 type Querier interface {
+	CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) ([]PipelineStep, error)
+	CancelScopeSteps(ctx context.Context, arg CancelScopeStepsParams) ([]PipelineStep, error)
+	CancelStep(ctx context.Context, arg CancelStepParams) (PipelineStep, error)
+	// The only fence: a handler only owns the rows this query returns. Driven
+	// solely by River job args (step ids the dispatcher itself enqueued),
+	// never by request input, so it is not tenant-filtered.
+	// lint-tenant-queries:allow: claim is fenced by id = ANY(job args) + status, not by caller-supplied tenant
+	ClaimSteps(ctx context.Context, arg ClaimStepsParams) ([]PipelineStep, error)
+	// lint-tenant-queries:allow: internal output commit fenced by id+attempt, not caller input
+	CommitStepDone(ctx context.Context, arg CommitStepDoneParams) (PipelineStep, error)
+	// lint-tenant-queries:allow: internal failure commit fenced by id+attempt, not caller input
+	CommitStepFailed(ctx context.Context, arg CommitStepFailedParams) (PipelineStep, error)
 	CompleteBackupRun(ctx context.Context, arg CompleteBackupRunParams) error
 	// Consumes one token if at least one is available; the caller checks the
 	// returned row count (1 = allowed, 0 = the bucket was already empty).
 	ConsumeRateLimitBucket(ctx context.Context, bucketKey string) (int64, error)
+	CountActiveStepsForTenant(ctx context.Context, tenantID pgtype.UUID) (int64, error)
+	// lint-tenant-queries:allow: cross-tenant GPU scheduling decision, there is only one physical GPU
+	CountQueuedGpuStepsForModel(ctx context.Context, arg CountQueuedGpuStepsForModelParams) (int64, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
+	CreateRun(ctx context.Context, arg CreateRunParams) (PipelineRun, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DecrementRemainingDeps(ctx context.Context, arg DecrementRemainingDepsParams) ([]PipelineStep, error)
 	// Best-effort housekeeping, called opportunistically (not on a schedule)
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
@@ -33,27 +50,50 @@ type Querier interface {
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
 	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
+	GetDependents(ctx context.Context, arg GetDependentsParams) ([]pgtype.UUID, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
+	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
+	GetRunningGpuStepForTenant(ctx context.Context, tenantID pgtype.UUID) (PipelineStep, error)
 	// Placeholder query proving the sqlc -> pgx/v5 pipeline against goose's own
 	// version table. Later phases add domain queries here and in sibling files.
 	GetSchemaVersion(ctx context.Context) (GetSchemaVersionRow, error)
 	GetSecret(ctx context.Context, arg GetSecretParams) (Secret, error)
 	GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error)
+	GetStepByID(ctx context.Context, arg GetStepByIDParams) (PipelineStep, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
+	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
+	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertStep(ctx context.Context, arg InsertStepParams) (PipelineStep, error)
+	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
+	// transaction stays within the enqueue latency budget.
+	InsertStepBatch(ctx context.Context, arg []InsertStepBatchParams) *InsertStepBatchBatchResults
+	InsertStepDep(ctx context.Context, arg InsertStepDepParams) error
+	InsertStepDepBatch(ctx context.Context, arg []InsertStepDepBatchParams) *InsertStepDepBatchBatchResults
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
+	ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error)
 	// lint-tenant-queries:allow: by design this lists every tenant the user
 	// belongs to (e.g. to populate the tenant switcher); it is scoped by
 	// user_id, not tenant_id, because no single tenant is selected yet.
 	ListMembershipsForUser(ctx context.Context, userID pgtype.UUID) ([]ListMembershipsForUserRow, error)
+	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	MarkRunStatus(ctx context.Context, arg MarkRunStatusParams) error
+	MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams) ([]PipelineStep, error)
+	// lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
+	PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineStep, error)
+	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
+	ReadySweep(ctx context.Context) ([]PipelineStep, error)
+	RecomputeRemainingDeps(ctx context.Context, arg RecomputeRemainingDepsParams) (PipelineStep, error)
 	// Upserts a token bucket, refilling it by elapsed time since its last
 	// update, and returns the refilled token count. Deliberately a separate
 	// statement from the conditional decrement in ConsumeRateLimitBucket: a
@@ -65,13 +105,21 @@ type Querier interface {
 	// race window under heavy concurrent load on the same key, which a login
 	// rate limiter does not need to close precisely.
 	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
+	// lint-tenant-queries:allow: internal retry-requeue fenced by id+attempt, not caller input
+	RequeueStep(ctx context.Context, arg RequeueStepParams) (PipelineStep, error)
+	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
+	ResetStaleHeartbeats(ctx context.Context, cutoff pgtype.Timestamptz) ([]PipelineStep, error)
+	RetryStep(ctx context.Context, arg RetryStepParams) (PipelineStep, error)
 	// Used on tenant switch (session-fixation defence: a session that briefly
 	// saw tenant A's data gets a fresh token before it can act on tenant B's).
 	// expires_at is deliberately left untouched: rotating must not extend the
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	SupersedeRun(ctx context.Context, arg SupersedeRunParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
+	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 }
