@@ -1,0 +1,199 @@
+seriesCollection:
+  get:
+    operationId: listSeries
+    summary: Cursor-paginated list of the active tenant's series
+    tags: [series]
+    x-min-role: viewer
+    parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+    responses:
+      "200":
+        description: page of series
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/SeriesList"
+  post:
+    operationId: createSeries
+    summary: Create a new series (settings only; no bible or episodes yet)
+    tags: [series]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/SeriesCreateRequest"
+    responses:
+      "201":
+        description: series created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Series"
+      "400":
+        description: invalid series settings
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+seriesItem:
+  get:
+    operationId: getSeries
+    summary: Series settings
+    tags: [series]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: series settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Series"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  patch:
+    operationId: updateSeries
+    summary: Update series settings
+    tags: [series]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/SeriesUpdateRequest"
+    responses:
+      "200":
+        description: series updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Series"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+generateSeries:
+  post:
+    operationId: generateSeries
+    summary: Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+    tags: [series]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/SeriesGenerateRequest"
+    responses:
+      "202":
+        description: generation run created; progress streams over SSE
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/SeriesGenerateResponse"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: no LLM provider available for this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+seriesBible:
+  get:
+    operationId: getBible
+    summary: The series' story bible sections
+    tags: [series]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: story bible
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/StoryBible"
+      "404":
+        description: series or bible not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  patch:
+    operationId: updateBibleSection
+    summary: Update one bible section with an optimistic-concurrency check
+    tags: [series]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/BibleSectionUpdateRequest"
+    responses:
+      "200":
+        description: bible section updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/StoryBible"
+      "409":
+        description: expectedVersion did not match the section's current version
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

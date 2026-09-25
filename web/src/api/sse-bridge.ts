@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { AiDeltaBus, isAiDeltaEvent } from "./sse-ai-delta";
 import { SseCachePatcher, type StepEvent } from "./sse-cache";
 import { SseConnection, type StreamStatus } from "./sse-connection";
 import { broadcastChannelSupported, CHANNEL_NAME, electLeader } from "./sse-leader";
@@ -30,6 +31,7 @@ export class SseBridge {
   private readonly tabId = crypto.randomUUID();
   private readonly channel: BroadcastChannel | null;
   private readonly patcher: SseCachePatcher;
+  private readonly aiDeltaBus = new AiDeltaBus();
   private readonly connection: SseConnection;
   private readonly consumers = new Map<string, Set<string>>();
   private readonly topicRegistry = new TopicRegistry();
@@ -91,6 +93,11 @@ export class SseBridge {
   /** A job-completion announcement (done/failed/canceled), for the status bar's live region. */
   onCompletion(listener: (evt: StepEvent) => void): () => void {
     return this.patcher.onCompletion(listener);
+  }
+
+  /** AI-action token chunks (phase 6 writer) for one step id; see ./sse-ai-delta for the contract gap this assumes. */
+  onAiDelta(stepId: string, listener: (evt: { stepId: string; text: string; done: boolean }) => void): () => void {
+    return this.aiDeltaBus.subscribe(stepId, listener);
   }
 
   /** Registers a consumer's topic set (pipeline run ids); returns an unsubscribe function. */
@@ -192,6 +199,10 @@ export class SseBridge {
     }
     if (eventName === "resync") {
       this.invalidateActiveSnapshots();
+      return;
+    }
+    if (eventName === "llm.delta") {
+      if (isAiDeltaEvent(data)) this.aiDeltaBus.publish(data);
       return;
     }
     if (eventName !== "step" || data == null) return;

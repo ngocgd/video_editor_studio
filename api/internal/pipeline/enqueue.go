@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -21,6 +22,11 @@ type StepSpec struct {
 	ScopeID   uuid.UUID
 	Priority  int
 	DependsOn []uuid.UUID
+	// Input is caller-supplied, handler-specific parameters (e.g. an AI
+	// action's selected paragraph ids and free-text instruction), set
+	// once at enqueue time and read back via StepContext.Input in Run.
+	// Nil is stored as an empty JSON object, never a SQL NULL.
+	Input json.RawMessage
 }
 
 // RunSpec describes a new pipeline run and its steps.
@@ -134,6 +140,10 @@ func (e *Engine) insertSteps(ctx context.Context, qtx *dbgen.Queries, tenantID u
 		if len(r.spec.DependsOn) == 0 {
 			status = StatusQueued
 		}
+		input := r.spec.Input
+		if len(input) == 0 {
+			input = json.RawMessage("{}")
+		}
 		params[i] = dbgen.InsertStepBatchParams{
 			ID:            idconv.ToPg(r.spec.ID),
 			TenantID:      idconv.ToPg(tenantID),
@@ -147,6 +157,7 @@ func (e *Engine) insertSteps(ctx context.Context, qtx *dbgen.Queries, tenantID u
 			Status:        status,
 			RemainingDeps: int32(len(r.spec.DependsOn)),
 			InputHash:     r.hash,
+			Input:         input,
 		}
 	}
 

@@ -51,6 +51,11 @@
   --text-lg--line-height: 1.375rem;
   --text-xl: 1.25rem;
   --text-xl--line-height: 1.625rem;
+  /* Guidelines §3: Literata long-form reading sizes for the story writer. */
+  --text-read-md: 1.0625rem;
+  --text-read-md--line-height: 1.7;
+  --text-read-lg: 1.1875rem;
+  --text-read-lg--line-height: 1.75;
 }
 
 @layer base {

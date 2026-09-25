@@ -33,14 +33,19 @@ import (
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/providers/bootstrap"
+	"loomtale/api/internal/providers/llm/claudecli"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
 	"loomtale/api/internal/secheaders"
+	"loomtale/api/internal/secretstr"
+	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
+	"loomtale/api/internal/story"
 	"loomtale/api/internal/validation"
 )
 
@@ -96,7 +101,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if _, err := envelope.NewSealer(keyID, kek); err != nil {
+	sealer, err := envelope.NewSealer(keyID, kek)
+	if err != nil {
 		return err
 	}
 	// The CSRF pepper reuses the KEK bytes with domain separation (see
@@ -144,7 +150,27 @@ func run() error {
 		return err
 	}
 	quotaChecker := &quota.Checker{}
-	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, pipeline.NewRegistry(), []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
+	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+	llmRegistry, llmStore, err := bootstrap.Build(bootstrap.Config{
+		AppMode:               cfg.AppMode,
+		AllowedProviderHosts:  cfg.AllowedProviderHosts,
+		OllamaURL:             cfg.OllamaURL,
+		OllamaModel:           cfg.OllamaModel,
+		LLMCLIURL:             cfg.LLMCLIURL,
+		LLMCLIBearerTokenPath: cfg.LLMCLIBearerTokenPath,
+		AnthropicAPIKeyPath:   cfg.AnthropicAPIKeyPath,
+		AnthropicModel:        cfg.AnthropicModel,
+		GeminiAPIKeyPath:      cfg.GeminiAPIKeyPath,
+		GeminiModel:           cfg.GeminiModel,
+	}, queries, secretsStore)
+	if err != nil {
+		return err
+	}
+	stepRegistry := pipeline.NewRegistry()
+	for _, handler := range story.Handlers(llmRegistry, queries) {
+		stepRegistry.Register(handler)
+	}
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
@@ -177,10 +203,7 @@ func run() error {
 		}
 	}
 
-	llmRegistry, llmStore, err := buildRegistry(cfg, queries)
-	if err != nil {
-		return err
-	}
+	claudeCLIStatus := claudecli.New(cfg.LLMCLIURL, secretstr.String(""), bootstrap.TimeoutHTTPClient(), false)
 
 	srv := &server{
 		Handler: &health.Handler{
@@ -223,8 +246,18 @@ func run() error {
 			Registry:      llmRegistry,
 			Store:         llmStore,
 			Queries:       queries,
+			Secrets:       secretsStore,
 			WorkerStatus:  &workerstatus.Store{Queries: queries},
 			TestRateLimit: ratelimit.NewDBBucket(queries, 5, 5.0/60),
+			SecretsWrite:  secretsStore,
+			ClaudeCLI:     claudeCLIStatus,
+		},
+		StoryAPI: &story.StoryAPI{
+			Pool:     pool,
+			Queries:  queries,
+			Engine:   engine,
+			Registry: llmRegistry,
+			Internal: internalStore,
 		},
 	}
 

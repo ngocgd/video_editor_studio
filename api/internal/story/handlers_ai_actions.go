@@ -1,0 +1,101 @@
+package story
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+
+	authpkg "loomtale/api/internal/auth"
+	"loomtale/api/internal/db/idconv"
+	"loomtale/api/internal/httpapi/gen"
+	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/tenant"
+)
+
+// AiActionInput is the step's Input payload (pipeline_steps.input): the
+// parts of AiActionRequest the async handler needs beyond its own
+// scope_kind/scope_id. Instruction is re-capped by storyctx.Build
+// regardless, so a caller that already validated the 500-char OpenAPI
+// limit gets no surprise truncation, only defense in depth.
+type AiActionInput struct {
+	Lang         string   `json:"lang"`
+	ParagraphIds []string `json:"paragraphIds,omitempty"`
+	BeatId       string   `json:"beatId,omitempty"`
+	Instruction  string   `json:"instruction,omitempty"`
+}
+
+// actionToKind maps the client-facing AiActionRequest.Action enum to a
+// pipeline step kind. "outline" at episode scope is not supported today
+// (llm.outline always creates a new episode under a series scope, per
+// POST /series/{id}/generate and the AI action step registration in this
+// package's kinds.go); a caller that requests it gets a 404.
+var actionToKind = map[gen.AiActionRequestAction]string{
+	gen.Continue:   KindContinue,
+	gen.ExpandBeat: KindExpandBeat,
+	gen.Expand:     KindRewrite,
+	gen.Shorten:    KindRewrite,
+	gen.Tone:       KindRewrite,
+	gen.Rewrite:    KindRewrite,
+	gen.Translate:  KindTranslate,
+	gen.Summarise:  KindSummarise,
+}
+
+// CreateAiAction implements gen.StrictServerInterface: enqueues one
+// pipeline step for the requested action, scoped to this episode. Editor
+// role is enforced by x-min-role; ownership is re-checked here via a
+// tenant-scoped episode lookup. The request's lang/paragraphIds/beatId/
+// instruction are carried to the async Run via StepSpec.Input (see
+// AiActionInput) and applied in ai_actions.go's runEpisodeAction.
+func (h *StoryAPI) CreateAiAction(ctx context.Context, req gen.CreateAiActionRequestObject) (gen.CreateAiActionResponseObject, error) {
+	info := tenant.MustFromCtx(ctx)
+	sess, _ := authpkg.FromCtx(ctx)
+	if _, err := h.requireEpisode(ctx, info.ID, req.Id); err != nil {
+		if isNoRows(err) {
+			return gen.CreateAiAction404ApplicationProblemPlusJSONResponse{Title: "episode not found", Status: http.StatusNotFound}, nil
+		}
+		return nil, err
+	}
+
+	kind, ok := actionToKind[req.Body.Action]
+	if !ok {
+		detail := "this action is not supported at episode scope"
+		return gen.CreateAiAction404ApplicationProblemPlusJSONResponse{Title: "unsupported action", Status: http.StatusNotFound, Detail: &detail}, nil
+	}
+
+	input := AiActionInput{Lang: string(req.Body.Lang)}
+	if req.Body.BeatId != nil {
+		input.BeatId = *req.Body.BeatId
+	}
+	if req.Body.Instruction != nil {
+		input.Instruction = *req.Body.Instruction
+	}
+	if req.Body.ParagraphIds != nil {
+		input.ParagraphIds = *req.Body.ParagraphIds
+	}
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+
+	runID := idconv.NewV7()
+	stepID := idconv.NewV7()
+	if _, err := h.Engine.Enqueue(ctx, info.ID, pipeline.RunSpec{
+		ID:        runID,
+		ScopeKind: ScopeEpisode,
+		ScopeID:   req.Id,
+		Kind:      "episode.ai_action",
+		CreatedBy: userIDPtr(sess),
+		Steps: []pipeline.StepSpec{{
+			ID:        stepID,
+			Kind:      kind,
+			ScopeKind: ScopeEpisode,
+			ScopeID:   req.Id,
+			Priority:  pipeline.PriorityInteractive,
+			Input:     inputJSON,
+		}},
+	}); err != nil {
+		return nil, err
+	}
+
+	return gen.CreateAiAction202JSONResponse{RunId: runID, StepId: stepID}, nil
+}

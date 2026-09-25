@@ -928,6 +928,776 @@ export const LLMSettingsTestResultSchema = {
         },
         detail: {
             type: 'string'
+        },
+        latencyMs: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const LLMApiKeyRequestSchema = {
+    type: 'object',
+    required: [
+        'apiKey'
+    ],
+    properties: {
+        apiKey: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 4096,
+            description: 'Write-only; never echoed back. Stored envelope-encrypted (kind=llm_api_key, owner_ref=provider).'
+        }
+    }
+} as const;
+
+export const ClaudeCliStatusSchema = {
+    type: 'object',
+    required: [
+        'installed',
+        'authenticated',
+        'toolsDisabled'
+    ],
+    properties: {
+        installed: {
+            type: 'boolean'
+        },
+        version: {
+            type: 'string'
+        },
+        authenticated: {
+            type: 'boolean'
+        },
+        toolsDisabled: {
+            type: 'boolean',
+            description: 'Always true; the llm-cli sidecar runs claude with tool use disabled.'
+        },
+        detail: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const TargetLanguageSchema = {
+    type: 'string',
+    enum: [
+        'en',
+        'vi'
+    ]
+} as const;
+
+export const SeriesSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'title',
+        'targetLanguages',
+        'targetEpisodeMinutes',
+        'plannedEpisodeCount',
+        'status',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        title: {
+            type: 'string'
+        },
+        genre: {
+            type: 'string'
+        },
+        targetLanguages: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/TargetLanguage'
+            }
+        },
+        targetEpisodeMinutes: {
+            type: 'integer'
+        },
+        plannedEpisodeCount: {
+            type: 'integer'
+        },
+        styleNotes: {
+            type: 'string'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'draft',
+                'active',
+                'archived'
+            ]
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const SeriesListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Series'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const SeriesCreateRequestSchema = {
+    type: 'object',
+    required: [
+        'title',
+        'targetLanguages',
+        'targetEpisodeMinutes',
+        'plannedEpisodeCount'
+    ],
+    properties: {
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 200
+        },
+        genre: {
+            type: 'string',
+            maxLength: 100
+        },
+        targetLanguages: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/TargetLanguage'
+            },
+            minItems: 1
+        },
+        targetEpisodeMinutes: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 120
+        },
+        plannedEpisodeCount: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 500
+        },
+        styleNotes: {
+            type: 'string',
+            maxLength: 4000
+        }
+    }
+} as const;
+
+export const SeriesUpdateRequestSchema = {
+    allOf: [
+        {
+            $ref: '#/components/schemas/SeriesCreateRequest'
+        },
+        {
+            type: 'object',
+            properties: {
+                status: {
+                    type: 'string',
+                    enum: [
+                        'draft',
+                        'active',
+                        'archived'
+                    ]
+                }
+            }
+        }
+    ]
+} as const;
+
+export const SeriesGenerateRequestSchema = {
+    type: 'object',
+    description: 'Kicks off the settings -> bible seed -> episode outlines wizard.',
+    properties: {
+        episodeCount: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 500
+        }
+    }
+} as const;
+
+export const SeriesGenerateResponseSchema = {
+    type: 'object',
+    required: [
+        'runId'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const OriginSchema = {
+    type: 'string',
+    enum: [
+        'user',
+        'import',
+        'model'
+    ]
+} as const;
+
+export const BibleSectionSchema = {
+    type: 'object',
+    required: [
+        'content',
+        'origin',
+        'tainted',
+        'version'
+    ],
+    properties: {
+        content: {
+            type: 'string',
+            description: 'Plain text for prose sections; JSON-encoded array text for the glossary section.'
+        },
+        origin: {
+            $ref: '#/components/schemas/Origin'
+        },
+        tainted: {
+            type: 'boolean'
+        },
+        version: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const StoryBibleSchema = {
+    type: 'object',
+    required: [
+        'seriesId',
+        'sections',
+        'updatedAt'
+    ],
+    properties: {
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        sections: {
+            type: 'object',
+            additionalProperties: {
+                $ref: '#/components/schemas/BibleSection'
+            }
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const BibleSectionUpdateRequestSchema = {
+    type: 'object',
+    required: [
+        'section',
+        'content',
+        'expectedVersion'
+    ],
+    properties: {
+        section: {
+            type: 'string',
+            enum: [
+                'world',
+                'cultivation_realms',
+                'arcs',
+                'style_guide',
+                'running_summary',
+                'glossary'
+            ]
+        },
+        content: {
+            type: 'string',
+            maxLength: 20000
+        },
+        expectedVersion: {
+            type: 'integer',
+            description: 'Optimistic-concurrency check against the section\'s current version; a mismatch returns 409.'
+        }
+    }
+} as const;
+
+export const OutlineBeatSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'summary',
+        'targetWords'
+    ],
+    properties: {
+        id: {
+            type: 'string'
+        },
+        summary: {
+            type: 'string'
+        },
+        targetWords: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const DraftStatusSchema = {
+    type: 'object',
+    properties: {
+        wordCount: {
+            type: 'integer'
+        },
+        version: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const EpisodeSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'seriesId',
+        'idx',
+        'title',
+        'outline',
+        'status',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        idx: {
+            type: 'integer'
+        },
+        title: {
+            type: 'string'
+        },
+        outline: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/OutlineBeat'
+            }
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'planned',
+                'outlined',
+                'drafting',
+                'draft',
+                'reviewed'
+            ]
+        },
+        drafts: {
+            type: 'object',
+            additionalProperties: {
+                $ref: '#/components/schemas/DraftStatus'
+            }
+        },
+        durationEstimateMinutes: {
+            type: 'object',
+            additionalProperties: {
+                type: 'number'
+            }
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const EpisodeListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Episode'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const EpisodeUpdateRequestSchema = {
+    type: 'object',
+    properties: {
+        title: {
+            type: 'string',
+            maxLength: 200
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'planned',
+                'outlined',
+                'drafting',
+                'draft',
+                'reviewed'
+            ]
+        }
+    }
+} as const;
+
+export const AiActionRequestSchema = {
+    type: 'object',
+    required: [
+        'action',
+        'lang'
+    ],
+    properties: {
+        action: {
+            type: 'string',
+            enum: [
+                'outline',
+                'expand_beat',
+                'continue',
+                'rewrite',
+                'expand',
+                'shorten',
+                'tone',
+                'translate',
+                'summarise'
+            ]
+        },
+        lang: {
+            $ref: '#/components/schemas/TargetLanguage'
+        },
+        paragraphIds: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        },
+        beatId: {
+            type: 'string'
+        },
+        instruction: {
+            type: 'string',
+            maxLength: 500,
+            description: 'The user\'s own free-text instruction; sent as a separate, length-capped, origin=user data block, never concatenated into the system template.'
+        }
+    }
+} as const;
+
+export const AiActionResponseSchema = {
+    type: 'object',
+    required: [
+        'stepId',
+        'runId'
+    ],
+    properties: {
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const DraftParagraphSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'text',
+        'origin',
+        'tainted'
+    ],
+    properties: {
+        id: {
+            type: 'string'
+        },
+        text: {
+            type: 'string'
+        },
+        origin: {
+            $ref: '#/components/schemas/Origin'
+        },
+        tainted: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const EpisodeDraftSchema = {
+    type: 'object',
+    required: [
+        'episodeId',
+        'lang',
+        'paragraphs',
+        'version',
+        'wordCount'
+    ],
+    properties: {
+        episodeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        lang: {
+            $ref: '#/components/schemas/TargetLanguage'
+        },
+        paragraphs: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/DraftParagraph'
+            }
+        },
+        version: {
+            type: 'integer'
+        },
+        wordCount: {
+            type: 'integer'
+        },
+        durationEstimateMinutes: {
+            type: 'number'
+        },
+        summary: {
+            type: 'string'
+        },
+        summaryTainted: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const ParagraphOpSchema = {
+    type: 'object',
+    required: [
+        'op',
+        'paragraphId'
+    ],
+    properties: {
+        op: {
+            type: 'string',
+            enum: [
+                'upsert',
+                'delete',
+                'move'
+            ]
+        },
+        paragraphId: {
+            type: 'string'
+        },
+        text: {
+            type: 'string'
+        },
+        afterParagraphId: {
+            type: 'string',
+            description: 'For op=move, the paragraph id to place this one after (empty string means first).'
+        }
+    }
+} as const;
+
+export const DraftPatchRequestSchema = {
+    type: 'object',
+    required: [
+        'expectedVersion',
+        'ops'
+    ],
+    properties: {
+        expectedVersion: {
+            type: 'integer'
+        },
+        ops: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ParagraphOp'
+            },
+            minItems: 1,
+            maxItems: 200
+        }
+    }
+} as const;
+
+export const ChapterPreviewSchema = {
+    type: 'object',
+    required: [
+        'index',
+        'title',
+        'wordCount'
+    ],
+    properties: {
+        index: {
+            type: 'integer'
+        },
+        title: {
+            type: 'string'
+        },
+        wordCount: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const ImportSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'status',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        encoding: {
+            type: 'string'
+        },
+        splitPreset: {
+            type: 'string'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'uploaded',
+                'preview',
+                'committed',
+                'failed'
+            ]
+        },
+        chapters: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ChapterPreview'
+            }
+        },
+        errorMsg: {
+            type: 'string'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const ImportListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Import'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const ImportCreateRequestSchema = {
+    type: 'object',
+    required: [
+        'assetId'
+    ],
+    properties: {
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const ImportPreviewRequestSchema = {
+    type: 'object',
+    properties: {
+        splitPreset: {
+            type: 'string',
+            enum: [
+                'zh_chapter',
+                'en_chapter',
+                'vi_chuong',
+                'auto'
+            ],
+            default: 'auto'
+        }
+    }
+} as const;
+
+export const ImportCommitRequestSchema = {
+    type: 'object',
+    required: [
+        'seriesId'
+    ],
+    properties: {
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        chapterIndexes: {
+            type: 'array',
+            items: {
+                type: 'integer'
+            },
+            description: 'Empty means every previewed chapter.'
+        },
+        translateToLang: {
+            $ref: '#/components/schemas/TargetLanguage'
+        }
+    }
+} as const;
+
+export const ImportCommitResponseSchema = {
+    type: 'object',
+    required: [
+        'episodeIds'
+    ],
+    properties: {
+        episodeIds: {
+            type: 'array',
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Set only when translateToLang triggered llm.translate steps.'
         }
     }
 } as const;

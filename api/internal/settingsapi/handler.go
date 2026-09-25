@@ -38,6 +38,14 @@ type SettingsAPI struct {
 	// TestRateLimit bounds POST /settings/llm/test per tenant (decision:
 	// 5/min), since it spends real provider tokens/quota synchronously.
 	TestRateLimit RateLimiter
+	// SecretsWrite persists a BYOK provider API key (PutLLMApiKey). A nil
+	// value fails PutLLMApiKey with an internal error rather than
+	// panicking; every real wiring (cmd/api/main.go) sets it.
+	SecretsWrite SecretsWriter
+	// ClaudeCLI reports the llm-cli sidecar's status (GetClaudeCliStatus).
+	// A nil value degrades GetClaudeCliStatus to installed:false rather
+	// than erroring, since the sidecar is host-dependent.
+	ClaudeCLI ClaudeCLIStatusChecker
 }
 
 // settingsStore is the subset of *registry.Store this package depends

@@ -260,6 +260,232 @@ export type LlmSettingsTestResult = {
     provider: string;
     ok: boolean;
     detail?: string;
+    latencyMs?: number;
+};
+
+export type LlmApiKeyRequest = {
+    /**
+     * Write-only; never echoed back. Stored envelope-encrypted (kind=llm_api_key, owner_ref=provider).
+     */
+    apiKey: string;
+};
+
+export type ClaudeCliStatus = {
+    installed: boolean;
+    version?: string;
+    authenticated: boolean;
+    /**
+     * Always true; the llm-cli sidecar runs claude with tool use disabled.
+     */
+    toolsDisabled: boolean;
+    detail?: string;
+};
+
+export type TargetLanguage = 'en' | 'vi';
+
+export type Series = {
+    id: string;
+    title: string;
+    genre?: string;
+    targetLanguages: Array<TargetLanguage>;
+    targetEpisodeMinutes: number;
+    plannedEpisodeCount: number;
+    styleNotes?: string;
+    status: 'draft' | 'active' | 'archived';
+    createdAt: string;
+};
+
+export type SeriesList = {
+    items: Array<Series>;
+    nextCursor?: string;
+};
+
+export type SeriesCreateRequest = {
+    title: string;
+    genre?: string;
+    targetLanguages: Array<TargetLanguage>;
+    targetEpisodeMinutes: number;
+    plannedEpisodeCount: number;
+    styleNotes?: string;
+};
+
+export type SeriesUpdateRequest = SeriesCreateRequest & {
+    status?: 'draft' | 'active' | 'archived';
+};
+
+/**
+ * Kicks off the settings -> bible seed -> episode outlines wizard.
+ */
+export type SeriesGenerateRequest = {
+    episodeCount?: number;
+};
+
+export type SeriesGenerateResponse = {
+    runId: string;
+};
+
+export type Origin = 'user' | 'import' | 'model';
+
+export type BibleSection = {
+    /**
+     * Plain text for prose sections; JSON-encoded array text for the glossary section.
+     */
+    content: string;
+    origin: Origin;
+    tainted: boolean;
+    version: number;
+};
+
+export type StoryBible = {
+    seriesId: string;
+    sections: {
+        [key: string]: BibleSection;
+    };
+    updatedAt: string;
+};
+
+export type BibleSectionUpdateRequest = {
+    section: 'world' | 'cultivation_realms' | 'arcs' | 'style_guide' | 'running_summary' | 'glossary';
+    content: string;
+    /**
+     * Optimistic-concurrency check against the section's current version; a mismatch returns 409.
+     */
+    expectedVersion: number;
+};
+
+export type OutlineBeat = {
+    id: string;
+    summary: string;
+    targetWords: number;
+};
+
+export type DraftStatus = {
+    wordCount?: number;
+    version?: number;
+};
+
+export type Episode = {
+    id: string;
+    seriesId: string;
+    idx: number;
+    title: string;
+    outline: Array<OutlineBeat>;
+    status: 'planned' | 'outlined' | 'drafting' | 'draft' | 'reviewed';
+    drafts?: {
+        [key: string]: DraftStatus;
+    };
+    durationEstimateMinutes?: {
+        [key: string]: number;
+    };
+    createdAt: string;
+};
+
+export type EpisodeList = {
+    items: Array<Episode>;
+    nextCursor?: string;
+};
+
+export type EpisodeUpdateRequest = {
+    title?: string;
+    status?: 'planned' | 'outlined' | 'drafting' | 'draft' | 'reviewed';
+};
+
+export type AiActionRequest = {
+    action: 'outline' | 'expand_beat' | 'continue' | 'rewrite' | 'expand' | 'shorten' | 'tone' | 'translate' | 'summarise';
+    lang: TargetLanguage;
+    paragraphIds?: Array<string>;
+    beatId?: string;
+    /**
+     * The user's own free-text instruction; sent as a separate, length-capped, origin=user data block, never concatenated into the system template.
+     */
+    instruction?: string;
+};
+
+export type AiActionResponse = {
+    stepId: string;
+    runId: string;
+};
+
+export type DraftParagraph = {
+    id: string;
+    text: string;
+    origin: Origin;
+    tainted: boolean;
+};
+
+export type EpisodeDraft = {
+    episodeId: string;
+    lang: TargetLanguage;
+    paragraphs: Array<DraftParagraph>;
+    version: number;
+    wordCount: number;
+    durationEstimateMinutes?: number;
+    summary?: string;
+    summaryTainted?: boolean;
+};
+
+export type ParagraphOp = {
+    op: 'upsert' | 'delete' | 'move';
+    paragraphId: string;
+    text?: string;
+    /**
+     * For op=move, the paragraph id to place this one after (empty string means first).
+     */
+    afterParagraphId?: string;
+};
+
+export type DraftPatchRequest = {
+    expectedVersion: number;
+    ops: Array<ParagraphOp>;
+};
+
+export type ChapterPreview = {
+    index: number;
+    title: string;
+    wordCount: number;
+};
+
+export type Import = {
+    id: string;
+    seriesId?: string;
+    assetId?: string;
+    encoding?: string;
+    splitPreset?: string;
+    status: 'uploaded' | 'preview' | 'committed' | 'failed';
+    chapters?: Array<ChapterPreview>;
+    errorMsg?: string;
+    createdAt: string;
+};
+
+export type ImportList = {
+    items: Array<Import>;
+    nextCursor?: string;
+};
+
+export type ImportCreateRequest = {
+    assetId: string;
+    seriesId?: string;
+};
+
+export type ImportPreviewRequest = {
+    splitPreset?: 'zh_chapter' | 'en_chapter' | 'vi_chuong' | 'auto';
+};
+
+export type ImportCommitRequest = {
+    seriesId: string;
+    /**
+     * Empty means every previewed chapter.
+     */
+    chapterIndexes?: Array<number>;
+    translateToLang?: TargetLanguage;
+};
+
+export type ImportCommitResponse = {
+    episodeIds: Array<string>;
+    /**
+     * Set only when translateToLang triggered llm.translate steps.
+     */
+    runId?: string;
 };
 
 export type GetHealthzData = {
@@ -839,6 +1065,536 @@ export type TestLlmSettingsResponses = {
 };
 
 export type TestLlmSettingsResponse = TestLlmSettingsResponses[keyof TestLlmSettingsResponses];
+
+export type PutLlmApiKeyData = {
+    body: LlmApiKeyRequest;
+    path: {
+        provider: string;
+    };
+    query?: never;
+    url: '/settings/llm/keys/{provider}';
+};
+
+export type PutLlmApiKeyErrors = {
+    /**
+     * unknown provider or empty key
+     */
+    400: Problem;
+};
+
+export type PutLlmApiKeyError = PutLlmApiKeyErrors[keyof PutLlmApiKeyErrors];
+
+export type PutLlmApiKeyResponses = {
+    /**
+     * key stored
+     */
+    204: void;
+};
+
+export type PutLlmApiKeyResponse = PutLlmApiKeyResponses[keyof PutLlmApiKeyResponses];
+
+export type GetClaudeCliStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/settings/llm/cli-status';
+};
+
+export type GetClaudeCliStatusResponses = {
+    /**
+     * claude CLI status
+     */
+    200: ClaudeCliStatus;
+};
+
+export type GetClaudeCliStatusResponse = GetClaudeCliStatusResponses[keyof GetClaudeCliStatusResponses];
+
+export type ListSeriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/series';
+};
+
+export type ListSeriesResponses = {
+    /**
+     * page of series
+     */
+    200: SeriesList;
+};
+
+export type ListSeriesResponse = ListSeriesResponses[keyof ListSeriesResponses];
+
+export type CreateSeriesData = {
+    body: SeriesCreateRequest;
+    path?: never;
+    query?: never;
+    url: '/series';
+};
+
+export type CreateSeriesErrors = {
+    /**
+     * invalid series settings
+     */
+    400: Problem;
+};
+
+export type CreateSeriesError = CreateSeriesErrors[keyof CreateSeriesErrors];
+
+export type CreateSeriesResponses = {
+    /**
+     * series created
+     */
+    201: Series;
+};
+
+export type CreateSeriesResponse = CreateSeriesResponses[keyof CreateSeriesResponses];
+
+export type GetSeriesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}';
+};
+
+export type GetSeriesErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetSeriesError = GetSeriesErrors[keyof GetSeriesErrors];
+
+export type GetSeriesResponses = {
+    /**
+     * series settings
+     */
+    200: Series;
+};
+
+export type GetSeriesResponse = GetSeriesResponses[keyof GetSeriesResponses];
+
+export type UpdateSeriesData = {
+    body: SeriesUpdateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}';
+};
+
+export type UpdateSeriesErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type UpdateSeriesError = UpdateSeriesErrors[keyof UpdateSeriesErrors];
+
+export type UpdateSeriesResponses = {
+    /**
+     * series updated
+     */
+    200: Series;
+};
+
+export type UpdateSeriesResponse = UpdateSeriesResponses[keyof UpdateSeriesResponses];
+
+export type GenerateSeriesData = {
+    body?: SeriesGenerateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/generate';
+};
+
+export type GenerateSeriesErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+    /**
+     * no LLM provider available for this tenant
+     */
+    429: Problem;
+};
+
+export type GenerateSeriesError = GenerateSeriesErrors[keyof GenerateSeriesErrors];
+
+export type GenerateSeriesResponses = {
+    /**
+     * generation run created; progress streams over SSE
+     */
+    202: SeriesGenerateResponse;
+};
+
+export type GenerateSeriesResponse = GenerateSeriesResponses[keyof GenerateSeriesResponses];
+
+export type GetBibleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/bible';
+};
+
+export type GetBibleErrors = {
+    /**
+     * series or bible not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetBibleError = GetBibleErrors[keyof GetBibleErrors];
+
+export type GetBibleResponses = {
+    /**
+     * story bible
+     */
+    200: StoryBible;
+};
+
+export type GetBibleResponse = GetBibleResponses[keyof GetBibleResponses];
+
+export type UpdateBibleSectionData = {
+    body: BibleSectionUpdateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/bible';
+};
+
+export type UpdateBibleSectionErrors = {
+    /**
+     * expectedVersion did not match the section's current version
+     */
+    409: Problem;
+};
+
+export type UpdateBibleSectionError = UpdateBibleSectionErrors[keyof UpdateBibleSectionErrors];
+
+export type UpdateBibleSectionResponses = {
+    /**
+     * bible section updated
+     */
+    200: StoryBible;
+};
+
+export type UpdateBibleSectionResponse = UpdateBibleSectionResponses[keyof UpdateBibleSectionResponses];
+
+export type ListEpisodesData = {
+    body?: never;
+    path?: never;
+    query: {
+        seriesId: string;
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/episodes';
+};
+
+export type ListEpisodesResponses = {
+    /**
+     * page of episodes
+     */
+    200: EpisodeList;
+};
+
+export type ListEpisodesResponse = ListEpisodesResponses[keyof ListEpisodesResponses];
+
+export type CreateEpisodeData = {
+    body?: never;
+    path?: never;
+    query: {
+        seriesId: string;
+    };
+    url: '/episodes';
+};
+
+export type CreateEpisodeResponses = {
+    /**
+     * episode created
+     */
+    201: Episode;
+};
+
+export type CreateEpisodeResponse = CreateEpisodeResponses[keyof CreateEpisodeResponses];
+
+export type GetEpisodeData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}';
+};
+
+export type GetEpisodeErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetEpisodeError = GetEpisodeErrors[keyof GetEpisodeErrors];
+
+export type GetEpisodeResponses = {
+    /**
+     * episode
+     */
+    200: Episode;
+};
+
+export type GetEpisodeResponse = GetEpisodeResponses[keyof GetEpisodeResponses];
+
+export type UpdateEpisodeData = {
+    body: EpisodeUpdateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}';
+};
+
+export type UpdateEpisodeErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type UpdateEpisodeError = UpdateEpisodeErrors[keyof UpdateEpisodeErrors];
+
+export type UpdateEpisodeResponses = {
+    /**
+     * episode updated
+     */
+    200: Episode;
+};
+
+export type UpdateEpisodeResponse = UpdateEpisodeResponses[keyof UpdateEpisodeResponses];
+
+export type CreateAiActionData = {
+    body: AiActionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}/ai-actions';
+};
+
+export type CreateAiActionErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+    /**
+     * no LLM provider available for this tenant
+     */
+    429: Problem;
+};
+
+export type CreateAiActionError = CreateAiActionErrors[keyof CreateAiActionErrors];
+
+export type CreateAiActionResponses = {
+    /**
+     * AI action step created; tokens stream over SSE as llm.delta events
+     */
+    202: AiActionResponse;
+};
+
+export type CreateAiActionResponse = CreateAiActionResponses[keyof CreateAiActionResponses];
+
+export type GetDraftData = {
+    body?: never;
+    path: {
+        id: string;
+        lang: TargetLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/drafts/{lang}';
+};
+
+export type GetDraftErrors = {
+    /**
+     * episode or draft not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetDraftError = GetDraftErrors[keyof GetDraftErrors];
+
+export type GetDraftResponses = {
+    /**
+     * draft
+     */
+    200: EpisodeDraft;
+};
+
+export type GetDraftResponse = GetDraftResponses[keyof GetDraftResponses];
+
+export type PatchDraftData = {
+    body: DraftPatchRequest;
+    path: {
+        id: string;
+        lang: TargetLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/drafts/{lang}';
+};
+
+export type PatchDraftErrors = {
+    /**
+     * expectedVersion is stale; client should refetch and merge
+     */
+    409: Problem;
+};
+
+export type PatchDraftError = PatchDraftErrors[keyof PatchDraftErrors];
+
+export type PatchDraftResponses = {
+    /**
+     * draft updated
+     */
+    200: EpisodeDraft;
+};
+
+export type PatchDraftResponse = PatchDraftResponses[keyof PatchDraftResponses];
+
+export type ListImportsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/imports';
+};
+
+export type ListImportsResponses = {
+    /**
+     * page of imports
+     */
+    200: ImportList;
+};
+
+export type ListImportsResponse = ListImportsResponses[keyof ListImportsResponses];
+
+export type CreateImportData = {
+    body: ImportCreateRequest;
+    path?: never;
+    query?: never;
+    url: '/imports';
+};
+
+export type CreateImportErrors = {
+    /**
+     * asset not ready, wrong MIME, or over the 10MB text cap
+     */
+    400: Problem;
+};
+
+export type CreateImportError = CreateImportErrors[keyof CreateImportErrors];
+
+export type CreateImportResponses = {
+    /**
+     * import registered
+     */
+    201: Import;
+};
+
+export type CreateImportResponse = CreateImportResponses[keyof CreateImportResponses];
+
+export type GetImportData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/imports/{id}';
+};
+
+export type GetImportErrors = {
+    /**
+     * import not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetImportError = GetImportErrors[keyof GetImportErrors];
+
+export type GetImportResponses = {
+    /**
+     * import
+     */
+    200: Import;
+};
+
+export type GetImportResponse = GetImportResponses[keyof GetImportResponses];
+
+export type PreviewImportData = {
+    body?: ImportPreviewRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/imports/{id}/preview';
+};
+
+export type PreviewImportErrors = {
+    /**
+     * decoding failed or no chapters matched the preset (reported, not guessed)
+     */
+    422: Problem;
+};
+
+export type PreviewImportError = PreviewImportErrors[keyof PreviewImportErrors];
+
+export type PreviewImportResponses = {
+    /**
+     * chapter preview
+     */
+    200: Import;
+};
+
+export type PreviewImportResponse = PreviewImportResponses[keyof PreviewImportResponses];
+
+export type CommitImportData = {
+    body: ImportCommitRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/imports/{id}/commit';
+};
+
+export type CommitImportErrors = {
+    /**
+     * import is not in preview status
+     */
+    409: Problem;
+};
+
+export type CommitImportError = CommitImportErrors[keyof CommitImportErrors];
+
+export type CommitImportResponses = {
+    /**
+     * episodes created from the selected chapters
+     */
+    200: ImportCommitResponse;
+};
+
+export type CommitImportResponse = CommitImportResponses[keyof CommitImportResponses];
 
 export type StreamEventsData = {
     body?: never;

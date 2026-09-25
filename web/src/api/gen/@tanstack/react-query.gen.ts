@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getLlmSettings, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, putLlmSettings, retryStep, switchTenant, testLlmSettings } from '../sdk.gen';
-import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse } from '../types.gen';
+import { cancelRun, cancelStep, commitImport, createAiAction, createEpisode, createImport, createRun, createSeries, finalizeAsset, generateSeries, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, listAssets, listAudit, listEpisodes, listImports, listJobs, listRunSteps, listSeries, login, logout, type Options, patchDraft, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, switchTenant, testLlmSettings, updateBibleSection, updateEpisode, updateSeries } from '../sdk.gen';
+import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateEpisodeData, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -599,6 +599,462 @@ export const testLlmSettingsMutation = (options?: Partial<Options<TestLlmSetting
     const mutationOptions: UseMutationOptions<TestLlmSettingsResponse, TestLlmSettingsError, Options<TestLlmSettingsData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await testLlmSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Store (or replace) the active tenant's API key for a provider; write-only, audited
+ */
+export const putLlmApiKeyMutation = (options?: Partial<Options<PutLlmApiKeyData>>): UseMutationOptions<PutLlmApiKeyResponse, PutLlmApiKeyError, Options<PutLlmApiKeyData>> => {
+    const mutationOptions: UseMutationOptions<PutLlmApiKeyResponse, PutLlmApiKeyError, Options<PutLlmApiKeyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putLlmApiKey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getClaudeCliStatusQueryKey = (options?: Options<GetClaudeCliStatusData>) => createQueryKey('getClaudeCliStatus', options);
+
+/**
+ * claude CLI version and auth state, as reported by the llm-cli sidecar
+ */
+export const getClaudeCliStatusOptions = (options?: Options<GetClaudeCliStatusData>) => queryOptions<GetClaudeCliStatusResponse, DefaultError, GetClaudeCliStatusResponse, ReturnType<typeof getClaudeCliStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getClaudeCliStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getClaudeCliStatusQueryKey(options)
+});
+
+export const listSeriesQueryKey = (options?: Options<ListSeriesData>) => createQueryKey('listSeries', options);
+
+/**
+ * Cursor-paginated list of the active tenant's series
+ */
+export const listSeriesOptions = (options?: Options<ListSeriesData>) => queryOptions<ListSeriesResponse, DefaultError, ListSeriesResponse, ReturnType<typeof listSeriesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listSeries({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listSeriesQueryKey(options)
+});
+
+export const listSeriesInfiniteQueryKey = (options?: Options<ListSeriesData>): QueryKey<Options<ListSeriesData>> => createQueryKey('listSeries', options, true);
+
+/**
+ * Cursor-paginated list of the active tenant's series
+ */
+export const listSeriesInfiniteOptions = (options?: Options<ListSeriesData>) => {
+    const opts = infiniteQueryOptions<ListSeriesResponse, DefaultError, InfiniteData<ListSeriesResponse>, QueryKey<Options<ListSeriesData>>, string | Pick<QueryKey<Options<ListSeriesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListSeriesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listSeries({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listSeriesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Create a new series (settings only; no bible or episodes yet)
+ */
+export const createSeriesMutation = (options?: Partial<Options<CreateSeriesData>>): UseMutationOptions<CreateSeriesResponse, CreateSeriesError, Options<CreateSeriesData>> => {
+    const mutationOptions: UseMutationOptions<CreateSeriesResponse, CreateSeriesError, Options<CreateSeriesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createSeries({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getSeriesQueryKey = (options: Options<GetSeriesData>) => createQueryKey('getSeries', options);
+
+/**
+ * Series settings
+ */
+export const getSeriesOptions = (options: Options<GetSeriesData>) => queryOptions<GetSeriesResponse, GetSeriesError, GetSeriesResponse, ReturnType<typeof getSeriesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSeries({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSeriesQueryKey(options)
+});
+
+/**
+ * Update series settings
+ */
+export const updateSeriesMutation = (options?: Partial<Options<UpdateSeriesData>>): UseMutationOptions<UpdateSeriesResponse, UpdateSeriesError, Options<UpdateSeriesData>> => {
+    const mutationOptions: UseMutationOptions<UpdateSeriesResponse, UpdateSeriesError, Options<UpdateSeriesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateSeries({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+ */
+export const generateSeriesMutation = (options?: Partial<Options<GenerateSeriesData>>): UseMutationOptions<GenerateSeriesResponse, GenerateSeriesError, Options<GenerateSeriesData>> => {
+    const mutationOptions: UseMutationOptions<GenerateSeriesResponse, GenerateSeriesError, Options<GenerateSeriesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await generateSeries({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getBibleQueryKey = (options: Options<GetBibleData>) => createQueryKey('getBible', options);
+
+/**
+ * The series' story bible sections
+ */
+export const getBibleOptions = (options: Options<GetBibleData>) => queryOptions<GetBibleResponse, GetBibleError, GetBibleResponse, ReturnType<typeof getBibleQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getBible({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getBibleQueryKey(options)
+});
+
+/**
+ * Update one bible section with an optimistic-concurrency check
+ */
+export const updateBibleSectionMutation = (options?: Partial<Options<UpdateBibleSectionData>>): UseMutationOptions<UpdateBibleSectionResponse, UpdateBibleSectionError, Options<UpdateBibleSectionData>> => {
+    const mutationOptions: UseMutationOptions<UpdateBibleSectionResponse, UpdateBibleSectionError, Options<UpdateBibleSectionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateBibleSection({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listEpisodesQueryKey = (options: Options<ListEpisodesData>) => createQueryKey('listEpisodes', options);
+
+/**
+ * Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+ */
+export const listEpisodesOptions = (options: Options<ListEpisodesData>) => queryOptions<ListEpisodesResponse, DefaultError, ListEpisodesResponse, ReturnType<typeof listEpisodesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listEpisodes({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listEpisodesQueryKey(options)
+});
+
+export const listEpisodesInfiniteQueryKey = (options: Options<ListEpisodesData>): QueryKey<Options<ListEpisodesData>> => createQueryKey('listEpisodes', options, true);
+
+/**
+ * Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+ */
+export const listEpisodesInfiniteOptions = (options: Options<ListEpisodesData>) => {
+    const opts = infiniteQueryOptions<ListEpisodesResponse, DefaultError, InfiniteData<ListEpisodesResponse>, QueryKey<Options<ListEpisodesData>>, string | Pick<QueryKey<Options<ListEpisodesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListEpisodesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listEpisodes({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listEpisodesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Append a new, empty episode to a series
+ */
+export const createEpisodeMutation = (options?: Partial<Options<CreateEpisodeData>>): UseMutationOptions<CreateEpisodeResponse, DefaultError, Options<CreateEpisodeData>> => {
+    const mutationOptions: UseMutationOptions<CreateEpisodeResponse, DefaultError, Options<CreateEpisodeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createEpisode({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getEpisodeQueryKey = (options: Options<GetEpisodeData>) => createQueryKey('getEpisode', options);
+
+/**
+ * Episode outline and metadata
+ */
+export const getEpisodeOptions = (options: Options<GetEpisodeData>) => queryOptions<GetEpisodeResponse, GetEpisodeError, GetEpisodeResponse, ReturnType<typeof getEpisodeQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEpisode({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEpisodeQueryKey(options)
+});
+
+/**
+ * Update episode title/status
+ */
+export const updateEpisodeMutation = (options?: Partial<Options<UpdateEpisodeData>>): UseMutationOptions<UpdateEpisodeResponse, UpdateEpisodeError, Options<UpdateEpisodeData>> => {
+    const mutationOptions: UseMutationOptions<UpdateEpisodeResponse, UpdateEpisodeError, Options<UpdateEpisodeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateEpisode({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Enqueue a streaming AI writing action at interactive priority
+ */
+export const createAiActionMutation = (options?: Partial<Options<CreateAiActionData>>): UseMutationOptions<CreateAiActionResponse, CreateAiActionError, Options<CreateAiActionData>> => {
+    const mutationOptions: UseMutationOptions<CreateAiActionResponse, CreateAiActionError, Options<CreateAiActionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createAiAction({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getDraftQueryKey = (options: Options<GetDraftData>) => createQueryKey('getDraft', options);
+
+/**
+ * The episode's draft for one language
+ */
+export const getDraftOptions = (options: Options<GetDraftData>) => queryOptions<GetDraftResponse, GetDraftError, GetDraftResponse, ReturnType<typeof getDraftQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getDraft({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getDraftQueryKey(options)
+});
+
+/**
+ * Autosave paragraph ops with an optimistic-concurrency version check
+ */
+export const patchDraftMutation = (options?: Partial<Options<PatchDraftData>>): UseMutationOptions<PatchDraftResponse, PatchDraftError, Options<PatchDraftData>> => {
+    const mutationOptions: UseMutationOptions<PatchDraftResponse, PatchDraftError, Options<PatchDraftData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await patchDraft({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listImportsQueryKey = (options?: Options<ListImportsData>) => createQueryKey('listImports', options);
+
+/**
+ * Cursor-paginated list of the active tenant's imports
+ */
+export const listImportsOptions = (options?: Options<ListImportsData>) => queryOptions<ListImportsResponse, DefaultError, ListImportsResponse, ReturnType<typeof listImportsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listImports({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listImportsQueryKey(options)
+});
+
+export const listImportsInfiniteQueryKey = (options?: Options<ListImportsData>): QueryKey<Options<ListImportsData>> => createQueryKey('listImports', options, true);
+
+/**
+ * Cursor-paginated list of the active tenant's imports
+ */
+export const listImportsInfiniteOptions = (options?: Options<ListImportsData>) => {
+    const opts = infiniteQueryOptions<ListImportsResponse, DefaultError, InfiniteData<ListImportsResponse>, QueryKey<Options<ListImportsData>>, string | Pick<QueryKey<Options<ListImportsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListImportsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listImports({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listImportsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+ */
+export const createImportMutation = (options?: Partial<Options<CreateImportData>>): UseMutationOptions<CreateImportResponse, CreateImportError, Options<CreateImportData>> => {
+    const mutationOptions: UseMutationOptions<CreateImportResponse, CreateImportError, Options<CreateImportData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createImport({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getImportQueryKey = (options: Options<GetImportData>) => createQueryKey('getImport', options);
+
+/**
+ * Import status and chapter preview
+ */
+export const getImportOptions = (options: Options<GetImportData>) => queryOptions<GetImportResponse, GetImportError, GetImportResponse, ReturnType<typeof getImportQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getImport({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getImportQueryKey(options)
+});
+
+/**
+ * Detect encoding and split into chapters using a regex preset, without committing episodes
+ */
+export const previewImportMutation = (options?: Partial<Options<PreviewImportData>>): UseMutationOptions<PreviewImportResponse, PreviewImportError, Options<PreviewImportData>> => {
+    const mutationOptions: UseMutationOptions<PreviewImportResponse, PreviewImportError, Options<PreviewImportData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewImport({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Turn previewed chapters into episodes, optionally translating each
+ */
+export const commitImportMutation = (options?: Partial<Options<CommitImportData>>): UseMutationOptions<CommitImportResponse, CommitImportError, Options<CommitImportData>> => {
+    const mutationOptions: UseMutationOptions<CommitImportResponse, CommitImportError, Options<CommitImportData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await commitImport({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

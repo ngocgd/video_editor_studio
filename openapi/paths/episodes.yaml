@@ -1,0 +1,211 @@
+episodesCollection:
+  get:
+    operationId: listEpisodes
+    summary: Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+    tags: [episodes]
+    x-min-role: viewer
+    parameters:
+      - name: seriesId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+    responses:
+      "200":
+        description: page of episodes
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeList"
+  post:
+    operationId: createEpisode
+    summary: Append a new, empty episode to a series
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: seriesId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "201":
+        description: episode created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Episode"
+episodeItem:
+  get:
+    operationId: getEpisode
+    summary: Episode outline and metadata
+    tags: [episodes]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: episode
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Episode"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  patch:
+    operationId: updateEpisode
+    summary: Update episode title/status
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/EpisodeUpdateRequest"
+    responses:
+      "200":
+        description: episode updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Episode"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+createAiAction:
+  post:
+    operationId: createAiAction
+    summary: Enqueue a streaming AI writing action at interactive priority
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/AiActionRequest"
+    responses:
+      "202":
+        description: AI action step created; tokens stream over SSE as llm.delta events
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/AiActionResponse"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: no LLM provider available for this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+episodeDraft:
+  get:
+    operationId: getDraft
+    summary: The episode's draft for one language
+    tags: [episodes]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/story.yaml#/TargetLanguage"
+    responses:
+      "200":
+        description: draft
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeDraft"
+      "404":
+        description: episode or draft not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  patch:
+    operationId: patchDraft
+    summary: Autosave paragraph ops with an optimistic-concurrency version check
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/story.yaml#/TargetLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/DraftPatchRequest"
+    responses:
+      "200":
+        description: draft updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeDraft"
+      "409":
+        description: expectedVersion is stale; client should refetch and merge
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

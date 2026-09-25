@@ -22,11 +22,15 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/providers/bootstrap"
+	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/storage"
+	"loomtale/api/internal/story"
 )
 
 const healthAddr = "127.0.0.1:8081"
@@ -73,10 +77,39 @@ func run() error {
 	}
 	logSink := &pipeline.AssetLogSink{Queries: queries, Storage: internalStore}
 
+	// The envelope-encryption KEK must be the same one cmd/api mounts
+	// (MASTER_KEY_PATH), since this worker opens the same tenants' BYOK
+	// secrets that cmd/api's Settings > LLM page writes.
+	kek, keyID, err := envelope.LoadKEK(cfg.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	sealer, err := envelope.NewSealer(keyID, kek)
+	if err != nil {
+		return err
+	}
+	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+
+	llmRegistry, _, err := bootstrap.Build(bootstrap.Config{
+		AppMode:               cfg.AppMode,
+		AllowedProviderHosts:  cfg.AllowedProviderHosts,
+		OllamaURL:             cfg.OllamaURL,
+		OllamaModel:           cfg.OllamaModel,
+		LLMCLIURL:             cfg.LLMCLIURL,
+		LLMCLIBearerTokenPath: cfg.LLMCLIBearerTokenPath,
+		AnthropicAPIKeyPath:   cfg.AnthropicAPIKeyPath,
+		AnthropicModel:        cfg.AnthropicModel,
+		GeminiAPIKeyPath:      cfg.GeminiAPIKeyPath,
+		GeminiModel:           cfg.GeminiModel,
+	}, queries, secretsStore)
+	if err != nil {
+		return err
+	}
+
 	registry := pipeline.NewRegistry()
-	// Phases 6-10 register their StepHandlers here in their own
-	// cmd/worker wiring change once they exist; phase 3 ships the engine
-	// with none.
+	for _, h := range story.Handlers(llmRegistry, queries) {
+		registry.Register(h)
+	}
 
 	residency, probe, residencyManager, err := buildResidency(ctx, cfg)
 	if err != nil {
@@ -84,19 +117,22 @@ func run() error {
 	}
 	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)
 
-	// A worker with no registered handler for any kind must never fetch a
-	// job at all: claiming a step it cannot run destroys it (the CAS
-	// claim is a one-way door). This is the only thing standing between
-	// today's empty registry (nothing past phase 3 has registered a
-	// handler yet) and every gpu/cpu/llm/render/io queue getting worked
-	// by a process that immediately fails everything with "no handler".
+	// A worker must never enable a queue no registered handler actually
+	// resolves to: claiming a step it cannot run destroys it (the CAS
+	// claim is a one-way door). This phase only registers llm.* handlers
+	// (see story.Handlers above), which only ever resolve to QueueLLM or,
+	// for the Ollama provider, QueueGPU (see registry.Registry.QueueFor) —
+	// so cpu/render/io stay disabled here until a later phase registers a
+	// handler that actually uses them; enabling them unconditionally
+	// whenever registry.Len() > 0 (as before phase 6, when the registry
+	// was always empty and this was moot) would let this process's cpu/
+	// render/io queue slots steal and permanently snooze jobs meant for
+	// another registry/handler entirely, including other processes and
+	// tests sharing the same Postgres instance.
 	var queueConfig map[string]river.QueueConfig
 	if registry.Len() > 0 {
 		queueConfig = map[string]river.QueueConfig{
-			pipeline.QueueCPU:    {MaxWorkers: cfg.CPUWorkers},
-			pipeline.QueueLLM:    {MaxWorkers: cfg.LLMWorkers},
-			pipeline.QueueRender: {MaxWorkers: cfg.RenderWorkers},
-			pipeline.QueueIO:     {MaxWorkers: cfg.IOWorkers},
+			pipeline.QueueLLM: {MaxWorkers: cfg.LLMWorkers},
 		}
 		if cfg.WorkerGPU {
 			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}

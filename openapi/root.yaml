@@ -52,6 +52,34 @@ paths:
     $ref: paths/settings_llm.yaml#/llmSettings
   /settings/llm/test:
     $ref: paths/settings_llm.yaml#/testLLMSettings
+  /settings/llm/keys/{provider}:
+    $ref: paths/settings_llm.yaml#/putLLMApiKey
+  /settings/llm/cli-status:
+    $ref: paths/settings_llm.yaml#/getClaudeCliStatus
+  /series:
+    $ref: paths/series.yaml#/seriesCollection
+  /series/{id}:
+    $ref: paths/series.yaml#/seriesItem
+  /series/{id}/generate:
+    $ref: paths/series.yaml#/generateSeries
+  /series/{id}/bible:
+    $ref: paths/series.yaml#/seriesBible
+  /episodes:
+    $ref: paths/episodes.yaml#/episodesCollection
+  /episodes/{id}:
+    $ref: paths/episodes.yaml#/episodeItem
+  /episodes/{id}/ai-actions:
+    $ref: paths/episodes.yaml#/createAiAction
+  /episodes/{id}/drafts/{lang}:
+    $ref: paths/episodes.yaml#/episodeDraft
+  /imports:
+    $ref: paths/imports.yaml#/importsCollection
+  /imports/{id}:
+    $ref: paths/imports.yaml#/importItem
+  /imports/{id}/preview:
+    $ref: paths/imports.yaml#/previewImport
+  /imports/{id}/commit:
+    $ref: paths/imports.yaml#/commitImport
   /events:
     $ref: paths/events.yaml#/events
 components:

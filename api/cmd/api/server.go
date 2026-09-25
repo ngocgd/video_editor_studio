@@ -8,6 +8,7 @@ import (
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/pipelineapi"
 	"loomtale/api/internal/settingsapi"
+	"loomtale/api/internal/story"
 )
 
 // server composes every domain handler into the single type
@@ -21,6 +22,7 @@ type server struct {
 	*auditapi.AuditAPI
 	*pipelineapi.PipelineAPI
 	*settingsapi.SettingsAPI
+	*story.StoryAPI
 }
 
 var _ gen.StrictServerInterface = (*server)(nil)
