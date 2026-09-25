@@ -83,6 +83,102 @@ Stack torn down with `docker compose -p loomtale-p5 ... down -v`; confirmed no `
 2. Confirm the intended source of the initial "topics" set for a tenant-wide Dashboard view — right now it is derived from the `GET /jobs` snapshot's own `runId`s, which means the very first paint is not "subscribe before snapshot" the way a single-run detail view can be. Is a tenant-wide topic (e.g. `"*"` or a dedicated dashboard topic) planned for a later phase, or is per-run subscription-after-snapshot the accepted design for list views?
 3. Is it acceptable that no step kind is registered in `api/cmd/api/main.go`/`api/cmd/worker/main.go` until phase 6+? If a smoke/demo environment is needed before then, a minimal no-op step kind registration might be worth adding in a later phase's cook, but that is Go code outside phase 5's ownership.
 
-Status: DONE_WITH_CONCERNS
-Summary: Core frontend foundation (tokens, router, API client, SSE bridge, shared component library, AppShell, Login/Dashboard/Render Queue/Account screens) is built and verified against a real running stack, including a genuine live SSE update with no page refetch; typecheck/lint/tests/build/budget/audit are all green and the toolbox `make ci` passes except for a worktree-only git-path artifact in `gen-check` (confirmed no real drift on the host).
-Concerns: GPU status uses polling instead of SSE (real API has no gpu topic), `POST /runs` cannot be exercised end-to-end yet because no pipeline step kind is registered anywhere before phase 6, the multi-tab single-connection test is not yet written, and the authenticated-route initial bundle (~189KB gzip) is close to the 200KB hard cap.
+## Review fixes (2026-09-25, second pass)
+
+A pre-merge review (`code-reviewer-260925-2141-phase-05-frontend-review.md`) found 1 Critical, 6 High and 9 Medium issues plus 5 Low and UI-polish notes. All Critical/High/Medium items were fixed on this branch; every Low item was cheap enough to fix too (none deferred). Final sha: `4b28794`.
+
+### C1 — CI budget gate
+
+`ci.yml`'s web job ran `npx size-limit` against a config the branch had deleted, so CI would always fail. Replaced with `npm run budget-check`. The script itself (`web/scripts/check-bundle-budget.mjs`) was rewritten to read Vite's build manifest (`build.manifest: true` in `vite.config.ts`) and measure the *actual first-paint set* — the entry plus every statically-imported/modulepreloaded chunk for each route, not just the single largest file — gating the authenticated shell and every route's total against the 200KB hard cap (with a 160KB target reported, not failed, per the review's own follow-up number).
+
+### H1 — SSE never reconnects after a clean server close
+
+`api/internal/sse/subscriber.go` closes every stream cleanly after its 1h max lifetime; the fetch-based generated client had no reconnect logic for that (unlike a browser `EventSource`). Rewrote the connection lifecycle into a new `web/src/api/sse-connection.ts` (`SseConnection`) that disables the generated client's own retry (`sseMaxRetryAttempts: 0`) and fully owns reconnect timing: a clean close or a transient error both trigger a full-jitter backoff (1s base, 30s cap, reset to 0 after a successful reconnect) and retry; a 403 (H2) is the one non-retryable outcome. Covered by `sse-connection.test.ts` (3 tests, including a simulated 1h-lifetime close and reconnect).
+
+### H2 — No 50-topic cap
+
+`web/src/api/sse-topic-registry.ts` (`TopicRegistry`) now caps the leader's topic union to the server's per-stream limit (`MAX_TOPICS_PER_STREAM = 50`); excess topics rely on each screen's existing 15s poll. `use-jobs.ts`/`render-queue-view.tsx` now only subscribe *non-terminal* (`pending`/`queued`/`running`) run ids instead of every visible one, reducing pressure on the cap in the first place. A 403 is treated as non-retryable by `SseConnection` (see H1) instead of retrying forever and spamming `resync`; `StatusBar` shows a quiet "Live updates paused" indicator when the stream is `degraded`.
+
+### H3 — Version gating used a private counter, not the cached snapshot
+
+`sse-cache.ts`'s `patchStepCaches` now gates every write against *that specific cache entry's own* `version` (`evt.version > step.version`), with no exemption for `transition` events, matching `openapi/paths/events.yaml`'s "discard any event whose version is <= the snapshot's". The old test that asserted a stale v3 `failed` could override a newer v5 `running` was rewritten to assert the correct (opposite) behaviour, plus a new case proving a genuinely newer transition still applies.
+
+### H4 — Unbounded buffering in hidden tabs
+
+`SseCachePatcher` now coalesces pending events into a `Map<stepId, event>` (keeping only the highest-version event per step, which also keeps a terminal event since it always has the highest version in a legal sequence), flushes through `notifyManager.batch` (one subscriber notification pass per flush, not one per event), and falls back to a 250ms `setTimeout` instead of `requestAnimationFrame` when `document.hidden` (rAF never fires in a hidden tab). Covered by a new hidden-tab test and a render-count test (`sse-render-count.test.tsx`) that pushes 500 events across 10 simulated frames and asserts ≤10 commits.
+
+### H5 — Render Queue stopped updating after "Load more"
+
+`render-queue-view.tsx` now uses `useInfiniteQuery` (`listJobsInfiniteOptions`) instead of copying query data into local state; `sse-cache.ts` gained `InfiniteData<PipelineStepList>` support (patches every loaded page in place, covered by a dedicated test) so a row from page 1 keeps updating after paging. Switching the filter changes the query key, which resets pagination automatically — no manual cursor-reset bug possible.
+
+### H6 — Two serial round trips on every navigation
+
+`_app.tsx`'s `beforeLoad` now uses `context.queryClient.ensureQueryData(getMeOptions())` (reused across navigations via the query cache, primed once by `login.tsx`'s own `beforeLoad`) and only fetches `/auth/csrf` when `getCsrfToken()` is null, in parallel with the `/auth/me` check. `__root.tsx` was switched to `createRootRouteWithContext<RouterContext>()` so `context.queryClient` is typed. `TopBar`'s own `useMe()` now reads the already-warm cache instead of triggering a third fetch.
+
+### Medium findings
+
+- **M1 (Caddy caches the SPA fallback as immutable)**: split into a dedicated `/assets/*` block with *no* `try_files` fallback (a deleted/renamed chunk now 404s instead of silently getting `index.html` with a year-long immutable cache header), and the catch-all fallback now sends `Cache-Control: no-cache` explicitly. Added a `vite:preloadError` → `location.reload()` handler in `main.tsx`. `bundle-stats.html` now writes outside `dist/` (never shipped by the Caddy image) and is gitignored.
+- **M2 (lost events on rebuild, no jitter, AbortError mishandled)**: covered by the `SseConnection` rewrite (H1): every `ready` after the first on a topic set is treated as a resync point; a deliberate `stop()` (topic rebuild) is distinguished from a real error via a generation counter, so it is never treated as a reconnect-worthy failure; backoff uses full jitter and resets after a successful reconnect.
+- **M3 (leader protocol gaps)**: (a) `pagehide` now posts `unsubscribe` so a closed tab's topics leave the union; (b) a tab joining while the topic union is unchanged now gets a replayed `ready` from the leader instead of deadlocking; (c) dropped — the "every tab runs its own stream" fallback for missing Web Locks was already implemented in `sse-leader.ts`'s `electLeader`, confirmed correct on inspection, not a gap; (d) the `beforeunload` handler was removed — the lock auto-releases when the browser tears down the tab's JS context, and holding the leader promise open forever (`new Promise(() => {})`) needs no unload listener.
+- **M4 (subscribe-before-snapshot not honoured)**: this was an accepted, disclosed deviation conditional on H3 making the snapshot version authoritative; H3 is now fixed, so the precondition holds. No further change.
+- **M5 (no CSRF 403 recovery, no cross-tab auth sync)**: `client.ts`'s response interceptor now retries once on a `"CSRF check failed"` 403 (a pristine `Request` clone captured before `fetch` consumes the body, so this works for POST/PUT/PATCH bodies too, not just GETs) after refreshing the token via `GET /auth/csrf`. A new `web/src/api/auth-channel.ts` broadcasts an `auth-changed` message; `use-auth.ts`'s `useSwitchTenant`/`useLogout` post it, and any tab receiving it invalidates its query cache.
+- **M6 (silent errors, no confirm on cancel)**: `dashboard-view.tsx` now distinguishes loading (skeleton)/error (`InlineError` + retry)/empty states instead of showing the empty state in all three cases; `use-jobs.ts`'s mutations gained `onError` (a `sonner` toast, dynamically imported so it stays out of the eager bundle); `JobProgress` and the Render Queue table both require an explicit confirm click before cancelling.
+- **M7 (dead shortcuts)**: fixed the `"?"` normalisation bug (a plain Shift+printable key like `?` already reflects the shift state in `event.key`; the registry no longer double-prepends `"shift"` for it). `G D/R/S` are now registered for real in `AppShell` (navigating to Dashboard/Render Queue/Account settings — the sheet's `Ctrl .` entry for a not-yet-existing inspector toggle was removed rather than faked). `pushShortcutScope`/`popShortcutScope` are now called by `CommandPalette` and `ShortcutSheet` while open. `useShortcut` keeps the latest handler in a ref instead of re-registering the listener on every render.
+- **M8 (accessibility defects)**: collapsed nav rail links now keep an `sr-only` label plus a native `title`. The status bar's noisy GPU line is no longer inside the `aria-live` region; a new dedicated `role=status aria-live=polite` span only updates on a real job completion (fed by a new `SseCachePatcher.onCompletion` listener). `VirtualTable` switched to `role=grid`/`role=rowgroup` with `aria-activedescendant` instead of per-row `tabIndex=-1`. The Render Queue filter buttons use `aria-pressed` instead of a fake `role=tab` with no tabpanel/arrow-key support.
+- **M9 (budget checks the wrong thing)**: folded into C1.
+
+### Low findings (all fixed, none deferred)
+
+- **L1**: `login.tsx`'s hand-rolled `validateSearch` now requires `redirect` to match `^/(?!/|\\)` (an internal path only).
+- **L2**: `client.ts`'s error interceptor now keeps the real HTTP status from `response` even when the body is not JSON (a proxy's plain-text 502, say); `queryClient`'s `retry` is now a function that never retries a 401/403.
+- **L3**: the command-palette trigger no longer dispatches a synthetic `keydown`; a small shared store (`command-palette-state.ts`) drives both the `Ctrl K` shortcut and the button.
+- **L4**: `EmptyState`'s `actionLabel` now always has a matching `onAction` (navigates to the Render Queue); `GpuStatusBar` is now a `Link` to `/jobs`.
+- **L5**: removed the unused `react-resizable-panels`, `web-vitals`, `size-limit`/`@size-limit/file`, `@tanstack/react-router-devtools` and the unused Radix select/switch/tabs/popover/label packages; `sonner`'s `toast()` is now actually called (see M6).
+
+### Bundle wins (decision #8)
+
+Authenticated first paint dropped from ~190KB gzip to ~124-139KB gzip per route (measured by the rewritten budget script), well under the 160KB target:
+
+| Route | Before | After |
+|---|---|---|
+| Dashboard (`_app/index`) | ~177 KB | 129.97 KB |
+| Render Queue (`_app/jobs`) | ~169 KB | 139.20 KB |
+| Account settings | ~156 KB | 123.93 KB |
+| Login | ~156 KB | 135.97 KB |
+| Authenticated shell (`_app` layout alone) | ~190 KB | 159.13 KB |
+
+Achieved by: dropping `zod` from `login.tsx`'s route-level `validateSearch` (it was pulled into the shared entry because `routeTree.gen.ts` statically imports every route file for matching, even though only the `component` half is code-split) so `zod` now only loads inside the lazily-split login component; deferring DOMPurify behind a `requestIdleCallback` (the Trusted Types policy does not need to exist before first paint, only before the first HTML-sink call, and nothing calls one yet); lazy-loading `sonner`'s `Toaster`; and replacing `GpuStatusBar`'s Radix Tooltip (pulled `@radix-ui/react-tooltip` + floating-ui into every authenticated page via the status bar) with a native `title` attribute.
+
+### UI polish (design fidelity)
+
+- `JobProgress`'s progress bar now fills with the jade accent (`--primary`) instead of `--info` blue; Cancel requires an explicit confirm click and uses the `destructive` button variant for the confirmation.
+- Raw step/run `kind` strings (e.g. `render_episode`) are now humanized (`lib/format.ts`'s `humanizeKind`, "Render episode") everywhere a job name is shown, with the raw kind kept as a `title` attribute; used in `JobProgress`, the Render Queue table, and `GpuStatusBar`.
+- `StatusBar`'s backup-warning copy changed from the literal `"Backup no backup run yet"` to `"Backup: not run yet"` (or the real detail, e.g. `"Backup: stale (40h ago)"`), with an explanatory `title`.
+- Added the actual Loomtale Studio logo (`docs/wireframe/logo.svg`, copied to `web/public/logo.svg`) to the expanded nav rail header and the login screen, replacing plain text.
+- The Dashboard no longer duplicates the status bar's GPU line (guidelines §6: the status bar is the single source); added mono `text-xl` stat cards (Running/Queued/Failed counts) and real loading/error/empty states so the screen does not read as empty when nothing is active.
+
+### New verification (after the review fixes)
+
+| Command | Result |
+|---|---|
+| `cd web && npm run typecheck` | pass |
+| `cd web && npm run lint` | pass, 0 errors/warnings |
+| `cd web && npm test` (vitest) | pass, **30/30** tests across 7 files (up from 19/4; added `sse-bridge.test.ts` 3 tests, `sse-connection.test.ts` 3 tests, `sse-render-count.test.tsx` 1 test, plus the rewritten `sse-cache.test.ts` with 4 tests) — run 3x in a row with no flakes |
+| `cd web && npm run build` | pass |
+| `cd web && npm run budget-check` | pass, all routes under the 160KB target and the 200KB hard cap (table above) |
+| `cd web && npm audit --audit-level=high` | 0 vulnerabilities |
+| `cd web && npx playwright test` (`e2e/smoke.spec.ts`, against a real re-seeded stack) | **pass** — login, CSP headers (`script-src 'self'`, `trusted-types default dompurify`), Dashboard, Render Queue, `Ctrl K` palette, account settings, logout, and a check that no CSP-violation console messages appeared |
+| `scripts/tb.sh ci` | Go vet/lint/tests (`-race`), tenant-query lint, Python ruff/pytest, web lint all pass. `gen-check` fails only on the same pre-existing worktree git-path artifact documented in the first cook report (`fatal: not a git repository: /src/C:/Users/.../worktrees/...`); re-confirmed with a clean `git diff --exit-code` on the host for the same paths (exit 0, no drift) |
+
+A second manual live-stack pass (fresh `docker compose -p loomtale-p5 up`, a freshly re-seeded owner + demo `pipeline_runs`/`pipeline_steps` row, the same `pg_notify('lt_events', ...)` technique as the first pass) re-confirmed the live SSE update end to end with the new jade UI, and produced the updated screenshots in `plans/260924-2244-loomtale-studio-mvp/reports/phase-05-screens/` (`01-login.png` through `11-logged-out.png`, including a new `05-dashboard-cancel-confirm.png` and `10-collapsed-nav.png`). The stack was torn down (`down -v`) afterwards; `docker ps -a --filter name=loomtale-p5` confirmed nothing was left running.
+
+### Deferred (none — all reviewed items addressed)
+
+Everything from Critical through Low was fixed on this branch. Two follow-ups worth flagging for a later phase, neither blocking:
+
+1. The Dashboard's per-status stat cards (Running/Queued/Failed counts) are each backed by a separately-filtered `listJobs` query; an SSE-driven status change updates the item inside whichever filtered list already cached it, but does not move it between the "queued" and "running" filtered lists until the next 15s poll. The visible job row itself updates live and correctly; only the aggregate counts can lag by up to 15s. Noticed while reviewing the new screenshots; not something the pre-merge review flagged, and not a data-loss or correctness bug, just a cosmetic self-correcting drift.
+2. `GET /gpu` polling (accepted by the reviewer as fine for the MVP) is unchanged; a later phase could add a tenant-scoped `gpu` SSE event type on the existing hub per the reviewer's own suggestion.
+
+Status: DONE
+Summary: All Critical/High/Medium findings from the pre-merge review are fixed and verified (typecheck/lint/30 tests/build/budget/audit/Playwright smoke/toolbox CI all green, the one remaining CI-adjacent failure being the same pre-existing worktree git-path artifact from the first pass, confirmed not real drift), authenticated first paint dropped to 124-139KB gzip (from ~190KB), and the UI was brought closer to the design guidelines (jade accents, human-readable labels, the real logo, honest loading/error states) with fresh screenshots of every main screen.
+Concerns: a minor, self-correcting (within 15s) drift between the Dashboard's aggregate stat counts and an individual job's live status after an SSE-driven state change; GPU status still polls rather than streams (an accepted MVP deviation per the review itself).
