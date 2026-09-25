@@ -1,14 +1,16 @@
-// Package pipelineapi implements the jobs/runs/steps/gpu slice of the
-// generated strict server interface: everything phase 3's HTTP surface
-// exposes on top of api/internal/pipeline.Engine. GET /events is not
-// here (see api/internal/sse.Handler): it is mounted directly on the
-// chi router instead of through the generated strict interface.
+// Package pipelineapi implements the jobs/runs/steps/gpu/events slice of
+// the generated strict server interface: everything phase 3's HTTP
+// surface exposes on top of api/internal/pipeline.Engine. StreamEvents
+// (GET /events, see events.go) goes through the same generated strict
+// interface as every other route here — oapi-codegen special-cases a
+// text/event-stream response with a flush-per-chunk body — it just
+// returns a hand-written io.Pipe-backed response instead of a single
+// JSON value.
 package pipelineapi
 
 import (
+	"context"
 	"time"
-
-	"github.com/google/uuid"
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
@@ -16,6 +18,7 @@ import (
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
+	"loomtale/api/internal/tenant"
 )
 
 // PipelineAPI implements the jobs/runs/steps/gpu/events slice of
@@ -28,6 +31,17 @@ type PipelineAPI struct {
 	Hub       *sse.Hub
 	Probe     pipeline.GpuProbe       // nil until phase 4 wires a real one
 	Residency pipeline.ModelResidency // NoopResidency when WORKER_GPU=false
+
+	// ShutdownSignal is cancelled (via http.Server.RegisterOnShutdown, in
+	// cmd/api/main.go) when the process starts a graceful shutdown. A
+	// plain http.Server.Shutdown never cancels an in-flight request's own
+	// context — by design, so a normal handler is never yanked out from
+	// under a client mid-response — but an SSE stream has no natural end
+	// of its own, so without this every open /events connection would
+	// keep Shutdown waiting the full ShutdownTimeout on every deploy.
+	// StreamEvents derives each subscription's context from both this and
+	// the request's own context, so either one ending closes the stream.
+	ShutdownSignal context.Context
 }
 
 func toRunDTO(r dbgen.PipelineRun) gen.PipelineRun {
@@ -46,7 +60,14 @@ func toRunDTO(r dbgen.PipelineRun) gen.PipelineRun {
 	return dto
 }
 
-func toStepDTO(s dbgen.PipelineStep) gen.PipelineStep {
+// toStepDTO converts a step row to its wire DTO. includeErrorMsg gates
+// error_msg (a handler's own free-text error, scrubbed before storage
+// but never intended for anyone below editor: the log it stands next to
+// is already editor-only) — error_code alone is always included, since
+// it is a fixed, non-sensitive classification string. Every caller in
+// this package sees the same step rows either way; only what gets
+// serialized differs by the caller's own role.
+func toStepDTO(s dbgen.PipelineStep, includeErrorMsg bool) gen.PipelineStep {
 	dto := gen.PipelineStep{
 		Id:            idconv.FromPg(s.ID),
 		RunId:         idconv.FromPg(s.RunID),
@@ -72,7 +93,7 @@ func toStepDTO(s dbgen.PipelineStep) gen.PipelineStep {
 	if s.ErrorCode.Valid {
 		dto.ErrorCode = &s.ErrorCode.String
 	}
-	if s.ErrorMsg.Valid {
+	if includeErrorMsg && s.ErrorMsg.Valid {
 		dto.ErrorMsg = &s.ErrorMsg.String
 	}
 	if s.LogAssetID.Valid {
@@ -105,26 +126,19 @@ func toStepSummary(s dbgen.PipelineStep) gen.StepSummary {
 	return dto
 }
 
-func toModelRefSpecs(specs []gen.CreateStepSpec) []pipeline.StepSpec {
-	out := make([]pipeline.StepSpec, len(specs))
-	for i, s := range specs {
-		var dependsOn []uuid.UUID
-		if s.DependsOn != nil {
-			dependsOn = make([]uuid.UUID, len(*s.DependsOn))
-			copy(dependsOn, *s.DependsOn)
-		}
-		out[i] = pipeline.StepSpec{
-			ID:        s.Id,
-			Kind:      s.Kind,
-			ScopeKind: s.ScopeKind,
-			ScopeID:   s.ScopeId,
-			Priority:  s.Priority,
-			DependsOn: dependsOn,
-		}
-	}
-	return out
-}
-
 // nowUTC exists purely to keep time.Now().UTC() out of every call site
 // that needs a deterministic-looking timestamp field.
 func nowUTC() time.Time { return time.Now().UTC() }
+
+// isEditorOrAbove reports whether the resolved tenant role in ctx is
+// "editor" or "owner", used to gate a step's error_msg (see toStepDTO):
+// a viewer-role route (ListJobs, ListRunSteps) never includes it, since
+// the same free-text error a step's editor-only log sits next to should
+// not be more widely visible than that log is.
+func isEditorOrAbove(ctx context.Context) bool {
+	info, err := tenant.FromCtx(ctx)
+	if err != nil {
+		return false
+	}
+	return info.Role == "editor" || info.Role == "owner"
+}

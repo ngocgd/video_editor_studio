@@ -8,36 +8,38 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 )
 
-// readyUniqueStates is the set of River job states in which a duplicate
-// insert for the same step set must be rejected: a step already
-// available, scheduled, running or retryable already has a live job, so
-// the reconciler's ready-sweep and River's own stuck-job rescue can both
-// try to enqueue the same step without ever double-queuing it.
-var readyUniqueStates = []rivertype.JobState{
-	rivertype.JobStateAvailable,
-	rivertype.JobStateScheduled,
-	rivertype.JobStateRunning,
-	rivertype.JobStateRetryable,
-	rivertype.JobStatePending,
-}
-
-// enqueueReadySteps groups every "queued" step by (queue, kind), chunks
-// each group to BatchChunkTarget using e.Estimator, and inserts one River
-// job per chunk inside tx.
+// enqueueReadySteps groups every "queued" step by (queue, kind,
+// provider_ref) — provider_ref so a GPU chunk never mixes two different
+// models, letting the executor load exactly one model for the whole
+// chunk — chunks each group to BatchChunkTarget using e.Estimator, and
+// inserts one River job per chunk inside tx.
+//
+// Deliberately uninque: no river.UniqueOpts. The DB-side CAS claim is the
+// only fence a handler ever trusts, and every caller of this function
+// only ever passes rows it just, in the same transaction, moved into
+// "queued" via a WHERE clause that itself cannot double-fire (see
+// MarkStepsQueued, ResetStaleHeartbeatsBatch, ReadySweepBatch, RetryStep)
+// — so a duplicate River job for the same step set is not just harmless,
+// it cannot actually happen from this codebase's own call sites either.
+// A prior version used UniqueOpts keyed by args, which seemed like
+// harmless extra safety but actively broke crash recovery: after a
+// worker died, River leaves its job row "running" until
+// RescueStuckJobsAfter (4h); the reconciler's re-enqueue for the same
+// step ids was then silently deduped against that dead, still-"running"
+// row, stalling the step for the entire rescue window.
 func (e *Engine) enqueueReadySteps(ctx context.Context, tx pgx.Tx, steps []dbgen.PipelineStep) error {
-	type groupKey struct{ queue, kind string }
+	type groupKey struct{ queue, kind, providerRef string }
 	groups := make(map[groupKey][]dbgen.PipelineStep)
 	for _, s := range steps {
 		if s.Status != StatusQueued {
 			continue
 		}
-		key := groupKey{queue: s.Queue, kind: s.Kind}
+		key := groupKey{queue: s.Queue, kind: s.Kind, providerRef: s.ProviderRef}
 		groups[key] = append(groups[key], s)
 	}
 
@@ -50,7 +52,10 @@ func (e *Engine) enqueueReadySteps(ctx context.Context, tx pgx.Tx, steps []dbgen
 		if keys[i].queue != keys[j].queue {
 			return keys[i].queue < keys[j].queue
 		}
-		return keys[i].kind < keys[j].kind
+		if keys[i].kind != keys[j].kind {
+			return keys[i].kind < keys[j].kind
+		}
+		return keys[i].providerRef < keys[j].providerRef
 	})
 
 	for _, key := range keys {
@@ -67,11 +72,6 @@ func (e *Engine) enqueueReadySteps(ctx context.Context, tx pgx.Tx, steps []dbgen
 				Priority:    priority,
 				MaxAttempts: MaxTransientAttempts,
 				Metadata:    metadata,
-				UniqueOpts: river.UniqueOpts{
-					ByArgs:  true,
-					ByQueue: true,
-					ByState: readyUniqueStates,
-				},
 			}); err != nil {
 				return err
 			}

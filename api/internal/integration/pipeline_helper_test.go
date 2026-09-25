@@ -10,6 +10,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -24,6 +25,32 @@ import (
 	"loomtale/api/internal/pipeline"
 )
 
+// markedPool opens a pool whose every connection carries application_name
+// = appName, so a test that needs to pg_terminate_backend a connection it
+// itself opened (simulating a crashed lock or LISTEN connection) can
+// target exactly that connection instead of any backend that happens to
+// match a broader pattern like "every advisory lock holder" — which,
+// against a stack also running the real api/worker containers, could
+// just as easily kill one of theirs.
+func markedPool(t *testing.T, appName string) *pgxpool.Pool {
+	t.Helper()
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		missingEnv(t, "DATABASE_URL", "needs the loomtale_app DSN of a running stack")
+	}
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		t.Fatalf("parse DATABASE_URL: %v", err)
+	}
+	cfg.ConnConfig.RuntimeParams["application_name"] = appName
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("connect with application_name %q: %v", appName, err)
+	}
+	t.Cleanup(pool.Close)
+	return pool
+}
+
 // pipelineEngine builds a real pipeline.Engine against appPool(t), with an
 // insert-only River client (tests call pipeline.Claim/Engine.Dispatch
 // directly instead of running a live river.Client worker loop, since the
@@ -31,7 +58,14 @@ import (
 // Engine, not in River's own fetch scheduling).
 func pipelineEngine(t *testing.T, registry *pipeline.Registry) (*pipeline.Engine, *pgxpool.Pool) {
 	t.Helper()
-	pool := appPool(t)
+	return pipelineEngineOnPool(t, registry, appPool(t))
+}
+
+// pipelineEngineOnPool is pipelineEngine but against a caller-supplied
+// pool (see markedPool), for tests that need to identify and target
+// exactly this engine's own connections afterwards.
+func pipelineEngineOnPool(t *testing.T, registry *pipeline.Registry, pool *pgxpool.Pool) (*pipeline.Engine, *pgxpool.Pool) {
+	t.Helper()
 	riverClient, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
 		RescueStuckJobsAfter: pipeline.RescueStuckJobsAfter,
 	})
@@ -125,6 +159,26 @@ func readStep(t *testing.T, pool *pgxpool.Pool, id uuid.UUID) stepRow {
 		t.Fatalf("read step %s: %v", id, err)
 	}
 	return r
+}
+
+// completeRiverJobsForStep marks any live river_job row for id as
+// "completed", standing in for what a real river.Client would do to the
+// job row once its Work call returns nil. Tests in this package drive
+// pipeline.Engine.Dispatch directly instead of running a real
+// river.Client fetch loop (the CAS fence and fan-in logic under test live
+// entirely in Postgres and in Engine, not in River's own scheduling), so
+// nothing else ever performs this transition; a test whose step is
+// dispatched to completion and then later re-armed needs it explicitly,
+// or its old, never-cleaned-up job row would be double-counted alongside
+// the fresh one a re-arm inserts.
+func completeRiverJobsForStep(t *testing.T, pool *pgxpool.Pool, id uuid.UUID) {
+	t.Helper()
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE river_job SET state = 'completed', finalized_at = now() WHERE kind = $1 AND args -> 'step_ids' ? $2 AND state IN ('available', 'scheduled', 'running', 'retryable', 'pending')`,
+		pipeline.JobKind, id.String(),
+	); err != nil {
+		t.Fatalf("mark river jobs completed for step %s: %v", id, err)
+	}
 }
 
 // countRiverJobsForStep counts live (non-terminal) river_job rows whose

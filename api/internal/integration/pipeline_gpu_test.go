@@ -76,7 +76,7 @@ func TestGpuAdvisoryLockSerializesTwoExecutors(t *testing.T) {
 	runUntilDone := func(g *pipeline.GPUExecutor, jobID int64, stepID uuid.UUID) error {
 		deadline := time.Now().Add(10 * time.Second)
 		for time.Now().Before(deadline) {
-			err := g.Run(context.Background(), jobID, 1, []uuid.UUID{stepID}, nil)
+			err := g.Run(context.Background(), jobID, 1, pipeline.MaxTransientAttempts, []uuid.UUID{stepID}, nil)
 			var snooze *river.JobSnoozeError
 			if errors.As(err, &snooze) {
 				continue
@@ -127,7 +127,12 @@ func TestGpuLockConnectionLossCancelsRunningJob(t *testing.T) {
 		}
 	}})
 
-	engine, pool := pipelineEngine(t, registry)
+	// A dedicated, uniquely-named connection pool for this engine: killing
+	// its own advisory-lock connection below must never risk hitting an
+	// unrelated backend (the live worker container's own connections, or
+	// another test's).
+	appName := "gpu-watchdog-test-" + uuid.NewString()
+	engine, _ := pipelineEngineOnPool(t, registry, markedPool(t, appName))
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "gpu-watchdog-tenant")
 
@@ -141,15 +146,21 @@ func TestGpuLockConnectionLossCancelsRunningJob(t *testing.T) {
 	}
 
 	g := pipeline.NewGPUExecutor(engine, &fakeResidency{}, 0)
-	go func() { _ = g.Run(context.Background(), 7101, 1, []uuid.UUID{stepID}, nil) }()
+	go func() { _ = g.Run(context.Background(), 7101, 1, pipeline.MaxTransientAttempts, []uuid.UUID{stepID}, nil) }()
 
 	// Give the executor time to acquire the lock and start the handler,
-	// then find and kill its backend from a separate connection: the
-	// watchdog's next ping (every 5s in production; the test can't shrink
-	// that constant, so it waits it out) must then cancel the job.
+	// then find and kill exactly its own backend (matched by
+	// application_name, not "every advisory lock holder") from a separate
+	// connection: the watchdog's next ping (every 5s in production; the
+	// test can't shrink that constant, so it waits it out) must then
+	// cancel the job.
 	time.Sleep(500 * time.Millisecond)
-	if _, err := pool.Exec(context.Background(),
-		`SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND pid <> pg_backend_pid()`,
+	// pg_terminate_backend requires either superuser or the same role as
+	// the target backend; markedPool connects as the app role (same DSN
+	// as appPool), so the terminating connection must too.
+	terminator := appPool(t)
+	if _, err := terminator.Exec(context.Background(),
+		`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = $1 AND pid <> pg_backend_pid()`, appName,
 	); err != nil {
 		t.Fatalf("terminate lock backend: %v", err)
 	}

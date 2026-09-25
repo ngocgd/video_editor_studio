@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/google/uuid"
-
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/httpapi/gen"
@@ -16,22 +14,32 @@ import (
 )
 
 // CreateRun implements gen.StrictServerInterface. RBAC guarantees an
-// editor+ role in a resolved tenant for this route.
+// editor+ role in a resolved tenant for this route. Every id (the run's
+// and every step's) is generated here, never accepted from the client:
+// see resolveStepGraph. Priority is derived from the client's declared
+// priorityClass, never a raw client-supplied integer.
 func (h *PipelineAPI) CreateRun(ctx context.Context, req gen.CreateRunRequestObject) (gen.CreateRunResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 	body := req.Body
 
-	runID := idconv.NewV7()
-	if body.Id != nil {
-		runID = uuid.UUID(*body.Id)
+	priority, err := priorityForClass(body.PriorityClass)
+	if err != nil {
+		detail := err.Error()
+		return gen.CreateRun400ApplicationProblemPlusJSONResponse{Title: "invalid run", Status: http.StatusBadRequest, Detail: &detail}, nil
+	}
+	steps, err := resolveStepGraph(body.Steps, priority)
+	if err != nil {
+		detail := err.Error()
+		return gen.CreateRun400ApplicationProblemPlusJSONResponse{Title: "invalid run", Status: http.StatusBadRequest, Detail: &detail}, nil
 	}
 
+	runID := idconv.NewV7()
 	spec := pipeline.RunSpec{
 		ID:        runID,
 		ScopeKind: body.ScopeKind,
 		ScopeID:   body.ScopeId,
 		Kind:      body.Kind,
-		Steps:     toModelRefSpecs(body.Steps),
+		Steps:     steps,
 	}
 
 	if _, err := h.Engine.Enqueue(ctx, info.ID, spec); err != nil {
@@ -42,13 +50,19 @@ func (h *PipelineAPI) CreateRun(ctx context.Context, req gen.CreateRunRequestObj
 		case errors.Is(err, pipeline.ErrAdmissionDenied):
 			detail := err.Error()
 			return gen.CreateRun507ApplicationProblemPlusJSONResponse{Title: "admission denied", Status: http.StatusInsufficientStorage, Detail: &detail}, nil
-		default:
-			// Anything else (a malformed step spec referencing an
-			// unregistered kind, a bad dependency graph) is the caller's
-			// mistake, not a server fault, so it is surfaced as 400
-			// rather than falling through to the generic 500 handler.
+		case errors.Is(err, pipeline.ErrInvalidGraph), errors.Is(err, pipeline.ErrUnknownStepKind):
+			// The only two Enqueue error classes that are ever the
+			// caller's own mistake: everything else (a database error, a
+			// deadlock, anything unexpected) falls through to the
+			// generic 500 handler below rather than echoing a raw
+			// internal error message — and since every id here is
+			// server-generated, a duplicate-key violation can no longer
+			// happen at all, so there is nothing else genuinely
+			// input-shaped left to surface as a 400.
 			detail := err.Error()
 			return gen.CreateRun400ApplicationProblemPlusJSONResponse{Title: "invalid run", Status: http.StatusBadRequest, Detail: &detail}, nil
+		default:
+			return nil, err
 		}
 	}
 
@@ -82,7 +96,8 @@ func (h *PipelineAPI) ListRunSteps(ctx context.Context, req gen.ListRunStepsRequ
 	}
 	cursor, err := httpx.DecodeCursor(cursorStr)
 	if err != nil {
-		cursor = uuid.Nil
+		detail := "invalid cursor"
+		return gen.ListRunSteps400ApplicationProblemPlusJSONResponse{Title: "invalid request", Status: http.StatusBadRequest, Detail: &detail}, nil
 	}
 	limit := httpx.PageLimit(req.Params.Limit)
 
@@ -90,13 +105,17 @@ func (h *PipelineAPI) ListRunSteps(ctx context.Context, req gen.ListRunStepsRequ
 	if err != nil {
 		return nil, err
 	}
-	return gen.ListRunSteps200JSONResponse(toStepListDTO(steps, limit)), nil
+	return gen.ListRunSteps200JSONResponse(toStepListDTO(steps, limit, isEditorOrAbove(ctx))), nil
 }
 
 // CancelRun implements gen.StrictServerInterface.
 func (h *PipelineAPI) CancelRun(ctx context.Context, req gen.CancelRunRequestObject) (gen.CancelRunResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 	if err := h.Engine.CancelRun(ctx, info.ID, req.Id); err != nil {
+		if errors.Is(err, pipeline.ErrNotFound) {
+			detail := "run not found, or already finished"
+			return gen.CancelRun404ApplicationProblemPlusJSONResponse{Title: "not found", Status: http.StatusNotFound, Detail: &detail}, nil
+		}
 		return nil, err
 	}
 	recordJobAudit(ctx, h.Engine, "run_canceled", "pipeline_run", req.Id)
@@ -106,10 +125,10 @@ func (h *PipelineAPI) CancelRun(ctx context.Context, req gen.CancelRunRequestObj
 // toStepListDTO converts a page of steps into the wire list DTO, adding a
 // nextCursor when the page was full (matching the cursor convention used
 // by every other list endpoint in this codebase, e.g. auditapi.ListAudit).
-func toStepListDTO(steps []dbgen.PipelineStep, limit int32) gen.PipelineStepList {
+func toStepListDTO(steps []dbgen.PipelineStep, limit int32, includeErrorMsg bool) gen.PipelineStepList {
 	items := make([]gen.PipelineStep, 0, len(steps))
 	for _, s := range steps {
-		items = append(items, toStepDTO(s))
+		items = append(items, toStepDTO(s, includeErrorMsg))
 	}
 	list := gen.PipelineStepList{Items: items}
 	if int32(len(steps)) == limit && len(steps) > 0 {

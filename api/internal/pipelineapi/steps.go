@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
-
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/httpapi/gen"
@@ -26,14 +24,18 @@ func (h *PipelineAPI) RetryStep(ctx context.Context, req gen.RetryStepRequestObj
 	info := tenant.MustFromCtx(ctx)
 	step, err := h.Engine.RetryStep(ctx, info.ID, req.Id)
 	if errors.Is(err, pipeline.ErrNotFound) {
-		detail := "step not found, or not in a retryable state"
+		detail := "step not found"
 		return gen.RetryStep404ApplicationProblemPlusJSONResponse{Title: "not found", Status: http.StatusNotFound, Detail: &detail}, nil
+	}
+	if errors.Is(err, pipeline.ErrRetryNotAllowed) {
+		detail := err.Error()
+		return gen.RetryStep409ApplicationProblemPlusJSONResponse{Title: "retry not allowed", Status: http.StatusConflict, Detail: &detail}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	recordJobAudit(ctx, h.Engine, "step_retried", "pipeline_step", req.Id)
-	return gen.RetryStep200JSONResponse(toStepDTO(step)), nil
+	return gen.RetryStep200JSONResponse(toStepDTO(step, true)), nil
 }
 
 // CancelStep implements gen.StrictServerInterface. RBAC guarantees an
@@ -49,7 +51,7 @@ func (h *PipelineAPI) CancelStep(ctx context.Context, req gen.CancelStepRequestO
 		return nil, err
 	}
 	recordJobAudit(ctx, h.Engine, "step_canceled", "pipeline_step", req.Id)
-	return gen.CancelStep200JSONResponse(toStepDTO(step)), nil
+	return gen.CancelStep200JSONResponse(toStepDTO(step, true)), nil
 }
 
 // ListJobs implements gen.StrictServerInterface.
@@ -67,7 +69,8 @@ func (h *PipelineAPI) ListJobs(ctx context.Context, req gen.ListJobsRequestObjec
 	}
 	cursor, err := httpx.DecodeCursor(cursorStr)
 	if err != nil {
-		cursor = uuid.Nil
+		detail := "invalid cursor"
+		return gen.ListJobs400ApplicationProblemPlusJSONResponse{Title: "invalid request", Status: http.StatusBadRequest, Detail: &detail}, nil
 	}
 	limit := httpx.PageLimit(req.Params.Limit)
 
@@ -75,7 +78,7 @@ func (h *PipelineAPI) ListJobs(ctx context.Context, req gen.ListJobsRequestObjec
 	if err != nil {
 		return nil, err
 	}
-	return gen.ListJobs200JSONResponse(toStepListDTO(steps, limit)), nil
+	return gen.ListJobs200JSONResponse(toStepListDTO(steps, limit, isEditorOrAbove(ctx))), nil
 }
 
 // GetStepLog implements gen.StrictServerInterface. RBAC guarantees an

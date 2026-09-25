@@ -37,11 +37,15 @@ type RunSpec struct {
 // registered AdmissionCheck first, and inserts a River job for every step
 // that has no unmet dependency, chunked to BatchChunkTarget per job. It
 // returns the new run id.
+//
+// spec.Steps' own DependsOn entries must each reference another step in
+// the same spec.Steps (checked by validateGraph, which also rejects
+// cycles and self-dependencies): Enqueue always creates a wholly new
+// run, so there is no existing step in the database a legitimate
+// dependency could point at yet.
 func (e *Engine) Enqueue(ctx context.Context, tenantID uuid.UUID, spec RunSpec) (uuid.UUID, error) {
-	for _, check := range e.Checks {
-		if err := check(ctx, tenantID, len(spec.Steps)); err != nil {
-			return uuid.Nil, err
-		}
+	if err := validateGraph(spec.Steps); err != nil {
+		return uuid.Nil, err
 	}
 
 	tx, err := e.Pool.Begin(ctx)
@@ -50,6 +54,18 @@ func (e *Engine) Enqueue(ctx context.Context, tenantID uuid.UUID, spec RunSpec) 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := e.Queries.WithTx(tx)
+
+	// Serializes concurrent Enqueue calls for the same tenant so the
+	// admission checks below (in particular quota.Checker, a
+	// check-then-insert) cannot race two calls into both passing.
+	if err := qtx.LockTenantForAdmission(ctx, tenantID.String()); err != nil {
+		return uuid.Nil, fmt.Errorf("pipeline: lock tenant for admission: %w", err)
+	}
+	for _, check := range e.Checks {
+		if err := check(ctx, qtx, tenantID, len(spec.Steps)); err != nil {
+			return uuid.Nil, err
+		}
+	}
 
 	if _, err := qtx.CreateRun(ctx, dbgen.CreateRunParams{
 		ID:        idconv.ToPg(spec.ID),
@@ -92,7 +108,7 @@ func (e *Engine) insertSteps(ctx context.Context, qtx *dbgen.Queries, tenantID u
 	for i, s := range spec.Steps {
 		h, ok := e.Registry.Lookup(s.Kind)
 		if !ok {
-			return nil, fmt.Errorf("pipeline: no handler registered for step kind %q", s.Kind)
+			return nil, fmt.Errorf("%w: %q", ErrUnknownStepKind, s.Kind)
 		}
 		ref := StepRef{ID: s.ID, TenantID: tenantID, RunID: spec.ID, ScopeKind: s.ScopeKind, ScopeID: s.ScopeID, Kind: s.Kind}
 		queue, err := h.Queue(ctx, ref)

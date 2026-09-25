@@ -30,7 +30,7 @@ func newLogRing() *logRing {
 }
 
 func (r *logRing) add(line string) {
-	scrubbed := scrub.URL(line)
+	scrubbed := scrub.Text(line)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.lines) >= maxLogLines {

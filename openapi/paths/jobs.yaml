@@ -83,6 +83,12 @@ listRunSteps:
           application/json:
             schema:
               $ref: "../schemas/jobs.yaml#/PipelineStepList"
+      "400":
+        description: invalid cursor
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
 cancelRun:
   post:
     operationId: cancelRun
@@ -97,6 +103,12 @@ cancelRun:
     responses:
       "204":
         description: run canceled
+      "404":
+        description: run not found in this tenant, or already finished
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
 retryStep:
   post:
     operationId: retryStep
@@ -116,7 +128,13 @@ retryStep:
             schema:
               $ref: "../schemas/jobs.yaml#/PipelineStep"
       "404":
-        description: step not found, or not in a retryable state
+        description: step not found
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: step exists but cannot be retried right now (unmet dependency, or its run is not active)
         content:
           application/problem+json:
             schema:
@@ -171,6 +189,12 @@ listJobs:
           application/json:
             schema:
               $ref: "../schemas/jobs.yaml#/PipelineStepList"
+      "400":
+        description: invalid cursor
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
 getStepLog:
   get:
     operationId: getStepLog

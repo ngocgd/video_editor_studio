@@ -9,6 +9,8 @@ import (
 	"context"
 	"time"
 
+	dbgen "loomtale/api/internal/db/gen"
+
 	"github.com/google/uuid"
 )
 
@@ -88,10 +90,15 @@ type StepHandler interface {
 	Run(ctx context.Context, sc *StepContext) (Output, error)
 }
 
-// AdmissionCheck runs before Enqueue inserts anything. A non-nil error
-// aborts the whole enqueue with no rows written; Engine.Enqueue maps it to
-// a problem+json 429 or 507 response.
-type AdmissionCheck func(ctx context.Context, tenantID uuid.UUID, stepCount int) error
+// AdmissionCheck runs inside Enqueue's own transaction, after it has
+// taken the per-tenant admission lock (see LockTenantForAdmission), and
+// before anything is inserted. q is that same transaction's Queries, so
+// a check's own reads (e.g. counting a tenant's active steps) are
+// serialized against concurrent Enqueue calls for the same tenant rather
+// than racing a separate, unlocked connection. A non-nil error aborts
+// the whole enqueue with no rows written; Engine.Enqueue maps it to a
+// problem+json 429 or 507 response.
+type AdmissionCheck func(ctx context.Context, q *dbgen.Queries, tenantID uuid.UUID, stepCount int) error
 
 // GpuSnapshot is the live GPU state read by the /gpu endpoint and the
 // render admission gate. Phase 4 is the only real implementation.

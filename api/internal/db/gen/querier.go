@@ -11,6 +11,12 @@ import (
 )
 
 type Querier interface {
+	// Used to cascade-cancel the downstream of a permanently failed step:
+	// a "pending" step whose upstream will never produce output can never
+	// become ready on its own, so it must be cancelled explicitly or the run
+	// would stay "active" forever with no step left that could ever finish
+	// it.
+	CancelPendingDependents(ctx context.Context, arg CancelPendingDependentsParams) ([]PipelineStep, error)
 	CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) ([]PipelineStep, error)
 	CancelScopeSteps(ctx context.Context, arg CancelScopeStepsParams) ([]PipelineStep, error)
 	CancelStep(ctx context.Context, arg CancelStepParams) (PipelineStep, error)
@@ -27,7 +33,12 @@ type Querier interface {
 	// Consumes one token if at least one is available; the caller checks the
 	// returned row count (1 = allowed, 0 = the bucket was already empty).
 	ConsumeRateLimitBucket(ctx context.Context, bucketKey string) (int64, error)
+	// Counts pending steps too: a run made mostly of fan-in-blocked
+	// "pending" steps still reserves the capacity they will need once
+	// unblocked, so it must count against the same quota queued/running
+	// steps do.
 	CountActiveStepsForTenant(ctx context.Context, tenantID pgtype.UUID) (int64, error)
+	CountNonTerminalStepsInRun(ctx context.Context, arg CountNonTerminalStepsInRunParams) (int64, error)
 	// lint-tenant-queries:allow: cross-tenant GPU scheduling decision, there is only one physical GPU
 	CountQueuedGpuStepsForModel(ctx context.Context, arg CountQueuedGpuStepsForModelParams) (int64, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
@@ -47,15 +58,26 @@ type Querier interface {
 	DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error
 	// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
 	DeleteStaleRateLimitBuckets(ctx context.Context) error
+	// Used by the reconciler when a "queued" step has exceeded its stranded
+	// re-enqueue budget: unlike CommitStepFailed this fences on status =
+	// 'queued', not 'running', since a stranded step was never re-claimed.
+	// lint-tenant-queries:allow: internal reconciler write, not caller input
+	FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) (PipelineStep, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
 	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
+	// The reverse of GetDependents: every step ids' own upstream steps,
+	// tenant-scoped (unlike the version this replaces).
+	GetDependencies(ctx context.Context, arg GetDependenciesParams) ([]GetDependenciesRow, error)
 	GetDependents(ctx context.Context, arg GetDependentsParams) ([]pgtype.UUID, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
+	// Batch existence check for SSE topic authorization: one query for every
+	// requested topic instead of one round trip each.
+	GetRunIDsForTenant(ctx context.Context, arg GetRunIDsForTenantParams) ([]pgtype.UUID, error)
 	GetRunningGpuStepForTenant(ctx context.Context, tenantID pgtype.UUID) (PipelineStep, error)
 	// Placeholder query proving the sqlc -> pgx/v5 pipeline against goose's own
 	// version table. Later phases add domain queries here and in sibling files.
@@ -67,32 +89,62 @@ type Querier interface {
 	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error)
 	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
 	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
+	// Durable OOM counter, checked instead of River's own attempt count: a
+	// transient failure on attempt 1 followed by the first real OOM on
+	// attempt 2 must still count as "first OOM", not "second".
+	// lint-tenant-queries:allow: internal failure-path write fenced by id+attempt, not caller input
+	IncrementGpuOomCount(ctx context.Context, arg IncrementGpuOomCountParams) (PipelineStep, error)
+	// lint-tenant-queries:allow: internal reconciler write, not caller input
+	IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) (PipelineStep, error)
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
-	InsertStep(ctx context.Context, arg InsertStepParams) (PipelineStep, error)
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
 	// transaction stays within the enqueue latency budget.
 	InsertStepBatch(ctx context.Context, arg []InsertStepBatchParams) *InsertStepBatchBatchResults
-	InsertStepDep(ctx context.Context, arg InsertStepDepParams) error
 	InsertStepDepBatch(ctx context.Context, arg []InsertStepDepBatchParams) *InsertStepDepBatchBatchResults
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
 	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
+	// No filter: the (tenant_id, id) index.
 	ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error)
+	ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams) ([]PipelineStep, error)
+	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]PipelineStep, error)
+	ListJobsByStatusAndQueue(ctx context.Context, arg ListJobsByStatusAndQueueParams) ([]PipelineStep, error)
 	// lint-tenant-queries:allow: by design this lists every tenant the user
 	// belongs to (e.g. to populate the tenant switcher); it is scoped by
 	// user_id, not tenant_id, because no single tenant is selected yet.
 	ListMembershipsForUser(ctx context.Context, userID pgtype.UUID) ([]ListMembershipsForUserRow, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
+	// Serializes concurrent Enqueue calls for the same tenant so the
+	// quota check-then-insert in Engine.Enqueue cannot race: every caller
+	// must hold this lock (acquired inside the same transaction as the
+	// check and the insert) before counting active steps. hashtext's 32-bit
+	// output is widened to bigint because pg_advisory_xact_lock has no
+	// native 32-bit single-key overload; a hash collision between two
+	// tenants only costs extra serialization, never a correctness bug.
+	LockTenantForAdmission(ctx context.Context, tenantID string) error
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
-	MarkRunStatus(ctx context.Context, arg MarkRunStatusParams) error
+	// Guards against a cancel/rollup racing an already-terminal run (done,
+	// failed, canceled or superseded): only a run still "active" can change
+	// status through this path.
+	MarkRunStatusIfNotTerminal(ctx context.Context, arg MarkRunStatusIfNotTerminalParams) (PipelineRun, error)
+	// Reopens dependents that were already "done" so MarkStaleDependents can
+	// put them back in the normal fan-in path instead of leaving a stale
+	// done step's dependents permanently skipped.
+	MarkStepsPending(ctx context.Context, arg MarkStepsPendingParams) ([]PipelineStep, error)
 	MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams) ([]PipelineStep, error)
+	// Candidate "queued" steps under their stranded-requeue budget, for the
+	// reconciler to check against River's own job table (not visible to
+	// sqlc/goose, so that check is a hand-written query in Go, not here).
+	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
+	OrphanedQueuedStepsBatch(ctx context.Context, arg OrphanedQueuedStepsBatchParams) ([]PipelineStep, error)
 	// lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
 	PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineStep, error)
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
-	ReadySweep(ctx context.Context) ([]PipelineStep, error)
+	ReadySweepBatch(ctx context.Context, pageLimit int32) ([]PipelineStep, error)
 	RecomputeRemainingDeps(ctx context.Context, arg RecomputeRemainingDepsParams) (PipelineStep, error)
 	// Upserts a token bucket, refilling it by elapsed time since its last
 	// update, and returns the refilled token count. Deliberately a separate
@@ -107,8 +159,16 @@ type Querier interface {
 	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
 	// lint-tenant-queries:allow: internal retry-requeue fenced by id+attempt, not caller input
 	RequeueStep(ctx context.Context, arg RequeueStepParams) (PipelineStep, error)
+	// Bounded (LIMIT + FOR UPDATE SKIP LOCKED) so the reconciler never holds
+	// one giant transaction; the caller loops until fewer than page_limit
+	// rows come back.
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
-	ResetStaleHeartbeats(ctx context.Context, cutoff pgtype.Timestamptz) ([]PipelineStep, error)
+	ResetStaleHeartbeatsBatch(ctx context.Context, arg ResetStaleHeartbeatsBatchParams) ([]PipelineStep, error)
+	// Only revives a step whose run is still active (never canceled or
+	// superseded) and whose own dependencies are already satisfied
+	// (remaining_deps <= 0); otherwise this returns no rows and the caller
+	// rejects the request with a problem+json error rather than silently
+	// re-queuing a step whose inputs are not ready.
 	RetryStep(ctx context.Context, arg RetryStepParams) (PipelineStep, error)
 	// Used on tenant switch (session-fixation defence: a session that briefly
 	// saw tenant A's data gets a fresh token before it can act on tenant B's).
@@ -116,7 +176,12 @@ type Querier interface {
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
-	SupersedeRun(ctx context.Context, arg SupersedeRunParams) error
+	// Cancels and links a run to its replacement in a single statement (the
+	// caller wraps this with CancelRunSteps in one transaction): the run row
+	// itself never passes through an intermediate "canceled" state that a
+	// concurrent reader could observe, and newRunID must already exist
+	// (insert it before calling this, never after).
+	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)

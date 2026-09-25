@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/pipeline"
@@ -107,16 +106,17 @@ func TestSSESubscribeReadyThenTransitionsDeliveredAndTenantIsolated(t *testing.T
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
 	registry.Register(succeedsImmediately("sse-step", pipeline.QueueCPU))
-	engine, pool := pipelineEngine(t, registry)
+	engine, _ := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantA := pipelineFixtureTenant(t, q, "sse-tenant-a")
 	tenantB := pipelineFixtureTenant(t, q, "sse-tenant-b")
 
-	hub := sse.NewHub(pool)
+	appName := "sse-transitions-test-" + uuid.NewString()
+	hub := sse.NewHub(markedPool(t, appName))
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
 	go hub.Run(hubCtx)
-	waitForListen(t, pool)
+	waitForListen(t, appName)
 
 	runID := idconv.NewV7()
 	stepID := idconv.NewV7()
@@ -175,12 +175,17 @@ func TestSSESubscribeReadyThenTransitionsDeliveredAndTenantIsolated(t *testing.T
 // reconnects.
 func TestSSEResyncOnListenLoss(t *testing.T) {
 	skipIfAPIUnreachable(t)
-	pool := appPool(t)
+	// A uniquely-named pool for this test's own Hub: the stack under CI
+	// also runs the real api container's own SSE hub, LISTEN-ing on the
+	// exact same channel, which a broad "any LISTEN backend" kill would
+	// take down right along with this test's.
+	appName := "sse-resync-test-" + uuid.NewString()
+	pool := markedPool(t, appName)
 	hub := sse.NewHub(pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
 	go hub.Run(hubCtx)
-	waitForListen(t, pool)
+	waitForListen(t, appName)
 
 	subCtx, stopSub := context.WithCancel(context.Background())
 	defer stopSub()
@@ -193,8 +198,12 @@ func TestSSEResyncOnListenLoss(t *testing.T) {
 		t.Fatalf("expected ready first, got %q", f.Event)
 	}
 
-	if _, err := pool.Exec(context.Background(),
-		`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE 'LISTEN %' AND pid <> pg_backend_pid()`,
+	// pg_terminate_backend requires either superuser or the same role as
+	// the target backend; markedPool connects as the app role (same DSN
+	// as appPool), so the terminating connection must too.
+	terminator := appPool(t)
+	if _, err := terminator.Exec(context.Background(),
+		`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = $1 AND pid <> pg_backend_pid()`, appName,
 	); err != nil {
 		t.Fatalf("terminate LISTEN backend: %v", err)
 	}
@@ -212,21 +221,25 @@ func TestSSEResyncOnListenLoss(t *testing.T) {
 	}
 }
 
-// waitForListen polls until at least one "LISTEN lt_events" backend shows
-// up in pg_stat_activity, so a test never races the hub's own connection
-// setup on a slow CI runner.
-func waitForListen(t *testing.T, pool *pgxpool.Pool) {
+// waitForListen polls until this test's own Hub connection (identified by
+// its application_name, see markedPool) shows up in pg_stat_activity, so
+// a test never races the hub's own connection setup on a slow CI runner.
+// It does not also match on query text: an idle connection's last-query
+// text is not guaranteed to still read "LISTEN ..." the moment this
+// polls, only that the connection itself is alive and registered.
+func waitForListen(t *testing.T, appName string) {
 	t.Helper()
+	admin := ownerPool(t)
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		var n int
-		err := pool.QueryRow(context.Background(),
-			`SELECT count(*) FROM pg_stat_activity WHERE query LIKE 'LISTEN %'`,
+		err := admin.QueryRow(context.Background(),
+			`SELECT count(*) FROM pg_stat_activity WHERE application_name = $1`, appName,
 		).Scan(&n)
 		if err == nil && n > 0 {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	t.Fatal("timed out waiting for the hub's LISTEN connection to appear")
+	t.Fatal("timed out waiting for the hub's connection to appear")
 }

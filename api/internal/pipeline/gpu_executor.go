@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -24,9 +25,15 @@ const gpuSlotLockKey int64 = 0x6c745f677075 // "lt_gpu" packed into an int64
 // process picking up the lock never overlaps for long.
 const gpuLockWatchdogInterval = 5 * time.Second
 
+// gpuLockPingTimeout bounds a single watchdog ping: without a timeout, a
+// half-open TCP connection (the remote end vanished without a clean
+// close) never returns an error and never trips the watchdog, exactly
+// the failure mode the watchdog exists to catch.
+const gpuLockPingTimeout = 2 * time.Second
+
 // maxResidentPreferenceSnoozes bounds how many times a job defers to let
-// a same-priority queued step for the currently resident model run
-// first, so preferring residency can never starve a step outright.
+// a same-priority queued gpu step targeting the currently resident model
+// run first, so preferring residency can never starve a step outright.
 const maxResidentPreferenceSnoozes = 3
 
 // GPUExecutor owns the single-GPU advisory lock, the lock-connection
@@ -53,29 +60,64 @@ func NewGPUExecutor(e *Engine, residency ModelResidency, renderReserveMB int64) 
 // spinning. On success it holds the lock (with a watchdog cancelling ctx
 // if the connection dies), applies the resident-model preference, ensures
 // the target model is loaded, and only then claims and dispatches.
-func (g *GPUExecutor) Run(ctx context.Context, jobID int64, riverAttempt int, ids []uuid.UUID, sink logSink) error {
+func (g *GPUExecutor) Run(ctx context.Context, jobID int64, riverAttempt, riverMaxAttempts int, ids []uuid.UUID, sink logSink) error {
 	conn, err := g.Engine.Pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("pipeline: acquire GPU lock connection: %w", err)
 	}
-	defer conn.Release()
+	released := false
+	release := func() {
+		if !released {
+			released = true
+			conn.Release()
+		}
+	}
+	defer release()
 
 	var locked bool
 	if err := conn.QueryRow(ctx, "SELECT pg_try_advisory_lock($1)", gpuSlotLockKey).Scan(&locked); err != nil {
 		return fmt.Errorf("pipeline: try GPU advisory lock: %w", err)
 	}
 	if !locked {
+		g.clearSnoozeCount(jobID)
 		return river.JobSnooze(5 * time.Second)
 	}
-	defer func() {
-		unlockCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, _ = conn.Exec(unlockCtx, "SELECT pg_advisory_unlock($1)", gpuSlotLockKey)
-	}()
 
 	watchdogCtx, cancelWatchdog := context.WithCancel(ctx)
-	defer cancelWatchdog()
-	go g.watchLockConnection(watchdogCtx, conn, cancelWatchdog)
+	watchdogDone := make(chan struct{})
+	go func() {
+		defer close(watchdogDone)
+		g.watchLockConnection(watchdogCtx, conn, cancelWatchdog)
+	}()
+	defer func() {
+		// Cancel and, critically, wait for the watchdog goroutine to
+		// actually exit before touching conn again: a Ping still in
+		// flight on the same *pgxpool.Conn makes the unlock query fail
+		// with "conn busy", and unlocking is meaningless if the
+		// connection is about to be handed back to the pool anyway.
+		cancelWatchdog()
+		<-watchdogDone
+
+		unlockCtx, cancel := context.WithTimeout(context.Background(), gpuLockPingTimeout)
+		defer cancel()
+		if _, err := conn.Exec(unlockCtx, "SELECT pg_advisory_unlock($1)", gpuSlotLockKey); err != nil {
+			// The unlock failed: the connection may still hold the
+			// (re-entrant, session-scoped) advisory lock. Handing it back
+			// to the pool via Release would let some future checkout
+			// silently inherit a connection that never actually released
+			// the GPU slot, locking every other process out until pgxpool
+			// happens to recycle it. Hijack takes the raw connection out
+			// of the pool's accounting entirely (Release must never also
+			// run on it after this), then it is closed outright so the
+			// pool opens a fresh one next time instead of reusing it.
+			slog.ErrorContext(ctx, "pipeline: failed to release the GPU advisory lock, closing the connection instead of returning it to the pool", "error", err)
+			released = true
+			raw := conn.Hijack()
+			if closeErr := raw.Close(context.Background()); closeErr != nil {
+				slog.WarnContext(ctx, "pipeline: failed to close the hijacked GPU lock connection", "error", closeErr)
+			}
+		}
+	}()
 
 	if snooze, err := g.preferResident(watchdogCtx, jobID, ids); err != nil {
 		return err
@@ -88,7 +130,9 @@ func (g *GPUExecutor) Run(ctx context.Context, jobID int64, riverAttempt int, id
 		return err
 	}
 
-	return g.Engine.Dispatch(watchdogCtx, jobID, ids, DispatchOpts{Sink: sink, Residency: g.Residency, RiverAttempt: riverAttempt})
+	return g.Engine.Dispatch(watchdogCtx, jobID, ids, DispatchOpts{
+		Sink: sink, Residency: g.Residency, RiverAttempt: riverAttempt, RiverMaxAttempts: riverMaxAttempts,
+	})
 }
 
 // pinger is the minimal interface the watchdog needs from the dedicated
@@ -97,10 +141,12 @@ type pinger interface {
 	Ping(ctx context.Context) error
 }
 
-// watchLockConnection pings conn every gpuLockWatchdogInterval and
-// cancels cancel the moment the ping fails, so a job never keeps running
-// after this worker silently lost the advisory lock (e.g. the connection
-// itself was dropped, which also releases the lock server-side).
+// watchLockConnection pings conn every gpuLockWatchdogInterval (each
+// ping bounded by gpuLockPingTimeout) and cancels cancel the moment a
+// ping fails, so a job never keeps running after this worker silently
+// lost the advisory lock (e.g. the connection itself was dropped, which
+// also releases the lock server-side). Returns as soon as ctx is done,
+// so the caller can safely wait on this returning before reusing conn.
 func (g *GPUExecutor) watchLockConnection(ctx context.Context, conn pinger, cancel context.CancelFunc) {
 	ticker := time.NewTicker(gpuLockWatchdogInterval)
 	defer ticker.Stop()
@@ -109,7 +155,10 @@ func (g *GPUExecutor) watchLockConnection(ctx context.Context, conn pinger, canc
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := conn.Ping(ctx); err != nil {
+			pingCtx, cancelPing := context.WithTimeout(ctx, gpuLockPingTimeout)
+			err := conn.Ping(pingCtx)
+			cancelPing()
+			if err != nil {
 				cancel()
 				return
 			}
@@ -156,6 +205,9 @@ func (g *GPUExecutor) preferResident(ctx context.Context, jobID int64, ids []uui
 
 // ensureModel waits for the target step's model to be resident, using
 // PeekSteps rather than the claimed rows because this runs before claim.
+// Every step in a chunk shares the same provider_ref (enqueueReadySteps
+// groups by (queue, kind, provider_ref)), so steps[0]'s model is the
+// whole chunk's model, not just an arbitrary representative.
 func (g *GPUExecutor) ensureModel(ctx context.Context, ids []uuid.UUID) error {
 	steps, err := g.Engine.Queries.PeekSteps(ctx, toPgUUIDs(ids))
 	if err != nil || len(steps) == 0 {
@@ -163,7 +215,7 @@ func (g *GPUExecutor) ensureModel(ctx context.Context, ids []uuid.UUID) error {
 	}
 	handler, ok := g.Engine.Registry.Lookup(steps[0].Kind)
 	if !ok {
-		return nil // runOne will record the no-handler failure itself
+		return nil // Dispatch/runOne will record the no-handler failure itself
 	}
 	ref := StepRef{
 		ID:        idconv.FromPg(steps[0].ID),
@@ -192,6 +244,12 @@ func (g *GPUExecutor) incrementSnoozeCount(jobID int64) {
 	g.snoozes[jobID]++
 }
 
+// clearSnoozeCount drops jobID's entry. Called both when a job stops
+// needing to defer (it got the lock and either proceeded or lost the
+// resident-preference race enough times to stop deferring) and when it
+// never got the lock at all, so a job id that only ever snoozed on the
+// advisory lock itself (never reaching preferResident) cannot leak an
+// entry that nothing else will ever clear.
 func (g *GPUExecutor) clearSnoozeCount(jobID int64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()

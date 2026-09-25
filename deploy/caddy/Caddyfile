@@ -1,6 +1,4 @@
 :8080 {
-	encode gzip
-
 	# `handle` blocks are mutually exclusive and match top to bottom, so
 	# /api/* responses carry only the API's own security headers
 	# (api/internal/secheaders) unmodified, and static SPA responses carry
@@ -15,10 +13,22 @@
 		request_body {
 			max_size 256KB
 		}
-		reverse_proxy api:8080
+		# No `encode gzip` on this block: gzip buffers output until its
+		# window fills or the stream ends, which would turn
+		# /api/v1/events (text/event-stream, api/internal/pipelineapi
+		# StreamEvents) into a stream a browser's EventSource never
+		# receives incrementally. flush_interval -1 makes every proxied
+		# write reach the client immediately instead of waiting on Go's
+		# reverse proxy's own buffering heuristics, which is what an SSE
+		# response needs and a normal JSON response is unaffected by.
+		reverse_proxy api:8080 {
+			flush_interval -1
+		}
 	}
 
 	handle {
+		encode gzip
+
 		# Enforcing CSP, never Report-Only. {$MEDIA_ORIGIN} is the same env
 		# var the API reads for its own copy of this header
 		# (api/internal/secheaders), so both always send byte-identical

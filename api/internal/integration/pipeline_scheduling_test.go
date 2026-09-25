@@ -15,11 +15,11 @@ import (
 	"loomtale/api/internal/pipeline"
 )
 
-// chunkStepSeconds is the test-only per-step duration used to size one
+// chunkStepDuration is the test-only per-step duration used to size one
 // batch chunk, standing in for the spec's "test-only 2s-chunk handler";
 // kept at 1s here purely to keep this test's wall-clock cost low while
 // still exercising real River scheduling end to end.
-const chunkStepSeconds = 1 * time.Second
+const chunkStepDuration = 1 * time.Second
 
 // TestInteractiveStepWaitsAtMostOneChunkBehindBatch runs a real
 // river.Client (Start/Stop, not a manual Dispatch call) against a
@@ -34,7 +34,7 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 
 	registry := pipeline.NewRegistry()
 	registry.Register(&fakeHandler{kind: "sched-batch", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
-		time.Sleep(chunkStepSeconds)
+		time.Sleep(chunkStepDuration)
 		return pipeline.Output{}, nil
 	}})
 	interactiveStarted := make(chan time.Time, 1)
@@ -47,7 +47,7 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 	// truly waits behind one whole chunk rather than a re-split one.
 	estimator := func(kind string) time.Duration {
 		if kind == "sched-batch" {
-			return chunkStepSeconds
+			return chunkStepDuration
 		}
 		return pipeline.DefaultStepEstimate(kind)
 	}
@@ -126,8 +126,8 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 		t.Logf("interactive step started %s after being enqueued", wait)
 		// One chunk (2 batch steps * 1s, since MaxWorkers=1 serializes
 		// them) plus generous scheduling overhead.
-		if wait > 2*chunkStepSeconds+2*time.Second {
-			t.Fatalf("interactive step waited %s, want at most one chunk (~%s) plus overhead", wait, 2*chunkStepSeconds)
+		if wait > 2*chunkStepDuration+2*time.Second {
+			t.Fatalf("interactive step waited %s, want at most one chunk (~%s) plus overhead", wait, 2*chunkStepDuration)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("interactive step never started")

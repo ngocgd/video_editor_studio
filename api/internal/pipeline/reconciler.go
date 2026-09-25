@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 )
 
@@ -12,11 +13,19 @@ import (
 // boot-time pass.
 const reconcileInterval = 60 * time.Second
 
+// reconcileBatchLimit bounds every reconciler sweep query so it never
+// holds one giant transaction over an unbounded row set; the reconciler
+// loops a batch at a time until a pass returns fewer rows than the
+// limit.
+const reconcileBatchLimit = 500
+
 // Reconciler is the crash-resume safety net: it resets steps whose
 // heartbeat went stale (the worker that claimed them died or was
 // killed), sweeps any pending step whose dependencies are already
-// satisfied but that was never enqueued (a fan-in gap), and inserts a
-// fresh River job for everything it just moved to queued.
+// satisfied but that was never enqueued (a fan-in gap), sweeps any
+// queued step with no live River job (a step that fell out of River's
+// own bookkeeping), and inserts a fresh River job for everything it just
+// moved to queued.
 type Reconciler struct {
 	Engine *Engine
 }
@@ -37,10 +46,9 @@ func (r *Reconciler) Run(ctx context.Context) {
 	}
 }
 
-// RunOnce executes a single reconcile pass: reset stale heartbeats, then
-// sweep ready pending steps. Exported so tests (and a future manual
-// "reconcile now" operator hook) can drive one pass deterministically
-// instead of waiting on Run's own ticker.
+// RunOnce executes a single reconcile pass. Exported so tests (and a
+// future manual "reconcile now" operator hook) can drive one pass
+// deterministically instead of waiting on Run's own ticker.
 func (r *Reconciler) RunOnce(ctx context.Context) {
 	if err := r.resetStaleHeartbeats(ctx); err != nil {
 		slog.ErrorContext(ctx, "pipeline: reconciler failed to reset stale heartbeats", "error", err)
@@ -48,40 +56,46 @@ func (r *Reconciler) RunOnce(ctx context.Context) {
 	if err := r.sweepReady(ctx); err != nil {
 		slog.ErrorContext(ctx, "pipeline: reconciler failed to sweep ready steps", "error", err)
 	}
+	if err := r.sweepOrphanedQueued(ctx); err != nil {
+		slog.ErrorContext(ctx, "pipeline: reconciler failed to sweep orphaned queued steps", "error", err)
+	}
 }
 
 // resetStaleHeartbeats moves every "running" step whose heartbeat is
 // older than heartbeatStaleAfter back to "queued" and enqueues a fresh
-// River job for it, all in one transaction so a step is never left
-// queued with nothing that will ever claim it.
+// River job for it, one bounded batch and transaction at a time, so a
+// step is never left queued with nothing that will ever claim it.
 func (r *Reconciler) resetStaleHeartbeats(ctx context.Context) error {
 	cutoff := idconv.ToPgTimestamptz(time.Now().Add(-heartbeatStaleAfter))
+	for {
+		tx, err := r.Engine.Pool.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		qtx := r.Engine.Queries.WithTx(tx)
 
-	tx, err := r.Engine.Pool.Begin(ctx)
-	if err != nil {
-		return err
+		reset, err := qtx.ResetStaleHeartbeatsBatch(ctx, dbgen.ResetStaleHeartbeatsBatchParams{Cutoff: cutoff, PageLimit: reconcileBatchLimit})
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			return err
+		}
+		if len(reset) > 0 {
+			if err := r.Engine.enqueueReadySteps(ctx, tx, reset); err != nil {
+				_ = tx.Rollback(ctx)
+				return err
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return err
+		}
+		for _, s := range reset {
+			slog.WarnContext(ctx, "pipeline: reclaimed a step with a stale heartbeat", "step_id", idconv.FromPg(s.ID), "attempt", s.Attempt)
+			publishStepEvent(ctx, r.Engine.Pool, s, true)
+		}
+		if len(reset) < reconcileBatchLimit {
+			return nil
+		}
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	qtx := r.Engine.Queries.WithTx(tx)
-
-	reset, err := qtx.ResetStaleHeartbeats(ctx, cutoff)
-	if err != nil {
-		return err
-	}
-	if len(reset) == 0 {
-		return tx.Commit(ctx)
-	}
-	if err := r.Engine.enqueueReadySteps(ctx, tx, reset); err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return err
-	}
-	for _, s := range reset {
-		slog.WarnContext(ctx, "pipeline: reclaimed a step with a stale heartbeat", "step_id", idconv.FromPg(s.ID), "attempt", s.Attempt)
-		publishStepEvent(ctx, r.Engine.Pool, s, true)
-	}
-	return nil
 }
 
 // sweepReady moves every "pending" step whose remaining_deps already
@@ -91,28 +105,32 @@ func (r *Reconciler) resetStaleHeartbeats(ctx context.Context) error {
 // remaining_deps was recomputed by MarkStaleDependents outside the
 // normal fan-in path.
 func (r *Reconciler) sweepReady(ctx context.Context) error {
-	tx, err := r.Engine.Pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	qtx := r.Engine.Queries.WithTx(tx)
+	for {
+		tx, err := r.Engine.Pool.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		qtx := r.Engine.Queries.WithTx(tx)
 
-	ready, err := qtx.ReadySweep(ctx)
-	if err != nil {
-		return err
+		ready, err := qtx.ReadySweepBatch(ctx, reconcileBatchLimit)
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			return err
+		}
+		if len(ready) > 0 {
+			if err := r.Engine.enqueueReadySteps(ctx, tx, ready); err != nil {
+				_ = tx.Rollback(ctx)
+				return err
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return err
+		}
+		for _, s := range ready {
+			publishStepEvent(ctx, r.Engine.Pool, s, true)
+		}
+		if len(ready) < reconcileBatchLimit {
+			return nil
+		}
 	}
-	if len(ready) == 0 {
-		return tx.Commit(ctx)
-	}
-	if err := r.Engine.enqueueReadySteps(ctx, tx, ready); err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return err
-	}
-	for _, s := range ready {
-		publishStepEvent(ctx, r.Engine.Pool, s, true)
-	}
-	return nil
 }

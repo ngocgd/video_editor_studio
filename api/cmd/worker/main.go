@@ -82,14 +82,23 @@ func run() error {
 	// Phase 4 replaces this with a real residency backend and only then
 	// is WORKER_GPU allowed to be true (see compose.gpu.yml).
 
-	queueConfig := map[string]river.QueueConfig{
-		pipeline.QueueCPU:    {MaxWorkers: cfg.CPUWorkers},
-		pipeline.QueueLLM:    {MaxWorkers: cfg.LLMWorkers},
-		pipeline.QueueRender: {MaxWorkers: cfg.RenderWorkers},
-		pipeline.QueueIO:     {MaxWorkers: cfg.IOWorkers},
-	}
-	if cfg.WorkerGPU {
-		queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
+	// A worker with no registered handler for any kind must never fetch a
+	// job at all: claiming a step it cannot run destroys it (the CAS
+	// claim is a one-way door). This is the only thing standing between
+	// today's empty registry (nothing past phase 3 has registered a
+	// handler yet) and every gpu/cpu/llm/render/io queue getting worked
+	// by a process that immediately fails everything with "no handler".
+	var queueConfig map[string]river.QueueConfig
+	if registry.Len() > 0 {
+		queueConfig = map[string]river.QueueConfig{
+			pipeline.QueueCPU:    {MaxWorkers: cfg.CPUWorkers},
+			pipeline.QueueLLM:    {MaxWorkers: cfg.LLMWorkers},
+			pipeline.QueueRender: {MaxWorkers: cfg.RenderWorkers},
+			pipeline.QueueIO:     {MaxWorkers: cfg.IOWorkers},
+		}
+		if cfg.WorkerGPU {
+			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
+		}
 	}
 
 	// Engine is built with River left nil, then patched in below: the
@@ -122,10 +131,18 @@ func run() error {
 	defer stopReconciler()
 	go reconciler.Run(reconcilerCtx)
 
-	if err := riverClient.Start(ctx); err != nil {
-		return err
+	// river.Client.Start requires at least one configured queue: with an
+	// empty registry (nothing to work yet), this client exists only to
+	// let the reconciler insert jobs via InsertTx, exactly like the
+	// insert-only client cmd/api builds. Started is tracked so shutdown
+	// below only calls Stop on a client that was actually started.
+	started := len(queueConfig) > 0
+	if started {
+		if err := riverClient.Start(ctx); err != nil {
+			return err
+		}
 	}
-	slog.Info("worker started", "gpu_enabled", cfg.WorkerGPU, "cpu_workers", cfg.CPUWorkers)
+	slog.Info("worker started", "gpu_enabled", cfg.WorkerGPU, "cpu_workers", cfg.CPUWorkers, "registered_kinds", registry.Len(), "queues_enabled", len(queueConfig))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -155,6 +172,9 @@ func run() error {
 
 	stopReconciler()
 
+	if !started {
+		return nil
+	}
 	// Soft stop: let running jobs finish, up to ShutdownTimeout, then
 	// escalate to a hard stop that cancels every job's context.
 	softCtx, cancelSoft := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)

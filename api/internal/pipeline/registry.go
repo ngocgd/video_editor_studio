@@ -30,3 +30,12 @@ func (r *Registry) Lookup(kind string) (StepHandler, bool) {
 	h, ok := r.handlers[kind]
 	return h, ok
 }
+
+// Len returns how many kinds have a registered handler. Used at worker
+// startup to decide whether to enable River queues at all: a worker with
+// an empty registry (every phase before the first one that registers a
+// real handler) must never fetch any job, since it cannot run anything
+// it would claim without destroying it.
+func (r *Registry) Len() int {
+	return len(r.handlers)
+}

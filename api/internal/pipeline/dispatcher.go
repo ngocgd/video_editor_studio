@@ -2,11 +2,13 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/riverqueue/river"
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
@@ -21,40 +23,71 @@ const heartbeatInterval = 10 * time.Second
 // single missed tick under load does not cause a spurious reclaim.
 const heartbeatStaleAfter = 60 * time.Second
 
+// missingHandlerSnooze is how long Dispatch waits before a River retry
+// when a chunk contains a step kind this process has no handler for
+// (an old binary mid-rollout, GPU disabled on this worker, or — today —
+// no phase past 3 having registered anything yet). Snoozing never
+// consumes a River attempt, so a step can wait indefinitely for a
+// capable worker instead of being destroyed by an incapable one.
+const missingHandlerSnooze = 30 * time.Second
+
 // DispatchOpts carries the parts of dispatch that only apply to a GPU
 // job: Residency is nil for every non-gpu queue, in which case a
 // gpu_oom-classified error (which should never happen off the gpu queue)
 // degrades to a permanent failure instead of panicking on a nil
-// interface. RiverAttempt is River's own attempt counter (distinct from
-// the step's DB attempt), used to bound gpu_oom to exactly one retry.
+// interface. RiverAttempt/RiverMaxAttempts are River's own attempt
+// bookkeeping (distinct from the step's DB attempt), used to fail a step
+// outright on its last transient retry instead of requeuing it forever.
 type DispatchOpts struct {
-	Sink         logSink
-	Residency    ModelResidency
-	RiverAttempt int
+	Sink             logSink
+	Residency        ModelResidency
+	RiverAttempt     int
+	RiverMaxAttempts int
 }
 
-// Dispatch claims every step in ids under jobID and runs each one to
-// completion (or a classified failure) through its registered handler.
-// It returns a non-nil error only when the whole River job should be
-// retried: a transient or first-time gpu_oom failure on at least one
-// claimed step. A permanent failure is recorded on the step itself and
-// does not fail the job.
-func (e *Engine) Dispatch(ctx context.Context, jobID int64, ids []uuid.UUID, opts DispatchOpts) error {
-	claimed, err := Claim(ctx, e.Queries, jobID, ids)
-	if err != nil {
-		return fmt.Errorf("pipeline: claim: %w", err)
-	}
-	if len(claimed) == 0 {
-		// Every id was already handled (done/failed/canceled/reclaimed by
-		// someone else) or never existed; nothing to do. This is the
-		// expected outcome for a duplicate River rescue firing alongside
-		// the reconciler.
-		return nil
-	}
+// errStopChunk signals Dispatch to stop claiming further ids in this
+// call (used after a gpu_oom: the GPU has no model loaded any more, so
+// running the rest of the chunk would just OOM again immediately). The
+// ids not yet claimed are simply left "queued" for a later job.
+var errStopChunk = errors.New("pipeline: stop working the rest of this chunk")
 
+// Dispatch claims and runs each id in turn, one at a time (not all up
+// front): claiming the whole chunk before working any of it would mark
+// every step "running" immediately, but only the one actually being
+// worked has a live heartbeat goroutine, so the rest go heartbeat-stale
+// and get reclaimed by the reconciler while this same call is still
+// (uselessly) about to work them. It returns a non-nil error only when
+// the whole River job should be retried: a transient or first-time
+// gpu_oom failure on at least one claimed step, or a missing handler for
+// an unclaimed one (which snoozes instead of failing).
+func (e *Engine) Dispatch(ctx context.Context, jobID int64, ids []uuid.UUID, opts DispatchOpts) error {
 	var retryErr error
-	for _, step := range claimed {
-		if err := e.runOne(ctx, step, opts); err != nil {
+	for _, id := range ids {
+		peeked, err := e.Queries.PeekSteps(ctx, toPgUUIDs([]uuid.UUID{id}))
+		if err != nil {
+			return fmt.Errorf("pipeline: peek: %w", err)
+		}
+		if len(peeked) == 0 {
+			continue // gone: canceled, or the id never existed
+		}
+		if _, ok := e.Registry.Lookup(peeked[0].Kind); !ok {
+			// A worker that cannot run this kind must never claim (and
+			// thereby destroy) the step; leave it queued for one that can.
+			return river.JobSnooze(missingHandlerSnooze)
+		}
+
+		claimed, err := Claim(ctx, e.Queries, jobID, []uuid.UUID{id})
+		if err != nil {
+			return fmt.Errorf("pipeline: claim: %w", err)
+		}
+		if len(claimed) == 0 {
+			continue // reclaimed by someone else, or already terminal
+		}
+
+		if err := e.runOne(ctx, claimed[0], opts); err != nil {
+			if errors.Is(err, errStopChunk) {
+				return err
+			}
 			if retryErr == nil {
 				retryErr = err
 			}
@@ -64,11 +97,16 @@ func (e *Engine) Dispatch(ctx context.Context, jobID int64, ids []uuid.UUID, opt
 }
 
 // runOne runs a single claimed step and commits its result. The returned
-// error, if any, signals "retry this River job"; it is never returned
-// for a permanent failure, which is terminal by design.
+// error, if any, signals "retry this River job" (possibly wrapped in
+// errStopChunk); it is never returned for a permanent failure, which is
+// terminal by design.
 func (e *Engine) runOne(ctx context.Context, step dbgen.PipelineStep, opts DispatchOpts) error {
 	handler, ok := e.Registry.Lookup(step.Kind)
 	if !ok {
+		// Dispatch already checked this before claiming, but the
+		// registry could change between the peek and the claim in a
+		// pathological case; fail closed rather than run nothing and
+		// silently drop the step.
 		_ = e.commitFailed(ctx, step, "no_handler", fmt.Sprintf("no handler registered for step kind %q", step.Kind), nil)
 		return nil
 	}
@@ -90,7 +128,7 @@ func (e *Engine) runOne(ctx context.Context, step dbgen.PipelineStep, opts Dispa
 	logAssetID := sc.flushLog(commitCtx)
 
 	if runErr == nil {
-		return e.commitDone(commitCtx, step, output, logAssetID)
+		return e.commitDoneWithRetry(commitCtx, step, output, logAssetID)
 	}
 
 	class, code := Classify(runErr)
@@ -100,6 +138,14 @@ func (e *Engine) runOne(ctx context.Context, step dbgen.PipelineStep, opts Dispa
 	case ClassGPUOOM:
 		return e.handleGPUOOM(commitCtx, step, runErr, &logAssetID, opts)
 	default: // ClassTransient
+		if opts.RiverMaxAttempts > 0 && opts.RiverAttempt >= opts.RiverMaxAttempts {
+			// This is the last attempt River will ever give this job:
+			// requeuing would strand the step in "queued" forever (no
+			// future job will exist to reclaim it). Fail it outright so
+			// it stops holding quota and is visible as an actionable
+			// error instead.
+			return e.commitFailed(commitCtx, step, "exhausted_retries", runErr.Error(), &logAssetID)
+		}
 		if err := e.requeueForRetry(commitCtx, step); err != nil {
 			slog.ErrorContext(commitCtx, "pipeline: failed to requeue step after transient error", "step_id", idconv.FromPg(step.ID), "error", err)
 		}

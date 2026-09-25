@@ -11,11 +11,77 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelPendingDependents = `-- name: CancelPendingDependents :many
+UPDATE pipeline_steps
+SET status = 'canceled', version = version + 1, finished_at = now()
+WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'pending'
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+`
+
+type CancelPendingDependentsParams struct {
+	TenantID pgtype.UUID   `json:"tenant_id"`
+	Ids      []pgtype.UUID `json:"ids"`
+}
+
+// Used to cascade-cancel the downstream of a permanently failed step:
+// a "pending" step whose upstream will never produce output can never
+// become ready on its own, so it must be cancelled explicitly or the run
+// would stay "active" forever with no step left that could ever finish
+// it.
+func (q *Queries) CancelPendingDependents(ctx context.Context, arg CancelPendingDependentsParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, cancelPendingDependents, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const cancelRunSteps = `-- name: CancelRunSteps :many
 UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND run_id = $2 AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type CancelRunStepsParams struct {
@@ -59,6 +125,8 @@ func (q *Queries) CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) 
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -75,7 +143,7 @@ UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND scope_kind = $2 AND scope_id = $3
   AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type CancelScopeStepsParams struct {
@@ -120,6 +188,8 @@ func (q *Queries) CancelScopeSteps(ctx context.Context, arg CancelScopeStepsPara
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -135,7 +205,7 @@ const cancelStep = `-- name: CancelStep :one
 UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND id = $2 AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type CancelStepParams struct {
@@ -173,6 +243,8 @@ func (q *Queries) CancelStep(ctx context.Context, arg CancelStepParams) (Pipelin
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
@@ -186,7 +258,7 @@ SET attempt = attempt + 1,
     started_at = COALESCE(started_at, now()),
     version = version + 1
 WHERE id = ANY($2::uuid[]) AND status = 'queued'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type ClaimStepsParams struct {
@@ -234,6 +306,8 @@ func (q *Queries) ClaimSteps(ctx context.Context, arg ClaimStepsParams) ([]Pipel
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -250,7 +324,7 @@ UPDATE pipeline_steps
 SET status = 'done', output = $1, progress = 100, log_asset_id = $2,
     finished_at = now(), version = version + 1
 WHERE id = $3 AND attempt = $4 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type CommitStepDoneParams struct {
@@ -296,6 +370,8 @@ func (q *Queries) CommitStepDone(ctx context.Context, arg CommitStepDoneParams) 
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
@@ -305,7 +381,7 @@ UPDATE pipeline_steps
 SET status = $1, error_code = $2, error_msg = $3,
     log_asset_id = $4, finished_at = now(), version = version + 1
 WHERE id = $5 AND attempt = $6 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type CommitStepFailedParams struct {
@@ -355,16 +431,39 @@ func (q *Queries) CommitStepFailed(ctx context.Context, arg CommitStepFailedPara
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
 
 const countActiveStepsForTenant = `-- name: CountActiveStepsForTenant :one
-SELECT count(*) FROM pipeline_steps WHERE tenant_id = $1 AND status IN ('queued', 'running')
+SELECT count(*) FROM pipeline_steps WHERE tenant_id = $1 AND status IN ('pending', 'queued', 'running')
 `
 
+// Counts pending steps too: a run made mostly of fan-in-blocked
+// "pending" steps still reserves the capacity they will need once
+// unblocked, so it must count against the same quota queued/running
+// steps do.
 func (q *Queries) CountActiveStepsForTenant(ctx context.Context, tenantID pgtype.UUID) (int64, error) {
 	row := q.db.QueryRow(ctx, countActiveStepsForTenant, tenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countNonTerminalStepsInRun = `-- name: CountNonTerminalStepsInRun :one
+SELECT count(*) FROM pipeline_steps
+WHERE tenant_id = $1 AND run_id = $2 AND status NOT IN ('done', 'failed', 'canceled')
+`
+
+type CountNonTerminalStepsInRunParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	RunID    pgtype.UUID `json:"run_id"`
+}
+
+func (q *Queries) CountNonTerminalStepsInRun(ctx context.Context, arg CountNonTerminalStepsInRunParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countNonTerminalStepsInRun, arg.TenantID, arg.RunID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -432,7 +531,7 @@ const decrementRemainingDeps = `-- name: DecrementRemainingDeps :many
 UPDATE pipeline_steps
 SET remaining_deps = remaining_deps - 1, version = version + 1
 WHERE tenant_id = $1 AND id = ANY($2::uuid[])
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type DecrementRemainingDepsParams struct {
@@ -476,7 +575,103 @@ func (q *Queries) DecrementRemainingDeps(ctx context.Context, arg DecrementRemai
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const failQueuedStep = `-- name: FailQueuedStep :one
+UPDATE pipeline_steps
+SET status = 'failed', error_code = $1, error_msg = $2,
+    finished_at = now(), version = version + 1
+WHERE id = $3 AND status = 'queued'
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+`
+
+type FailQueuedStepParams struct {
+	ErrorCode pgtype.Text `json:"error_code"`
+	ErrorMsg  pgtype.Text `json:"error_msg"`
+	ID        pgtype.UUID `json:"id"`
+}
+
+// Used by the reconciler when a "queued" step has exceeded its stranded
+// re-enqueue budget: unlike CommitStepFailed this fences on status =
+// 'queued', not 'running', since a stranded step was never re-claimed.
+// lint-tenant-queries:allow: internal reconciler write, not caller input
+func (q *Queries) FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) (PipelineStep, error) {
+	row := q.db.QueryRow(ctx, failQueuedStep, arg.ErrorCode, arg.ErrorMsg, arg.ID)
+	var i PipelineStep
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RunID,
+		&i.ScopeKind,
+		&i.ScopeID,
+		&i.Kind,
+		&i.Queue,
+		&i.ProviderRef,
+		&i.Priority,
+		&i.Status,
+		&i.Attempt,
+		&i.Version,
+		&i.RemainingDeps,
+		&i.ClaimedJobID,
+		&i.InputHash,
+		&i.Progress,
+		&i.EtaS,
+		&i.Output,
+		&i.ErrorCode,
+		&i.ErrorMsg,
+		&i.LogAssetID,
+		&i.HeartbeatAt,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
+	)
+	return i, err
+}
+
+const getDependencies = `-- name: GetDependencies :many
+SELECT d.step_id, d.depends_on_step_id, dep.status AS depends_on_status
+FROM pipeline_step_deps d
+JOIN pipeline_steps dep ON dep.id = d.depends_on_step_id
+WHERE d.tenant_id = $1 AND d.step_id = ANY($2::uuid[])
+`
+
+type GetDependenciesParams struct {
+	TenantID pgtype.UUID   `json:"tenant_id"`
+	Ids      []pgtype.UUID `json:"ids"`
+}
+
+type GetDependenciesRow struct {
+	StepID          pgtype.UUID `json:"step_id"`
+	DependsOnStepID pgtype.UUID `json:"depends_on_step_id"`
+	DependsOnStatus string      `json:"depends_on_status"`
+}
+
+// The reverse of GetDependents: every step ids' own upstream steps,
+// tenant-scoped (unlike the version this replaces).
+func (q *Queries) GetDependencies(ctx context.Context, arg GetDependenciesParams) ([]GetDependenciesRow, error) {
+	rows, err := q.db.Query(ctx, getDependencies, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDependenciesRow
+	for rows.Next() {
+		var i GetDependenciesRow
+		if err := rows.Scan(&i.StepID, &i.DependsOnStepID, &i.DependsOnStatus); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -544,8 +739,39 @@ func (q *Queries) GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, er
 	return i, err
 }
 
+const getRunIDsForTenant = `-- name: GetRunIDsForTenant :many
+SELECT id FROM pipeline_runs WHERE tenant_id = $1 AND id = ANY($2::uuid[])
+`
+
+type GetRunIDsForTenantParams struct {
+	TenantID pgtype.UUID   `json:"tenant_id"`
+	Ids      []pgtype.UUID `json:"ids"`
+}
+
+// Batch existence check for SSE topic authorization: one query for every
+// requested topic instead of one round trip each.
+func (q *Queries) GetRunIDsForTenant(ctx context.Context, arg GetRunIDsForTenantParams) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, getRunIDsForTenant, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRunningGpuStepForTenant = `-- name: GetRunningGpuStepForTenant :one
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
 WHERE tenant_id = $1 AND queue = 'gpu' AND status = 'running'
 ORDER BY started_at DESC NULLS LAST
 LIMIT 1
@@ -581,12 +807,14 @@ func (q *Queries) GetRunningGpuStepForTenant(ctx context.Context, tenantID pgtyp
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
 
 const getStepByID = `-- name: GetStepByID :one
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps WHERE tenant_id = $1 AND id = $2
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps WHERE tenant_id = $1 AND id = $2
 `
 
 type GetStepByIDParams struct {
@@ -624,6 +852,8 @@ func (q *Queries) GetStepByID(ctx context.Context, arg GetStepByIDParams) (Pipel
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
@@ -646,6 +876,24 @@ func (q *Queries) GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (Ten
 	return i, err
 }
 
+const hasFailedStepsInRun = `-- name: HasFailedStepsInRun :one
+SELECT EXISTS (
+    SELECT 1 FROM pipeline_steps WHERE tenant_id = $1 AND run_id = $2 AND status = 'failed'
+)
+`
+
+type HasFailedStepsInRunParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	RunID    pgtype.UUID `json:"run_id"`
+}
+
+func (q *Queries) HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasFailedStepsInRun, arg.TenantID, arg.RunID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const heartbeatStep = `-- name: HeartbeatStep :execrows
 UPDATE pipeline_steps
 SET heartbeat_at = now()
@@ -666,47 +914,24 @@ func (q *Queries) HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (i
 	return result.RowsAffected(), nil
 }
 
-const insertStep = `-- name: InsertStep :one
-INSERT INTO pipeline_steps (
-    id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref,
-    priority, status, remaining_deps, input_hash
-) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8,
-    $9, $10, $11, $12
-)
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+const incrementGpuOomCount = `-- name: IncrementGpuOomCount :one
+UPDATE pipeline_steps
+SET gpu_oom_count = gpu_oom_count + 1, version = version + 1
+WHERE id = $1 AND attempt = $2 AND status = 'running'
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
-type InsertStepParams struct {
-	ID            pgtype.UUID `json:"id"`
-	TenantID      pgtype.UUID `json:"tenant_id"`
-	RunID         pgtype.UUID `json:"run_id"`
-	ScopeKind     string      `json:"scope_kind"`
-	ScopeID       pgtype.UUID `json:"scope_id"`
-	Kind          string      `json:"kind"`
-	Queue         string      `json:"queue"`
-	ProviderRef   string      `json:"provider_ref"`
-	Priority      int16       `json:"priority"`
-	Status        string      `json:"status"`
-	RemainingDeps int32       `json:"remaining_deps"`
-	InputHash     string      `json:"input_hash"`
+type IncrementGpuOomCountParams struct {
+	ID      pgtype.UUID `json:"id"`
+	Attempt int32       `json:"attempt"`
 }
 
-func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) (PipelineStep, error) {
-	row := q.db.QueryRow(ctx, insertStep,
-		arg.ID,
-		arg.TenantID,
-		arg.RunID,
-		arg.ScopeKind,
-		arg.ScopeID,
-		arg.Kind,
-		arg.Queue,
-		arg.ProviderRef,
-		arg.Priority,
-		arg.Status,
-		arg.RemainingDeps,
-		arg.InputHash,
-	)
+// Durable OOM counter, checked instead of River's own attempt count: a
+// transient failure on attempt 1 followed by the first real OOM on
+// attempt 2 must still count as "first OOM", not "second".
+// lint-tenant-queries:allow: internal failure-path write fenced by id+attempt, not caller input
+func (q *Queries) IncrementGpuOomCount(ctx context.Context, arg IncrementGpuOomCountParams) (PipelineStep, error) {
+	row := q.db.QueryRow(ctx, incrementGpuOomCount, arg.ID, arg.Attempt)
 	var i PipelineStep
 	err := row.Scan(
 		&i.ID,
@@ -735,28 +960,58 @@ func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) (Pipelin
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
 
-const insertStepDep = `-- name: InsertStepDep :exec
-INSERT INTO pipeline_step_deps (tenant_id, step_id, depends_on_step_id)
-VALUES ($1, $2, $3)
+const incrementStrandedRequeue = `-- name: IncrementStrandedRequeue :one
+UPDATE pipeline_steps
+SET stranded_requeues = stranded_requeues + 1, version = version + 1
+WHERE id = $1 AND status = 'queued'
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
-type InsertStepDepParams struct {
-	TenantID        pgtype.UUID `json:"tenant_id"`
-	StepID          pgtype.UUID `json:"step_id"`
-	DependsOnStepID pgtype.UUID `json:"depends_on_step_id"`
-}
-
-func (q *Queries) InsertStepDep(ctx context.Context, arg InsertStepDepParams) error {
-	_, err := q.db.Exec(ctx, insertStepDep, arg.TenantID, arg.StepID, arg.DependsOnStepID)
-	return err
+// lint-tenant-queries:allow: internal reconciler write, not caller input
+func (q *Queries) IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) (PipelineStep, error) {
+	row := q.db.QueryRow(ctx, incrementStrandedRequeue, id)
+	var i PipelineStep
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RunID,
+		&i.ScopeKind,
+		&i.ScopeID,
+		&i.Kind,
+		&i.Queue,
+		&i.ProviderRef,
+		&i.Priority,
+		&i.Status,
+		&i.Attempt,
+		&i.Version,
+		&i.RemainingDeps,
+		&i.ClaimedJobID,
+		&i.InputHash,
+		&i.Progress,
+		&i.EtaS,
+		&i.Output,
+		&i.ErrorCode,
+		&i.ErrorMsg,
+		&i.LogAssetID,
+		&i.HeartbeatAt,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
+	)
+	return i, err
 }
 
 const listGpuQueueForTenant = `-- name: ListGpuQueueForTenant :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
 WHERE tenant_id = $1 AND queue = 'gpu' AND status = 'queued'
 ORDER BY priority, id
 LIMIT $2
@@ -803,6 +1058,8 @@ func (q *Queries) ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueFor
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -815,16 +1072,212 @@ func (q *Queries) ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueFor
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps
-WHERE tenant_id = $1
-  AND ($2::text = '' OR status = $2)
-  AND ($3::text = '' OR queue = $3)
-  AND id > $4
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+WHERE tenant_id = $1 AND id > $2
+ORDER BY id
+LIMIT $3
+`
+
+type ListJobsParams struct {
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	Cursor    pgtype.UUID `json:"cursor"`
+	PageLimit int32       `json:"page_limit"`
+}
+
+// No filter: the (tenant_id, id) index.
+func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, listJobs, arg.TenantID, arg.Cursor, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByQueue = `-- name: ListJobsByQueue :many
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+WHERE tenant_id = $1 AND queue = $2 AND id > $3
+ORDER BY id
+LIMIT $4
+`
+
+type ListJobsByQueueParams struct {
+	TenantID    pgtype.UUID `json:"tenant_id"`
+	QueueFilter string      `json:"queue_filter"`
+	Cursor      pgtype.UUID `json:"cursor"`
+	PageLimit   int32       `json:"page_limit"`
+}
+
+func (q *Queries) ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, listJobsByQueue,
+		arg.TenantID,
+		arg.QueueFilter,
+		arg.Cursor,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByStatus = `-- name: ListJobsByStatus :many
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+WHERE tenant_id = $1 AND status = $2 AND id > $3
+ORDER BY id
+LIMIT $4
+`
+
+type ListJobsByStatusParams struct {
+	TenantID     pgtype.UUID `json:"tenant_id"`
+	StatusFilter string      `json:"status_filter"`
+	Cursor       pgtype.UUID `json:"cursor"`
+	PageLimit    int32       `json:"page_limit"`
+}
+
+func (q *Queries) ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, listJobsByStatus,
+		arg.TenantID,
+		arg.StatusFilter,
+		arg.Cursor,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsByStatusAndQueue = `-- name: ListJobsByStatusAndQueue :many
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+WHERE tenant_id = $1 AND status = $2 AND queue = $3 AND id > $4
 ORDER BY id
 LIMIT $5
 `
 
-type ListJobsParams struct {
+type ListJobsByStatusAndQueueParams struct {
 	TenantID     pgtype.UUID `json:"tenant_id"`
 	StatusFilter string      `json:"status_filter"`
 	QueueFilter  string      `json:"queue_filter"`
@@ -832,8 +1285,8 @@ type ListJobsParams struct {
 	PageLimit    int32       `json:"page_limit"`
 }
 
-func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error) {
-	rows, err := q.db.Query(ctx, listJobs,
+func (q *Queries) ListJobsByStatusAndQueue(ctx context.Context, arg ListJobsByStatusAndQueueParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, listJobsByStatusAndQueue,
 		arg.TenantID,
 		arg.StatusFilter,
 		arg.QueueFilter,
@@ -874,6 +1327,8 @@ func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineS
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -886,7 +1341,7 @@ func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineS
 }
 
 const listRunSteps = `-- name: ListRunSteps :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
 WHERE tenant_id = $1 AND run_id = $2 AND id > $3
 ORDER BY id
 LIMIT $4
@@ -940,6 +1395,8 @@ func (q *Queries) ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]P
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -951,26 +1408,125 @@ func (q *Queries) ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]P
 	return items, nil
 }
 
-const markRunStatus = `-- name: MarkRunStatus :exec
-UPDATE pipeline_runs SET status = $1, updated_at = now() WHERE tenant_id = $2 AND id = $3
+const lockTenantForAdmission = `-- name: LockTenantForAdmission :exec
+SELECT pg_advisory_xact_lock(hashtext($1::text)::bigint)
 `
 
-type MarkRunStatusParams struct {
+// Serializes concurrent Enqueue calls for the same tenant so the
+// quota check-then-insert in Engine.Enqueue cannot race: every caller
+// must hold this lock (acquired inside the same transaction as the
+// check and the insert) before counting active steps. hashtext's 32-bit
+// output is widened to bigint because pg_advisory_xact_lock has no
+// native 32-bit single-key overload; a hash collision between two
+// tenants only costs extra serialization, never a correctness bug.
+func (q *Queries) LockTenantForAdmission(ctx context.Context, tenantID string) error {
+	_, err := q.db.Exec(ctx, lockTenantForAdmission, tenantID)
+	return err
+}
+
+const markRunStatusIfNotTerminal = `-- name: MarkRunStatusIfNotTerminal :one
+UPDATE pipeline_runs
+SET status = $1, updated_at = now()
+WHERE tenant_id = $2 AND id = $3 AND status = 'active'
+RETURNING id, tenant_id, scope_kind, scope_id, kind, status, superseded_by, created_by, created_at, updated_at
+`
+
+type MarkRunStatusIfNotTerminalParams struct {
 	Status   string      `json:"status"`
 	TenantID pgtype.UUID `json:"tenant_id"`
 	ID       pgtype.UUID `json:"id"`
 }
 
-func (q *Queries) MarkRunStatus(ctx context.Context, arg MarkRunStatusParams) error {
-	_, err := q.db.Exec(ctx, markRunStatus, arg.Status, arg.TenantID, arg.ID)
-	return err
+// Guards against a cancel/rollup racing an already-terminal run (done,
+// failed, canceled or superseded): only a run still "active" can change
+// status through this path.
+func (q *Queries) MarkRunStatusIfNotTerminal(ctx context.Context, arg MarkRunStatusIfNotTerminalParams) (PipelineRun, error) {
+	row := q.db.QueryRow(ctx, markRunStatusIfNotTerminal, arg.Status, arg.TenantID, arg.ID)
+	var i PipelineRun
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ScopeKind,
+		&i.ScopeID,
+		&i.Kind,
+		&i.Status,
+		&i.SupersededBy,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const markStepsPending = `-- name: MarkStepsPending :many
+UPDATE pipeline_steps
+SET status = 'pending', version = version + 1
+WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'done'
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+`
+
+type MarkStepsPendingParams struct {
+	TenantID pgtype.UUID   `json:"tenant_id"`
+	Ids      []pgtype.UUID `json:"ids"`
+}
+
+// Reopens dependents that were already "done" so MarkStaleDependents can
+// put them back in the normal fan-in path instead of leaving a stale
+// done step's dependents permanently skipped.
+func (q *Queries) MarkStepsPending(ctx context.Context, arg MarkStepsPendingParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, markStepsPending, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const markStepsQueued = `-- name: MarkStepsQueued :many
 UPDATE pipeline_steps
 SET status = 'queued', version = version + 1
 WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'pending' AND remaining_deps <= 0
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type MarkStepsQueuedParams struct {
@@ -1014,6 +1570,73 @@ func (q *Queries) MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const orphanedQueuedStepsBatch = `-- name: OrphanedQueuedStepsBatch :many
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+WHERE status = 'queued' AND stranded_requeues < $1
+ORDER BY id
+LIMIT $2
+`
+
+type OrphanedQueuedStepsBatchParams struct {
+	MaxStrandedRequeues int32 `json:"max_stranded_requeues"`
+	PageLimit           int32 `json:"page_limit"`
+}
+
+// Candidate "queued" steps under their stranded-requeue budget, for the
+// reconciler to check against River's own job table (not visible to
+// sqlc/goose, so that check is a hand-written query in Go, not here).
+// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
+func (q *Queries) OrphanedQueuedStepsBatch(ctx context.Context, arg OrphanedQueuedStepsBatchParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, orphanedQueuedStepsBatch, arg.MaxStrandedRequeues, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PipelineStep
+	for rows.Next() {
+		var i PipelineStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RunID,
+			&i.ScopeKind,
+			&i.ScopeID,
+			&i.Kind,
+			&i.Queue,
+			&i.ProviderRef,
+			&i.Priority,
+			&i.Status,
+			&i.Attempt,
+			&i.Version,
+			&i.RemainingDeps,
+			&i.ClaimedJobID,
+			&i.InputHash,
+			&i.Progress,
+			&i.EtaS,
+			&i.Output,
+			&i.ErrorCode,
+			&i.ErrorMsg,
+			&i.LogAssetID,
+			&i.HeartbeatAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1026,7 +1649,7 @@ func (q *Queries) MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams
 }
 
 const peekSteps = `-- name: PeekSteps :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at FROM pipeline_steps WHERE id = ANY($1::uuid[])
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps WHERE id = ANY($1::uuid[])
 `
 
 // lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
@@ -1066,6 +1689,8 @@ func (q *Queries) PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineS
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1077,16 +1702,24 @@ func (q *Queries) PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineS
 	return items, nil
 }
 
-const readySweep = `-- name: ReadySweep :many
-UPDATE pipeline_steps
+const readySweepBatch = `-- name: ReadySweepBatch :many
+WITH candidates AS (
+    SELECT p.id FROM pipeline_steps p
+    WHERE p.status = 'pending' AND p.remaining_deps <= 0
+    ORDER BY p.id
+    LIMIT $1
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE pipeline_steps s
 SET status = 'queued', version = version + 1
-WHERE status = 'pending' AND remaining_deps <= 0
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+FROM candidates c
+WHERE s.id = c.id
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
 `
 
 // lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
-func (q *Queries) ReadySweep(ctx context.Context) ([]PipelineStep, error) {
-	rows, err := q.db.Query(ctx, readySweep)
+func (q *Queries) ReadySweepBatch(ctx context.Context, pageLimit int32) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, readySweepBatch, pageLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -1121,6 +1754,8 @@ func (q *Queries) ReadySweep(ctx context.Context) ([]PipelineStep, error) {
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1136,11 +1771,11 @@ const recomputeRemainingDeps = `-- name: RecomputeRemainingDeps :one
 UPDATE pipeline_steps s
 SET remaining_deps = (
     SELECT count(*) FROM pipeline_step_deps d
-    JOIN pipeline_steps dep ON dep.id = d.depends_on_step_id
+    JOIN pipeline_steps dep ON dep.id = d.depends_on_step_id AND dep.tenant_id = $1
     WHERE d.tenant_id = $1 AND d.step_id = s.id AND dep.status <> 'done'
 ), version = s.version + 1
 WHERE s.tenant_id = $1 AND s.id = $2
-RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
 `
 
 type RecomputeRemainingDepsParams struct {
@@ -1178,6 +1813,8 @@ func (q *Queries) RecomputeRemainingDeps(ctx context.Context, arg RecomputeRemai
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
@@ -1186,7 +1823,7 @@ const requeueStep = `-- name: RequeueStep :one
 UPDATE pipeline_steps
 SET status = 'queued', version = version + 1
 WHERE id = $1 AND attempt = $2 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type RequeueStepParams struct {
@@ -1225,20 +1862,38 @@ func (q *Queries) RequeueStep(ctx context.Context, arg RequeueStepParams) (Pipel
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
 
-const resetStaleHeartbeats = `-- name: ResetStaleHeartbeats :many
-UPDATE pipeline_steps
+const resetStaleHeartbeatsBatch = `-- name: ResetStaleHeartbeatsBatch :many
+WITH candidates AS (
+    SELECT p.id FROM pipeline_steps p
+    WHERE p.status = 'running' AND p.heartbeat_at < $1
+    ORDER BY p.id
+    LIMIT $2
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE pipeline_steps s
 SET status = 'queued', version = version + 1
-WHERE status = 'running' AND heartbeat_at < $1
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+FROM candidates c
+WHERE s.id = c.id
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
 `
 
+type ResetStaleHeartbeatsBatchParams struct {
+	Cutoff    pgtype.Timestamptz `json:"cutoff"`
+	PageLimit int32              `json:"page_limit"`
+}
+
+// Bounded (LIMIT + FOR UPDATE SKIP LOCKED) so the reconciler never holds
+// one giant transaction; the caller loops until fewer than page_limit
+// rows come back.
 // lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
-func (q *Queries) ResetStaleHeartbeats(ctx context.Context, cutoff pgtype.Timestamptz) ([]PipelineStep, error) {
-	rows, err := q.db.Query(ctx, resetStaleHeartbeats, cutoff)
+func (q *Queries) ResetStaleHeartbeatsBatch(ctx context.Context, arg ResetStaleHeartbeatsBatchParams) ([]PipelineStep, error) {
+	rows, err := q.db.Query(ctx, resetStaleHeartbeatsBatch, arg.Cutoff, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -1273,6 +1928,8 @@ func (q *Queries) ResetStaleHeartbeats(ctx context.Context, cutoff pgtype.Timest
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1285,10 +1942,15 @@ func (q *Queries) ResetStaleHeartbeats(ctx context.Context, cutoff pgtype.Timest
 }
 
 const retryStep = `-- name: RetryStep :one
-UPDATE pipeline_steps
-SET status = 'queued', error_code = NULL, error_msg = NULL, version = version + 1
-WHERE tenant_id = $1 AND id = $2 AND status IN ('failed', 'canceled')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+UPDATE pipeline_steps s
+SET status = 'queued',
+    error_code = NULL, error_msg = NULL, gpu_oom_count = 0, stranded_requeues = 0,
+    version = s.version + 1
+FROM pipeline_runs r
+WHERE s.tenant_id = $1 AND s.id = $2
+  AND s.run_id = r.id AND r.tenant_id = $1 AND r.status = 'active'
+  AND s.status IN ('failed', 'canceled') AND s.remaining_deps <= 0
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
 `
 
 type RetryStepParams struct {
@@ -1296,6 +1958,11 @@ type RetryStepParams struct {
 	ID       pgtype.UUID `json:"id"`
 }
 
+// Only revives a step whose run is still active (never canceled or
+// superseded) and whose own dependencies are already satisfied
+// (remaining_deps <= 0); otherwise this returns no rows and the caller
+// rejects the request with a problem+json error rather than silently
+// re-queuing a step whose inputs are not ready.
 func (q *Queries) RetryStep(ctx context.Context, arg RetryStepParams) (PipelineStep, error) {
 	row := q.db.QueryRow(ctx, retryStep, arg.TenantID, arg.ID)
 	var i PipelineStep
@@ -1326,31 +1993,53 @@ func (q *Queries) RetryStep(ctx context.Context, arg RetryStepParams) (PipelineS
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }
 
-const supersedeRun = `-- name: SupersedeRun :exec
-UPDATE pipeline_runs SET status = 'superseded', superseded_by = $1, updated_at = now()
-WHERE tenant_id = $2 AND id = $3
+const supersedeRunTx = `-- name: SupersedeRunTx :one
+UPDATE pipeline_runs
+SET status = 'superseded', superseded_by = $1, updated_at = now()
+WHERE tenant_id = $2 AND id = $3 AND status = 'active'
+RETURNING id, tenant_id, scope_kind, scope_id, kind, status, superseded_by, created_by, created_at, updated_at
 `
 
-type SupersedeRunParams struct {
+type SupersedeRunTxParams struct {
 	NewRunID pgtype.UUID `json:"new_run_id"`
 	TenantID pgtype.UUID `json:"tenant_id"`
 	OldRunID pgtype.UUID `json:"old_run_id"`
 }
 
-func (q *Queries) SupersedeRun(ctx context.Context, arg SupersedeRunParams) error {
-	_, err := q.db.Exec(ctx, supersedeRun, arg.NewRunID, arg.TenantID, arg.OldRunID)
-	return err
+// Cancels and links a run to its replacement in a single statement (the
+// caller wraps this with CancelRunSteps in one transaction): the run row
+// itself never passes through an intermediate "canceled" state that a
+// concurrent reader could observe, and newRunID must already exist
+// (insert it before calling this, never after).
+func (q *Queries) SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error) {
+	row := q.db.QueryRow(ctx, supersedeRunTx, arg.NewRunID, arg.TenantID, arg.OldRunID)
+	var i PipelineRun
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ScopeKind,
+		&i.ScopeID,
+		&i.Kind,
+		&i.Status,
+		&i.SupersededBy,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateStepProgress = `-- name: UpdateStepProgress :one
 UPDATE pipeline_steps
 SET progress = $1, eta_s = $2, version = version + 1
 WHERE id = $3 AND attempt = $4 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type UpdateStepProgressParams struct {
@@ -1396,6 +2085,8 @@ func (q *Queries) UpdateStepProgress(ctx context.Context, arg UpdateStepProgress
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StrandedRequeues,
+		&i.GpuOomCount,
 	)
 	return i, err
 }

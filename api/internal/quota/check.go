@@ -18,13 +18,15 @@ import (
 )
 
 // Checker enforces tenant_quotas.max_active_steps.
-type Checker struct {
-	Queries *dbgen.Queries
-}
+type Checker struct{}
 
-// Check implements pipeline.AdmissionCheck.
-func (c *Checker) Check(ctx context.Context, tenantID uuid.UUID, stepCount int) error {
-	quota, err := c.Queries.GetTenantQuota(ctx, idconv.ToPg(tenantID))
+// Check implements pipeline.AdmissionCheck. q is Engine.Enqueue's own
+// transaction, already holding the per-tenant admission advisory lock:
+// this check-then-count is safe from a concurrent Enqueue racing the
+// same tenant only because of that lock, not because of anything in this
+// function itself.
+func (c *Checker) Check(ctx context.Context, q *dbgen.Queries, tenantID uuid.UUID, stepCount int) error {
+	quota, err := q.GetTenantQuota(ctx, idconv.ToPg(tenantID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil // no row: unlimited
 	}
@@ -35,7 +37,9 @@ func (c *Checker) Check(ctx context.Context, tenantID uuid.UUID, stepCount int) 
 		return nil // explicit NULL: unlimited
 	}
 
-	active, err := c.Queries.CountActiveStepsForTenant(ctx, idconv.ToPg(tenantID))
+	// Counts "pending" steps too: a run made mostly of fan-in-blocked
+	// steps still reserves the capacity they will need once unblocked.
+	active, err := q.CountActiveStepsForTenant(ctx, idconv.ToPg(tenantID))
 	if err != nil {
 		return fmt.Errorf("quota: count active steps: %w", err)
 	}

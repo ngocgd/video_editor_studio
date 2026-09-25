@@ -80,6 +80,82 @@ func TestReconcilerResumesAfterCrash(t *testing.T) {
 	}
 }
 
+// TestReconcilerRecoversWhileTheDeadRiverJobIsStillRunning reproduces the
+// real crash shape end to end: Enqueue creates a real river_job row,
+// forced to "running" (matching what River's own bookkeeping shows for a
+// job whose worker process was SIGKILLed — it never transitions off
+// "running" on its own; River's stuck-job rescue would only notice after
+// RescueStuckJobsAfter, 4h). The reconciler must produce a fresh,
+// claimable job well within that window despite the dead job still
+// sitting in "running": a River uniqueness constraint keyed by args
+// would otherwise silently dedupe the reconciler's own re-enqueue against
+// that dead row and strand the step for the full 4h.
+func TestReconcilerRecoversWhileTheDeadRiverJobIsStillRunning(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	registry := pipeline.NewRegistry()
+	registry.Register(succeedsImmediately("dead-job-crash", pipeline.QueueCPU))
+	engine, pool := pipelineEngine(t, registry)
+	q := ownerQueries(t)
+	tenantID := pipelineFixtureTenant(t, q, "dead-job-crash-tenant")
+
+	runID := idconv.NewV7()
+	stepID := idconv.NewV7()
+	if _, err := engine.Enqueue(context.Background(), tenantID, pipeline.RunSpec{
+		ID: runID, ScopeKind: "test", ScopeID: runID, Kind: "dead-job-crash-test",
+		Steps: []pipeline.StepSpec{{ID: stepID, Kind: "dead-job-crash", ScopeKind: "test", ScopeID: runID, Priority: pipeline.PriorityBatch}},
+	}); err != nil {
+		t.Fatalf("enqueue: %v", err)
+	}
+	if n := countRiverJobsForStep(t, pool, stepID); n != 1 {
+		t.Fatalf("expected exactly one live river job right after enqueue, got %d", n)
+	}
+
+	// A real worker fetching this job would claim the step (queued ->
+	// running) and River would mark the job row "running" too. Model both
+	// halves of that directly instead of running an actual river.Client.
+	claimed, err := pipeline.Claim(context.Background(), dbgen.New(pool), 42001, []uuid.UUID{stepID})
+	if err != nil || len(claimed) != 1 {
+		t.Fatalf("claim: %v (claimed %d)", err, len(claimed))
+	}
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE river_job SET state = 'running' WHERE kind = $1 AND args -> 'step_ids' ? $2`,
+		pipeline.JobKind, stepID.String(),
+	); err != nil {
+		t.Fatalf("force river_job to running: %v", err)
+	}
+
+	// The worker that claimed it is gone; it never heartbeats again.
+	setHeartbeatInPast(t, pool, stepID, 5*time.Minute)
+
+	reconciler := &pipeline.Reconciler{Engine: engine}
+	reconciler.RunOnce(context.Background())
+
+	after := readStep(t, pool, stepID)
+	if after.Status != pipeline.StatusQueued {
+		t.Fatalf("expected the reconciler to requeue the step, got status %q", after.Status)
+	}
+
+	var available int
+	if err := pool.QueryRow(context.Background(),
+		`SELECT count(*) FROM river_job WHERE kind = $1 AND args -> 'step_ids' ? $2 AND state = 'available'`,
+		pipeline.JobKind, stepID.String(),
+	).Scan(&available); err != nil {
+		t.Fatalf("count available river jobs: %v", err)
+	}
+	if available == 0 {
+		t.Fatal("expected the reconciler to have inserted a fresh available River job despite the dead job still sitting in 'running'; a step stuck here for the full RescueStuckJobsAfter window is exactly the bug this test guards against")
+	}
+
+	// And it is genuinely claimable now, not just present as a row.
+	reclaimed, err := pipeline.Claim(context.Background(), dbgen.New(pool), 42002, []uuid.UUID{stepID})
+	if err != nil || len(reclaimed) != 1 {
+		t.Fatalf("reclaim after recovery: %v (claimed %d)", err, len(reclaimed))
+	}
+	if reclaimed[0].Attempt != 2 {
+		t.Fatalf("expected attempt 2 on the recovered claim, got %d", reclaimed[0].Attempt)
+	}
+}
+
 // TestZombieWriterFailsHeartbeatAndCommitsNothing: a step is claimed,
 // then reclaimed out from under the original claim (simulating the
 // reconciler firing while the original handler is still, wrongly,

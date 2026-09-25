@@ -24,6 +24,15 @@ const transitionQueueSize = 256
 // frames from.
 const outQueueSize = 256
 
+// maxStreamLifetime bounds how long one /events connection stays open
+// before it is ended (a resync-then-close, which EventSource's own
+// browser-side reconnect will follow automatically): without this, a
+// revoked session or a membership removed mid-stream keeps receiving
+// events indefinitely, since nothing about an already-open SSE
+// connection re-checks either. Reconnecting re-runs the handler's own
+// auth and tenant-membership checks from scratch.
+const maxStreamLifetime = 1 * time.Hour
+
 // Subscriber is one open /events connection. It is created by Hub.Subscribe
 // and driven by its own goroutine (run) until its context is cancelled
 // (client disconnect) or the hub closes it (per-user cap eviction).
@@ -74,6 +83,16 @@ func (s *Subscriber) allows(evt Event) bool {
 // goroutine; must never block.
 func (s *Subscriber) deliver(evt Event) {
 	if evt.Transition {
+		// Drop any progress this step still has buffered before queueing
+		// the transition: otherwise run's own select loop (which does
+		// not guarantee ordering between the transitions channel and the
+		// progress-flush ticker) could still flush a now-stale progress
+		// value for this step after the terminal transition already
+		// went out, which would visually revert a client's "done"/
+		// "failed" display back to some earlier percentage.
+		s.mu.Lock()
+		delete(s.progress, evt.StepID)
+		s.mu.Unlock()
 		select {
 		case s.transitions <- evt:
 		default:
@@ -123,9 +142,14 @@ func (s *Subscriber) run(ctx context.Context) {
 	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 
+	maxLifetime := time.NewTimer(maxStreamLifetime)
+	defer maxLifetime.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
+			return
+		case <-maxLifetime.C:
 			return
 		case evt := <-s.transitions:
 			s.send(ctx, frame{Event: sseEventStep, Data: evt})

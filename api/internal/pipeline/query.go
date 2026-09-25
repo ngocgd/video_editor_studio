@@ -40,15 +40,49 @@ func (e *Engine) ListRunSteps(ctx context.Context, tenantID, runID, cursor uuid.
 	})
 }
 
-// ListJobs returns a tenant's steps, optionally filtered by status/queue.
+// ListJobs returns a tenant's steps, optionally filtered by status
+// and/or queue. Dispatches to one of four sqlc queries, one per filter
+// combination, instead of a single query that OR's an optional status
+// filter with an optional queue filter: a planner cannot turn that OR
+// form into an index scan for any combination (only ever the union of
+// both branches, i.e. effectively a full scan regardless of which
+// filters are actually set), whereas each of these four maps directly to
+// one of the (tenant_id, id) / (tenant_id, status, id) /
+// (tenant_id, queue, id) / (tenant_id, queue, status, id) indexes.
 func (e *Engine) ListJobs(ctx context.Context, tenantID uuid.UUID, status, queue string, cursor uuid.UUID, limit int32) ([]dbgen.PipelineStep, error) {
-	return e.Queries.ListJobs(ctx, dbgen.ListJobsParams{
-		TenantID:     idconv.ToPg(tenantID),
-		StatusFilter: status,
-		QueueFilter:  queue,
-		Cursor:       idconv.ToPg(cursor),
-		PageLimit:    limit,
-	})
+	pgTenant := idconv.ToPg(tenantID)
+	pgCursor := idconv.ToPg(cursor)
+	switch {
+	case status != "" && queue != "":
+		return e.Queries.ListJobsByStatusAndQueue(ctx, dbgen.ListJobsByStatusAndQueueParams{
+			TenantID: pgTenant, StatusFilter: status, QueueFilter: queue, Cursor: pgCursor, PageLimit: limit,
+		})
+	case status != "":
+		return e.Queries.ListJobsByStatus(ctx, dbgen.ListJobsByStatusParams{
+			TenantID: pgTenant, StatusFilter: status, Cursor: pgCursor, PageLimit: limit,
+		})
+	case queue != "":
+		return e.Queries.ListJobsByQueue(ctx, dbgen.ListJobsByQueueParams{
+			TenantID: pgTenant, QueueFilter: queue, Cursor: pgCursor, PageLimit: limit,
+		})
+	default:
+		return e.Queries.ListJobs(ctx, dbgen.ListJobsParams{TenantID: pgTenant, Cursor: pgCursor, PageLimit: limit})
+	}
+}
+
+// RunsBelongToTenant checks membership of many run ids at once (used by
+// SSE topic authorization, one query instead of one GetRun per topic)
+// and returns the subset that actually belong to tenantID.
+func (e *Engine) RunsBelongToTenant(ctx context.Context, tenantID uuid.UUID, runIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	rows, err := e.Queries.GetRunIDsForTenant(ctx, dbgen.GetRunIDsForTenantParams{TenantID: idconv.ToPg(tenantID), Ids: toPgUUIDs(runIDs)})
+	if err != nil {
+		return nil, err
+	}
+	found := make(map[uuid.UUID]bool, len(rows))
+	for _, id := range rows {
+		found[idconv.FromPg(id)] = true
+	}
+	return found, nil
 }
 
 // GpuQueue returns a tenant's own queued gpu steps, ordered the way the

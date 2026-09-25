@@ -55,7 +55,10 @@ func runMigrate(ctx context.Context, args []string) error {
 		}
 		return riverMigrateUp(ctx, dsn)
 	case "down":
-		return goose.DownContext(ctx, db, migrationsDir)
+		if err := goose.DownContext(ctx, db, migrationsDir); err != nil {
+			return err
+		}
+		return riverMigrateDown(ctx, dsn)
 	case "status":
 		return goose.StatusContext(ctx, db, migrationsDir)
 	default:
@@ -78,6 +81,27 @@ func riverMigrateUp(ctx context.Context, dsn string) error {
 		return err
 	}
 	_, err = migrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
+	return err
+}
+
+// riverMigrateDown reverts every River migration in one call. This is
+// intentionally not step-for-step symmetric with goose's own "down"
+// (which reverts exactly one migration): River's own migration set is
+// small and changes rarely, and "migrate down" exists here mainly for a
+// full local teardown, not an incremental rollback of a specific River
+// schema change.
+func riverMigrateDown(ctx context.Context, dsn string) error {
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	migrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
+	if err != nil {
+		return err
+	}
+	_, err = migrator.Migrate(ctx, rivermigrate.DirectionDown, &rivermigrate.MigrateOpts{TargetVersion: -1})
 	return err
 }
 

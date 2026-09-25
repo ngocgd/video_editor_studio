@@ -70,7 +70,7 @@ type StepWorker struct {
 func (w *StepWorker) Work(ctx context.Context, job *river.Job[StepJobArgs]) error {
 	switch job.Queue {
 	case QueueGPU:
-		return w.GPU.Run(ctx, job.ID, job.Attempt, job.Args.StepIDs, w.Sink)
+		return w.GPU.Run(ctx, job.ID, job.Attempt, job.MaxAttempts, job.Args.StepIDs, w.Sink)
 	case QueueRender:
 		if w.Probe != nil {
 			admitted, err := RenderAdmitted(ctx, w.Probe, w.RenderReserveMB)
@@ -82,7 +82,7 @@ func (w *StepWorker) Work(ctx context.Context, job *river.Job[StepJobArgs]) erro
 			}
 		}
 	}
-	return w.Engine.Dispatch(ctx, job.ID, job.Args.StepIDs, DispatchOpts{Sink: w.Sink})
+	return w.Engine.Dispatch(ctx, job.ID, job.Args.StepIDs, DispatchOpts{Sink: w.Sink, RiverAttempt: job.Attempt, RiverMaxAttempts: job.MaxAttempts})
 }
 
 // Timeout implements river.Worker: it resolves a per-kind override (read

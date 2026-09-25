@@ -24,10 +24,10 @@ func TestQuotaCheckEnforcesConfiguredLimit(t *testing.T) {
 	ownerP := ownerPool(t)
 	tenantID := pipelineFixtureTenant(t, dbgen.New(ownerP), "quota-tenant")
 
-	checker := &quota.Checker{Queries: q}
+	checker := &quota.Checker{}
 
 	// No tenant_quotas row yet: unlimited.
-	if err := checker.Check(context.Background(), tenantID, 1000); err != nil {
+	if err := checker.Check(context.Background(), q, tenantID, 1000); err != nil {
 		t.Fatalf("expected an unquotaed tenant to be unlimited, got %v", err)
 	}
 
@@ -37,10 +37,10 @@ func TestQuotaCheckEnforcesConfiguredLimit(t *testing.T) {
 		t.Fatalf("seed quota: %v", err)
 	}
 
-	if err := checker.Check(context.Background(), tenantID, 2); err != nil {
+	if err := checker.Check(context.Background(), q, tenantID, 2); err != nil {
 		t.Fatalf("expected exactly-at-limit to be allowed, got %v", err)
 	}
-	err := checker.Check(context.Background(), tenantID, 3)
+	err := checker.Check(context.Background(), q, tenantID, 3)
 	if !errors.Is(err, pipeline.ErrQuotaExceeded) {
 		t.Fatalf("expected ErrQuotaExceeded once the request would exceed the limit, got %v", err)
 	}
@@ -54,7 +54,6 @@ func TestEnqueueRejectsOverQuotaRunWithNoRowsWritten(t *testing.T) {
 	registry := pipeline.NewRegistry()
 	registry.Register(succeedsImmediately("admission-step", pipeline.QueueCPU))
 	pool := appPool(t)
-	q := dbgen.New(pool)
 	ownerP := ownerPool(t)
 	tenantID := pipelineFixtureTenant(t, dbgen.New(ownerP), "admission-tenant")
 
@@ -64,7 +63,7 @@ func TestEnqueueRejectsOverQuotaRunWithNoRowsWritten(t *testing.T) {
 		t.Fatalf("seed quota: %v", err)
 	}
 
-	checker := &quota.Checker{Queries: q}
+	checker := &quota.Checker{}
 	engine, _ := pipelineEngineWithChecks(t, registry, []pipeline.AdmissionCheck{checker.Check})
 
 	runID := idconv.NewV7()

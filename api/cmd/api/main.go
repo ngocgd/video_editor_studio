@@ -141,12 +141,19 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	quotaChecker := &quota.Checker{Queries: queries}
+	quotaChecker := &quota.Checker{}
 	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, pipeline.NewRegistry(), []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
 	go hub.Run(hubCtx)
+
+	// Cancelled (via server.RegisterOnShutdown below) when the process
+	// starts a graceful shutdown, so every open SSE stream ends promptly
+	// instead of holding server.Shutdown's wait open until
+	// ShutdownTimeout on every deploy.
+	shutdownSignal, cancelShutdownSignal := context.WithCancel(context.Background())
+	defer cancelShutdownSignal()
 
 	spec, err := gen.GetSwagger()
 	if err != nil {
@@ -193,11 +200,12 @@ func run() error {
 		},
 		AuditAPI: &auditapi.AuditAPI{Queries: queries},
 		PipelineAPI: &pipelineapi.PipelineAPI{
-			Engine:    engine,
-			Storage:   internalStore,
-			Hub:       hub,
-			Probe:     nil, // wired by phase 4
-			Residency: nil, // wired by phase 4
+			Engine:         engine,
+			Storage:        internalStore,
+			Hub:            hub,
+			Probe:          nil, // wired by phase 4
+			Residency:      nil, // wired by phase 4
+			ShutdownSignal: shutdownSignal,
 		},
 	}
 
@@ -232,6 +240,7 @@ func run() error {
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	server.RegisterOnShutdown(cancelShutdownSignal)
 
 	errCh := make(chan error, 1)
 	go func() {

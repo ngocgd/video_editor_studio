@@ -25,7 +25,7 @@ INSERT INTO pipeline_steps (
     $1, $2, $3, $4, $5, $6, $7, $8,
     $9, $10, $11, $12
 )
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
 `
 
 type InsertStepBatchBatchResults struct {
@@ -112,6 +112,8 @@ func (b *InsertStepBatchBatchResults) QueryRow(f func(int, PipelineStep, error))
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StrandedRequeues,
+			&i.GpuOomCount,
 		)
 		if f != nil {
 			f(t, i, err)

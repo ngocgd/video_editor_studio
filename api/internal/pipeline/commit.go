@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -12,7 +13,42 @@ import (
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
+	"loomtale/api/internal/obs/scrub"
 )
+
+// commitRetries and commitRetryDelay bound how hard commitDoneWithRetry
+// tries before giving up and requeuing instead of leaving a step
+// stranded in "running": a transient failure here (a deadlock, a
+// failover) must never silently redo already-finished work just because
+// the one write that would have recorded it as done could not land.
+const commitRetries = 3
+
+const commitRetryDelay = 200 * time.Millisecond
+
+// commitDoneWithRetry is commitDone with a small bounded retry: if every
+// attempt still fails (and the failure was not the ordinary "reclaimed
+// while running" case, which is not an error to retry), it falls back to
+// an explicit RequeueStep so the step is claimable again immediately
+// instead of waiting for the reconciler's 60s heartbeat sweep to notice
+// it never got as far as committing.
+func (e *Engine) commitDoneWithRetry(ctx context.Context, step dbgen.PipelineStep, output Output, logAssetID uuid.UUID) error {
+	var lastErr error
+	for attempt := 0; attempt < commitRetries; attempt++ {
+		if attempt > 0 {
+			time.Sleep(commitRetryDelay)
+		}
+		err := e.commitDone(ctx, step, output, logAssetID)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+	}
+	slog.ErrorContext(ctx, "pipeline: commitDone failed after retries, requeuing instead of stranding the step", "step_id", idconv.FromPg(step.ID), "error", lastErr)
+	if err := e.requeueForRetry(ctx, step); err != nil {
+		return errors.Join(lastErr, err)
+	}
+	return lastErr
+}
 
 // commitDone commits a step's successful output, fans out to any newly
 // ready dependents, and publishes the resulting events, all after the
@@ -60,10 +96,14 @@ func (e *Engine) commitDone(ctx context.Context, step dbgen.PipelineStep, output
 	for _, d := range queuedDependents {
 		publishStepEvent(ctx, e.Pool, d, true)
 	}
+	e.rollupRun(ctx, updated.TenantID, updated.RunID)
 	return nil
 }
 
-// commitFailed records a terminal failure for step.
+// commitFailed records a terminal failure for step, then cascade-cancels
+// any "pending" dependent that can now never run (see
+// cascadeCancelPendingDependents) and rolls the run up to done/failed if
+// that was its last non-terminal step.
 func (e *Engine) commitFailed(ctx context.Context, step dbgen.PipelineStep, code, msg string, logAssetID *uuid.UUID) error {
 	logID := uuid.Nil
 	if logAssetID != nil {
@@ -72,7 +112,7 @@ func (e *Engine) commitFailed(ctx context.Context, step dbgen.PipelineStep, code
 	updated, err := e.Queries.CommitStepFailed(ctx, dbgen.CommitStepFailedParams{
 		Status:     StatusFailed,
 		ErrorCode:  idconv.ToPgText(code),
-		ErrorMsg:   idconv.ToPgText(truncate(msg, 2000)),
+		ErrorMsg:   idconv.ToPgText(truncate(scrub.Text(msg), 2000)),
 		LogAssetID: uuidOrNull(logID),
 		ID:         step.ID,
 		Attempt:    step.Attempt,
@@ -84,6 +124,11 @@ func (e *Engine) commitFailed(ctx context.Context, step dbgen.PipelineStep, code
 		return err
 	}
 	publishStepEvent(ctx, e.Pool, updated, true)
+
+	for _, canceled := range e.cascadeCancelPendingDependents(ctx, updated.TenantID, updated.ID) {
+		publishStepEvent(ctx, e.Pool, canceled, true)
+	}
+	e.rollupRun(ctx, updated.TenantID, updated.RunID)
 	return nil
 }
 
@@ -102,12 +147,16 @@ func (e *Engine) requeueForRetry(ctx context.Context, step dbgen.PipelineStep) e
 }
 
 // handleGPUOOM implements the gpu_oom policy: a full residency unload,
-// requeue the step so it is claimable again, and exactly one retry.
-// opts.RiverAttempt is River's own attempt counter (distinct from the
-// step's DB attempt), which bounds the retry: a second OOM for the same
-// River job is permanent. A gpu_oom classification reaching here with no
-// Residency configured (i.e. off the gpu queue, which should never
-// happen) degrades to a permanent failure rather than panicking.
+// requeue the step so it is claimable again, and exactly one retry,
+// tracked by the step's own durable gpu_oom_count (not River's attempt
+// count, which a transient failure on an earlier attempt would otherwise
+// miscount as "already OOM'd once"). It also stops the rest of the
+// current chunk (see errStopChunk): the GPU has no model loaded any
+// more, so running the remaining claimed... rather, not-yet-claimed
+// steps immediately would just OOM again. A gpu_oom classification
+// reaching here with no Residency configured (i.e. off the gpu queue,
+// which should never happen) degrades to a permanent failure rather than
+// panicking.
 func (e *Engine) handleGPUOOM(ctx context.Context, step dbgen.PipelineStep, runErr error, logAssetID *uuid.UUID, opts DispatchOpts) error {
 	if opts.Residency == nil {
 		return e.commitFailed(ctx, step, "gpu_oom", runErr.Error(), logAssetID)
@@ -115,13 +164,24 @@ func (e *Engine) handleGPUOOM(ctx context.Context, step dbgen.PipelineStep, runE
 	if unloadErr := opts.Residency.UnloadAll(ctx); unloadErr != nil {
 		slog.ErrorContext(ctx, "pipeline: failed to unload GPU models after OOM", "error", unloadErr)
 	}
-	if opts.RiverAttempt > 1 {
-		return e.commitFailed(ctx, step, "gpu_oom", runErr.Error(), logAssetID)
+
+	counted, err := e.Queries.IncrementGpuOomCount(ctx, dbgen.IncrementGpuOomCountParams{ID: step.ID, Attempt: step.Attempt})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return errStopChunk // reclaimed; nothing more to do
+	}
+	if err != nil {
+		return errors.Join(runErr, err, errStopChunk)
+	}
+	if counted.GpuOomCount > 1 {
+		if err := e.commitFailed(ctx, step, "gpu_oom", runErr.Error(), logAssetID); err != nil {
+			return errors.Join(err, errStopChunk)
+		}
+		return errStopChunk
 	}
 	if err := e.requeueForRetry(ctx, step); err != nil {
-		return errors.Join(runErr, err)
+		return errors.Join(runErr, err, errStopChunk)
 	}
-	return runErr
+	return errors.Join(runErr, errStopChunk)
 }
 
 func uuidOrNull(id uuid.UUID) pgtype.UUID {
