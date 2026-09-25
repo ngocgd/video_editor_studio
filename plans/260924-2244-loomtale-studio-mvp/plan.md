@@ -17,7 +17,7 @@ Source of truth: [contract](../reports/brainstorm-260924-2128-story-video-studio
 
 | # | Phase | Effort | Depends on | Group | Status |
 |---|---|---|---|---|---|
-| 1 | [Repo scaffold, toolbox, CI, codegen, memory budget](phase-01-repo-scaffold-tooling-ci.md) | 14h | none | A | pending |
+| 1 | [Repo scaffold, toolbox, CI, codegen, memory budget](phase-01-repo-scaffold-tooling-ci.md) | 14h | none | A | completed |
 | 1b | [Blackwell/ComfyUI/Qwen-Edit smoke spike (gate)](phase-01b-blackwell-comfyui-smoke-spike.md) | 2h | 1 | B (with 2) | pending |
 | 2 | [DB, auth, audit, storage, secrets, backups](phase-02-db-auth-security-foundation.md) | 24h | 1 | B | pending |
 | 3 | [Job orchestration, GPU slot, SSE](phase-03-job-orchestration-sse.md) | 26h | 2 | C (with 4, 5) | pending |
@@ -130,3 +130,8 @@ Swept all 16 plan files on 2026-09-24 for superseded terms. Remaining hits are i
 | Also checked | `grpc_tools` (only as "not used", P1), `UntrustedDoc` (none), trainer container / `Train` in worker.proto (none), `≤4 streams per session` (none), Report-Only (only as forbidden), `nvidia-smi` (only as "not used", P4) |
 
 Remaining contradictions (unresolved): none found in the plan files. `docs/tech-stack.md` still names `docker-compose.yml` / `docker-compose.gpu.yml`; it is outside this plan dir and is corrected by the P12 docs step.
+
+## Progress notes
+
+- 2026-09-25: phase 1 done ([report](reports/cook-260925-phase-01-scaffold.md)). Docker VM verified at 20GB / 12 CPU. Follow-ups: `/readyz` returns 503 on a fresh `compose up` until the MinIO app key is wired by hand, so phase 2's secrets work should automate that; host-measured `/healthz` p95 is 10.9ms because of the WSL2 NAT hop (the handler itself takes <1ms).
+- Model weights are in Docker volume `loomtale_models` ([report](../reports/spike-260924-model-downloads.md)). Phase 1b and 9a must mount this volume, not `models`. Z-Image Turbo was downloaded as int8, which phase 1b has to confirm ComfyUI supports.
