@@ -8,6 +8,8 @@ AuditEntry:
     actorUserId:
       type: string
       format: uuid
+    actorEmail:
+      type: string
     action:
       type: string
     targetType:

@@ -90,6 +90,10 @@ func run() error {
 	if _, err := envelope.NewSealer(keyID, kek); err != nil {
 		return err
 	}
+	// The CSRF pepper reuses the KEK bytes with domain separation (see
+	// package csrf's doc comment), rather than a second mounted secret:
+	// it is never used for anything AES-GCM would touch.
+	csrfPepper := kek[:]
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
@@ -147,11 +151,14 @@ func run() error {
 			Backup:  &ops.BackupStatus{Queries: queries},
 		},
 		AuthAPI: &authapi.AuthAPI{
-			Pool:         pool,
-			Queries:      queries,
-			Store:        authpkg.Store{},
-			LoginPerUser: ratelimit.NewDBBucket(queries, 5, 5.0/60),
-			LoginPerIP:   ratelimit.NewDBBucket(queries, 20, 20.0/3600),
+			Pool:            pool,
+			Queries:         queries,
+			Store:           authpkg.Store{},
+			CSRFPepper:      csrfPepper,
+			HashLimiter:     authpkg.NewHashLimiter(cfg.ArgonMaxConcurrency),
+			LoginPerUser:    ratelimit.NewDBBucket(queries, 5, 5.0/60),
+			LoginPerIP:      ratelimit.NewDBBucket(queries, 20, 20.0/3600),
+			LoginPerAccount: ratelimit.NewDBBucket(queries, 10, 10.0/3600),
 		},
 		AssetsAPI: &assetsapi.AssetsAPI{
 			Pool:     pool,
@@ -170,16 +177,17 @@ func run() error {
 	generalLimiter := ratelimit.NewMemory(100, 100.0/60)
 	headers := secheaders.Config{MediaOrigin: cfg.MediaOrigin, PublicURL: cfg.PublicURL}
 	sessionMW := authpkg.Middleware(authpkg.Store{}, queries)
-	csrfMW := csrf.Middleware(authpkg.CSRFLookup, allowedOrigins, csrfRejected)
+	csrfMW := csrf.Middleware(csrfPepper, authpkg.CSRFLookup, allowedOrigins, csrfRejected)
 
 	r := chi.NewRouter()
 	r.Use(httpx.RequestIDMiddleware)
 	r.Use(middleware.Recoverer)
 	r.Use(httpx.RealIP(cfg.TrustedProxyCIDRs))
 	r.Use(headers.Middleware)
+	r.Use(httpx.MaxBodyMiddleware)
 	r.Use(generalLimiter.Middleware(httpx.ClientIP, tooManyRequests))
 	r.Use(httpx.WithRequestMiddleware)
-	r.Use(middleware.Logger)
+	r.Use(httpx.AccessLogMiddleware)
 	r.Use(sessionMW)
 	r.Use(csrfMW)
 	r.Use(requestValidator)

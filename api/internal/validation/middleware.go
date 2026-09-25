@@ -6,6 +6,7 @@
 package validation
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -29,12 +30,17 @@ func Middleware(spec *openapi3.T) (func(http.Handler) http.Handler, error) {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			route, pathParams, err := router.FindRoute(r)
 			if err != nil {
-				// The generated chi router and this validator are built
-				// from the same spec, so a route that chi will dispatch
-				// should always resolve here too; if it somehow does not,
-				// fail open to the handler rather than take the whole API
-				// down on a router-library edge case.
-				next.ServeHTTP(w, r)
+				// Fail closed, not open: the generated chi router and this
+				// validator are built from the same spec, so any request
+				// chi would actually dispatch to a handler must resolve
+				// here too. A route that fails to resolve is either a
+				// genuinely unknown path (correctly a 404) or a
+				// router-library disagreement that must never be allowed
+				// to skip validation (schema constraints, and the
+				// content-type check that is the main defence against a
+				// login-CSRF style text/plain form POST, both depend on
+				// this middleware actually running).
+				httpx.WriteProblem(w, httpx.Problem{Title: "not found", Status: http.StatusNotFound})
 				return
 			}
 
@@ -44,8 +50,12 @@ func Middleware(spec *openapi3.T) (func(http.Handler) http.Handler, error) {
 				Route:      route,
 			}
 			if err := openapi3filter.ValidateRequest(r.Context(), input); err != nil {
-				detail := err.Error()
-				httpx.WriteProblem(w, httpx.Problem{Title: "request validation failed", Status: http.StatusBadRequest, Detail: detail})
+				// The error can include kin-openapi's internal schema
+				// description and, for some failure modes, an echo of the
+				// submitted value (e.g. a too-short password) — log it,
+				// never return it to the client.
+				slog.ErrorContext(r.Context(), "request validation failed", "error", err, "path", r.URL.Path)
+				httpx.WriteProblem(w, httpx.Problem{Title: "request validation failed", Status: http.StatusBadRequest})
 				return
 			}
 			next.ServeHTTP(w, r)

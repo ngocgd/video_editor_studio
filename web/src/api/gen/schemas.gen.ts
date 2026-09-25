@@ -76,11 +76,13 @@ export const LoginRequestSchema = {
     properties: {
         email: {
             type: 'string',
-            format: 'email'
+            format: 'email',
+            maxLength: 320
         },
         password: {
             type: 'string',
-            minLength: 8
+            minLength: 8,
+            maxLength: 1024
         }
     }
 } as const;
@@ -340,6 +342,9 @@ export const AuditEntrySchema = {
         actorUserId: {
             type: 'string',
             format: 'uuid'
+        },
+        actorEmail: {
+            type: 'string'
         },
         action: {
             type: 'string'

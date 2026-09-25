@@ -31,11 +31,29 @@ func baseURL() string {
 	return "http://127.0.0.1:8080/api/v1"
 }
 
+// inCI reports whether this run must treat a missing prerequisite as a
+// hard failure instead of a skip: CI is set by GitHub Actions (and most
+// other CI systems) automatically, so a misconfigured integration job
+// that forgot to provision the stack fails loudly instead of silently
+// reporting all-green with zero tests actually exercised.
+func inCI() bool {
+	return os.Getenv("CI") != ""
+}
+
+func missingEnv(t *testing.T, name, reason string) {
+	t.Helper()
+	msg := name + " not set; " + reason
+	if inCI() {
+		t.Fatal(msg)
+	}
+	t.Skip(msg)
+}
+
 func ownerPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	dsn := os.Getenv("OWNER_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("OWNER_DATABASE_URL not set; skipping (needs the loomtale_owner DSN of a running stack)")
+		missingEnv(t, "OWNER_DATABASE_URL", "needs the loomtale_owner DSN of a running stack")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -49,11 +67,25 @@ func appPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		t.Skip("DATABASE_URL not set; skipping (needs the loomtale_app DSN of a running stack)")
+		missingEnv(t, "DATABASE_URL", "needs the loomtale_app DSN of a running stack")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("connect as app: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	return pool
+}
+
+func backupPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	dsn := os.Getenv("BACKUP_DATABASE_URL")
+	if dsn == "" {
+		missingEnv(t, "BACKUP_DATABASE_URL", "needs the loomtale_backup DSN of a running stack")
+	}
+	pool, err := pgxpool.New(context.Background(), dsn)
+	if err != nil {
+		t.Fatalf("connect as backup: %v", err)
 	}
 	t.Cleanup(pool.Close)
 	return pool

@@ -13,14 +13,15 @@ import (
 )
 
 const insertAuditLog = `-- name: InsertAuditLog :exec
-INSERT INTO audit_log (id, tenant_id, actor_user_id, action, target_type, target_id, metadata, ip, user_agent)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO audit_log (id, tenant_id, actor_user_id, actor_email, action, target_type, target_id, metadata, ip, user_agent)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type InsertAuditLogParams struct {
 	ID          pgtype.UUID `json:"id"`
 	TenantID    pgtype.UUID `json:"tenant_id"`
 	ActorUserID pgtype.UUID `json:"actor_user_id"`
+	ActorEmail  pgtype.Text `json:"actor_email"`
 	Action      string      `json:"action"`
 	TargetType  pgtype.Text `json:"target_type"`
 	TargetID    pgtype.Text `json:"target_id"`
@@ -34,6 +35,7 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 		arg.ID,
 		arg.TenantID,
 		arg.ActorUserID,
+		arg.ActorEmail,
 		arg.Action,
 		arg.TargetType,
 		arg.TargetID,
@@ -45,7 +47,7 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 }
 
 const listAuditLog = `-- name: ListAuditLog :many
-SELECT id, tenant_id, actor_user_id, action, target_type, target_id, metadata, ip, user_agent, created_at FROM audit_log
+SELECT id, tenant_id, actor_user_id, actor_email, action, target_type, target_id, metadata, ip, user_agent, created_at FROM audit_log
 WHERE tenant_id = $1 AND id > $2
 ORDER BY id
 LIMIT $3
@@ -70,6 +72,7 @@ func (q *Queries) ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]A
 			&i.ID,
 			&i.TenantID,
 			&i.ActorUserID,
+			&i.ActorEmail,
 			&i.Action,
 			&i.TargetType,
 			&i.TargetID,

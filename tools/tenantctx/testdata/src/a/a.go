@@ -30,3 +30,33 @@ func allowedException(req request) queryParams {
 func fromResolvedTenant(resolvedTenantID string) queryParams {
 	return queryParams{TenantID: resolvedTenantID}
 }
+
+func viaLocalVariable(req request) queryParams {
+	id := req.Body.TenantId
+	return queryParams{TenantID: id} // want `tenantctx: TenantID is populated from a request object`
+}
+
+func viaLocalVariableFromParams(req request) queryParams {
+	var id string
+	id = req.Params.TenantId
+	return queryParams{TenantID: id} // want `tenantctx: TenantID is populated from a request object`
+}
+
+func viaLocalVariableWithAllowComment(req request) queryParams {
+	id := req.Body.TenantId
+	// tenantctx:allow: same verified switch-tenant shape as allowedException, laundered through a local variable
+	return queryParams{TenantID: id}
+}
+
+type multiField struct {
+	TenantID string
+	UserID   string
+}
+
+func allowCommentCoversWholeLiteral(req request) multiField {
+	// tenantctx:allow: comment sits above the literal, not the specific field, and must still cover it
+	return multiField{
+		TenantID: req.Body.TenantId,
+		UserID:   "u1",
+	}
+}

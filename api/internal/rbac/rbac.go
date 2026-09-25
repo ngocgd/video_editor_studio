@@ -17,11 +17,20 @@ import (
 	"loomtale/api/internal/tenant"
 )
 
-// Role ranks owner > editor > viewer > public (no auth required).
+// Role ranks owner > editor > viewer > authenticated > public.
+// "authenticated" (a valid session, no tenant requirement) is distinct
+// from "viewer" (a valid session AND a resolved, at-least-viewer tenant):
+// account-level routes (me, csrf, logout, switch-tenant) use
+// "authenticated" because a session with no active tenant yet, or a
+// membership that was revoked mid-session, must still be able to reach
+// them — deny-by-default otherwise means the ONLY way such a session can
+// reach any of them is if a "viewer" route silently skipped the tenant
+// check, which is the trap the previous single-tier design fell into.
 type Role int
 
 const (
 	RolePublic Role = iota
+	RoleAuthenticated
 	RoleViewer
 	RoleEditor
 	RoleOwner
@@ -32,6 +41,8 @@ func ParseRole(s string) (Role, error) {
 	switch s {
 	case "public":
 		return RolePublic, nil
+	case "authenticated":
+		return RoleAuthenticated, nil
 	case "viewer":
 		return RoleViewer, nil
 	case "editor":
@@ -93,21 +104,14 @@ func Middleware(minRoles map[string]Role) gen.StrictMiddlewareFunc {
 			if _, authenticated := auth.FromCtx(ctx); !authenticated {
 				return nil, unauthorizedProblem(w)
 			}
-
-			if minRole == RoleViewer {
-				// Account-level routes (me, csrf, logout, switch-tenant)
-				// only require an authenticated session, not necessarily an
-				// active tenant yet.
-				info, err := tenant.FromCtx(ctx)
-				if err != nil {
-					return f(ctx, w, r, request)
-				}
-				if !roleFromTenant(info.Role).satisfies(minRole) {
-					return nil, forbiddenProblem(w)
-				}
+			if minRole == RoleAuthenticated {
 				return f(ctx, w, r, request)
 			}
 
+			// RoleViewer and above always require a resolved tenant: a
+			// session with no active tenant, or a membership revoked
+			// mid-session, is correctly 403'd here rather than reaching a
+			// handler that would otherwise panic on tenant.MustFromCtx.
 			info, err := tenant.FromCtx(ctx)
 			if err != nil {
 				return nil, forbiddenProblem(w)

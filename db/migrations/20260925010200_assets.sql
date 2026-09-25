@@ -4,6 +4,15 @@ CREATE TABLE assets (
     tenant_id uuid NOT NULL REFERENCES tenants (id) ON DELETE CASCADE,
     kind text NOT NULL CHECK (kind IN ('image', 'audio', 'video', 'document')),
     storage_key text NOT NULL,
+    -- Set at finalize time from the bucket's own object version (bucket
+    -- versioning is enabled by deploy/minio-init.sh). Every read after
+    -- finalize pins this exact version, so a client that still holds an
+    -- unexpired presigned POST for this key (valid up to 10 minutes after
+    -- issue) cannot make a "ready" asset silently start serving different,
+    -- unverified bytes by re-uploading to the same key: that upload lands
+    -- as a new, unreferenced version instead of mutating the one this row
+    -- points at.
+    storage_version_id text,
     mime text NOT NULL,
     bytes bigint,
     sha256 text,

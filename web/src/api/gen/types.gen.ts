@@ -98,6 +98,7 @@ export type AssetList = {
 export type AuditEntry = {
     id: string;
     actorUserId?: string;
+    actorEmail?: string;
     action: string;
     targetType?: string;
     targetId?: string;
@@ -232,9 +233,9 @@ export type SwitchTenantError = SwitchTenantErrors[keyof SwitchTenantErrors];
 
 export type SwitchTenantResponses = {
     /**
-     * active tenant switched
+     * active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
      */
-    200: Me;
+    200: LoginResponse;
 };
 
 export type SwitchTenantResponse = SwitchTenantResponses[keyof SwitchTenantResponses];

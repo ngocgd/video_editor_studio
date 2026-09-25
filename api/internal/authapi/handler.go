@@ -17,9 +17,17 @@ import (
 // cmd/api embeds every domain handler by type, and Go's embedded-field
 // promotion needs each embedded type name to be unique.
 type AuthAPI struct {
-	Pool         *dbpool.Pool
-	Queries      *dbgen.Queries
-	Store        authpkg.Store
-	LoginPerUser *ratelimit.DBBucket // key: ip+email, 5/min
-	LoginPerIP   *ratelimit.DBBucket // key: ip, 20/hour
+	Pool    *dbpool.Pool
+	Queries *dbgen.Queries
+	Store   authpkg.Store
+	// CSRFPepper is the key CSRF tokens are derived from (see package
+	// csrf); never exposed to clients.
+	CSRFPepper []byte
+	// HashLimiter bounds concurrent argon2id work so a burst of
+	// concurrent /auth/login requests cannot OOM the process.
+	HashLimiter *authpkg.HashLimiter
+
+	LoginPerUser    *ratelimit.DBBucket // key: ip+email, 5/min
+	LoginPerIP      *ratelimit.DBBucket // key: ip, 20/hour
+	LoginPerAccount *ratelimit.DBBucket // key: email only (no IP), 10/hour — closes the "spread bad logins across many IPs" gap a per-IP bucket alone leaves open
 }

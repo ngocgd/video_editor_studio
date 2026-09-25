@@ -21,7 +21,15 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	// Best-effort housekeeping, called opportunistically (not on a schedule)
+	// so the table does not grow unbounded; safe to run concurrently.
+	DeleteExpiredSessions(ctx context.Context) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
+	// Called on login so a fresh login revokes any session(s) left over from
+	// before (e.g. a device that was never logged out), not just the new one.
+	DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error
+	// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
+	DeleteStaleRateLimitBuckets(ctx context.Context) error
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
 	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
@@ -57,12 +65,13 @@ type Querier interface {
 	// race window under heavy concurrent load on the same key, which a login
 	// rate limiter does not need to close precisely.
 	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
-	// Used on login (session fixation defence) and on tenant switch.
+	// Used on tenant switch (session-fixation defence: a session that briefly
+	// saw tenant A's data gets a fresh token before it can act on tenant B's).
+	// expires_at is deliberately left untouched: rotating must not extend the
+	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
+	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
-	// Refreshes only the CSRF token, leaving the session's own token_hash (and
-	// therefore the client's cookie) untouched.
-	UpdateSessionCSRF(ctx context.Context, arg UpdateSessionCSRFParams) error
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 }

@@ -43,7 +43,7 @@ func TestViewerGetsForbiddenOnEditorRoute(t *testing.T) {
 	resp := sess.do(http.MethodPost, "/assets/presign", map[string]any{
 		"kind": "image", "mime": "image/png", "bytes": 100,
 	})
-	requireStatus(t, resp, http.StatusForbidden)
+	requireProblem(t, resp, http.StatusForbidden, "insufficient role for this tenant")
 }
 
 func TestLoginRejectsWrongPassword(t *testing.T) {
@@ -78,5 +78,70 @@ func TestCSRFRejectsRequestMissingToken(t *testing.T) {
 	sess.csrfToken = "" // simulate a client that forgot to attach the header
 
 	resp := sess.do(http.MethodPost, "/auth/logout", nil)
-	requireStatus(t, resp, http.StatusForbidden)
+	requireProblem(t, resp, http.StatusForbidden, "CSRF check failed")
 }
+
+func TestCSRFRejectsWrongToken(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "auth-flow-csrf-wrong-tenant", uniqueEmail("csrf-wrong"), "owner")
+	sess := login(t, fx.Email, fx.Password)
+	sess.csrfToken = "not-the-real-token"
+
+	resp := sess.do(http.MethodPost, "/auth/logout", nil)
+	requireProblem(t, resp, http.StatusForbidden, "CSRF check failed")
+}
+
+func TestCSRFRejectsBadOrigin(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "auth-flow-bad-origin-tenant", uniqueEmail("bad-origin"), "owner")
+	sess := login(t, fx.Email, fx.Password)
+
+	req, err := http.NewRequest(http.MethodPost, baseURL()+"/auth/logout", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: sess.cookie})
+	req.Header.Set("Origin", "https://evil.example.com")
+	req.Header.Set("X-CSRF-Token", sess.csrfToken)
+	resp, err := sess.client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireProblem(t, resp, http.StatusForbidden, "CSRF check failed")
+}
+
+func TestOldCookieRejectedAfterLogout(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "auth-flow-old-cookie-logout-tenant", uniqueEmail("logout"), "owner")
+	sess := login(t, fx.Email, fx.Password)
+
+	oldCookie := sess.cookie
+	requireStatus(t, sess.do(http.MethodPost, "/auth/logout", nil), http.StatusNoContent)
+
+	sess.cookie = oldCookie
+	resp := sess.do(http.MethodGet, "/auth/me", nil)
+	requireStatus(t, resp, http.StatusUnauthorized)
+}
+
+func TestOldCookieRejectedAfterSwitchTenant(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "auth-flow-old-cookie-switch-tenant", uniqueEmail("switch-rotate"), "owner")
+	sess := login(t, fx.Email, fx.Password)
+
+	oldCookie := sess.cookie
+	resp := sess.do(http.MethodPost, "/auth/switch-tenant", map[string]string{"tenantId": fx.TenantID.String()})
+	requireStatus(t, resp, http.StatusOK)
+
+	sess.cookie = oldCookie
+	meResp := sess.do(http.MethodGet, "/auth/me", nil)
+	requireStatus(t, meResp, http.StatusUnauthorized)
+}
+

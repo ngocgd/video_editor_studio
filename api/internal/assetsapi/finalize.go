@@ -65,11 +65,12 @@ func (h *AssetsAPI) FinalizeAsset(ctx context.Context, req gen.FinalizeAssetRequ
 	qtx := h.Queries.WithTx(tx)
 
 	updated, err := qtx.MarkAssetReady(ctx, dbgen.MarkAssetReadyParams{
-		TenantID: idconv.ToPg(info.ID),
-		ID:       idconv.ToPg(req.Id),
-		Bytes:    idconv.ToPgInt8(result.Size),
-		Sha256:   idconv.ToPgText(result.SHA256Hex),
-		Mime:     effectiveMIME,
+		TenantID:          idconv.ToPg(info.ID),
+		ID:                idconv.ToPg(req.Id),
+		Bytes:             idconv.ToPgInt8(result.Size),
+		Sha256:            idconv.ToPgText(result.SHA256Hex),
+		Mime:              effectiveMIME,
+		StorageVersionID:  idconv.ToPgText(result.VersionID),
 		// Width/Height/DurationMs stay NULL here: probing media dimensions
 		// needs ffprobe, which runs in the worker pipeline (a later phase),
 		// not the API request path.

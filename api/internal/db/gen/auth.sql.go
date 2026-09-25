@@ -12,9 +12,9 @@ import (
 )
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (id, user_id, active_tenant_id, token_hash, csrf_token_hash, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, user_id, active_tenant_id, token_hash, csrf_token_hash, created_at, last_seen_at, expires_at, revoked_at
+INSERT INTO sessions (id, user_id, active_tenant_id, token_hash, expires_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, active_tenant_id, token_hash, created_at, last_seen_at, expires_at, revoked_at
 `
 
 type CreateSessionParams struct {
@@ -22,7 +22,6 @@ type CreateSessionParams struct {
 	UserID         pgtype.UUID        `json:"user_id"`
 	ActiveTenantID pgtype.UUID        `json:"active_tenant_id"`
 	TokenHash      []byte             `json:"token_hash"`
-	CsrfTokenHash  []byte             `json:"csrf_token_hash"`
 	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
 }
 
@@ -32,7 +31,6 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		arg.UserID,
 		arg.ActiveTenantID,
 		arg.TokenHash,
-		arg.CsrfTokenHash,
 		arg.ExpiresAt,
 	)
 	var i Session
@@ -41,7 +39,6 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.UserID,
 		&i.ActiveTenantID,
 		&i.TokenHash,
-		&i.CsrfTokenHash,
 		&i.CreatedAt,
 		&i.LastSeenAt,
 		&i.ExpiresAt,
@@ -75,6 +72,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteExpiredSessions = `-- name: DeleteExpiredSessions :exec
+DELETE FROM sessions WHERE expires_at < now()
+`
+
+// Best-effort housekeeping, called opportunistically (not on a schedule)
+// so the table does not grow unbounded; safe to run concurrently.
+func (q *Queries) DeleteExpiredSessions(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteExpiredSessions)
+	return err
+}
+
 const deleteSession = `-- name: DeleteSession :exec
 DELETE FROM sessions WHERE id = $1
 `
@@ -84,8 +92,29 @@ func (q *Queries) DeleteSession(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const deleteSessionsForUser = `-- name: DeleteSessionsForUser :exec
+DELETE FROM sessions WHERE user_id = $1
+`
+
+// Called on login so a fresh login revokes any session(s) left over from
+// before (e.g. a device that was never logged out), not just the new one.
+func (q *Queries) DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSessionsForUser, userID)
+	return err
+}
+
+const deleteStaleRateLimitBuckets = `-- name: DeleteStaleRateLimitBuckets :exec
+DELETE FROM rate_limit_buckets WHERE updated_at < now() - interval '7 days'
+`
+
+// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
+func (q *Queries) DeleteStaleRateLimitBuckets(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteStaleRateLimitBuckets)
+	return err
+}
+
 const getSessionByTokenHash = `-- name: GetSessionByTokenHash :one
-SELECT id, user_id, active_tenant_id, token_hash, csrf_token_hash, created_at, last_seen_at, expires_at, revoked_at FROM sessions
+SELECT id, user_id, active_tenant_id, token_hash, created_at, last_seen_at, expires_at, revoked_at FROM sessions
 WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
 `
 
@@ -97,7 +126,6 @@ func (q *Queries) GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (
 		&i.UserID,
 		&i.ActiveTenantID,
 		&i.TokenHash,
-		&i.CsrfTokenHash,
 		&i.CreatedAt,
 		&i.LastSeenAt,
 		&i.ExpiresAt,
@@ -143,38 +171,31 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 const rotateSession = `-- name: RotateSession :one
 UPDATE sessions
 SET token_hash = $1,
-    csrf_token_hash = $2,
-    active_tenant_id = $3,
-    expires_at = $4,
+    active_tenant_id = $2,
     last_seen_at = now()
-WHERE id = $5
-RETURNING id, user_id, active_tenant_id, token_hash, csrf_token_hash, created_at, last_seen_at, expires_at, revoked_at
+WHERE id = $3
+RETURNING id, user_id, active_tenant_id, token_hash, created_at, last_seen_at, expires_at, revoked_at
 `
 
 type RotateSessionParams struct {
-	TokenHash      []byte             `json:"token_hash"`
-	CsrfTokenHash  []byte             `json:"csrf_token_hash"`
-	ActiveTenantID pgtype.UUID        `json:"active_tenant_id"`
-	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
-	ID             pgtype.UUID        `json:"id"`
+	TokenHash      []byte      `json:"token_hash"`
+	ActiveTenantID pgtype.UUID `json:"active_tenant_id"`
+	ID             pgtype.UUID `json:"id"`
 }
 
-// Used on login (session fixation defence) and on tenant switch.
+// Used on tenant switch (session-fixation defence: a session that briefly
+// saw tenant A's data gets a fresh token before it can act on tenant B's).
+// expires_at is deliberately left untouched: rotating must not extend the
+// 7-day absolute lifetime, or repeatedly switching tenants would keep a
+// session alive forever.
 func (q *Queries) RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error) {
-	row := q.db.QueryRow(ctx, rotateSession,
-		arg.TokenHash,
-		arg.CsrfTokenHash,
-		arg.ActiveTenantID,
-		arg.ExpiresAt,
-		arg.ID,
-	)
+	row := q.db.QueryRow(ctx, rotateSession, arg.TokenHash, arg.ActiveTenantID, arg.ID)
 	var i Session
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.ActiveTenantID,
 		&i.TokenHash,
-		&i.CsrfTokenHash,
 		&i.CreatedAt,
 		&i.LastSeenAt,
 		&i.ExpiresAt,
@@ -194,22 +215,6 @@ type TouchSessionLastSeenParams struct {
 
 func (q *Queries) TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error {
 	_, err := q.db.Exec(ctx, touchSessionLastSeen, arg.LastSeenAt, arg.ID)
-	return err
-}
-
-const updateSessionCSRF = `-- name: UpdateSessionCSRF :exec
-UPDATE sessions SET csrf_token_hash = $1 WHERE id = $2
-`
-
-type UpdateSessionCSRFParams struct {
-	CsrfTokenHash []byte      `json:"csrf_token_hash"`
-	ID            pgtype.UUID `json:"id"`
-}
-
-// Refreshes only the CSRF token, leaving the session's own token_hash (and
-// therefore the client's cookie) untouched.
-func (q *Queries) UpdateSessionCSRF(ctx context.Context, arg UpdateSessionCSRFParams) error {
-	_, err := q.db.Exec(ctx, updateSessionCSRF, arg.CsrfTokenHash, arg.ID)
 	return err
 }
 

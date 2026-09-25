@@ -27,4 +27,8 @@ type config struct {
 	// X-Forwarded-For/X-Real-IP; empty uses httpx's loopback+RFC1918
 	// default, which covers Caddy's compose network out of the box.
 	TrustedProxyCIDRs []string `env:"TRUSTED_PROXY_CIDRS" envSeparator:","`
+
+	// ArgonMaxConcurrency bounds concurrent argon2id hashing (each call
+	// allocates up to 64MiB); see api/internal/auth.HashLimiter.
+	ArgonMaxConcurrency int `env:"ARGON2_MAX_CONCURRENCY" envDefault:"4"`
 }

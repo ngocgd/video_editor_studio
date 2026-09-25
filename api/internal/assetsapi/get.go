@@ -28,7 +28,7 @@ func (h *AssetsAPI) GetAsset(ctx context.Context, req gen.GetAssetRequestObject)
 
 	var downloadURL *string
 	if asset.Status == "ready" {
-		url, err := h.Browser.PresignGet(ctx, asset.StorageKey)
+		url, err := h.Browser.PresignGet(ctx, asset.StorageKey, asset.StorageVersionID.String)
 		if err != nil {
 			return nil, err
 		}

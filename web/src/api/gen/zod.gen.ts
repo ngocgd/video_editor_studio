@@ -21,8 +21,8 @@ export const zReadyStatus = z.object({
 });
 
 export const zLoginRequest = z.object({
-    email: z.string().email(),
-    password: z.string().min(8)
+    email: z.string().email().max(320),
+    password: z.string().min(8).max(1024)
 });
 
 export const zRole = z.enum([
@@ -105,6 +105,7 @@ export const zAssetList = z.object({
 export const zAuditEntry = z.object({
     id: z.string().uuid(),
     actorUserId: z.string().uuid().optional(),
+    actorEmail: z.string().optional(),
     action: z.string(),
     targetType: z.string().optional(),
     targetId: z.string().optional(),
@@ -147,9 +148,9 @@ export const zGetMeResponse = zMe;
 export const zSwitchTenantBody = zSwitchTenantRequest;
 
 /**
- * active tenant switched
+ * active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
  */
-export const zSwitchTenantResponse = zMe;
+export const zSwitchTenantResponse = zLoginResponse;
 
 /**
  * current CSRF token

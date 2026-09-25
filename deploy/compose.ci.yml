@@ -1,0 +1,10 @@
+name: loomtale
+
+# CI-only override: publishes Postgres directly so the integration test
+# job (running `go test` on the GitHub Actions runner itself, not in a
+# container on loomtale_core) can reach it via 127.0.0.1. Never applied
+# outside CI — deploy/compose.yml alone never exposes Postgres.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"

@@ -27,8 +27,18 @@ type Sealed struct {
 // AAD deterministically builds the additional authenticated data binding a
 // ciphertext to the record it belongs to, so swapping a ciphertext between
 // records (even within the same tenant) fails to decrypt.
-func AAD(tenantID, kind, recordID string) []byte {
-	return []byte(tenantID + "|" + kind + "|" + recordID)
+//
+// ownerRef must be the row's natural key (secrets.owner_ref: "what this
+// secret is for", e.g. a provider name or a YouTube channel id), never its
+// surrogate id column. db/queries/secrets.sql's UpsertSecret is an
+// INSERT ... ON CONFLICT (tenant_id, kind, owner_ref) that keeps the
+// existing row's id on a conflict; binding AAD to the id would mean a
+// caller that generates a fresh id for every Seal (the normal pattern
+// elsewhere in this codebase) gets a ciphertext whose AAD no longer
+// matches the row it lands in, and Open then fails permanently. owner_ref
+// is stable across that upsert by construction.
+func AAD(tenantID, kind, ownerRef string) []byte {
+	return []byte(tenantID + "|" + kind + "|" + ownerRef)
 }
 
 // Sealer seals and opens secrets using a single KEK. Rotation to a new KEK
@@ -114,6 +124,12 @@ func (s *Sealer) Open(sealed Sealed, aad []byte) ([]byte, error) {
 	dekGCM, err := newGCM(dek)
 	if err != nil {
 		return nil, err
+	}
+	// cipher.AEAD.Open panics (not errors) if the nonce is the wrong
+	// length, so a corrupt or truncated row must be rejected here first
+	// rather than letting a malformed database value crash the process.
+	if len(sealed.Nonce) != dekGCM.NonceSize() {
+		return nil, fmt.Errorf("envelope: nonce is %d bytes, want %d", len(sealed.Nonce), dekGCM.NonceSize())
 	}
 	plaintext, err := dekGCM.Open(nil, sealed.Nonce, sealed.Ciphertext, aad)
 	if err != nil {

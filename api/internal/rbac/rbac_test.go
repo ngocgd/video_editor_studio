@@ -102,6 +102,45 @@ func TestMiddlewareForbidsInsufficientTenantRole(t *testing.T) {
 	}
 }
 
+func TestMiddlewareAuthenticatedTierAllowsSessionWithNoTenant(t *testing.T) {
+	// The "authenticated" tier (me, csrf, logout, switch-tenant) must
+	// reach the handler for a session that has no active tenant yet (or
+	// whose membership was revoked mid-session), unlike "viewer" and
+	// above, which now correctly requires a resolved tenant.
+	mw := Middleware(map[string]Role{"op": RoleAuthenticated})
+	called := false
+	f := mw(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		called = true
+		return nil, nil
+	}, "op")
+
+	ctx := authpkg.WithSession(context.Background(), authpkg.Session{})
+	w := httptest.NewRecorder()
+	_, _ = f(ctx, w, httptest.NewRequest(http.MethodGet, "/", nil), nil)
+	if !called {
+		t.Fatal("expected a session with no tenant to reach an authenticated-tier handler")
+	}
+}
+
+func TestMiddlewareViewerTierRequiresTenant(t *testing.T) {
+	// Unlike the "authenticated" tier, "viewer" must 403 (not reach the
+	// handler) for a session with no resolved tenant: this is the fix for
+	// the earlier design where a viewer route silently skipped the tenant
+	// check and could panic in tenant.MustFromCtx downstream instead.
+	mw := Middleware(map[string]Role{"op": RoleViewer})
+	f := mw(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		t.Fatal("handler should not be reached")
+		return nil, nil
+	}, "op")
+
+	ctx := authpkg.WithSession(context.Background(), authpkg.Session{})
+	w := httptest.NewRecorder()
+	_, _ = f(ctx, w, httptest.NewRequest(http.MethodGet, "/", nil), nil)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", w.Code)
+	}
+}
+
 func TestMiddlewareAllowsSufficientTenantRole(t *testing.T) {
 	mw := Middleware(map[string]Role{"op": RoleEditor})
 	called := false

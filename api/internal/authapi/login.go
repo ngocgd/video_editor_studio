@@ -3,12 +3,15 @@ package authapi
 import (
 	"context"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"loomtale/api/internal/audit"
 	authpkg "loomtale/api/internal/auth"
+	"loomtale/api/internal/csrf"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/httpapi/gen"
@@ -39,7 +42,7 @@ func (w withCookie) VisitLoginResponse(rw http.ResponseWriter) error {
 func (h *AuthAPI) Login(ctx context.Context, req gen.LoginRequestObject) (gen.LoginResponseObject, error) {
 	r := httpx.RequestFromCtx(ctx)
 	ip := httpx.ClientIP(r)
-	email := string(req.Body.Email)
+	email := strings.ToLower(string(req.Body.Email))
 
 	allowed, err := h.LoginPerIP.Allow(ctx, "login:ip:"+ip)
 	if err != nil {
@@ -55,6 +58,19 @@ func (h *AuthAPI) Login(ctx context.Context, req gen.LoginRequestObject) (gen.Lo
 	if !allowed {
 		return rateLimited("too many login attempts for this account"), nil
 	}
+	allowed, err = h.LoginPerAccount.Allow(ctx, "login:account:"+email)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return rateLimited("too many login attempts for this account"), nil
+	}
+
+	if !h.HashLimiter.TryAcquire() {
+		detail := "too many concurrent login attempts; try again shortly"
+		return gen.Login429ApplicationProblemPlusJSONResponse{Title: "server busy", Status: http.StatusTooManyRequests, Detail: &detail}, nil
+	}
+	defer h.HashLimiter.Release()
 
 	user, err := h.Queries.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -101,6 +117,7 @@ func (h *AuthAPI) Login(ctx context.Context, req gen.LoginRequestObject) (gen.Lo
 	if err := audit.Record(ctx, qtx, audit.Entry{
 		TenantID:    activeTenantID,
 		ActorUserID: &userID,
+		ActorEmail:  email,
 		Action:      "login_succeeded",
 		RemoteAddr:  r.RemoteAddr,
 		UserAgent:   r.UserAgent(),
@@ -112,14 +129,25 @@ func (h *AuthAPI) Login(ctx context.Context, req gen.LoginRequestObject) (gen.Lo
 	}
 
 	me := buildMe(userID, email, activeTenantID, memberships)
-	body := gen.Login200JSONResponse{Me: me, CsrfToken: created.CSRFToken}
+	body := gen.Login200JSONResponse{Me: me, CsrfToken: csrf.Derive(h.CSRFPepper, created.Token)}
 	return withCookie{LoginResponseObject: body, token: created.Token, expiresAt: created.Session.ExpiresAt.Time}, nil
 }
 
-func (h *AuthAPI) auditFailedLogin(ctx context.Context, ip, ua, email string) {
+// looksLikeEmail is a loose sanity check, not a validator: it exists only
+// to decide whether the attempted-login value is safe to record verbatim.
+// A value with no "@" is very likely a password mistyped into the email
+// field (or garbage), and recording it verbatim into an append-only audit
+// log would permanently capture what may be a real credential.
+var looksLikeEmail = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+
+func (h *AuthAPI) auditFailedLogin(ctx context.Context, ip, ua, attemptedEmail string) {
+	recorded := attemptedEmail
+	if !looksLikeEmail.MatchString(attemptedEmail) {
+		recorded = "[REDACTED: does not look like an email]"
+	}
 	_ = audit.Record(ctx, h.Queries, audit.Entry{
 		Action:     "login_failed",
-		Metadata:   map[string]any{"email": email},
+		Metadata:   map[string]any{"email": recorded},
 		RemoteAddr: ip,
 		UserAgent:  ua,
 	})

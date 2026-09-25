@@ -34,7 +34,9 @@ logout:
     operationId: logout
     summary: End the current session
     tags: [auth]
-    x-min-role: viewer
+    # Account-level: only needs a valid session, not a resolved tenant
+    # (see api/internal/rbac's doc comment on the Role tiers).
+    x-min-role: authenticated
     responses:
       "204":
         description: session ended
@@ -43,7 +45,7 @@ me:
     operationId: getMe
     summary: The caller's identity and tenant memberships
     tags: [auth]
-    x-min-role: viewer
+    x-min-role: authenticated
     responses:
       "200":
         description: current identity
@@ -56,7 +58,7 @@ switchTenant:
     operationId: switchTenant
     summary: Switch the session's active tenant (must be a member)
     tags: [auth]
-    x-min-role: viewer
+    x-min-role: authenticated
     requestBody:
       required: true
       content:
@@ -65,11 +67,11 @@ switchTenant:
             $ref: "../schemas/auth.yaml#/SwitchTenantRequest"
     responses:
       "200":
-        description: active tenant switched
+        description: active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
         content:
           application/json:
             schema:
-              $ref: "../schemas/auth.yaml#/Me"
+              $ref: "../schemas/auth.yaml#/LoginResponse"
       "404":
         description: not a member of that tenant
         content:
@@ -81,7 +83,7 @@ csrf:
     operationId: getCsrf
     summary: The CSRF token for the current session
     tags: [auth]
-    x-min-role: viewer
+    x-min-role: authenticated
     responses:
       "200":
         description: current CSRF token

@@ -1,22 +1,34 @@
 #!/bin/bash
-# One backup run: pg_dump -Fc, an mc mirror of the object bucket, both
-# encrypted client-side with age before upload to BACKUP_TARGET (an
-# encrypted cloud bucket: Cloudflare R2 or Backblaze B2), then a
-# retention prune (7 daily, 4 weekly) and a row in backup_runs recording
-# the outcome. Exits non-zero (and logs loudly) on any failure so a
-# failed cron run is never silent.
+# One backup run:
+#   - pg_dump -Fc streamed straight through age into the cloud target (no
+#     local copy of the plaintext dump ever touches disk/tmpfs), with
+#     7-daily + 4-weekly retention pruning old dumps.
+#   - the object bucket mirrored object-by-object, each one streamed
+#     through age individually (`mc cat | age | mc pipe`, never a local
+#     mirror of the whole bucket): a per-object existence check at the
+#     target skips anything already uploaded, so a nightly run only ever
+#     uploads what changed since the last one instead of re-uploading the
+#     full bucket (assets are immutable once finalized, so "already
+#     present" is a correct enough incremental-sync signal without a
+#     checksum comparison).
+# Encrypted client-side with age before upload to BACKUP_TARGET (an
+# encrypted cloud bucket: Cloudflare R2 or Backblaze B2), using only the
+# public recipient (the private identity is never mounted into this
+# container — see deploy/compose.yml's secrets block). A row in
+# backup_runs records the outcome. Exits non-zero (and logs loudly) on any
+# failure so a failed cron run is never silent.
 set -uo pipefail
 
 : "${DATABASE_URL:?DATABASE_URL is required}"
 : "${MINIO_ENDPOINT:?MINIO_ENDPOINT is required}"
 : "${MINIO_BUCKET:?MINIO_BUCKET is required}"
+: "${MINIO_BACKUP_ACCESS_KEY:?MINIO_BACKUP_ACCESS_KEY is required}"
+: "${MINIO_BACKUP_SECRET_KEY:?MINIO_BACKUP_SECRET_KEY is required}"
 : "${BACKUP_TARGET:?BACKUP_TARGET is required}"
-
-WORKDIR="$(mktemp -d)"
-trap 'rm -rf "$WORKDIR"' EXIT
+: "${BACKUP_TARGET_BUCKET:?BACKUP_TARGET_BUCKET is required}"
+: "${BACKUP_ENCRYPTION_RECIPIENT:?BACKUP_ENCRYPTION_RECIPIENT is required}"
 
 now_ts="$(date -u +%Y%m%dT%H%M%SZ)"
-weekday="$(date -u +%u)" # 1=Monday .. 7=Sunday
 run_id="$(cat /proc/sys/kernel/random/uuid)"
 
 log() { echo "[backup $now_ts] $*"; }
@@ -41,12 +53,7 @@ fail() {
 
 record_start || fail "could not record backup_runs start row"
 
-# --- age identity (generated once, stored in the backup_encryption_key secret) ---
-IDENTITY_FILE="/run/secrets/backup_encryption_key"
-[ -s "$IDENTITY_FILE" ] || fail "backup_encryption_key secret is missing or empty"
-RECIPIENT="$(age-keygen -y "$IDENTITY_FILE" 2>&1)" || fail "could not derive age recipient from identity"
-
-# --- backup target credentials (ENDPOINT/ACCESS_KEY/SECRET_KEY/BUCKET) ---
+# --- backup target credentials (ENDPOINT-independent: BACKUP_TARGET is the endpoint) ---
 CRED_FILE="/run/secrets/backup_target_credentials"
 [ -s "$CRED_FILE" ] || fail "backup_target_credentials secret is missing or empty"
 # shellcheck disable=SC1090
@@ -54,37 +61,37 @@ CRED_FILE="/run/secrets/backup_target_credentials"
 : "${BACKUP_TARGET_ACCESS_KEY_ID:?backup_target_credentials must set BACKUP_TARGET_ACCESS_KEY_ID}"
 : "${BACKUP_TARGET_SECRET_ACCESS_KEY:?backup_target_credentials must set BACKUP_TARGET_SECRET_ACCESS_KEY}"
 
-mc alias set local "http://$MINIO_ENDPOINT" "$(cat /run/secrets/minio_root_user)" "$(cat /run/secrets/minio_root_password)" \
+mc alias set local "http://$MINIO_ENDPOINT" "$MINIO_BACKUP_ACCESS_KEY" "$MINIO_BACKUP_SECRET_KEY" \
     || fail "mc alias set local failed"
 mc alias set target "$BACKUP_TARGET" "$BACKUP_TARGET_ACCESS_KEY_ID" "$BACKUP_TARGET_SECRET_ACCESS_KEY" \
     || fail "mc alias set target failed"
 
-# --- Postgres dump ---
-DUMP_FILE="$WORKDIR/loomtale-$now_ts.dump"
-pg_dump -Fc "$DATABASE_URL" -f "$DUMP_FILE" || fail "pg_dump failed"
-age -r "$RECIPIENT" -o "$DUMP_FILE.age" "$DUMP_FILE" || fail "encrypting the dump failed"
-mc cp "$DUMP_FILE.age" "target/postgres/loomtale-$now_ts.dump.age" || fail "uploading the encrypted dump failed"
+# --- Postgres dump, streamed through age straight to the target ---
+DUMP_NAME="$BACKUP_TARGET_BUCKET/postgres/loomtale-$now_ts.dump.age"
+pg_dump -Fc "$DATABASE_URL" \
+    | age -r "$BACKUP_ENCRYPTION_RECIPIENT" \
+    | mc pipe "target/$DUMP_NAME" \
+    || fail "pg_dump | age | mc pipe failed"
 
-# --- Object bucket mirror, encrypted per-object before upload ---
-STAGE_DIR="$WORKDIR/objects"
-ENC_DIR="$WORKDIR/objects-enc"
-mkdir -p "$STAGE_DIR" "$ENC_DIR"
-mc mirror --quiet "local/$MINIO_BUCKET" "$STAGE_DIR" || fail "mirroring the object bucket locally failed"
-find "$STAGE_DIR" -type f | while IFS= read -r f; do
-    rel="${f#"$STAGE_DIR"/}"
-    mkdir -p "$ENC_DIR/$(dirname "$rel")"
-    age -r "$RECIPIENT" -o "$ENC_DIR/$rel.age" "$f" || exit 1
-done || fail "encrypting the object bucket mirror failed"
-mc mirror --quiet "$ENC_DIR" "target/objects/$now_ts" || fail "uploading the encrypted object mirror failed"
+# --- Object bucket, streamed and incrementally synced object-by-object ---
+mc find "local/$MINIO_BUCKET" --type f 2>/dev/null | while IFS= read -r src; do
+    rel="${src#local/"$MINIO_BUCKET"/}"
+    dest="target/$BACKUP_TARGET_BUCKET/objects/$rel.age"
+    if mc stat "$dest" >/dev/null 2>&1; then
+        continue
+    fi
+    mc cat "$src" | age -r "$BACKUP_ENCRYPTION_RECIPIENT" | mc pipe "$dest" \
+        || log "warning: failed to sync $rel (non-fatal, will retry next run)"
+done
+log "object sync pass complete"
 
-# --- Retention: keep 7 daily + 4 weekly dumps under postgres/ ---
-# The newest 7 dumps are always kept ("daily" retention). Among anything
-# older, a Sunday (weekday 7) snapshot is kept as a "weekly" copy, capped
-# at the 4 most recent such Sundays; everything else is pruned. Runs in
-# the current shell (not a piped subshell) so weekly_kept actually
-# persists across iterations.
+# --- Retention for Postgres dumps: keep 7 daily + 4 weekly ---
+# Objects are not pruned the same way: they are immutable once finalized
+# (no delete-asset workflow exists yet), so the target mirror is simply
+# the bucket's own live content, not a series of point-in-time snapshots
+# that need thinning.
 prune_old_dumps() {
-    mapfile -t all_dumps < <(mc ls target/postgres/ 2>/dev/null | awk '{print $NF}' | sort)
+    mapfile -t all_dumps < <(mc ls "target/$BACKUP_TARGET_BUCKET/postgres/" 2>/dev/null | awk '{print $NF}' | sort)
     total="${#all_dumps[@]}"
     [ "$total" -le 7 ] && return 0
 
@@ -97,11 +104,11 @@ prune_old_dumps() {
             weekly_kept=$((weekly_kept + 1))
             continue
         fi
-        mc rm "target/postgres/$name" >/dev/null 2>&1 || true
+        mc rm "target/$BACKUP_TARGET_BUCKET/postgres/$name" >/dev/null 2>&1 || true
     done
 }
 prune_old_dumps || log "warning: retention prune step had an issue (non-fatal)"
 
-record_result success "dump=$DUMP_FILE.age objects_prefix=objects/$now_ts weekday=$weekday" \
+record_result success "dump=$DUMP_NAME objects synced incrementally to target/$BACKUP_TARGET_BUCKET/objects/" \
     || log "warning: could not record success in backup_runs"
 log "OK"

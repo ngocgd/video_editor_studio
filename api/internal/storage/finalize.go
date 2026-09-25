@@ -22,6 +22,11 @@ type FinalizeInfo struct {
 	Size        int64
 	SHA256Hex   string
 	SniffedMIME string
+	// VersionID pins the exact bucket object version that was sniffed and
+	// verified (bucket versioning is enabled by deploy/minio-init.sh), so
+	// a re-upload to the same key after finalize creates a new version
+	// that nothing ever reads, instead of mutating the verified one.
+	VersionID string
 }
 
 // ErrObjectNotFound is returned by Finalize when the key does not exist
@@ -42,7 +47,7 @@ func (c *Internal) Finalize(ctx context.Context, key string) (FinalizeInfo, erro
 		return FinalizeInfo{}, err
 	}
 
-	opts := minio.GetObjectOptions{}
+	opts := minio.GetObjectOptions{VersionID: info.VersionID}
 	if err := opts.SetRange(0, sniffBytes-1); err != nil {
 		return FinalizeInfo{}, err
 	}
@@ -70,5 +75,6 @@ func (c *Internal) Finalize(ctx context.Context, key string) (FinalizeInfo, erro
 		Size:        info.Size,
 		SHA256Hex:   sha256Hex,
 		SniffedMIME: SniffMIME(head[:n]),
+		VersionID:   info.VersionID,
 	}, nil
 }

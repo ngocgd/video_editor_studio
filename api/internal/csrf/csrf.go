@@ -1,49 +1,46 @@
-// Package csrf implements a synchronizer-token defence: the token's SHA-256
-// is stored on the session row (set at login/rotation by package auth), the
-// client echoes the plaintext token back on every unsafe request via
+// Package csrf implements a signed-token defence: the token is derived
+// deterministically as HMAC-SHA256(pepper, "csrf|"+sessionToken), never
+// stored or rotated. The client echoes it back on every unsafe request via
 // X-CSRF-Token, and the Origin/Referer header is checked against an
 // allowlist as defence in depth.
+//
+// Deriving instead of storing means GET /auth/csrf has no side effect (a
+// previous design stored a random token per session and rotated it on
+// every GET, which is a GET with a write side effect: a second tab, or a
+// cross-site top-level navigation that Lax still sends the cookie on,
+// would silently invalidate the SPA's token and lock it out with 403s).
 package csrf
 
 import (
-	"crypto/rand"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
+	"encoding/hex"
 	"net/http"
 	"net/url"
 )
 
-// HeaderName is the request header carrying the plaintext CSRF token.
+// HeaderName is the request header carrying the CSRF token.
 const HeaderName = "X-CSRF-Token"
 
-// NewToken generates a fresh random CSRF token (plaintext, sent to the
-// client) and its SHA-256 (stored on the session row).
-func NewToken() (token string, hash []byte) {
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
-		panic("csrf: crypto/rand unavailable: " + err.Error())
-	}
-	token = base64.RawURLEncoding.EncodeToString(raw)
-	sum := sha256.Sum256([]byte(token))
-	return token, sum[:]
+// Derive computes the CSRF token for a session token, given the
+// process-wide pepper (never exposed to clients; callers pass the loaded
+// envelope KEK bytes, domain-separated by the "csrf|" prefix so this use
+// can never collide with the KEK's own AES-GCM usage).
+func Derive(pepper []byte, sessionToken string) string {
+	mac := hmac.New(sha256.New, pepper)
+	mac.Write([]byte("csrf|" + sessionToken))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// Hash returns the SHA-256 of a plaintext token, for comparing an incoming
-// header value against a stored hash.
-func Hash(token string) []byte {
-	sum := sha256.Sum256([]byte(token))
-	return sum[:]
-}
-
-// Verify reports whether token hashes to storedHash, using a
-// constant-time comparison.
-func Verify(token string, storedHash []byte) bool {
-	if token == "" || len(storedHash) == 0 {
+// Verify reports whether token is the correct CSRF token for
+// sessionToken, using a constant-time comparison.
+func Verify(pepper []byte, sessionToken, token string) bool {
+	if token == "" || sessionToken == "" {
 		return false
 	}
-	got := Hash(token)
-	return subtle.ConstantTimeCompare(got, storedHash) == 1
+	expected := Derive(pepper, sessionToken)
+	return subtle.ConstantTimeCompare([]byte(expected), []byte(token)) == 1
 }
 
 func isUnsafeMethod(method string) bool {
@@ -74,28 +71,28 @@ func CheckOrigin(r *http.Request, allowedOrigins map[string]bool) bool {
 	return allowedOrigins[origin]
 }
 
-// StoredHash is implemented by the session accessor package (auth) so this
-// package does not need to depend on it: the middleware receives the
-// current session's stored CSRF hash through this narrow interface.
-type SessionLookup func(r *http.Request) (storedHash []byte, authenticated bool)
+// SessionLookup returns the current request's session token (the
+// plaintext cookie value, not a hash) and whether one is present. Kept as
+// a narrow function type so this package does not need to import auth.
+type SessionLookup func(r *http.Request) (sessionToken string, authenticated bool)
 
-// Middleware enforces the synchronizer token and Origin allowlist on every
-// unsafe-method request. Safe methods (GET/HEAD/OPTIONS) and requests with
-// no session (handled/rejected by the RBAC layer instead) pass through
-// unchecked.
-func Middleware(lookup SessionLookup, allowedOrigins map[string]bool, onReject http.HandlerFunc) func(http.Handler) http.Handler {
+// Middleware enforces the signed-token check and Origin allowlist on
+// every unsafe-method request. Safe methods (GET/HEAD/OPTIONS) and
+// requests with no session (handled/rejected by the RBAC layer
+// downstream) pass through unchecked.
+func Middleware(pepper []byte, lookup SessionLookup, allowedOrigins map[string]bool, onReject http.HandlerFunc) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !isUnsafeMethod(r.Method) {
 				next.ServeHTTP(w, r)
 				return
 			}
-			storedHash, authenticated := lookup(r)
+			sessionToken, authenticated := lookup(r)
 			if !authenticated {
 				// No session at all: let the RBAC layer downstream produce
 				// the 401 for routes that require one; public unsafe
 				// routes (login) are exempt from CSRF by design since no
-				// session/cookie exists yet to fixate.
+				// session/cookie exists yet to sign against.
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -103,7 +100,7 @@ func Middleware(lookup SessionLookup, allowedOrigins map[string]bool, onReject h
 				onReject(w, r)
 				return
 			}
-			if !Verify(r.Header.Get(HeaderName), storedHash) {
+			if !Verify(pepper, sessionToken, r.Header.Get(HeaderName)) {
 				onReject(w, r)
 				return
 			}

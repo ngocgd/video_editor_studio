@@ -25,6 +25,7 @@ SET status = 'ready',
     width = @width,
     height = @height,
     duration_ms = @duration_ms,
+    storage_version_id = @storage_version_id,
     updated_at = now()
 WHERE tenant_id = @tenant_id AND id = @id
 RETURNING *;

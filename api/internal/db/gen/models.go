@@ -11,27 +11,29 @@ import (
 )
 
 type Asset struct {
-	ID         pgtype.UUID        `json:"id"`
-	TenantID   pgtype.UUID        `json:"tenant_id"`
-	Kind       string             `json:"kind"`
-	StorageKey string             `json:"storage_key"`
-	Mime       string             `json:"mime"`
-	Bytes      pgtype.Int8        `json:"bytes"`
-	Sha256     pgtype.Text        `json:"sha256"`
-	Width      pgtype.Int4        `json:"width"`
-	Height     pgtype.Int4        `json:"height"`
-	DurationMs pgtype.Int4        `json:"duration_ms"`
-	Variants   []byte             `json:"variants"`
-	Status     string             `json:"status"`
-	CreatedBy  pgtype.UUID        `json:"created_by"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID               pgtype.UUID        `json:"id"`
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	Kind             string             `json:"kind"`
+	StorageKey       string             `json:"storage_key"`
+	StorageVersionID pgtype.Text        `json:"storage_version_id"`
+	Mime             string             `json:"mime"`
+	Bytes            pgtype.Int8        `json:"bytes"`
+	Sha256           pgtype.Text        `json:"sha256"`
+	Width            pgtype.Int4        `json:"width"`
+	Height           pgtype.Int4        `json:"height"`
+	DurationMs       pgtype.Int4        `json:"duration_ms"`
+	Variants         []byte             `json:"variants"`
+	Status           string             `json:"status"`
+	CreatedBy        pgtype.UUID        `json:"created_by"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type AuditLog struct {
 	ID          pgtype.UUID        `json:"id"`
 	TenantID    pgtype.UUID        `json:"tenant_id"`
 	ActorUserID pgtype.UUID        `json:"actor_user_id"`
+	ActorEmail  pgtype.Text        `json:"actor_email"`
 	Action      string             `json:"action"`
 	TargetType  pgtype.Text        `json:"target_type"`
 	TargetID    pgtype.Text        `json:"target_id"`
@@ -89,7 +91,6 @@ type Session struct {
 	UserID         pgtype.UUID        `json:"user_id"`
 	ActiveTenantID pgtype.UUID        `json:"active_tenant_id"`
 	TokenHash      []byte             `json:"token_hash"`
-	CsrfTokenHash  []byte             `json:"csrf_token_hash"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	LastSeenAt     pgtype.Timestamptz `json:"last_seen_at"`
 	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`

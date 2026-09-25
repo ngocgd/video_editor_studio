@@ -10,6 +10,11 @@
 	# headers must enforce the most restrictive of an ambiguous set,
 	# which is not what either side intended.
 	handle /api/* {
+		# Matches api/internal/httpx.MaxBodyBytes: reject an oversized body
+		# here too, before it is even proxied, not just at the API.
+		request_body {
+			max_size 256KB
+		}
 		reverse_proxy api:8080
 	}
 

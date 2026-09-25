@@ -21,12 +21,16 @@ import (
 type Entry struct {
 	TenantID    *uuid.UUID
 	ActorUserID *uuid.UUID
-	Action      string
-	TargetType  string
-	TargetID    string
-	Metadata    map[string]any
-	RemoteAddr  string // net/http Request.RemoteAddr; parsed to strip the port
-	UserAgent   string
+	// ActorEmail denormalizes the actor's email at write time so the
+	// entry stays readable after the user row itself is gone (audit_log
+	// intentionally has no FK to users — see the audit migration).
+	ActorEmail string
+	Action     string
+	TargetType string
+	TargetID   string
+	Metadata   map[string]any
+	RemoteAddr string // net/http Request.RemoteAddr; parsed to strip the port
+	UserAgent  string
 }
 
 // Record inserts e into audit_log. A nil or empty Metadata encodes as {}.
@@ -44,6 +48,7 @@ func Record(ctx context.Context, q *gen.Queries, e Entry) error {
 		ID:          idconv.ToPg(idconv.NewV7()),
 		TenantID:    idconv.ToPgPtr(e.TenantID),
 		ActorUserID: idconv.ToPgPtr(e.ActorUserID),
+		ActorEmail:  idconv.ToPgText(e.ActorEmail),
 		Action:      e.Action,
 		TargetType:  idconv.ToPgText(e.TargetType),
 		TargetID:    idconv.ToPgText(e.TargetID),

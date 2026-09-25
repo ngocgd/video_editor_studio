@@ -138,14 +138,34 @@ func requireStatus(t *testing.T, resp *http.Response, want int) {
 	}
 }
 
+// requireProblem asserts both the status and the problem+json title, so a
+// 403 from CSRF and a 403 from RBAC (both currently used by the API) are
+// never confused for each other by a test that only checks the status
+// code: a regression that made CSRF always reject would otherwise still
+// pass a test that expected "any 403".
+func requireProblem(t *testing.T, resp *http.Response, wantStatus int, wantTitle string) {
+	t.Helper()
+	if resp.StatusCode != wantStatus {
+		t.Fatalf("%s %s: got status %d, want %d", resp.Request.Method, resp.Request.URL.Path, resp.StatusCode, wantStatus)
+	}
+	var problem struct {
+		Title string `json:"title"`
+	}
+	decodeJSON(t, resp, &problem)
+	if problem.Title != wantTitle {
+		t.Fatalf("%s %s: got problem title %q, want %q", resp.Request.Method, resp.Request.URL.Path, problem.Title, wantTitle)
+	}
+}
+
 func skipIfAPIUnreachable(t *testing.T) {
 	t.Helper()
 	resp, err := http.Get(baseURL() + "/healthz")
 	if err != nil {
-		t.Skipf("API not reachable at %s: %v", baseURL(), err)
+		missingEnv(t, "API_BASE_URL", "API not reachable at "+baseURL()+": "+err.Error())
+		return
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Skipf("API healthz returned %d", resp.StatusCode)
+		missingEnv(t, "API_BASE_URL", "API healthz returned an unexpected status")
 	}
 }

@@ -33,7 +33,10 @@ CREATE TABLE sessions (
     user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     active_tenant_id uuid REFERENCES tenants (id) ON DELETE SET NULL,
     token_hash bytea NOT NULL,
-    csrf_token_hash bytea NOT NULL,
+    -- No csrf_token_hash column: the CSRF token is derived deterministically
+    -- from (server pepper, session token) — see api/internal/csrf — so it
+    -- never needs storing, rotating, or a GET endpoint with a write
+    -- side effect to recover it.
     created_at timestamptz NOT NULL DEFAULT now(),
     last_seen_at timestamptz NOT NULL DEFAULT now(),
     -- Absolute lifetime (7d); idle lifetime (12h) is enforced in application

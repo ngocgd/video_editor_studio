@@ -4,19 +4,19 @@ import (
 	"context"
 
 	authpkg "loomtale/api/internal/auth"
+	"loomtale/api/internal/csrf"
 	"loomtale/api/internal/httpapi/gen"
+	"loomtale/api/internal/httpx"
 )
 
-// GetCsrf implements gen.StrictServerInterface. It issues a fresh CSRF
-// token bound to the caller's existing session (the session's own token
-// and cookie are untouched), since only the hash of a CSRF token is ever
-// stored and the plaintext cannot be recovered once forgotten by the
-// client (e.g. after a page reload that did not persist it).
+// GetCsrf implements gen.StrictServerInterface. The token is derived
+// deterministically from the caller's own session token (see package
+// csrf), so this is a pure computation with no database write and no
+// side effect: calling it twice, from two tabs, or after a cross-site
+// navigation that still sends the Lax cookie, always returns the same
+// value and never invalidates anything.
 func (h *AuthAPI) GetCsrf(ctx context.Context, _ gen.GetCsrfRequestObject) (gen.GetCsrfResponseObject, error) {
-	sess, _ := authpkg.FromCtx(ctx)
-	token, err := h.Store.RefreshCSRF(ctx, h.Queries, sess.ID)
-	if err != nil {
-		return nil, err
-	}
-	return gen.GetCsrf200JSONResponse{Token: token}, nil
+	r := httpx.RequestFromCtx(ctx)
+	token := authpkg.TokenFromRequest(r)
+	return gen.GetCsrf200JSONResponse{Token: csrf.Derive(h.CSRFPepper, token)}, nil
 }

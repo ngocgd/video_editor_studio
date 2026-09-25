@@ -14,7 +14,7 @@ import (
 const createAsset = `-- name: CreateAsset :one
 INSERT INTO assets (id, tenant_id, kind, storage_key, mime, created_by)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, tenant_id, kind, storage_key, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at
+RETURNING id, tenant_id, kind, storage_key, storage_version_id, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at
 `
 
 type CreateAssetParams struct {
@@ -41,6 +41,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		&i.TenantID,
 		&i.Kind,
 		&i.StorageKey,
+		&i.StorageVersionID,
 		&i.Mime,
 		&i.Bytes,
 		&i.Sha256,
@@ -57,7 +58,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 }
 
 const getAssetByID = `-- name: GetAssetByID :one
-SELECT id, tenant_id, kind, storage_key, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets WHERE tenant_id = $1 AND id = $2
+SELECT id, tenant_id, kind, storage_key, storage_version_id, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets WHERE tenant_id = $1 AND id = $2
 `
 
 type GetAssetByIDParams struct {
@@ -73,6 +74,7 @@ func (q *Queries) GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Ass
 		&i.TenantID,
 		&i.Kind,
 		&i.StorageKey,
+		&i.StorageVersionID,
 		&i.Mime,
 		&i.Bytes,
 		&i.Sha256,
@@ -89,7 +91,7 @@ func (q *Queries) GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Ass
 }
 
 const getAssetByStorageKey = `-- name: GetAssetByStorageKey :one
-SELECT id, tenant_id, kind, storage_key, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets WHERE tenant_id = $1 AND storage_key = $2
+SELECT id, tenant_id, kind, storage_key, storage_version_id, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets WHERE tenant_id = $1 AND storage_key = $2
 `
 
 type GetAssetByStorageKeyParams struct {
@@ -106,6 +108,7 @@ func (q *Queries) GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorag
 		&i.TenantID,
 		&i.Kind,
 		&i.StorageKey,
+		&i.StorageVersionID,
 		&i.Mime,
 		&i.Bytes,
 		&i.Sha256,
@@ -122,7 +125,7 @@ func (q *Queries) GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorag
 }
 
 const listAssets = `-- name: ListAssets :many
-SELECT id, tenant_id, kind, storage_key, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets
+SELECT id, tenant_id, kind, storage_key, storage_version_id, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at FROM assets
 WHERE tenant_id = $1 AND id > $2
 ORDER BY id
 LIMIT $3
@@ -148,6 +151,7 @@ func (q *Queries) ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset
 			&i.TenantID,
 			&i.Kind,
 			&i.StorageKey,
+			&i.StorageVersionID,
 			&i.Mime,
 			&i.Bytes,
 			&i.Sha256,
@@ -194,20 +198,22 @@ SET status = 'ready',
     width = $4,
     height = $5,
     duration_ms = $6,
+    storage_version_id = $7,
     updated_at = now()
-WHERE tenant_id = $7 AND id = $8
-RETURNING id, tenant_id, kind, storage_key, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at
+WHERE tenant_id = $8 AND id = $9
+RETURNING id, tenant_id, kind, storage_key, storage_version_id, mime, bytes, sha256, width, height, duration_ms, variants, status, created_by, created_at, updated_at
 `
 
 type MarkAssetReadyParams struct {
-	Bytes      pgtype.Int8 `json:"bytes"`
-	Sha256     pgtype.Text `json:"sha256"`
-	Mime       string      `json:"mime"`
-	Width      pgtype.Int4 `json:"width"`
-	Height     pgtype.Int4 `json:"height"`
-	DurationMs pgtype.Int4 `json:"duration_ms"`
-	TenantID   pgtype.UUID `json:"tenant_id"`
-	ID         pgtype.UUID `json:"id"`
+	Bytes            pgtype.Int8 `json:"bytes"`
+	Sha256           pgtype.Text `json:"sha256"`
+	Mime             string      `json:"mime"`
+	Width            pgtype.Int4 `json:"width"`
+	Height           pgtype.Int4 `json:"height"`
+	DurationMs       pgtype.Int4 `json:"duration_ms"`
+	StorageVersionID pgtype.Text `json:"storage_version_id"`
+	TenantID         pgtype.UUID `json:"tenant_id"`
+	ID               pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error) {
@@ -218,6 +224,7 @@ func (q *Queries) MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) 
 		arg.Width,
 		arg.Height,
 		arg.DurationMs,
+		arg.StorageVersionID,
 		arg.TenantID,
 		arg.ID,
 	)
@@ -227,6 +234,7 @@ func (q *Queries) MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) 
 		&i.TenantID,
 		&i.Kind,
 		&i.StorageKey,
+		&i.StorageVersionID,
 		&i.Mime,
 		&i.Bytes,
 		&i.Sha256,

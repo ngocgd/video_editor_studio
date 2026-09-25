@@ -13,7 +13,6 @@ type Session struct {
 	ID             uuid.UUID
 	UserID         uuid.UUID
 	ActiveTenantID *uuid.UUID
-	CSRFTokenHash  []byte
 	ExpiresAt      time.Time
 }
 

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -39,10 +40,22 @@ func (c *Internal) Ping(ctx context.Context) error {
 // PresignGet issues an internal presigned GET URL for key, valid for ttl.
 // Callers size ttl to the calling step's own timeout plus a margin (the
 // FFmpeg and Python workers add 10 minutes), never to a fixed constant.
-func (c *Internal) PresignGet(ctx context.Context, key string, ttl time.Duration) (string, error) {
-	u, err := c.PresignedGetObject(ctx, c.Bucket, key, ttl, nil)
+// versionID pins the exact object version an asset was finalized against
+// (see storage.FinalizeInfo); pass "" to read the current version.
+func (c *Internal) PresignGet(ctx context.Context, key, versionID string, ttl time.Duration) (string, error) {
+	reqParams := versionQueryParam(versionID)
+	u, err := c.PresignedGetObject(ctx, c.Bucket, key, ttl, reqParams)
 	if err != nil {
 		return "", err
 	}
 	return u.String(), nil
+}
+
+func versionQueryParam(versionID string) url.Values {
+	if versionID == "" {
+		return nil
+	}
+	v := url.Values{}
+	v.Set("versionId", versionID)
+	return v
 }

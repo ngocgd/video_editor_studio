@@ -5,9 +5,11 @@ LoginRequest:
     email:
       type: string
       format: email
+      maxLength: 320
     password:
       type: string
       minLength: 8
+      maxLength: 1024
 TenantMembership:
   type: object
   required: [tenantId, tenantName, role]

@@ -13,8 +13,8 @@ SELECT * FROM users WHERE id = @id;
 UPDATE users SET password_hash = @password_hash, updated_at = now() WHERE id = @id;
 
 -- name: CreateSession :one
-INSERT INTO sessions (id, user_id, active_tenant_id, token_hash, csrf_token_hash, expires_at)
-VALUES (@id, @user_id, @active_tenant_id, @token_hash, @csrf_token_hash, @expires_at)
+INSERT INTO sessions (id, user_id, active_tenant_id, token_hash, expires_at)
+VALUES (@id, @user_id, @active_tenant_id, @token_hash, @expires_at)
 RETURNING *;
 
 -- name: GetSessionByTokenHash :one
@@ -25,12 +25,14 @@ WHERE token_hash = @token_hash AND revoked_at IS NULL AND expires_at > now();
 UPDATE sessions SET last_seen_at = @last_seen_at WHERE id = @id;
 
 -- name: RotateSession :one
--- Used on login (session fixation defence) and on tenant switch.
+-- Used on tenant switch (session-fixation defence: a session that briefly
+-- saw tenant A's data gets a fresh token before it can act on tenant B's).
+-- expires_at is deliberately left untouched: rotating must not extend the
+-- 7-day absolute lifetime, or repeatedly switching tenants would keep a
+-- session alive forever.
 UPDATE sessions
 SET token_hash = @token_hash,
-    csrf_token_hash = @csrf_token_hash,
     active_tenant_id = @active_tenant_id,
-    expires_at = @expires_at,
     last_seen_at = now()
 WHERE id = @id
 RETURNING *;
@@ -38,7 +40,16 @@ RETURNING *;
 -- name: DeleteSession :exec
 DELETE FROM sessions WHERE id = @id;
 
--- name: UpdateSessionCSRF :exec
--- Refreshes only the CSRF token, leaving the session's own token_hash (and
--- therefore the client's cookie) untouched.
-UPDATE sessions SET csrf_token_hash = @csrf_token_hash WHERE id = @id;
+-- name: DeleteSessionsForUser :exec
+-- Called on login so a fresh login revokes any session(s) left over from
+-- before (e.g. a device that was never logged out), not just the new one.
+DELETE FROM sessions WHERE user_id = @user_id;
+
+-- name: DeleteExpiredSessions :exec
+-- Best-effort housekeeping, called opportunistically (not on a schedule)
+-- so the table does not grow unbounded; safe to run concurrently.
+DELETE FROM sessions WHERE expires_at < now();
+
+-- name: DeleteStaleRateLimitBuckets :exec
+-- Best-effort housekeeping for the same reason as DeleteExpiredSessions.
+DELETE FROM rate_limit_buckets WHERE updated_at < now() - interval '7 days';

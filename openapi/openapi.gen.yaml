@@ -78,7 +78,7 @@ paths:
       summary: End the current session
       tags:
         - auth
-      x-min-role: viewer
+      x-min-role: authenticated
       responses:
         '204':
           description: session ended
@@ -88,7 +88,7 @@ paths:
       summary: The caller's identity and tenant memberships
       tags:
         - auth
-      x-min-role: viewer
+      x-min-role: authenticated
       responses:
         '200':
           description: current identity
@@ -102,7 +102,7 @@ paths:
       summary: Switch the session's active tenant (must be a member)
       tags:
         - auth
-      x-min-role: viewer
+      x-min-role: authenticated
       requestBody:
         required: true
         content:
@@ -111,11 +111,11 @@ paths:
               $ref: '#/components/schemas/SwitchTenantRequest'
       responses:
         '200':
-          description: active tenant switched
+          description: active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Me'
+                $ref: '#/components/schemas/LoginResponse'
         '404':
           description: not a member of that tenant
           content:
@@ -128,7 +128,7 @@ paths:
       summary: The CSRF token for the current session
       tags:
         - auth
-      x-min-role: viewer
+      x-min-role: authenticated
       responses:
         '200':
           description: current CSRF token
@@ -326,9 +326,11 @@ components:
         email:
           type: string
           format: email
+          maxLength: 320
         password:
           type: string
           minLength: 8
+          maxLength: 1024
     Role:
       type: string
       enum:
@@ -503,6 +505,8 @@ components:
         actorUserId:
           type: string
           format: uuid
+        actorEmail:
+          type: string
         action:
           type: string
         targetType:

@@ -90,8 +90,10 @@ func (b *Browser) PresignPost(ctx context.Context, tenantID, key, contentType st
 // caller-supplied clock, so that flooring is not implemented here; doing
 // it correctly needs a hand-rolled SigV4 signer, tracked as a follow-up
 // rather than faked.
-func (b *Browser) PresignGet(ctx context.Context, key string) (string, error) {
-	u, err := b.client.PresignedGetObject(ctx, b.bucket, key, MaxUploadTTL, nil)
+// versionID pins the exact object version an asset was finalized against
+// (see storage.FinalizeInfo); pass "" to read the current version.
+func (b *Browser) PresignGet(ctx context.Context, key, versionID string) (string, error) {
+	u, err := b.client.PresignedGetObject(ctx, b.bucket, key, MaxUploadTTL, versionQueryParam(versionID))
 	if err != nil {
 		return "", err
 	}

@@ -2,6 +2,8 @@ package scrub
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -51,6 +53,34 @@ func TestURLStripsCapabilityQueryParams(t *testing.T) {
 		if got := URL(c.in); got != c.want {
 			t.Errorf("URL(%q) = %q, want %q", c.in, got, c.want)
 		}
+	}
+}
+
+func TestURLScrubsEmbeddedInLargerText(t *testing.T) {
+	in := `Opening 'https://minio:9000/bucket/key?X-Amz-Signature=abc123' for reading`
+	got := URL(in)
+	if strings.Contains(got, "abc123") {
+		t.Errorf("expected the embedded capability URL to be scrubbed, got: %s", got)
+	}
+	if !strings.HasPrefix(got, "Opening '") || !strings.HasSuffix(got, "' for reading") {
+		t.Errorf("expected surrounding text to survive scrubbing, got: %s", got)
+	}
+}
+
+func TestURLMatchesParamsCaseInsensitively(t *testing.T) {
+	in := "https://minio:9000/bucket/key?x-amz-signature=abc123"
+	got := URL(in)
+	if strings.Contains(got, "abc123") {
+		t.Errorf("expected lowercase x-amz-signature to be scrubbed, got: %s", got)
+	}
+}
+
+func TestReplaceAttrScrubsErrorTypedValues(t *testing.T) {
+	wrapped := fmt.Errorf("upload failed: %w", errors.New("https://minio:9000/bucket/key?X-Amz-Signature=abc123: connection reset"))
+	a := slog.Any("error", wrapped)
+	got := ReplaceAttr(nil, a)
+	if strings.Contains(got.Value.String(), "abc123") {
+		t.Errorf("expected an error value's embedded capability URL to be scrubbed, got: %v", got.Value)
 	}
 }
 

@@ -1,34 +1,51 @@
 name: loomtale
 
 networks:
+  # A fixed subnet lets the API trust X-Forwarded-For only from this exact
+  # range (TRUSTED_PROXY_CIDRS below) instead of all of RFC1918: Caddy is
+  # the only thing that ever talks to the API directly, so this is a tight
+  # allowlist, not "trust the whole Docker bridge address space".
   loomtale_core:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
 
 secrets:
   minio_root_user:
     file: ../secrets/minio_root_user.txt
   minio_root_password:
     file: ../secrets/minio_root_password.txt
+  # The bootstrap Postgres superuser's own password (used only during
+  # initdb and by deploy/postgres/init-roles.sh, which then creates the
+  # least-privilege roles below). No container ever connects to Postgres
+  # as this user after first boot.
+  postgres_superuser_password:
+    file: ../secrets/postgres_superuser_password.txt
   # Postgres role passwords, read only by the postgres container's own
   # init script (deploy/postgres/init-roles.sh, via docker-entrypoint-initdb.d)
-  # to create loomtale_owner/loomtale_app on first boot. The API/worker/
-  # migrate/backup services connect using the same values from
-  # POSTGRES_OWNER_PASSWORD/POSTGRES_APP_PASSWORD in .env, the same
-  # operator-provisioned-once pattern already used for the MinIO app key
-  # below (never generated at runtime, never requiring a post-boot
-  # copy-paste from logs).
+  # to create loomtale_owner/loomtale_app/loomtale_backup on first boot.
+  # The API/worker/migrate/backup services connect using the same values
+  # from POSTGRES_OWNER_PASSWORD/POSTGRES_APP_PASSWORD/
+  # POSTGRES_BACKUP_PASSWORD in .env, the same operator-provisioned-once
+  # pattern already used for the MinIO app key below (never generated at
+  # runtime, never requiring a post-boot copy-paste from logs).
   postgres_owner_password:
     file: ../secrets/postgres_owner_password.txt
   postgres_app_password:
     file: ../secrets/postgres_app_password.txt
+  postgres_backup_password:
+    file: ../secrets/postgres_backup_password.txt
   # Envelope-encryption KEK: 32 raw bytes, base64-encoded. The process
   # refuses to start without it (api/internal/crypto/envelope).
   master_key:
     file: ../secrets/master_key.txt
-  # Client-side encryption key + credentials for the nightly backup's
-  # upload to the cloud backup bucket (deploy/backup/backup.sh).
-  backup_encryption_key:
-    file: ../secrets/backup_encryption_key.txt
+  # Credentials for the nightly backup's upload to the cloud backup
+  # bucket (deploy/backup/backup.sh). The age *identity* (private key)
+  # deliberately has no secret file here and is never mounted into any
+  # container: backup.sh only needs the public recipient
+  # (BACKUP_ENCRYPTION_RECIPIENT below, not sensitive) to encrypt; the
+  # identity is kept offline by the operator for the restore drill.
   backup_target_credentials:
     file: ../secrets/backup_target_credentials.txt
 
@@ -38,10 +55,10 @@ services:
     mem_limit: 1.5g
     restart: unless-stopped
     networks: [loomtale_core]
-    secrets: [postgres_owner_password, postgres_app_password]
+    secrets: [postgres_superuser_password, postgres_owner_password, postgres_app_password, postgres_backup_password]
     environment:
       POSTGRES_USER: loomtale
-      POSTGRES_PASSWORD: loomtale
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_superuser_password
       POSTGRES_DB: loomtale
     command:
       - "postgres"
@@ -103,6 +120,10 @@ services:
       # /readyz with no manual post-boot step.
       APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:?set MINIO_APP_ACCESS_KEY in .env, see .env.example}
       APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:?set MINIO_APP_SECRET_KEY in .env, see .env.example}
+      # A separate GetObject/ListBucket-only key for the backup sidecar,
+      # which never needs to write to the source bucket.
+      BACKUP_ACCESS_KEY: ${MINIO_BACKUP_ACCESS_KEY:?set MINIO_BACKUP_ACCESS_KEY in .env, see .env.example}
+      BACKUP_SECRET_KEY: ${MINIO_BACKUP_SECRET_KEY:?set MINIO_BACKUP_SECRET_KEY in .env, see .env.example}
     depends_on:
       minio:
         condition: service_healthy
@@ -161,6 +182,16 @@ services:
       ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://127.0.0.1:8080}
       PUBLIC_URL: ${PUBLIC_URL:-}
       MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
+      # Caddy's own fixed address (see the web service below), not the
+      # whole RFC1918 default: only Caddy is a legitimate X-Forwarded-For
+      # source for the api container.
+      TRUSTED_PROXY_CIDRS: 172.28.0.10/32
+      ARGON2_MAX_CONCURRENCY: "4"
+      # Go's runtime honors this automatically (no code needed): leaves
+      # headroom under the container's 512m cgroup limit so a burst of
+      # concurrent argon2 work triggers more aggressive GC instead of an
+      # OOM kill.
+      GOMEMLIMIT: 400MiB
     healthcheck:
       test: ["CMD", "/usr/local/bin/api", "healthcheck"]
       interval: 5s
@@ -203,7 +234,11 @@ services:
     image: loomtale/web:local
     mem_limit: 128m
     restart: unless-stopped
-    networks: [loomtale_core]
+    networks:
+      loomtale_core:
+        # Fixed so the api service can trust X-Forwarded-For from exactly
+        # this address (TRUSTED_PROXY_CIDRS below), not the whole subnet.
+        ipv4_address: 172.28.0.10
     depends_on:
       api:
         condition: service_healthy
@@ -226,13 +261,28 @@ services:
     image: loomtale/backup:local
     mem_limit: 512m
     networks: [loomtale_core]
-    secrets: [minio_root_user, minio_root_password, backup_encryption_key, backup_target_credentials]
+    secrets: [backup_target_credentials]
     environment:
       TZ: Asia/Bangkok
-      DATABASE_URL: postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
+      # mc writes its config (aliases) to $HOME/.mc; the default HOME
+      # (/root) is not writable on this read_only container, so this
+      # points it at the /tmp tmpfs instead.
+      HOME: /tmp
+      # Read-only role: the backup sidecar can never write to the
+      # database, and never holds owner credentials that could disable
+      # the audit_log immutability trigger.
+      DATABASE_URL: postgres://loomtale_backup:${POSTGRES_BACKUP_PASSWORD:?set POSTGRES_BACKUP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
       MINIO_ENDPOINT: minio:9000
       MINIO_BUCKET: loomtale
-      BACKUP_TARGET: ${BACKUP_TARGET:-}
+      # Read-only (GetObject/ListBucket) MinIO key, not the root
+      # credentials: the backup sidecar only ever reads the source bucket.
+      MINIO_BACKUP_ACCESS_KEY: ${MINIO_BACKUP_ACCESS_KEY:?set MINIO_BACKUP_ACCESS_KEY in .env, see .env.example}
+      MINIO_BACKUP_SECRET_KEY: ${MINIO_BACKUP_SECRET_KEY:?set MINIO_BACKUP_SECRET_KEY in .env, see .env.example}
+      # The age public recipient only (not the private identity, which is
+      # never mounted into any container — see the secrets block above).
+      BACKUP_ENCRYPTION_RECIPIENT: ${BACKUP_ENCRYPTION_RECIPIENT:?set BACKUP_ENCRYPTION_RECIPIENT in .env, see .env.example}
+      BACKUP_TARGET: ${BACKUP_TARGET:?set BACKUP_TARGET in .env, see .env.example}
+      BACKUP_TARGET_BUCKET: ${BACKUP_TARGET_BUCKET:?set BACKUP_TARGET_BUCKET in .env, see .env.example}
       # Nightly at 03:00 Asia/Bangkok; the container's own TZ (set above)
       # makes crond interpret this schedule in local time.
       BACKUP_SCHEDULE: "0 3 * * *"
