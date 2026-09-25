@@ -97,6 +97,40 @@ jobs:
         working-directory: workers-python
         continue-on-error: true
 
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: api/go.mod
+      - name: provision dev secrets and .env
+        run: |
+          bash scripts/dev-secrets-init.sh
+          echo "BACKUP_TARGET=https://ci-placeholder.invalid" >> .env
+          echo "BACKUP_TARGET_BUCKET=ci-placeholder" >> .env
+      - name: bring up the full stack
+        run: docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env up -d --wait --build
+      - name: run integration tests
+        env:
+          CI: "true"
+          API_BASE_URL: http://127.0.0.1:8080/api/v1
+        run: |
+          set -a
+          . ../.env
+          set +a
+          export OWNER_DATABASE_URL="postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD}@127.0.0.1:5432/loomtale?sslmode=disable"
+          export DATABASE_URL="postgres://loomtale_app:${POSTGRES_APP_PASSWORD}@127.0.0.1:5432/loomtale?sslmode=disable"
+          export BACKUP_DATABASE_URL="postgres://loomtale_backup:${POSTGRES_BACKUP_PASSWORD}@127.0.0.1:5432/loomtale?sslmode=disable"
+          go test -tags=integration ./internal/integration/... -race -count=1 -v
+        working-directory: api
+      - name: dump service logs on failure
+        if: failure()
+        run: docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env logs
+      - name: tear down
+        if: always()
+        run: docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env down -v
+
   gen-check:
     runs-on: ubuntu-latest
     steps:
@@ -117,13 +151,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: create dev-only secrets files for the build
+      - name: create dev-only secrets and .env for the build
+        # compose resolves ${VAR:?...} interpolation while parsing the
+        # YAML for any subcommand, build included, so every required var
+        # must exist even though this job never starts the stack.
         run: |
-          mkdir -p secrets
-          echo "ci-root-user" > secrets/minio_root_user.txt
-          echo "ci-root-password-change-me" > secrets/minio_root_password.txt
+          bash scripts/dev-secrets-init.sh
+          echo "BACKUP_TARGET=https://ci-placeholder.invalid" >> .env
+          echo "BACKUP_TARGET_BUCKET=ci-placeholder" >> .env
       - name: build all images
-        run: docker compose -f deploy/compose.yml build
+        run: docker compose -f deploy/compose.yml --env-file .env build
       - name: assert non-root USER in every built image
         run: |
           for svc in api worker web; do
@@ -135,7 +172,7 @@ jobs:
           done
       - name: assert every compose service declares mem_limit
         run: |
-          docker compose -f deploy/compose.yml config > /tmp/compose-rendered.yml
+          docker compose -f deploy/compose.yml --env-file .env config > /tmp/compose-rendered.yml
           python3 - /tmp/compose-rendered.yml <<'PY'
           import sys, yaml
           with open(sys.argv[1]) as f:
@@ -147,6 +184,6 @@ jobs:
           PY
       - name: assert no docker.sock mount
         run: |
-          if docker compose -f deploy/compose.yml config | grep -q "docker.sock"; then
+          if docker compose -f deploy/compose.yml --env-file .env config | grep -q "docker.sock"; then
             echo "a service mounts the docker socket"; exit 1
           fi

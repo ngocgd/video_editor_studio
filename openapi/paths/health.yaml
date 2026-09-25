@@ -3,6 +3,7 @@ healthz:
     operationId: getHealthz
     summary: Liveness probe
     tags: [health]
+    x-min-role: public
     responses:
       "200":
         description: process is alive
@@ -15,6 +16,7 @@ readyz:
     operationId: getReadyz
     summary: Readiness probe (checks Postgres and MinIO)
     tags: [health]
+    x-min-role: public
     responses:
       "200":
         description: all dependencies are reachable
@@ -27,4 +29,4 @@ readyz:
         content:
           application/problem+json:
             schema:
-              $ref: "../schemas/health.yaml#/Problem"
+              $ref: "../schemas/problem.yaml#/Problem"

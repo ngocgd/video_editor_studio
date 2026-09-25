@@ -66,3 +66,320 @@ export const ReadyStatusSchema = {
         }
     }
 } as const;
+
+export const LoginRequestSchema = {
+    type: 'object',
+    required: [
+        'email',
+        'password'
+    ],
+    properties: {
+        email: {
+            type: 'string',
+            format: 'email',
+            maxLength: 320
+        },
+        password: {
+            type: 'string',
+            minLength: 8,
+            maxLength: 1024
+        }
+    }
+} as const;
+
+export const RoleSchema = {
+    type: 'string',
+    enum: [
+        'owner',
+        'editor',
+        'viewer'
+    ]
+} as const;
+
+export const TenantMembershipSchema = {
+    type: 'object',
+    required: [
+        'tenantId',
+        'tenantName',
+        'role'
+    ],
+    properties: {
+        tenantId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        tenantName: {
+            type: 'string'
+        },
+        role: {
+            $ref: '#/components/schemas/Role'
+        }
+    }
+} as const;
+
+export const MeSchema = {
+    type: 'object',
+    required: [
+        'userId',
+        'email',
+        'tenants'
+    ],
+    properties: {
+        userId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        email: {
+            type: 'string'
+        },
+        activeTenantId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        activeRole: {
+            $ref: '#/components/schemas/Role'
+        },
+        tenants: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/TenantMembership'
+            }
+        }
+    }
+} as const;
+
+export const LoginResponseSchema = {
+    type: 'object',
+    required: [
+        'me',
+        'csrfToken'
+    ],
+    properties: {
+        me: {
+            $ref: '#/components/schemas/Me'
+        },
+        csrfToken: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const SwitchTenantRequestSchema = {
+    type: 'object',
+    required: [
+        'tenantId'
+    ],
+    properties: {
+        tenantId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const CsrfTokenSchema = {
+    type: 'object',
+    required: [
+        'token'
+    ],
+    properties: {
+        token: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const AssetKindSchema = {
+    type: 'string',
+    enum: [
+        'image',
+        'audio',
+        'video',
+        'document'
+    ]
+} as const;
+
+export const PresignRequestSchema = {
+    type: 'object',
+    required: [
+        'kind',
+        'mime',
+        'bytes'
+    ],
+    properties: {
+        kind: {
+            $ref: '#/components/schemas/AssetKind'
+        },
+        mime: {
+            type: 'string'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64',
+            minimum: 1
+        },
+        filename: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const PresignResponseSchema = {
+    type: 'object',
+    required: [
+        'assetId',
+        'uploadUrl',
+        'fields',
+        'expiresAt'
+    ],
+    properties: {
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        uploadUrl: {
+            type: 'string',
+            format: 'uri'
+        },
+        fields: {
+            type: 'object',
+            additionalProperties: {
+                type: 'string'
+            }
+        },
+        expiresAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const AssetSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'mime',
+        'status',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            $ref: '#/components/schemas/AssetKind'
+        },
+        mime: {
+            type: 'string'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        sha256: {
+            type: 'string'
+        },
+        width: {
+            type: 'integer'
+        },
+        height: {
+            type: 'integer'
+        },
+        durationMs: {
+            type: 'integer'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'pending',
+                'ready',
+                'failed'
+            ]
+        },
+        downloadUrl: {
+            type: 'string',
+            format: 'uri'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const AssetListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Asset'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const AuditEntrySchema = {
+    type: 'object',
+    required: [
+        'id',
+        'action',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        actorUserId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        actorEmail: {
+            type: 'string'
+        },
+        action: {
+            type: 'string'
+        },
+        targetType: {
+            type: 'string'
+        },
+        targetId: {
+            type: 'string'
+        },
+        metadata: {
+            type: 'object',
+            additionalProperties: true
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const AuditListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/AuditEntry'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;

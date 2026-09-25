@@ -10,7 +10,27 @@ paths:
     $ref: paths/health.yaml#/healthz
   /readyz:
     $ref: paths/health.yaml#/readyz
+  /auth/login:
+    $ref: paths/auth.yaml#/login
+  /auth/logout:
+    $ref: paths/auth.yaml#/logout
+  /auth/me:
+    $ref: paths/auth.yaml#/me
+  /auth/switch-tenant:
+    $ref: paths/auth.yaml#/switchTenant
+  /auth/csrf:
+    $ref: paths/auth.yaml#/csrf
+  /assets/presign:
+    $ref: paths/assets.yaml#/presign
+  /assets/{id}/finalize:
+    $ref: paths/assets.yaml#/finalize
+  /assets/{id}:
+    $ref: paths/assets.yaml#/getAsset
+  /assets:
+    $ref: paths/assets.yaml#/listAssets
+  /audit:
+    $ref: paths/audit.yaml#/listAudit
 components:
   schemas:
     Problem:
-      $ref: schemas/health.yaml#/Problem
+      $ref: schemas/problem.yaml#/Problem

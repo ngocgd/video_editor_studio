@@ -6,12 +6,74 @@ package gen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	CompleteBackupRun(ctx context.Context, arg CompleteBackupRunParams) error
+	// Consumes one token if at least one is available; the caller checks the
+	// returned row count (1 = allowed, 0 = the bucket was already empty).
+	ConsumeRateLimitBucket(ctx context.Context, bucketKey string) (int64, error)
+	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
+	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
+	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	// Best-effort housekeeping, called opportunistically (not on a schedule)
+	// so the table does not grow unbounded; safe to run concurrently.
+	DeleteExpiredSessions(ctx context.Context) error
+	DeleteSession(ctx context.Context, id pgtype.UUID) error
+	// Called on login so a fresh login revokes any session(s) left over from
+	// before (e.g. a device that was never logged out), not just the new one.
+	DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error
+	// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
+	DeleteStaleRateLimitBuckets(ctx context.Context) error
+	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
+	// Used to check ownership of a key before signing or finalizing it.
+	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
+	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
+	// Every cross-tenant lookup goes through this query so an attacker probing
+	// another tenant's resources gets the same "not found" as a real 404.
+	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	// Placeholder query proving the sqlc -> pgx/v5 pipeline against goose's own
 	// version table. Later phases add domain queries here and in sibling files.
 	GetSchemaVersion(ctx context.Context) (GetSchemaVersionRow, error)
+	GetSecret(ctx context.Context, arg GetSecretParams) (Secret, error)
+	GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error)
+	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
+	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	// lint-tenant-queries:allow: by design this lists every tenant the user
+	// belongs to (e.g. to populate the tenant switcher); it is scoped by
+	// user_id, not tenant_id, because no single tenant is selected yet.
+	ListMembershipsForUser(ctx context.Context, userID pgtype.UUID) ([]ListMembershipsForUserRow, error)
+	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
+	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	// Upserts a token bucket, refilling it by elapsed time since its last
+	// update, and returns the refilled token count. Deliberately a separate
+	// statement from the conditional decrement in ConsumeRateLimitBucket: a
+	// data-modifying CTE and a second statement/CTE both targeting the same
+	// table within one query execute against the same MVCC snapshot (see
+	// "WITH Queries" in the Postgres docs), so a brand-new bucket's insert is
+	// never visible to a sibling write in that same statement. Two
+	// round-trip statements sidestep that entirely, at the cost of a small
+	// race window under heavy concurrent load on the same key, which a login
+	// rate limiter does not need to close precisely.
+	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
+	// Used on tenant switch (session-fixation defence: a session that briefly
+	// saw tenant A's data gets a fresh token before it can act on tenant B's).
+	// expires_at is deliberately left untouched: rotating must not extend the
+	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
+	// session alive forever.
+	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 }
 
 var _ Querier = (*Queries)(nil)

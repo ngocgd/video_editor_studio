@@ -1,0 +1,75 @@
+AssetKind:
+  type: string
+  enum: [image, audio, video, document]
+PresignRequest:
+  type: object
+  required: [kind, mime, bytes]
+  properties:
+    kind:
+      $ref: "#/AssetKind"
+    mime:
+      type: string
+    bytes:
+      type: integer
+      format: int64
+      minimum: 1
+    filename:
+      type: string
+PresignResponse:
+  type: object
+  required: [assetId, uploadUrl, fields, expiresAt]
+  properties:
+    assetId:
+      type: string
+      format: uuid
+    uploadUrl:
+      type: string
+      format: uri
+    fields:
+      type: object
+      additionalProperties:
+        type: string
+    expiresAt:
+      type: string
+      format: date-time
+Asset:
+  type: object
+  required: [id, kind, mime, status, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      $ref: "#/AssetKind"
+    mime:
+      type: string
+    bytes:
+      type: integer
+      format: int64
+    sha256:
+      type: string
+    width:
+      type: integer
+    height:
+      type: integer
+    durationMs:
+      type: integer
+    status:
+      type: string
+      enum: [pending, ready, failed]
+    downloadUrl:
+      type: string
+      format: uri
+    createdAt:
+      type: string
+      format: date-time
+AssetList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Asset"
+    nextCursor:
+      type: string

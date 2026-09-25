@@ -24,6 +24,95 @@ export type ReadyStatus = {
     };
 };
 
+export type LoginRequest = {
+    email: string;
+    password: string;
+};
+
+export type Role = 'owner' | 'editor' | 'viewer';
+
+export type TenantMembership = {
+    tenantId: string;
+    tenantName: string;
+    role: Role;
+};
+
+export type Me = {
+    userId: string;
+    email: string;
+    activeTenantId?: string;
+    activeRole?: Role;
+    tenants: Array<TenantMembership>;
+};
+
+export type LoginResponse = {
+    me: Me;
+    csrfToken: string;
+};
+
+export type SwitchTenantRequest = {
+    tenantId: string;
+};
+
+export type CsrfToken = {
+    token: string;
+};
+
+export type AssetKind = 'image' | 'audio' | 'video' | 'document';
+
+export type PresignRequest = {
+    kind: AssetKind;
+    mime: string;
+    bytes: number;
+    filename?: string;
+};
+
+export type PresignResponse = {
+    assetId: string;
+    uploadUrl: string;
+    fields: {
+        [key: string]: string;
+    };
+    expiresAt: string;
+};
+
+export type Asset = {
+    id: string;
+    kind: AssetKind;
+    mime: string;
+    bytes?: number;
+    sha256?: string;
+    width?: number;
+    height?: number;
+    durationMs?: number;
+    status: 'pending' | 'ready' | 'failed';
+    downloadUrl?: string;
+    createdAt: string;
+};
+
+export type AssetList = {
+    items: Array<Asset>;
+    nextCursor?: string;
+};
+
+export type AuditEntry = {
+    id: string;
+    actorUserId?: string;
+    actorEmail?: string;
+    action: string;
+    targetType?: string;
+    targetId?: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    createdAt: string;
+};
+
+export type AuditList = {
+    items: Array<AuditEntry>;
+    nextCursor?: string;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -64,3 +153,226 @@ export type GetReadyzResponses = {
 };
 
 export type GetReadyzResponse = GetReadyzResponses[keyof GetReadyzResponses];
+
+export type LoginData = {
+    body: LoginRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/login';
+};
+
+export type LoginErrors = {
+    /**
+     * invalid credentials
+     */
+    401: Problem;
+    /**
+     * too many attempts
+     */
+    429: Problem;
+};
+
+export type LoginError = LoginErrors[keyof LoginErrors];
+
+export type LoginResponses = {
+    /**
+     * session established; the session cookie is set via Set-Cookie
+     */
+    200: LoginResponse;
+};
+
+export type LoginResponse2 = LoginResponses[keyof LoginResponses];
+
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/logout';
+};
+
+export type LogoutResponses = {
+    /**
+     * session ended
+     */
+    204: void;
+};
+
+export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type GetMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/me';
+};
+
+export type GetMeResponses = {
+    /**
+     * current identity
+     */
+    200: Me;
+};
+
+export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type SwitchTenantData = {
+    body: SwitchTenantRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/switch-tenant';
+};
+
+export type SwitchTenantErrors = {
+    /**
+     * not a member of that tenant
+     */
+    404: Problem;
+};
+
+export type SwitchTenantError = SwitchTenantErrors[keyof SwitchTenantErrors];
+
+export type SwitchTenantResponses = {
+    /**
+     * active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
+     */
+    200: LoginResponse;
+};
+
+export type SwitchTenantResponse = SwitchTenantResponses[keyof SwitchTenantResponses];
+
+export type GetCsrfData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/csrf';
+};
+
+export type GetCsrfResponses = {
+    /**
+     * current CSRF token
+     */
+    200: CsrfToken;
+};
+
+export type GetCsrfResponse = GetCsrfResponses[keyof GetCsrfResponses];
+
+export type PresignAssetData = {
+    body: PresignRequest;
+    path?: never;
+    query?: never;
+    url: '/assets/presign';
+};
+
+export type PresignAssetErrors = {
+    /**
+     * unsupported kind/mime or size over the per-kind cap
+     */
+    400: Problem;
+};
+
+export type PresignAssetError = PresignAssetErrors[keyof PresignAssetErrors];
+
+export type PresignAssetResponses = {
+    /**
+     * pending asset created with a presigned POST policy
+     */
+    201: PresignResponse;
+};
+
+export type PresignAssetResponse = PresignAssetResponses[keyof PresignAssetResponses];
+
+export type FinalizeAssetData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/assets/{id}/finalize';
+};
+
+export type FinalizeAssetErrors = {
+    /**
+     * asset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * object missing, MIME sniff mismatch, or size/type not allowed for kind
+     */
+    422: Problem;
+};
+
+export type FinalizeAssetError = FinalizeAssetErrors[keyof FinalizeAssetErrors];
+
+export type FinalizeAssetResponses = {
+    /**
+     * asset verified and marked ready
+     */
+    200: Asset;
+};
+
+export type FinalizeAssetResponse = FinalizeAssetResponses[keyof FinalizeAssetResponses];
+
+export type GetAssetData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/assets/{id}';
+};
+
+export type GetAssetErrors = {
+    /**
+     * asset not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetAssetError = GetAssetErrors[keyof GetAssetErrors];
+
+export type GetAssetResponses = {
+    /**
+     * asset metadata
+     */
+    200: Asset;
+};
+
+export type GetAssetResponse = GetAssetResponses[keyof GetAssetResponses];
+
+export type ListAssetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/assets';
+};
+
+export type ListAssetsResponses = {
+    /**
+     * page of assets
+     */
+    200: AssetList;
+};
+
+export type ListAssetsResponse = ListAssetsResponses[keyof ListAssetsResponses];
+
+export type ListAuditData = {
+    body?: never;
+    path?: never;
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/audit';
+};
+
+export type ListAuditResponses = {
+    /**
+     * page of audit entries
+     */
+    200: AuditList;
+};
+
+export type ListAuditResponse = ListAuditResponses[keyof ListAuditResponses];

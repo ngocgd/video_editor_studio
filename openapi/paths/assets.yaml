@@ -1,0 +1,107 @@
+presign:
+  post:
+    operationId: presignAsset
+    summary: Create a pending asset row and a browser upload URL for it
+    tags: [assets]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/assets.yaml#/PresignRequest"
+    responses:
+      "201":
+        description: pending asset created with a presigned POST policy
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/assets.yaml#/PresignResponse"
+      "400":
+        description: unsupported kind/mime or size over the per-kind cap
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+finalize:
+  post:
+    operationId: finalizeAsset
+    summary: Verify an uploaded object and mark the asset ready
+    tags: [assets]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: asset verified and marked ready
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/assets.yaml#/Asset"
+      "404":
+        description: asset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: object missing, MIME sniff mismatch, or size/type not allowed for kind
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+getAsset:
+  get:
+    operationId: getAsset
+    summary: Asset metadata, with a fresh browser download URL if ready
+    tags: [assets]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: asset metadata
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/assets.yaml#/Asset"
+      "404":
+        description: asset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+listAssets:
+  get:
+    operationId: listAssets
+    summary: Cursor-paginated list of the active tenant's assets
+    tags: [assets]
+    x-min-role: viewer
+    parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+    responses:
+      "200":
+        description: page of assets
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/assets.yaml#/AssetList"

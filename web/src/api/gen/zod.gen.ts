@@ -20,6 +20,104 @@ export const zReadyStatus = z.object({
     checks: z.record(z.string()).optional()
 });
 
+export const zLoginRequest = z.object({
+    email: z.string().email().max(320),
+    password: z.string().min(8).max(1024)
+});
+
+export const zRole = z.enum([
+    'owner',
+    'editor',
+    'viewer'
+]);
+
+export const zTenantMembership = z.object({
+    tenantId: z.string().uuid(),
+    tenantName: z.string(),
+    role: zRole
+});
+
+export const zMe = z.object({
+    userId: z.string().uuid(),
+    email: z.string(),
+    activeTenantId: z.string().uuid().optional(),
+    activeRole: zRole.optional(),
+    tenants: z.array(zTenantMembership)
+});
+
+export const zLoginResponse = z.object({
+    me: zMe,
+    csrfToken: z.string()
+});
+
+export const zSwitchTenantRequest = z.object({
+    tenantId: z.string().uuid()
+});
+
+export const zCsrfToken = z.object({
+    token: z.string()
+});
+
+export const zAssetKind = z.enum([
+    'image',
+    'audio',
+    'video',
+    'document'
+]);
+
+export const zPresignRequest = z.object({
+    kind: zAssetKind,
+    mime: z.string(),
+    bytes: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    filename: z.string().optional()
+});
+
+export const zPresignResponse = z.object({
+    assetId: z.string().uuid(),
+    uploadUrl: z.string().url(),
+    fields: z.record(z.string()),
+    expiresAt: z.string().datetime()
+});
+
+export const zAsset = z.object({
+    id: z.string().uuid(),
+    kind: zAssetKind,
+    mime: z.string(),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    sha256: z.string().optional(),
+    width: z.number().int().optional(),
+    height: z.number().int().optional(),
+    durationMs: z.number().int().optional(),
+    status: z.enum([
+        'pending',
+        'ready',
+        'failed'
+    ]),
+    downloadUrl: z.string().url().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zAssetList = z.object({
+    items: z.array(zAsset),
+    nextCursor: z.string().optional()
+});
+
+export const zAuditEntry = z.object({
+    id: z.string().uuid(),
+    actorUserId: z.string().uuid().optional(),
+    actorEmail: z.string().optional(),
+    action: z.string(),
+    targetType: z.string().optional(),
+    targetId: z.string().optional(),
+    metadata: z.record(z.unknown()).optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zAuditList = z.object({
+    items: z.array(zAuditEntry),
+    nextCursor: z.string().optional()
+});
+
 /**
  * process is alive
  */
@@ -29,3 +127,77 @@ export const zGetHealthzResponse = zHealthStatus;
  * all dependencies are reachable
  */
 export const zGetReadyzResponse = zReadyStatus;
+
+export const zLoginBody = zLoginRequest;
+
+/**
+ * session established; the session cookie is set via Set-Cookie
+ */
+export const zLoginResponse2 = zLoginResponse;
+
+/**
+ * session ended
+ */
+export const zLogoutResponse = z.void();
+
+/**
+ * current identity
+ */
+export const zGetMeResponse = zMe;
+
+export const zSwitchTenantBody = zSwitchTenantRequest;
+
+/**
+ * active tenant switched; the response carries the new CSRF token (the session token was rotated, and the CSRF token is derived from it)
+ */
+export const zSwitchTenantResponse = zLoginResponse;
+
+/**
+ * current CSRF token
+ */
+export const zGetCsrfResponse = zCsrfToken;
+
+export const zPresignAssetBody = zPresignRequest;
+
+/**
+ * pending asset created with a presigned POST policy
+ */
+export const zPresignAssetResponse = zPresignResponse;
+
+export const zFinalizeAssetPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * asset verified and marked ready
+ */
+export const zFinalizeAssetResponse = zAsset;
+
+export const zGetAssetPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * asset metadata
+ */
+export const zGetAssetResponse = zAsset;
+
+export const zListAssetsQuery = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of assets
+ */
+export const zListAssetsResponse = zAssetList;
+
+export const zListAuditQuery = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of audit entries
+ */
+export const zListAuditResponse = zAuditList;

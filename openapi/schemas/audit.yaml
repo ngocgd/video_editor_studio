@@ -1,0 +1,34 @@
+AuditEntry:
+  type: object
+  required: [id, action, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    actorUserId:
+      type: string
+      format: uuid
+    actorEmail:
+      type: string
+    action:
+      type: string
+    targetType:
+      type: string
+    targetId:
+      type: string
+    metadata:
+      type: object
+      additionalProperties: true
+    createdAt:
+      type: string
+      format: date-time
+AuditList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/AuditEntry"
+    nextCursor:
+      type: string
