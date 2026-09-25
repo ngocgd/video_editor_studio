@@ -1,6 +1,7 @@
 // Package migrations embeds a synced copy of db/migrations (repo root, the
-// source of truth) so the loomtale CLI can embed goose SQL without a
-// go:embed ".." path, which the toolchain forbids. `make gen` copies the
+// source of truth) so the loomtale CLI can embed goose SQL. The embed
+// directive below cannot reference a parent directory, which is why this
+// package holds a copy instead of the original files. `make gen` copies the
 // root SQL files here; `make gen-check` fails CI on drift.
 package migrations
 

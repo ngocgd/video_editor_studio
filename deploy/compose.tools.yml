@@ -13,14 +13,23 @@ services:
       - gomodcache:/root/go/pkg/mod
       - gobuildcache:/root/.cache/go-build
       - npmcache:/root/.npm
+      - uvcache:/root/.cache/uv
+      - uvpython:/root/.local/share/uv
     environment:
       DATABASE_URL: postgres://loomtale:loomtale@postgres:5432/loomtale?sslmode=disable
       # CGO stays enabled here (unlike the production Dockerfiles) because
       # `go test -race` needs cgo.
       CGO_ENABLED: "1"
+      # uv's installed interpreters live in the uvpython volume, not the
+      # bind-mounted repo, so workers-python/.venv (bind-mounted, thus
+      # persisted on the host) keeps pointing at a working interpreter
+      # across container runs instead of triggering a re-download every time.
+      UV_LINK_MODE: copy
     network_mode: bridge
 
 volumes:
   gomodcache:
   gobuildcache:
   npmcache:
+  uvcache:
+  uvpython:

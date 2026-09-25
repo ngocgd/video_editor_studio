@@ -1,7 +1,7 @@
 # Multi-stage build for the Go worker process (pipeline orchestration lands
 # in phase 3; phase 1 ships a minimal binary that exits cleanly so the
 # compose stack and CI stay green end to end).
-FROM golang@sha256:2c4c60ef415fbfa5e90300722293bef36c5e63fae17570ce18f580af933dbd73 AS build
+FROM golang@sha256:bdca99a00bc16590cb1a0bb4e698f5fc5d6a64e4d5eef13d9f18a0ee08e5fa65 AS build
 WORKDIR /src
 COPY api/go.mod api/go.sum* ./
 RUN go mod download

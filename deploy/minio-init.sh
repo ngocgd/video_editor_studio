@@ -13,7 +13,8 @@ mc alias set local http://minio:9000 "$ROOT_USER" "$ROOT_PASSWORD"
 mc mb --ignore-existing "local/$BUCKET"
 mc anonymous set none "local/$BUCKET"
 
-mc admin policy create local loomtale-app-policy - <<POLICY
+POLICY_FILE="$(mktemp)"
+cat > "$POLICY_FILE" <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -25,6 +26,8 @@ mc admin policy create local loomtale-app-policy - <<POLICY
   ]
 }
 POLICY
+mc admin policy create local loomtale-app-policy "$POLICY_FILE"
+rm -f "$POLICY_FILE"
 
 if ! mc admin user info local loomtale-app >/dev/null 2>&1; then
   APP_SECRET="$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)"

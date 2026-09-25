@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import "./api/client-setup";
 import { getHealthzOptions } from "./api/gen/@tanstack/react-query.gen";
 
 export function App() {

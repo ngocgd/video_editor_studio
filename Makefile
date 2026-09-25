@@ -61,4 +61,4 @@ migrate:
 	cd api && go run ./cmd/loomtale migrate $(ARGS)
 
 ## ci mirrors the CI workflow: lint, unit tests, gen-check, vuln, audit.
-ci: lint test gen-check vuln
+ci: lint test gen-check vuln audit

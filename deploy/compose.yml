@@ -35,6 +35,11 @@ services:
       retries: 10
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+    # The official postgres entrypoint starts as root to chown/chmod the
+    # mounted data directory, then drops to the postgres user itself; it
+    # needs these four capabilities back to do that de-escalation, even
+    # though the server process ends up unprivileged.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
 
   minio:
     image: bitnamilegacy/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c

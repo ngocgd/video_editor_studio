@@ -10,9 +10,19 @@
 		Referrer-Policy "no-referrer"
 	}
 
-	reverse_proxy /api/* api:8080
+	# `route` preserves the written order below. Without it, Caddy's default
+	# directive sort runs `try_files` before `reverse_proxy`, so it rewrites
+	# any non-static path (including /api/v1/healthz) to /index.html before
+	# the proxy matcher ever sees the original path.
+	route {
+		# A trailing `*` as the final path segment is Caddy's greedy form
+		# and matches the rest of the path across additional slashes (unlike
+		# a `*` elsewhere, which only matches within one segment). `**` is
+		# not special syntax here and only matched a single segment.
+		reverse_proxy /api/* api:8080
 
-	root * /srv
-	file_server
-	try_files {path} /index.html
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
 }

@@ -2,7 +2,10 @@
 
 export const ProblemSchema = {
     type: 'object',
-    required: ['title', 'status'],
+    required: [
+        'title',
+        'status'
+    ],
     properties: {
         type: {
             type: 'string',
@@ -26,11 +29,16 @@ export const ProblemSchema = {
 
 export const HealthStatusSchema = {
     type: 'object',
-    required: ['status', 'version'],
+    required: [
+        'status',
+        'version'
+    ],
     properties: {
         status: {
             type: 'string',
-            enum: ['ok']
+            enum: [
+                'ok'
+            ]
         },
         version: {
             type: 'string'
@@ -40,11 +48,15 @@ export const HealthStatusSchema = {
 
 export const ReadyStatusSchema = {
     type: 'object',
-    required: ['status'],
+    required: [
+        'status'
+    ],
     properties: {
         status: {
             type: 'string',
-            enum: ['ok']
+            enum: [
+                'ok'
+            ]
         },
         checks: {
             type: 'object',

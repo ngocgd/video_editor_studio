@@ -1,0 +1,13 @@
+.git
+node_modules
+web/dist
+web/coverage
+.venv
+__pycache__
+*.pyc
+plans
+docs
+.claude
+secrets
+.env
+.env.*

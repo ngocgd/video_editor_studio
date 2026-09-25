@@ -11,7 +11,15 @@ RUN npm run build
 FROM caddy@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
 COPY deploy/caddy/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /src/dist /srv
-RUN addgroup -g 1000 caddyapp && adduser -D -u 1000 -G caddyapp caddyapp \
+# The upstream image sets cap_net_bind_service on the caddy binary so it can
+# bind privileged ports (80/443) as non-root. We only ever bind 8080, and
+# compose runs this container with `no-new-privileges`, which refuses to
+# exec a binary carrying a file capability the process doesn't already
+# have. Stripping it here keeps the container startable under that flag.
+RUN apk add --no-cache libcap \
+    && setcap -r /usr/bin/caddy \
+    && apk del libcap \
+    && addgroup -g 1000 caddyapp && adduser -D -u 1000 -G caddyapp caddyapp \
     && chown -R caddyapp:caddyapp /srv /config /data
 USER caddyapp
 EXPOSE 8080

@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@hey-api/openapi-ts": "^0.64.1",
-    "@size-limit/preset-app": "^11.1.6",
+    "@hey-api/openapi-ts": "^0.99.0",
+    "@size-limit/file": "^14.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.2",
@@ -34,16 +34,19 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.1.0",
     "jsdom": "^25.0.1",
-    "size-limit": "^11.1.6",
+    "size-limit": "^14.0.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^7.0.0",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.1"
   },
   "size-limit": [
     {
       "path": "dist/assets/*.js",
       "limit": "200 KB"
     }
-  ]
+  ],
+  "overrides": {
+    "js-yaml": "^4.3.2"
+  }
 }

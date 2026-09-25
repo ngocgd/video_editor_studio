@@ -130,9 +130,11 @@ jobs:
           done
       - name: assert every compose service declares mem_limit
         run: |
-          docker compose -f deploy/compose.yml config | python3 - <<'PY'
+          docker compose -f deploy/compose.yml config > /tmp/compose-rendered.yml
+          python3 - /tmp/compose-rendered.yml <<'PY'
           import sys, yaml
-          cfg = yaml.safe_load(sys.stdin)
+          with open(sys.argv[1]) as f:
+              cfg = yaml.safe_load(f)
           missing = [name for name, svc in cfg.get("services", {}).items() if "mem_limit" not in svc]
           if missing:
               print("services missing mem_limit:", missing)

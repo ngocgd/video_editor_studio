@@ -11,19 +11,21 @@ export const zProblem = z.object({
 });
 
 export const zHealthStatus = z.object({
-    status: z.enum([
-        'ok'
-    ]),
+    status: z.enum(['ok']),
     version: z.string()
 });
 
 export const zReadyStatus = z.object({
-    status: z.enum([
-        'ok'
-    ]),
-    checks: z.object({}).optional()
+    status: z.enum(['ok']),
+    checks: z.record(z.string()).optional()
 });
 
+/**
+ * process is alive
+ */
 export const zGetHealthzResponse = zHealthStatus;
 
+/**
+ * all dependencies are reachable
+ */
 export const zGetReadyzResponse = zReadyStatus;
