@@ -1,0 +1,47 @@
+/* Design tokens copied verbatim from docs/design-guidelines.md §2.1-2.4.
+   Dark is the only theme today; [data-theme="light"] is reserved and must
+   override the same variable names so no component ever changes. */
+:root {
+  /* Surfaces and text (guidelines §2.1) */
+  --well: #0e0f11;
+  --background: #141518;
+  --card: #1b1c20;
+  --popover: #222328;
+  --accent: #2a2b31;
+  --secondary: #222328;
+  --muted: #1b1c20;
+  --border: #34363c;
+  --input: #686a72;
+  --foreground: #e6e4df;
+  --text-2: #a8a6a0;
+  --muted-foreground: #95928c;
+
+  /* Accent and status (guidelines §2.2) */
+  --primary: #4db6a0;
+  --ring: #6cc9b4;
+  --primary-text: #6cc9b4;
+  --primary-foreground: #0e0f11;
+  --success: #6bbf73;
+  --warning: #d9a441;
+  --destructive: #ee6b61;
+  --info: #6fa8dc;
+  --success-muted: rgb(107 191 115 / 14%);
+  --warning-muted: rgb(217 164 65 / 14%);
+  --destructive-muted: rgb(238 107 97 / 14%);
+  --info-muted: rgb(111 168 220 / 14%);
+
+  /* Data colours (guidelines §2.3) */
+  --spk-narrator: #95928c;
+  --spk-1: #c9a26b;
+  --spk-2: #7fa7c9;
+  --spk-3: #c98a9e;
+  --spk-4: #9db57a;
+  --spk-5: #b59bd0;
+
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%), 0 0 0 1px #34363c;
+}
+
+[data-theme="light"] {
+  /* Reserved: light theme values land here later, overriding the same
+     variable names above so components never need to change. */
+}
