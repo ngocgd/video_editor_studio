@@ -4,8 +4,13 @@ GOFLAGS := -mod=mod
 
 ## Codegen: openapi bundle -> Go + TS, sql -> sqlc, proto -> Go + Python.
 ## Generated code is committed; gen-check fails CI on drift.
-gen: gen-migrations-sync gen-openapi gen-sqlc gen-proto
+gen: gen-migrations-sync gen-openapi gen-sqlc gen-proto web/node_modules
 	cd web && npm run gen
+
+## Fresh clones (CI) have no web deps yet; install them from the lockfile once.
+web/node_modules: web/package-lock.json
+	cd web && npm ci --no-audit --no-fund
+	touch web/node_modules
 
 gen-migrations-sync:
 	rm -f api/internal/db/migrations/*.sql
@@ -22,7 +27,7 @@ gen-proto:
 	cd proto && buf generate
 
 gen-check: gen
-	git diff --exit-code -- api/internal/db/gen api/internal/httpapi/gen api/internal/workerpb workers-python/src/loomtale_worker/pb web/src/api/gen openapi/openapi.gen.yaml api/internal/db/migrations \
+	git -c safe.directory='*' diff --exit-code -- api/internal/db/gen api/internal/httpapi/gen api/internal/workerpb workers-python/src/loomtale_worker/pb web/src/api/gen openapi/openapi.gen.yaml api/internal/db/migrations \
 		|| (echo "generated code is out of date; run 'make gen' and commit the diff" && exit 1)
 
 lint:

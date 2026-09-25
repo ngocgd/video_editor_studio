@@ -37,7 +37,12 @@ jobs:
         run: go vet ./...
         working-directory: api
       - name: golangci-lint
-        run: go tool golangci-lint run ./...
+        # Same pinned release and checksum as deploy/docker/toolbox.Dockerfile.
+        run: |
+          curl -sSL -o /tmp/golangci-lint.tar.gz "https://github.com/golangci/golangci-lint/releases/download/v2.14.0/golangci-lint-2.14.0-linux-amd64.tar.gz"
+          echo "ab90aeb7b066f92a33415b638a50fe5344bbb75a0d32ad30cc248d88f81032ab  /tmp/golangci-lint.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/golangci-lint.tar.gz -C /tmp
+          /tmp/golangci-lint-2.14.0-linux-amd64/golangci-lint run ./...
         working-directory: api
       - name: go test -race
         env:
