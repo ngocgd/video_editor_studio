@@ -30,6 +30,26 @@ paths:
     $ref: paths/assets.yaml#/listAssets
   /audit:
     $ref: paths/audit.yaml#/listAudit
+  /runs:
+    $ref: paths/jobs.yaml#/createRun
+  /runs/{id}:
+    $ref: paths/jobs.yaml#/getRun
+  /runs/{id}/steps:
+    $ref: paths/jobs.yaml#/listRunSteps
+  /runs/{id}/cancel:
+    $ref: paths/jobs.yaml#/cancelRun
+  /steps/{id}/retry:
+    $ref: paths/jobs.yaml#/retryStep
+  /steps/{id}/cancel:
+    $ref: paths/jobs.yaml#/cancelStep
+  /steps/{id}/log:
+    $ref: paths/jobs.yaml#/getStepLog
+  /jobs:
+    $ref: paths/jobs.yaml#/listJobs
+  /gpu:
+    $ref: paths/gpu.yaml#/getGpuStatus
+  /events:
+    $ref: paths/events.yaml#/events
 components:
   schemas:
     Problem:

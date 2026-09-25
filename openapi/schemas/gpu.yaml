@@ -1,0 +1,92 @@
+# Full GpuStatus schema, owned by phase 3 (job orchestration). Phases 4,
+# 8 and 9a-9c only populate it at runtime through the Go interfaces
+# GpuProbe, EncoderInfo and CapabilitySource; they never edit this file.
+StepSummary:
+  type: object
+  required: [id, kind, status, priority, progress]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      type: string
+    status:
+      type: string
+      enum: [pending, queued, running, done, failed, canceled]
+    priority:
+      type: integer
+    progress:
+      type: integer
+    etaS:
+      type: integer
+GpuBackendStatus:
+  type: object
+  required: [name, reachable, loaded]
+  properties:
+    name:
+      type: string
+    reachable:
+      type: boolean
+    loaded:
+      type: array
+      items:
+        type: string
+GpuResident:
+  type: object
+  required: [backend, model]
+  properties:
+    backend:
+      type: string
+    model:
+      type: string
+GpuVram:
+  type: object
+  required: [totalMb, freeMb, budgetMb, renderReserveMb, measuredAt]
+  properties:
+    totalMb:
+      type: integer
+      format: int64
+    freeMb:
+      type: integer
+      format: int64
+    budgetMb:
+      type: integer
+      format: int64
+    renderReserveMb:
+      type: integer
+      format: int64
+    measuredAt:
+      type: string
+      format: date-time
+GpuEncoder:
+  type: object
+  required: [name, hw]
+  properties:
+    name:
+      type: string
+    hw:
+      type: boolean
+GpuStatus:
+  type: object
+  required: [queue, backends, capabilities]
+  properties:
+    running:
+      $ref: "#/StepSummary"
+    queue:
+      type: array
+      items:
+        $ref: "#/StepSummary"
+    resident:
+      $ref: "#/GpuResident"
+    vram:
+      $ref: "#/GpuVram"
+    backends:
+      type: array
+      items:
+        $ref: "#/GpuBackendStatus"
+    encoder:
+      $ref: "#/GpuEncoder"
+    capabilities:
+      type: array
+      items:
+        type: string

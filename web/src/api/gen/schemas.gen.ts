@@ -383,3 +383,430 @@ export const AuditListSchema = {
         }
     }
 } as const;
+
+export const CreateStepSpecSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'scopeKind',
+        'scopeId',
+        'priority'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            type: 'string'
+        },
+        scopeKind: {
+            type: 'string'
+        },
+        scopeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        priority: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 4
+        },
+        dependsOn: {
+            type: 'array',
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        }
+    }
+} as const;
+
+export const CreateRunRequestSchema = {
+    type: 'object',
+    required: [
+        'scopeKind',
+        'scopeId',
+        'kind',
+        'steps'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        scopeKind: {
+            type: 'string'
+        },
+        scopeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            type: 'string'
+        },
+        steps: {
+            type: 'array',
+            minItems: 1,
+            items: {
+                $ref: '#/components/schemas/CreateStepSpec'
+            }
+        }
+    }
+} as const;
+
+export const PipelineRunSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'scopeKind',
+        'scopeId',
+        'kind',
+        'status',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        scopeKind: {
+            type: 'string'
+        },
+        scopeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            type: 'string'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'active',
+                'done',
+                'failed',
+                'canceled',
+                'superseded'
+            ]
+        },
+        supersededBy: {
+            type: 'string',
+            format: 'uuid'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const PipelineStepSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'runId',
+        'scopeKind',
+        'scopeId',
+        'kind',
+        'queue',
+        'priority',
+        'status',
+        'attempt',
+        'version',
+        'remainingDeps',
+        'progress',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        scopeKind: {
+            type: 'string'
+        },
+        scopeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            type: 'string'
+        },
+        queue: {
+            type: 'string',
+            enum: [
+                'gpu',
+                'cpu',
+                'llm',
+                'render',
+                'io'
+            ]
+        },
+        providerRef: {
+            type: 'string'
+        },
+        priority: {
+            type: 'integer'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'pending',
+                'queued',
+                'running',
+                'done',
+                'failed',
+                'canceled'
+            ]
+        },
+        attempt: {
+            type: 'integer'
+        },
+        version: {
+            type: 'integer',
+            format: 'int64'
+        },
+        remainingDeps: {
+            type: 'integer'
+        },
+        progress: {
+            type: 'integer'
+        },
+        etaS: {
+            type: 'integer'
+        },
+        errorCode: {
+            type: 'string'
+        },
+        errorMsg: {
+            type: 'string'
+        },
+        logAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        startedAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        finishedAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const PipelineStepListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/PipelineStep'
+            }
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const StepLogUrlSchema = {
+    type: 'object',
+    required: [
+        'url',
+        'expiresAt'
+    ],
+    properties: {
+        url: {
+            type: 'string',
+            format: 'uri'
+        },
+        expiresAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const StepSummarySchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'status',
+        'priority',
+        'progress'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            type: 'string'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'pending',
+                'queued',
+                'running',
+                'done',
+                'failed',
+                'canceled'
+            ]
+        },
+        priority: {
+            type: 'integer'
+        },
+        progress: {
+            type: 'integer'
+        },
+        etaS: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const GpuResidentSchema = {
+    type: 'object',
+    required: [
+        'backend',
+        'model'
+    ],
+    properties: {
+        backend: {
+            type: 'string'
+        },
+        model: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const GpuVramSchema = {
+    type: 'object',
+    required: [
+        'totalMb',
+        'freeMb',
+        'budgetMb',
+        'renderReserveMb',
+        'measuredAt'
+    ],
+    properties: {
+        totalMb: {
+            type: 'integer',
+            format: 'int64'
+        },
+        freeMb: {
+            type: 'integer',
+            format: 'int64'
+        },
+        budgetMb: {
+            type: 'integer',
+            format: 'int64'
+        },
+        renderReserveMb: {
+            type: 'integer',
+            format: 'int64'
+        },
+        measuredAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const GpuBackendStatusSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'reachable',
+        'loaded'
+    ],
+    properties: {
+        name: {
+            type: 'string'
+        },
+        reachable: {
+            type: 'boolean'
+        },
+        loaded: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        }
+    }
+} as const;
+
+export const GpuEncoderSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'hw'
+    ],
+    properties: {
+        name: {
+            type: 'string'
+        },
+        hw: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const GpuStatusSchema = {
+    type: 'object',
+    required: [
+        'queue',
+        'backends',
+        'capabilities'
+    ],
+    properties: {
+        running: {
+            $ref: '#/components/schemas/StepSummary'
+        },
+        queue: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/StepSummary'
+            }
+        },
+        resident: {
+            $ref: '#/components/schemas/GpuResident'
+        },
+        vram: {
+            $ref: '#/components/schemas/GpuVram'
+        },
+        backends: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/GpuBackendStatus'
+            }
+        },
+        encoder: {
+            $ref: '#/components/schemas/GpuEncoder'
+        },
+        capabilities: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        }
+    }
+} as const;

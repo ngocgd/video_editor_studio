@@ -113,6 +113,109 @@ export type AuditList = {
     nextCursor?: string;
 };
 
+export type CreateStepSpec = {
+    id: string;
+    kind: string;
+    scopeKind: string;
+    scopeId: string;
+    priority: number;
+    dependsOn?: Array<string>;
+};
+
+export type CreateRunRequest = {
+    id?: string;
+    scopeKind: string;
+    scopeId: string;
+    kind: string;
+    steps: Array<CreateStepSpec>;
+};
+
+export type PipelineRun = {
+    id: string;
+    scopeKind: string;
+    scopeId: string;
+    kind: string;
+    status: 'active' | 'done' | 'failed' | 'canceled' | 'superseded';
+    supersededBy?: string;
+    createdAt: string;
+};
+
+export type PipelineStep = {
+    id: string;
+    runId: string;
+    scopeKind: string;
+    scopeId: string;
+    kind: string;
+    queue: 'gpu' | 'cpu' | 'llm' | 'render' | 'io';
+    providerRef?: string;
+    priority: number;
+    status: 'pending' | 'queued' | 'running' | 'done' | 'failed' | 'canceled';
+    attempt: number;
+    version: number;
+    remainingDeps: number;
+    progress: number;
+    etaS?: number;
+    errorCode?: string;
+    errorMsg?: string;
+    logAssetId?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    createdAt: string;
+};
+
+export type PipelineStepList = {
+    items: Array<PipelineStep>;
+    nextCursor?: string;
+};
+
+export type StepLogUrl = {
+    url: string;
+    expiresAt: string;
+};
+
+export type StepSummary = {
+    id: string;
+    kind: string;
+    status: 'pending' | 'queued' | 'running' | 'done' | 'failed' | 'canceled';
+    priority: number;
+    progress: number;
+    etaS?: number;
+};
+
+export type GpuResident = {
+    backend: string;
+    model: string;
+};
+
+export type GpuVram = {
+    totalMb: number;
+    freeMb: number;
+    budgetMb: number;
+    renderReserveMb: number;
+    measuredAt: string;
+};
+
+export type GpuBackendStatus = {
+    name: string;
+    reachable: boolean;
+    loaded: Array<string>;
+};
+
+export type GpuEncoder = {
+    name: string;
+    hw: boolean;
+};
+
+export type GpuStatus = {
+    running?: StepSummary;
+    queue: Array<StepSummary>;
+    resident?: GpuResident;
+    vram?: GpuVram;
+    backends: Array<GpuBackendStatus>;
+    encoder?: GpuEncoder;
+    capabilities: Array<string>;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -376,3 +479,254 @@ export type ListAuditResponses = {
 };
 
 export type ListAuditResponse = ListAuditResponses[keyof ListAuditResponses];
+
+export type CreateRunData = {
+    body: CreateRunRequest;
+    path?: never;
+    query?: never;
+    url: '/runs';
+};
+
+export type CreateRunErrors = {
+    /**
+     * invalid run/step spec
+     */
+    400: Problem;
+    /**
+     * tenant quota exceeded
+     */
+    429: Problem;
+    /**
+     * admission check denied (e.g. disk watermark)
+     */
+    507: Problem;
+};
+
+export type CreateRunError = CreateRunErrors[keyof CreateRunErrors];
+
+export type CreateRunResponses = {
+    /**
+     * run created, ready steps enqueued
+     */
+    201: PipelineRun;
+};
+
+export type CreateRunResponse = CreateRunResponses[keyof CreateRunResponses];
+
+export type GetRunData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/runs/{id}';
+};
+
+export type GetRunErrors = {
+    /**
+     * run not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetRunError = GetRunErrors[keyof GetRunErrors];
+
+export type GetRunResponses = {
+    /**
+     * run
+     */
+    200: PipelineRun;
+};
+
+export type GetRunResponse = GetRunResponses[keyof GetRunResponses];
+
+export type ListRunStepsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/runs/{id}/steps';
+};
+
+export type ListRunStepsResponses = {
+    /**
+     * page of steps
+     */
+    200: PipelineStepList;
+};
+
+export type ListRunStepsResponse = ListRunStepsResponses[keyof ListRunStepsResponses];
+
+export type CancelRunData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/runs/{id}/cancel';
+};
+
+export type CancelRunResponses = {
+    /**
+     * run canceled
+     */
+    204: void;
+};
+
+export type CancelRunResponse = CancelRunResponses[keyof CancelRunResponses];
+
+export type RetryStepData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/steps/{id}/retry';
+};
+
+export type RetryStepErrors = {
+    /**
+     * step not found, or not in a retryable state
+     */
+    404: Problem;
+};
+
+export type RetryStepError = RetryStepErrors[keyof RetryStepErrors];
+
+export type RetryStepResponses = {
+    /**
+     * step re-queued
+     */
+    200: PipelineStep;
+};
+
+export type RetryStepResponse = RetryStepResponses[keyof RetryStepResponses];
+
+export type CancelStepData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/steps/{id}/cancel';
+};
+
+export type CancelStepErrors = {
+    /**
+     * step not found, or already terminal
+     */
+    404: Problem;
+};
+
+export type CancelStepError = CancelStepErrors[keyof CancelStepErrors];
+
+export type CancelStepResponses = {
+    /**
+     * step canceled
+     */
+    200: PipelineStep;
+};
+
+export type CancelStepResponse = CancelStepResponses[keyof CancelStepResponses];
+
+export type GetStepLogData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/steps/{id}/log';
+};
+
+export type GetStepLogErrors = {
+    /**
+     * step not found, or has no log yet
+     */
+    404: Problem;
+};
+
+export type GetStepLogError = GetStepLogErrors[keyof GetStepLogErrors];
+
+export type GetStepLogResponses = {
+    /**
+     * presigned log URL
+     */
+    200: StepLogUrl;
+};
+
+export type GetStepLogResponse = GetStepLogResponses[keyof GetStepLogResponses];
+
+export type ListJobsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: string;
+        queue?: string;
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/jobs';
+};
+
+export type ListJobsResponses = {
+    /**
+     * page of steps
+     */
+    200: PipelineStepList;
+};
+
+export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses];
+
+export type GetGpuStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/gpu';
+};
+
+export type GetGpuStatusResponses = {
+    /**
+     * GPU status
+     */
+    200: GpuStatus;
+};
+
+export type GetGpuStatusResponse = GetGpuStatusResponses[keyof GetGpuStatusResponses];
+
+export type StreamEventsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Comma-separated pipeline run ids.
+         */
+        topics: string;
+    };
+    url: '/events';
+};
+
+export type StreamEventsErrors = {
+    /**
+     * an unknown or foreign topic was requested
+     */
+    403: Problem;
+    /**
+     * too many concurrent streams for this user
+     */
+    429: Problem;
+};
+
+export type StreamEventsError = StreamEventsErrors[keyof StreamEventsErrors];
+
+export type StreamEventsResponses = {
+    /**
+     * text/event-stream of step events
+     */
+    200: string;
+};
+
+export type StreamEventsResponse = StreamEventsResponses[keyof StreamEventsResponses];

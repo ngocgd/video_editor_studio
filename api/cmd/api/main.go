@@ -15,6 +15,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+
 	"loomtale/api/internal/assetsapi"
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
@@ -28,9 +31,13 @@ import (
 	"loomtale/api/internal/httpx"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/ops"
+	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
 	"loomtale/api/internal/secheaders"
+	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/validation"
 )
@@ -123,6 +130,31 @@ func run() error {
 		return err
 	}
 
+	if err := pipeline.AssertTimeoutsBelowRescue(); err != nil {
+		return err
+	}
+	// Insert-only River client: the API process enqueues jobs but never
+	// runs them (cmd/worker does), so it needs no Queues/Workers config.
+	riverClient, err := river.NewClient(riverpgxv5.New(pool.Pool), &river.Config{
+		RescueStuckJobsAfter: pipeline.RescueStuckJobsAfter,
+	})
+	if err != nil {
+		return err
+	}
+	quotaChecker := &quota.Checker{}
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, pipeline.NewRegistry(), []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
+	hub := sse.NewHub(pool.Pool)
+	hubCtx, stopHub := context.WithCancel(context.Background())
+	defer stopHub()
+	go hub.Run(hubCtx)
+
+	// Cancelled (via server.RegisterOnShutdown below) when the process
+	// starts a graceful shutdown, so every open SSE stream ends promptly
+	// instead of holding server.Shutdown's wait open until
+	// ShutdownTimeout on every deploy.
+	shutdownSignal, cancelShutdownSignal := context.WithCancel(context.Background())
+	defer cancelShutdownSignal()
+
 	spec, err := gen.GetSwagger()
 	if err != nil {
 		return err
@@ -167,6 +199,14 @@ func run() error {
 			Browser:  browserStore,
 		},
 		AuditAPI: &auditapi.AuditAPI{Queries: queries},
+		PipelineAPI: &pipelineapi.PipelineAPI{
+			Engine:         engine,
+			Storage:        internalStore,
+			Hub:            hub,
+			Probe:          nil, // wired by phase 4
+			Residency:      nil, // wired by phase 4
+			ShutdownSignal: shutdownSignal,
+		},
 	}
 
 	strict := gen.NewStrictHandlerWithOptions(srv, []gen.StrictMiddlewareFunc{rbac.Middleware(minRoles)}, gen.StrictHTTPServerOptions{
@@ -200,6 +240,7 @@ func run() error {
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	server.RegisterOnShutdown(cancelShutdownSignal)
 
 	errCh := make(chan error, 1)
 	go func() {

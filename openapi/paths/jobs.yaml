@@ -1,0 +1,221 @@
+createRun:
+  post:
+    operationId: createRun
+    summary: Create a pipeline run and its steps
+    tags: [jobs]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/CreateRunRequest"
+    responses:
+      "201":
+        description: run created, ready steps enqueued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineRun"
+      "400":
+        description: invalid run/step spec
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: tenant quota exceeded
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "507":
+        description: admission check denied (e.g. disk watermark)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+getRun:
+  get:
+    operationId: getRun
+    summary: Get a pipeline run
+    tags: [jobs]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "200":
+        description: run
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineRun"
+      "404":
+        description: run not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+listRunSteps:
+  get:
+    operationId: listRunSteps
+    summary: Cursor-paginated list of a run's steps
+    tags: [jobs]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: cursor
+        in: query
+        schema: { type: string }
+      - name: limit
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 200 }
+    responses:
+      "200":
+        description: page of steps
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineStepList"
+      "400":
+        description: invalid cursor
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+cancelRun:
+  post:
+    operationId: cancelRun
+    summary: Cancel every non-terminal step in a run
+    tags: [jobs]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "204":
+        description: run canceled
+      "404":
+        description: run not found in this tenant, or already finished
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+retryStep:
+  post:
+    operationId: retryStep
+    summary: Reset a failed or canceled step to queued and re-enqueue it
+    tags: [jobs]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "200":
+        description: step re-queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineStep"
+      "404":
+        description: step not found
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: step exists but cannot be retried right now (unmet dependency, or its run is not active)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+cancelStep:
+  post:
+    operationId: cancelStep
+    summary: Cancel one step
+    tags: [jobs]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "200":
+        description: step canceled
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineStep"
+      "404":
+        description: step not found, or already terminal
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+listJobs:
+  get:
+    operationId: listJobs
+    summary: Cursor-paginated list of the tenant's steps, optionally filtered
+    tags: [jobs]
+    x-min-role: viewer
+    parameters:
+      - name: status
+        in: query
+        schema: { type: string }
+      - name: queue
+        in: query
+        schema: { type: string }
+      - name: cursor
+        in: query
+        schema: { type: string }
+      - name: limit
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 200 }
+    responses:
+      "200":
+        description: page of steps
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/PipelineStepList"
+      "400":
+        description: invalid cursor
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+getStepLog:
+  get:
+    operationId: getStepLog
+    summary: Presigned URL for a step's scrubbed log, editor or owner only
+    tags: [jobs]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "200":
+        description: presigned log URL
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/StepLogUrl"
+      "404":
+        description: step not found, or has no log yet
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
