@@ -108,5 +108,12 @@ set_env_var MINIO_BACKUP_ACCESS_KEY "$MINIO_BACKUP_ACCESS_KEY"
 set_env_var MINIO_BACKUP_SECRET_KEY "$MINIO_BACKUP_SECRET_KEY"
 set_env_var BACKUP_ENCRYPTION_RECIPIENT "$(age_recipient_from_identity secrets/backup_encryption_key.txt)"
 
+# Compose file-based secrets are bind-mounted with their host mode, and on a
+# Linux host the reading process (e.g. postgres, uid 999) is not the file's
+# owner, so mounted secrets must be world-readable. The 0700 directory keeps
+# other host users out. The age identity is never mounted and stays 0600.
+chmod 700 secrets
+find secrets -maxdepth 1 -name '*.txt' ! -name 'backup_encryption_key.txt' -exec chmod 644 {} +
+
 echo "dev secrets ready: run 'make up' next."
 echo "keep secrets/backup_encryption_key.txt somewhere safe OUTSIDE this repo/machine for the restore drill; it is not mounted into any container."
