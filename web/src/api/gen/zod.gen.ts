@@ -251,6 +251,43 @@ export const zGpuStatus = z.object({
     capabilities: z.array(z.string())
 });
 
+export const zLlmActionOverrides = z.object({
+    outline: z.string().optional(),
+    draft: z.string().optional(),
+    rewrite: z.string().optional(),
+    translate: z.string().optional(),
+    scene_split: z.string().optional(),
+    summary: z.string().optional()
+});
+
+export const zProviderStatus = z.object({
+    name: z.string(),
+    available: z.boolean(),
+    configured: z.boolean().optional(),
+    disabledReason: z.string().optional()
+});
+
+export const zLlmSettings = z.object({
+    default: z.string(),
+    overrides: zLlmActionOverrides,
+    providers: z.array(zProviderStatus)
+});
+
+export const zLlmSettingsUpdate = z.object({
+    default: z.string(),
+    overrides: zLlmActionOverrides.optional()
+});
+
+export const zLlmSettingsTestRequest = z.object({
+    provider: z.string().optional()
+});
+
+export const zLlmSettingsTestResult = z.object({
+    provider: z.string(),
+    ok: z.boolean(),
+    detail: z.string().optional()
+});
+
 /**
  * process is alive
  */
@@ -417,6 +454,25 @@ export const zListJobsResponse = zPipelineStepList;
  * GPU status
  */
 export const zGetGpuStatusResponse = zGpuStatus;
+
+/**
+ * current LLM settings
+ */
+export const zGetLlmSettingsResponse = zLlmSettings;
+
+export const zPutLlmSettingsBody = zLlmSettingsUpdate;
+
+/**
+ * settings saved; the next matching call uses the new provider
+ */
+export const zPutLlmSettingsResponse = zLlmSettings;
+
+export const zTestLlmSettingsBody = zLlmSettingsTestRequest;
+
+/**
+ * test result
+ */
+export const zTestLlmSettingsResponse = zLlmSettingsTestResult;
 
 export const zStreamEventsQuery = z.object({
     topics: z.string()

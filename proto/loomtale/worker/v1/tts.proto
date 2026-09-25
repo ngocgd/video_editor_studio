@@ -1,0 +1,39 @@
+// Text-to-speech RPC. Inputs and outputs never travel as message bytes:
+// the caller passes internal presigned URLs (api/internal/storage.Internal,
+// step-length TTL) so the worker holds no S3 credentials and the 4MB gRPC
+// message cap only has to cover text/metadata, never audio.
+syntax = "proto3";
+
+package loomtale.worker.v1;
+
+option go_package = "loomtale/api/internal/workerpb/loomtale/worker/v1;workerv1";
+
+service TTS {
+  rpc Synthesize(SynthesizeRequest) returns (stream SynthesizeEvent);
+}
+
+message SynthesizeRequest {
+  string engine = 1;
+  string voice = 2;
+  string text = 3;
+  string output_put_url = 4; // presigned PUT for the resulting audio asset
+  map<string, string> params = 5;
+}
+
+message SynthesizeProgress {
+  int32 pct = 1;
+  int32 eta_s = 2;
+}
+
+message SynthesizeResult {
+  string output_key = 1;
+  double duration_s = 2;
+  map<string, string> metadata = 3;
+}
+
+message SynthesizeEvent {
+  oneof event {
+    SynthesizeProgress progress = 1;
+    SynthesizeResult result = 2;
+  }
+}

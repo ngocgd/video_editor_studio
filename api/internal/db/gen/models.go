@@ -59,6 +59,14 @@ type GooseDbVersion struct {
 	Tstamp    pgtype.Timestamp `json:"tstamp"`
 }
 
+type LlmSetting struct {
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	DefaultProvider string             `json:"default_provider"`
+	ActionOverrides []byte             `json:"action_overrides"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Membership struct {
 	TenantID  pgtype.UUID        `json:"tenant_id"`
 	UserID    pgtype.UUID        `json:"user_id"`

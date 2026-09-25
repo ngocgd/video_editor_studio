@@ -27,4 +27,15 @@ type config struct {
 	LLMWorkers    int `env:"WORKER_LLM_CONCURRENCY" envDefault:"5"`
 	RenderWorkers int `env:"WORKER_RENDER_CONCURRENCY" envDefault:"2"`
 	IOWorkers     int `env:"WORKER_IO_CONCURRENCY" envDefault:"5"`
+
+	// The residency manager's backends. Only reachable when WorkerGPU is
+	// true (this process then joins gpu_net alongside them, see
+	// compose.gpu.yml); OllamaModel stays empty until phase 9b seeds a
+	// model, in which case Ensure is simply never called for an
+	// ollama-backed step (registry.ModelRefFor returns nil).
+	OllamaURL          string `env:"OLLAMA_URL" envDefault:"http://ollama:11434"`
+	OllamaModel        string `env:"OLLAMA_MODEL" envDefault:""`
+	ComfyUIURL         string `env:"COMFYUI_URL" envDefault:"http://comfyui:8188"`
+	PyworkerAddr       string `env:"PYWORKER_ADDR" envDefault:"pyworker:9090"`
+	PyworkerTokenPath  string `env:"PYWORKER_BEARER_TOKEN_PATH" envDefault:""`
 }

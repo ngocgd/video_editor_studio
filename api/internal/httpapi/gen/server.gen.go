@@ -380,6 +380,42 @@ type HealthStatus struct {
 // HealthStatusStatus defines model for HealthStatus.Status.
 type HealthStatusStatus string
 
+// LLMActionOverrides defines model for LLMActionOverrides.
+type LLMActionOverrides struct {
+	Draft      *string `json:"draft,omitempty"`
+	Outline    *string `json:"outline,omitempty"`
+	Rewrite    *string `json:"rewrite,omitempty"`
+	SceneSplit *string `json:"scene_split,omitempty"`
+	Summary    *string `json:"summary,omitempty"`
+	Translate  *string `json:"translate,omitempty"`
+}
+
+// LLMSettings defines model for LLMSettings.
+type LLMSettings struct {
+	Default   string             `json:"default"`
+	Overrides LLMActionOverrides `json:"overrides"`
+	Providers []ProviderStatus   `json:"providers"`
+}
+
+// LLMSettingsTestRequest defines model for LLMSettingsTestRequest.
+type LLMSettingsTestRequest struct {
+	// Provider Provider name to test; defaults to the tenant's current default.
+	Provider *string `json:"provider,omitempty"`
+}
+
+// LLMSettingsTestResult defines model for LLMSettingsTestResult.
+type LLMSettingsTestResult struct {
+	Detail   *string `json:"detail,omitempty"`
+	Ok       bool    `json:"ok"`
+	Provider string  `json:"provider"`
+}
+
+// LLMSettingsUpdate defines model for LLMSettingsUpdate.
+type LLMSettingsUpdate struct {
+	Default   string              `json:"default"`
+	Overrides *LLMActionOverrides `json:"overrides,omitempty"`
+}
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	Email    openapi_types.Email `json:"email"`
@@ -476,6 +512,14 @@ type Problem struct {
 	Type     *string `json:"type,omitempty"`
 }
 
+// ProviderStatus defines model for ProviderStatus.
+type ProviderStatus struct {
+	Available      bool    `json:"available"`
+	Configured     *bool   `json:"configured,omitempty"`
+	DisabledReason *string `json:"disabledReason,omitempty"`
+	Name           string  `json:"name"`
+}
+
 // ReadyStatus defines model for ReadyStatus.
 type ReadyStatus struct {
 	Checks *map[string]string `json:"checks,omitempty"`
@@ -563,6 +607,12 @@ type SwitchTenantJSONRequestBody = SwitchTenantRequest
 // CreateRunJSONRequestBody defines body for CreateRun for application/json ContentType.
 type CreateRunJSONRequestBody = CreateRunRequest
 
+// PutLLMSettingsJSONRequestBody defines body for PutLLMSettings for application/json ContentType.
+type PutLLMSettingsJSONRequestBody = LLMSettingsUpdate
+
+// TestLLMSettingsJSONRequestBody defines body for TestLLMSettings for application/json ContentType.
+type TestLLMSettingsJSONRequestBody = LLMSettingsTestRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// ListAssets Cursor-paginated list of the active tenant's assets
@@ -624,6 +674,15 @@ type ServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams)
+	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
+	// (GET /settings/llm)
+	GetLLMSettings(w http.ResponseWriter, r *http.Request)
+	// PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
+	// (PUT /settings/llm)
+	PutLLMSettings(w http.ResponseWriter, r *http.Request)
+	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
+	// (POST /settings/llm/test)
+	TestLLMSettings(w http.ResponseWriter, r *http.Request)
 	// CancelStep Cancel one step
 	// (POST /steps/{id}/cancel)
 	CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
@@ -752,6 +811,24 @@ func (_ Unimplemented) CancelRun(w http.ResponseWriter, r *http.Request, id open
 // ListRunSteps Cursor-paginated list of a run's steps
 // (GET /runs/{id}/steps)
 func (_ Unimplemented) ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLLMSettings The active tenant's LLM provider default and per-action overrides
+// (GET /settings/llm)
+func (_ Unimplemented) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
+// (PUT /settings/llm)
+func (_ Unimplemented) PutLLMSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
+// (POST /settings/llm/test)
+func (_ Unimplemented) TestLLMSettings(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1278,6 +1355,48 @@ func (siw *ServerInterfaceWrapper) ListRunSteps(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// GetLLMSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLLMSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutLLMSettings operation middleware
+func (siw *ServerInterfaceWrapper) PutLLMSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutLLMSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestLLMSettings operation middleware
+func (siw *ServerInterfaceWrapper) TestLLMSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestLLMSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CancelStep operation middleware
 func (siw *ServerInterfaceWrapper) CancelStep(w http.ResponseWriter, r *http.Request) {
 
@@ -1531,6 +1650,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/gpu", wrapper.GetGpuStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/settings/llm", wrapper.GetLLMSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/settings/llm", wrapper.PutLLMSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/settings/llm/test", wrapper.TestLLMSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/events", wrapper.StreamEvents)
@@ -2207,6 +2335,85 @@ func (response ListRunSteps400ApplicationProblemPlusJSONResponse) VisitListRunSt
 	return err
 }
 
+type GetLLMSettingsRequestObject struct {
+}
+
+type GetLLMSettingsResponseObject interface {
+	VisitGetLLMSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetLLMSettings200JSONResponse LLMSettings
+
+func (response GetLLMSettings200JSONResponse) VisitGetLLMSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLLMSettingsRequestObject struct {
+	Body *PutLLMSettingsJSONRequestBody
+}
+
+type PutLLMSettingsResponseObject interface {
+	VisitPutLLMSettingsResponse(w http.ResponseWriter) error
+}
+
+type PutLLMSettings200JSONResponse LLMSettings
+
+func (response PutLLMSettings200JSONResponse) VisitPutLLMSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLLMSettings400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutLLMSettings400ApplicationProblemPlusJSONResponse) VisitPutLLMSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestLLMSettingsRequestObject struct {
+	Body *TestLLMSettingsJSONRequestBody
+}
+
+type TestLLMSettingsResponseObject interface {
+	VisitTestLLMSettingsResponse(w http.ResponseWriter) error
+}
+
+type TestLLMSettings200JSONResponse LLMSettingsTestResult
+
+func (response TestLLMSettings200JSONResponse) VisitTestLLMSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelStepRequestObject struct {
 	Id openapi_types.UUID `json:"id"`
 }
@@ -2390,6 +2597,15 @@ type StrictServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(ctx context.Context, request ListRunStepsRequestObject) (ListRunStepsResponseObject, error)
+	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
+	// (GET /settings/llm)
+	GetLLMSettings(ctx context.Context, request GetLLMSettingsRequestObject) (GetLLMSettingsResponseObject, error)
+	// PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
+	// (PUT /settings/llm)
+	PutLLMSettings(ctx context.Context, request PutLLMSettingsRequestObject) (PutLLMSettingsResponseObject, error)
+	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
+	// (POST /settings/llm/test)
+	TestLLMSettings(ctx context.Context, request TestLLMSettingsRequestObject) (TestLLMSettingsResponseObject, error)
 	// CancelStep Cancel one step
 	// (POST /steps/{id}/cancel)
 	CancelStep(ctx context.Context, request CancelStepRequestObject) (CancelStepResponseObject, error)
@@ -2943,6 +3159,95 @@ func (sh *strictHandler) ListRunSteps(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
+// GetLLMSettings operation middleware
+func (sh *strictHandler) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
+	var request GetLLMSettingsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLLMSettings(ctx, request.(GetLLMSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLLMSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLLMSettingsResponseObject); ok {
+		if err := validResponse.VisitGetLLMSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutLLMSettings operation middleware
+func (sh *strictHandler) PutLLMSettings(w http.ResponseWriter, r *http.Request) {
+	var request PutLLMSettingsRequestObject
+
+	var body PutLLMSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutLLMSettings(ctx, request.(PutLLMSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutLLMSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutLLMSettingsResponseObject); ok {
+		if err := validResponse.VisitPutLLMSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestLLMSettings operation middleware
+func (sh *strictHandler) TestLLMSettings(w http.ResponseWriter, r *http.Request) {
+	var request TestLLMSettingsRequestObject
+
+	var body TestLLMSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestLLMSettings(ctx, request.(TestLLMSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestLLMSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestLLMSettingsResponseObject); ok {
+		if err := validResponse.VisitTestLLMSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CancelStep operation middleware
 func (sh *strictHandler) CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	var request CancelStepRequestObject
@@ -3026,76 +3331,83 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"9/8XAAD//w==",
+	"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",
+	"le6vJhNWisniLHn48eF/AwAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

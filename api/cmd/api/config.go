@@ -31,4 +31,29 @@ type config struct {
 	// ArgonMaxConcurrency bounds concurrent argon2id hashing (each call
 	// allocates up to 64MiB); see api/internal/auth.HashLimiter.
 	ArgonMaxConcurrency int `env:"ARGON2_MAX_CONCURRENCY" envDefault:"4"`
+
+	// AppMode gates the claude-cli provider (local-only per the
+	// contract): "saas" disables it entirely, any other value (default
+	// "local") leaves it available.
+	AppMode string `env:"APP_MODE" envDefault:"local"`
+
+	// AllowedProviderHosts is netguard's allowlist for user-configurable
+	// provider endpoints (Ollama today; ComfyUI is dialed only from the
+	// worker, not this process).
+	AllowedProviderHosts []string `env:"ALLOWED_PROVIDER_HOSTS" envSeparator:","`
+
+	OllamaURL   string `env:"OLLAMA_URL" envDefault:"http://ollama:11434"`
+	OllamaModel string `env:"OLLAMA_MODEL" envDefault:""`
+
+	LLMCLIURL             string `env:"LLMCLI_URL" envDefault:"http://llm-cli:8090"`
+	LLMCLIBearerTokenPath string `env:"LLMCLI_BEARER_TOKEN_PATH" envDefault:""`
+
+	// AnthropicAPIKeyPath/GeminiAPIKeyPath, when set, wire a single
+	// operator-provisioned key as the process-wide adapter; per-tenant
+	// BYOK key resolution (phase 6+) supersedes this by constructing a
+	// tenant-scoped registry.Registry instead.
+	AnthropicAPIKeyPath string `env:"ANTHROPIC_API_KEY_PATH" envDefault:""`
+	AnthropicModel      string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-5"`
+	GeminiAPIKeyPath    string `env:"GEMINI_API_KEY_PATH" envDefault:""`
+	GeminiModel         string `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
 }

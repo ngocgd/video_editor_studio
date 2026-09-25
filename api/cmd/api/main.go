@@ -37,6 +37,7 @@ import (
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
 	"loomtale/api/internal/secheaders"
+	"loomtale/api/internal/settingsapi"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/validation"
@@ -175,6 +176,8 @@ func run() error {
 		}
 	}
 
+	llmRegistry, llmStore := buildRegistry(cfg, queries)
+
 	srv := &server{
 		Handler: &health.Handler{
 			Version: cfg.Version,
@@ -206,6 +209,10 @@ func run() error {
 			Probe:          nil, // wired by phase 4
 			Residency:      nil, // wired by phase 4
 			ShutdownSignal: shutdownSignal,
+		},
+		SettingsAPI: &settingsapi.SettingsAPI{
+			Registry: llmRegistry,
+			Store:    llmStore,
 		},
 	}
 

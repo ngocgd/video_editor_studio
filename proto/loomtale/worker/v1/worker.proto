@@ -1,0 +1,75 @@
+// Control-plane RPCs every Python worker implements regardless of which
+// engines it hosts: liveness, engine inventory and residency, and GPU
+// memory status. Real engines are registered in phases 9a-9c; before that
+// ListEngines returns an empty list and every Load/Unload call fails with
+// FAILED_PRECONDITION engine_not_installed.
+syntax = "proto3";
+
+package loomtale.worker.v1;
+
+option go_package = "loomtale/api/internal/workerpb/loomtale/worker/v1;workerv1";
+
+service Worker {
+  // Health reports process liveness (distinct from WorkerHealth.Check,
+  // which phase 1 already wired for the buf round-trip check).
+  rpc Health(HealthRequest) returns (HealthResponse);
+  // ListEngines reports every engine this worker process knows about,
+  // whether or not its weights are present on disk.
+  rpc ListEngines(ListEnginesRequest) returns (ListEnginesResponse);
+  // LoadModel makes an engine resident. Returns FAILED_PRECONDITION
+  // engine_not_installed if the engine's weights are not on disk.
+  rpc LoadModel(LoadModelRequest) returns (LoadModelResponse);
+  // UnloadModel releases whatever engine is currently resident, if any.
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse);
+  // GpuStatus reports live VRAM and the resident engine, used by the Go
+  // residency manager's app-side proof step.
+  rpc GpuStatus(GpuStatusRequest) returns (GpuStatusResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool ok = 1;
+}
+
+message ListEnginesRequest {}
+
+message EngineInfo {
+  string name = 1;
+  string task = 2;       // e.g. "tts", "align", "train", "vision"
+  string license = 3;
+  bool installed = 4;    // weights present on disk
+  bool loaded = 5;
+  int64 vram_held_mb = 6;
+}
+
+message ListEnginesResponse {
+  repeated EngineInfo engines = 1;
+}
+
+message LoadModelRequest {
+  string engine = 1;
+  string model = 2;
+}
+
+message LoadModelResponse {
+  bool loaded = 1;
+  int64 vram_held_mb = 2;
+}
+
+message UnloadModelRequest {
+  string engine = 1;
+}
+
+message UnloadModelResponse {
+  bool unloaded = 1;
+}
+
+message GpuStatusRequest {}
+
+message GpuStatusResponse {
+  bool gpu_present = 1;
+  int64 total_mb = 2;
+  int64 free_mb = 3;
+  string resident_engine = 4; // empty if nothing loaded
+}

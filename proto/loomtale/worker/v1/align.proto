@@ -1,0 +1,38 @@
+// Forced-alignment RPC: aligns narration text to an existing audio asset
+// and produces a timed-segment output (e.g. for subtitle/caption assets).
+// Same presigned-URL contract as tts.proto.
+syntax = "proto3";
+
+package loomtale.worker.v1;
+
+option go_package = "loomtale/api/internal/workerpb/loomtale/worker/v1;workerv1";
+
+service Align {
+  rpc Align(AlignRequest) returns (stream AlignEvent);
+}
+
+message AlignRequest {
+  string engine = 1;
+  string audio_get_url = 2;  // presigned GET for the source audio asset
+  string text = 3;
+  string output_put_url = 4; // presigned PUT for the resulting alignment JSON
+  map<string, string> params = 5;
+}
+
+message AlignProgress {
+  int32 pct = 1;
+  int32 eta_s = 2;
+}
+
+message AlignResult {
+  string output_key = 1;
+  int32 segment_count = 2;
+  map<string, string> metadata = 3;
+}
+
+message AlignEvent {
+  oneof event {
+    AlignProgress progress = 1;
+    AlignResult result = 2;
+  }
+}

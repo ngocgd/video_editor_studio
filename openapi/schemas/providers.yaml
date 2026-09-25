@@ -1,0 +1,66 @@
+# LLM provider settings (AC8: switching a tenant's provider via PUT
+# takes effect on the next call, no restart). API keys themselves are
+# never returned; ProviderStatus.configured only says whether one exists.
+LLMActionOverrides:
+  type: object
+  properties:
+    outline:
+      type: string
+    draft:
+      type: string
+    rewrite:
+      type: string
+    translate:
+      type: string
+    scene_split:
+      type: string
+    summary:
+      type: string
+ProviderStatus:
+  type: object
+  required: [name, available]
+  properties:
+    name:
+      type: string
+    available:
+      type: boolean
+    configured:
+      type: boolean
+    disabledReason:
+      type: string
+LLMSettings:
+  type: object
+  required: [default, overrides, providers]
+  properties:
+    default:
+      type: string
+    overrides:
+      $ref: "#/LLMActionOverrides"
+    providers:
+      type: array
+      items:
+        $ref: "#/ProviderStatus"
+LLMSettingsUpdate:
+  type: object
+  required: [default]
+  properties:
+    default:
+      type: string
+    overrides:
+      $ref: "#/LLMActionOverrides"
+LLMSettingsTestRequest:
+  type: object
+  properties:
+    provider:
+      type: string
+      description: Provider name to test; defaults to the tenant's current default.
+LLMSettingsTestResult:
+  type: object
+  required: [provider, ok]
+  properties:
+    provider:
+      type: string
+    ok:
+      type: boolean
+    detail:
+      type: string

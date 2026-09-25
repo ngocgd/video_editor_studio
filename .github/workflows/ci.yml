@@ -124,6 +124,28 @@ jobs:
           export BACKUP_DATABASE_URL="postgres://loomtale_backup:${POSTGRES_BACKUP_PASSWORD}@127.0.0.1:5432/loomtale?sslmode=disable"
           go test -tags=integration ./internal/integration/... -race -count=1 -v
         working-directory: api
+      - name: llm-cli sidecar is healthy (self-check passed, no token required)
+        run: |
+          docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \
+            node -e "fetch('http://127.0.0.1:8090/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      - name: llm-cli cannot reach postgres:5432 (not on its network)
+        run: |
+          if docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \
+            node -e "const c=require('net').createConnection({host:'postgres',port:5432,timeout:3000});c.on('connect',()=>process.exit(1));c.on('error',()=>process.exit(0));c.on('timeout',()=>process.exit(0))"
+          then
+            echo "OK: llm-cli cannot reach postgres:5432"
+          else
+            echo "FAIL: llm-cli reached postgres:5432 - network isolation is broken"; exit 1
+          fi
+      - name: llm-cli cannot reach example.com (internal network, no direct egress)
+        run: |
+          if docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env exec -T llm-cli \
+            node -e "const c=require('net').createConnection({host:'example.com',port:443,timeout:3000});c.on('connect',()=>process.exit(1));c.on('error',()=>process.exit(0));c.on('timeout',()=>process.exit(0))"
+          then
+            echo "OK: llm-cli cannot reach example.com directly"
+          else
+            echo "FAIL: llm-cli reached example.com directly - network isolation is broken"; exit 1
+          fi
       - name: dump service logs on failure
         if: failure()
         run: docker compose -f deploy/compose.yml -f deploy/compose.ci.yml --env-file .env logs
@@ -163,7 +185,7 @@ jobs:
         run: docker compose -f deploy/compose.yml --env-file .env build
       - name: assert non-root USER in every built image
         run: |
-          for svc in api worker web; do
+          for svc in api worker web llmcli egress-proxy; do
             image="loomtale/${svc}:local"
             user="$(docker inspect --format='{{.Config.User}}' "$image")"
             if [ -z "$user" ] || [ "$user" = "root" ] || [ "$user" = "0" ]; then

@@ -78,9 +78,10 @@ func run() error {
 	// cmd/worker wiring change once they exist; phase 3 ships the engine
 	// with none.
 
-	var residency pipeline.ModelResidency = pipeline.NoopResidency{}
-	// Phase 4 replaces this with a real residency backend and only then
-	// is WORKER_GPU allowed to be true (see compose.gpu.yml).
+	residency, _, err := buildResidency(ctx, cfg)
+	if err != nil {
+		return err
+	}
 
 	// A worker with no registered handler for any kind must never fetch a
 	// job at all: claiming a step it cannot run destroys it (the CAS

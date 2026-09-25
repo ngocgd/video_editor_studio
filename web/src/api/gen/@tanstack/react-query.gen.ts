@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, retryStep, switchTenant } from '../sdk.gen';
-import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse } from '../types.gen';
+import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getLlmSettings, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, putLlmSettings, retryStep, switchTenant, testLlmSettings } from '../sdk.gen';
+import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -556,3 +556,55 @@ export const getGpuStatusOptions = (options?: Options<GetGpuStatusData>) => quer
     },
     queryKey: getGpuStatusQueryKey(options)
 });
+
+export const getLlmSettingsQueryKey = (options?: Options<GetLlmSettingsData>) => createQueryKey('getLlmSettings', options);
+
+/**
+ * The active tenant's LLM provider default and per-action overrides
+ */
+export const getLlmSettingsOptions = (options?: Options<GetLlmSettingsData>) => queryOptions<GetLlmSettingsResponse, DefaultError, GetLlmSettingsResponse, ReturnType<typeof getLlmSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLlmSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLlmSettingsQueryKey(options)
+});
+
+/**
+ * Switch the active tenant's default LLM provider or an action override (AC8)
+ */
+export const putLlmSettingsMutation = (options?: Partial<Options<PutLlmSettingsData>>): UseMutationOptions<PutLlmSettingsResponse, PutLlmSettingsError, Options<PutLlmSettingsData>> => {
+    const mutationOptions: UseMutationOptions<PutLlmSettingsResponse, PutLlmSettingsError, Options<PutLlmSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putLlmSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Run a 1-token prompt against a provider to confirm it is reachable and configured
+ */
+export const testLlmSettingsMutation = (options?: Partial<Options<TestLlmSettingsData>>): UseMutationOptions<TestLlmSettingsResponse, DefaultError, Options<TestLlmSettingsData>> => {
+    const mutationOptions: UseMutationOptions<TestLlmSettingsResponse, DefaultError, Options<TestLlmSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await testLlmSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

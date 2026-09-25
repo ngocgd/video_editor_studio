@@ -1,0 +1,35 @@
+// Vision-model RPCs (LoRA/render scoring and depth extraction, phase 9c
+// engines): both are short unary calls, unlike the streaming media RPCs
+// above, since their outputs are a single small value or a single asset.
+syntax = "proto3";
+
+package loomtale.worker.v1;
+
+option go_package = "loomtale/api/internal/workerpb/loomtale/worker/v1;workerv1";
+
+service Vision {
+  rpc Score(ScoreRequest) returns (ScoreResponse);
+  rpc Depth(DepthRequest) returns (DepthResponse);
+}
+
+message ScoreRequest {
+  string engine = 1;
+  string image_get_url = 2; // presigned GET for the image to score
+  map<string, string> params = 3;
+}
+
+message ScoreResponse {
+  double score = 1;
+  map<string, string> metadata = 2;
+}
+
+message DepthRequest {
+  string engine = 1;
+  string image_get_url = 2;
+  string output_put_url = 3; // presigned PUT for the resulting depth map
+  map<string, string> params = 4;
+}
+
+message DepthResponse {
+  string output_key = 1;
+}
