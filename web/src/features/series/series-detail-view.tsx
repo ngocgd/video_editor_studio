@@ -24,13 +24,22 @@ export function SeriesDetailView({ seriesId }: { seriesId: string }) {
             {series.genre ?? "No genre"} · {series.targetLanguages.join(", ").toUpperCase()} · {series.plannedEpisodeCount} episodes planned
           </p>
         </div>
-        <Link
-          to="/projects/$seriesId/bible"
-          params={{ seriesId }}
-          className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-accent"
-        >
-          Story bible
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            to="/projects/$seriesId/characters"
+            params={{ seriesId }}
+            className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-accent"
+          >
+            Characters
+          </Link>
+          <Link
+            to="/projects/$seriesId/bible"
+            params={{ seriesId }}
+            className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-accent"
+          >
+            Story bible
+          </Link>
+        </div>
       </div>
 
       {episodes.length === 0 ? (
@@ -44,6 +53,7 @@ export function SeriesDetailView({ seriesId }: { seriesId: string }) {
               <th className="h-8 px-3">Status</th>
               <th className="h-8 px-3">EN</th>
               <th className="h-8 px-3">VI</th>
+              <th className="h-8 px-3" />
             </tr>
           </thead>
           <tbody>
@@ -61,6 +71,11 @@ export function SeriesDetailView({ seriesId }: { seriesId: string }) {
                 </td>
                 <td className="h-9 px-3 text-text-2">
                   {ep.drafts?.vi ? `${ep.drafts.vi.wordCount ?? 0}w · ${formatDurationEstimate(ep.drafts.vi.wordCount ?? 0, "vi")}` : "—"}
+                </td>
+                <td className="h-9 px-3 text-right">
+                  <Link to="/projects/$seriesId/storyboard/$episodeId" params={{ seriesId, episodeId: ep.id }} className="text-xs text-primary-text hover:underline">
+                    Storyboard
+                  </Link>
                 </td>
               </tr>
             ))}

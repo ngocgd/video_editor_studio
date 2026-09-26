@@ -27,6 +27,9 @@ var QueueTimeouts = map[string]time.Duration{
 var KindTimeoutOverrides = map[string]time.Duration{
 	"train.lora": 2 * time.Hour,
 	"bench.":     1 * time.Hour,
+	// Splitting a whole draft into scenes is one long structured reply:
+	// a 6,400-word draft took about 8 minutes on the claude CLI.
+	"llm.scene_split": 30 * time.Minute,
 	// A multi-GB model pull resumes across attempts, but each attempt
 	// should get as far as it can: at ~3 MB/s the largest entry needs
 	// more than the io queue's 2 h.

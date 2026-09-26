@@ -1,0 +1,391 @@
+# Scenes, takes and the storyboard rollup.
+SceneLanguage:
+  type: string
+  enum: [en, vi]
+SceneSegment:
+  type: object
+  required: [text]
+  properties:
+    speakerCharacterId:
+      type: string
+      format: uuid
+      description: Absent for the narrator.
+    text:
+      type: string
+      minLength: 1
+      maxLength: 20000
+    unrecognisedName:
+      type: string
+      description: A speaker name the split could not match to a character; the segment is voiced by the narrator until someone assigns it.
+PipState:
+  type: string
+  enum: [done, running, queued, failed, stale, none]
+PipKind:
+  type: string
+  enum: [text, image, voice, align, motion]
+ScenePip:
+  type: object
+  required: [kind, state]
+  properties:
+    kind:
+      $ref: "#/PipKind"
+    state:
+      $ref: "#/PipState"
+    stepId:
+      type: string
+      format: uuid
+    runId:
+      type: string
+      format: uuid
+    progress:
+      type: integer
+    errorCode:
+      type: string
+    errorMessage:
+      type: string
+    staleReason:
+      type: string
+MotionPreset:
+  type: string
+  enum: [ken_burns, parallax, static]
+Scene:
+  type: object
+  required: [id, episodeId, lang, idx, paragraphIds, narration, segments, imagePrompt, characterIds, motionPreset, durationMs, durationMeasured, startMs, tainted, version, pips, worstState, peaks]
+  properties:
+    id:
+      type: string
+      format: uuid
+    episodeId:
+      type: string
+      format: uuid
+    lang:
+      $ref: "#/SceneLanguage"
+    idx:
+      type: integer
+    paragraphIds:
+      type: array
+      items:
+        type: string
+    narration:
+      type: string
+    segments:
+      type: array
+      items:
+        $ref: "#/SceneSegment"
+    imagePrompt:
+      type: string
+    characterIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+    motionPreset:
+      $ref: "#/MotionPreset"
+    imageStyleId:
+      type: string
+      format: uuid
+    durationMs:
+      type: integer
+    durationMeasured:
+      type: boolean
+      description: True once a voice take set the duration; before that it is a words-per-minute estimate.
+    startMs:
+      type: integer
+      description: Offset of this scene in the episode timeline.
+    tainted:
+      type: boolean
+    version:
+      type: integer
+      format: int64
+    pips:
+      type: array
+      items:
+        $ref: "#/ScenePip"
+    worstState:
+      $ref: "#/PipState"
+    imageAssetId:
+      type: string
+      format: uuid
+    imageVariants:
+      type: boolean
+      description: True once WebP/AVIF variants exist for the selected image.
+    voiceAssetId:
+      type: string
+      format: uuid
+    alignAssetId:
+      type: string
+      format: uuid
+    peaks:
+      type: boolean
+      description: True once waveform peaks exist for the selected voice take.
+SceneCounts:
+  type: object
+  required: [all, stale, failed, missing, inQueue]
+  properties:
+    all:
+      type: integer
+    stale:
+      type: integer
+    failed:
+      type: integer
+    missing:
+      type: integer
+    inQueue:
+      type: integer
+StageProgress:
+  type: object
+  required: [kind, done, total]
+  properties:
+    kind:
+      $ref: "#/PipKind"
+    done:
+      type: integer
+    total:
+      type: integer
+SceneList:
+  type: object
+  required: [items, counts, stages, totalDurationMs, activeRunIds, missingCount]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Scene"
+    counts:
+      $ref: "#/SceneCounts"
+    stages:
+      type: array
+      items:
+        $ref: "#/StageProgress"
+    totalDurationMs:
+      type: integer
+    activeRunIds:
+      type: array
+      description: Runs with queued or running per-scene steps, for the SSE subscription.
+      items:
+        type: string
+        format: uuid
+    missingCount:
+      type: integer
+      description: How many per-scene steps "Generate missing" would queue.
+    nextCursor:
+      type: string
+SceneFilter:
+  type: string
+  enum: [all, stale, failed, missing, in_queue]
+SceneSplitRequest:
+  type: object
+  required: [lang, mode]
+  properties:
+    lang:
+      $ref: "#/SceneLanguage"
+    mode:
+      type: string
+      enum: [paragraphs, llm]
+    cadenceMinS:
+      type: integer
+      minimum: 5
+      maximum: 300
+    cadenceMaxS:
+      type: integer
+      minimum: 5
+      maximum: 600
+    discardWork:
+      type: boolean
+      default: false
+      description: Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
+SceneSplitResult:
+  type: object
+  required: [mode, sceneCount, keptCount]
+  properties:
+    mode:
+      type: string
+      enum: [paragraphs, llm]
+    sceneCount:
+      type: integer
+    keptCount:
+      type: integer
+      description: Scenes whose narration was unchanged, kept with their takes.
+    droppedCount:
+      type: integer
+      description: Old scenes the paragraph split deleted, with their takes.
+    unrecognisedSpeakers:
+      type: integer
+    runId:
+      type: string
+      format: uuid
+    stepId:
+      type: string
+      format: uuid
+SceneSplitConflict:
+  description: A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+  type: object
+  required: [title, status, detail, droppedCount, editedCount, takeCount]
+  properties:
+    title:
+      type: string
+    status:
+      type: integer
+    detail:
+      type: string
+    droppedCount:
+      type: integer
+    editedCount:
+      type: integer
+    takeCount:
+      type: integer
+ScenePatch:
+  type: object
+  required: [expectedVersion]
+  properties:
+    expectedVersion:
+      type: integer
+      format: int64
+    narration:
+      type: string
+      minLength: 1
+      maxLength: 20000
+      description: Replaces the narration; segments are re-derived from it, each quoted line keeping the speaker of the quoted line at the same position. Ignored for segments when segments is also given.
+    segments:
+      type: array
+      minItems: 1
+      maxItems: 200
+      items:
+        $ref: "#/SceneSegment"
+    imagePrompt:
+      type: string
+      maxLength: 4000
+    characterIds:
+      type: array
+      maxItems: 20
+      items:
+        type: string
+        format: uuid
+    motionPreset:
+      $ref: "#/MotionPreset"
+    imageStyleId:
+      type: string
+      format: uuid
+    clearImageStyle:
+      type: boolean
+TakeKind:
+  type: string
+  enum: [image, voice, align]
+SceneRegenerateRequest:
+  type: object
+  required: [kind]
+  properties:
+    kind:
+      $ref: "#/TakeKind"
+GenerateMissingRequest:
+  type: object
+  required: [lang]
+  properties:
+    lang:
+      $ref: "#/SceneLanguage"
+    kinds:
+      type: array
+      items:
+        $ref: "#/TakeKind"
+GenerateMissingResponse:
+  type: object
+  required: [queued]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    queued:
+      type: object
+      required: [image, voice, align]
+      properties:
+        image:
+          type: integer
+        voice:
+          type: integer
+        align:
+          type: integer
+SceneTake:
+  type: object
+  required: [id, kind, assetId, selected, stale, createdAt, params, variants]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      $ref: "#/TakeKind"
+    assetId:
+      type: string
+      format: uuid
+    selected:
+      type: boolean
+    stale:
+      type: boolean
+    durationMs:
+      type: integer
+    variants:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    params:
+      type: object
+      additionalProperties: true
+SceneTakeList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/SceneTake"
+StoryboardSettings:
+  type: object
+  required: [cadenceMinS, cadenceMaxS, segmentGapMs]
+  properties:
+    imageStyleId:
+      type: string
+      format: uuid
+    cadenceMinS:
+      type: integer
+      minimum: 5
+      maximum: 300
+    cadenceMaxS:
+      type: integer
+      minimum: 5
+      maximum: 600
+    segmentGapMs:
+      type: integer
+      minimum: 0
+      maximum: 5000
+Peaks:
+  type: object
+  required: [peaksPerSecond, startMs, durationMs, min, max]
+  properties:
+    peaksPerSecond:
+      type: integer
+    startMs:
+      type: integer
+    durationMs:
+      type: integer
+    min:
+      type: array
+      description: Per-peak minimum, scaled to -127..127.
+      items:
+        type: integer
+    max:
+      type: array
+      items:
+        type: integer
+MediaBackfillResponse:
+  type: object
+  required: [variants, peaks]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    variants:
+      type: integer
+    peaks:
+      type: integer
+AssetVariantName:
+  type: string
+  enum: [original, webp-320, webp-640, webp-1280, avif-320, avif-640, avif-1280]

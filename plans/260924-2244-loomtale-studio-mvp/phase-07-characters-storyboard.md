@@ -8,7 +8,7 @@
 - Depends on phase 6 (drafts, storyctx) and, through it, phases 3, 4 and 5.
 
 ## Overview
-- Priority: P1 · Status: pending · Effort: 28h <!-- RT#15 re-estimate -->
+- Priority: P1 · Status: implemented (see reports/cook-260926-phase-07-characters-storyboard.md) · Effort: 28h <!-- RT#15 re-estimate -->
 - This phase delivers the scene layer: splitting a draft into scenes (image prompt, characters, speaker segments) and per-scene image, voice and subtitle-align steps with takes and A/B compare, all shown as stale when their inputs change. It also delivers character profiles, references, LoRA versions and voices, the virtualized storyboard grid with inspector and a 3-hour timeline, and the first media derivatives (image variants and waveform peaks). The GPU engines arrive in phases 9a (image), 9b (TTS, align) and 9c (LoRA, scoring). Until then, generate actions fail honestly with `engine_not_installed`.
 
 ## Requirements
@@ -72,14 +72,14 @@
 8. Add a `storyctx` character pinning plus token counter.
 
 ## Todo checklist
-- [ ] Characters + refs + LoRA versions + voices (+ UI)
-- [ ] Voice presets + image styles
-- [ ] Scenes/takes schema + split + re-split
-- [ ] FFmpeg runner (single whitelist, forced -f, host/path checks) + variants + peaks
-- [ ] `scenes.Changed` hook
-- [ ] Image/voice/align steps + batches + takes
-- [ ] Rollup query + endpoints
-- [ ] Storyboard grid + inspector + timeline + keys
+- [x] Characters + refs + LoRA versions + voices (+ UI)
+- [x] Voice presets + image styles
+- [x] Scenes/takes schema + split + re-split
+- [x] FFmpeg runner (single whitelist, forced -f, host/path checks) + variants + peaks
+- [x] `scenes.Changed` hook
+- [x] Image/voice/align steps + batches + takes
+- [x] Rollup query + endpoints
+- [x] Storyboard grid + inspector + timeline + keys
 
 ## Performance budget checks
 - 300+ scenes: the grid scrolls at 60fps with ≤40 mounted tiles, and selection or keyboard moves take <16ms. A 3h timeline (≈400 clips) pans and zooms at 60fps, and peaks are fetched per visible window, with each chunk ≤200KB. All of this is measured in a Playwright trace (phase 12), with a quick check here.

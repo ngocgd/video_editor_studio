@@ -185,22 +185,55 @@ func (e AssetStatus) Valid() bool {
 
 // Defines values for AssetKind.
 const (
-	Audio    AssetKind = "audio"
-	Document AssetKind = "document"
-	Image    AssetKind = "image"
-	Video    AssetKind = "video"
+	AssetKindAudio    AssetKind = "audio"
+	AssetKindDocument AssetKind = "document"
+	AssetKindImage    AssetKind = "image"
+	AssetKindVideo    AssetKind = "video"
 )
 
 // Valid indicates whether the value is a known member of the AssetKind enum.
 func (e AssetKind) Valid() bool {
 	switch e {
-	case Audio:
+	case AssetKindAudio:
 		return true
-	case Document:
+	case AssetKindDocument:
 		return true
-	case Image:
+	case AssetKindImage:
 		return true
-	case Video:
+	case AssetKindVideo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AssetVariantName.
+const (
+	Avif1280 AssetVariantName = "avif-1280"
+	Avif320  AssetVariantName = "avif-320"
+	Avif640  AssetVariantName = "avif-640"
+	Original AssetVariantName = "original"
+	Webp1280 AssetVariantName = "webp-1280"
+	Webp320  AssetVariantName = "webp-320"
+	Webp640  AssetVariantName = "webp-640"
+)
+
+// Valid indicates whether the value is a known member of the AssetVariantName enum.
+func (e AssetVariantName) Valid() bool {
+	switch e {
+	case Avif1280:
+		return true
+	case Avif320:
+		return true
+	case Avif640:
+		return true
+	case Original:
+		return true
+	case Webp1280:
+		return true
+	case Webp320:
+		return true
+	case Webp640:
 		return true
 	default:
 		return false
@@ -237,24 +270,66 @@ func (e BibleSectionUpdateRequestSection) Valid() bool {
 	}
 }
 
+// Defines values for CharacterLoraStatus.
+const (
+	CharacterLoraStatusFailed   CharacterLoraStatus = "failed"
+	CharacterLoraStatusQueued   CharacterLoraStatus = "queued"
+	CharacterLoraStatusReady    CharacterLoraStatus = "ready"
+	CharacterLoraStatusTraining CharacterLoraStatus = "training"
+)
+
+// Valid indicates whether the value is a known member of the CharacterLoraStatus enum.
+func (e CharacterLoraStatus) Valid() bool {
+	switch e {
+	case CharacterLoraStatusFailed:
+		return true
+	case CharacterLoraStatusQueued:
+		return true
+	case CharacterLoraStatusReady:
+		return true
+	case CharacterLoraStatusTraining:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CharacterRefOrigin.
+const (
+	Generated CharacterRefOrigin = "generated"
+	Upload    CharacterRefOrigin = "upload"
+)
+
+// Valid indicates whether the value is a known member of the CharacterRefOrigin enum.
+func (e CharacterRefOrigin) Valid() bool {
+	switch e {
+	case Generated:
+		return true
+	case Upload:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateRunRequestPriorityClass.
 const (
-	Batch       CreateRunRequestPriorityClass = "batch"
-	Interactive CreateRunRequestPriorityClass = "interactive"
-	Scene       CreateRunRequestPriorityClass = "scene"
-	TrainBench  CreateRunRequestPriorityClass = "train_bench"
+	CreateRunRequestPriorityClassBatch       CreateRunRequestPriorityClass = "batch"
+	CreateRunRequestPriorityClassInteractive CreateRunRequestPriorityClass = "interactive"
+	CreateRunRequestPriorityClassScene       CreateRunRequestPriorityClass = "scene"
+	CreateRunRequestPriorityClassTrainBench  CreateRunRequestPriorityClass = "train_bench"
 )
 
 // Valid indicates whether the value is a known member of the CreateRunRequestPriorityClass enum.
 func (e CreateRunRequestPriorityClass) Valid() bool {
 	switch e {
-	case Batch:
+	case CreateRunRequestPriorityClassBatch:
 		return true
-	case Interactive:
+	case CreateRunRequestPriorityClassInteractive:
 		return true
-	case Scene:
+	case CreateRunRequestPriorityClassScene:
 		return true
-	case TrainBench:
+	case CreateRunRequestPriorityClassTrainBench:
 		return true
 	default:
 		return false
@@ -429,6 +504,27 @@ func (e ModelInfoStatus) Valid() bool {
 	}
 }
 
+// Defines values for MotionPreset.
+const (
+	KenBurns MotionPreset = "ken_burns"
+	Parallax MotionPreset = "parallax"
+	Static   MotionPreset = "static"
+)
+
+// Valid indicates whether the value is a known member of the MotionPreset enum.
+func (e MotionPreset) Valid() bool {
+	switch e {
+	case KenBurns:
+		return true
+	case Parallax:
+		return true
+	case Static:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Origin.
 const (
 	OriginImport Origin = "import"
@@ -471,6 +567,63 @@ func (e ParagraphOpOp) Valid() bool {
 	}
 }
 
+// Defines values for PipKind.
+const (
+	PipKindAlign  PipKind = "align"
+	PipKindImage  PipKind = "image"
+	PipKindMotion PipKind = "motion"
+	PipKindText   PipKind = "text"
+	PipKindVoice  PipKind = "voice"
+)
+
+// Valid indicates whether the value is a known member of the PipKind enum.
+func (e PipKind) Valid() bool {
+	switch e {
+	case PipKindAlign:
+		return true
+	case PipKindImage:
+		return true
+	case PipKindMotion:
+		return true
+	case PipKindText:
+		return true
+	case PipKindVoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PipState.
+const (
+	PipStateDone    PipState = "done"
+	PipStateFailed  PipState = "failed"
+	PipStateNone    PipState = "none"
+	PipStateQueued  PipState = "queued"
+	PipStateRunning PipState = "running"
+	PipStateStale   PipState = "stale"
+)
+
+// Valid indicates whether the value is a known member of the PipState enum.
+func (e PipState) Valid() bool {
+	switch e {
+	case PipStateDone:
+		return true
+	case PipStateFailed:
+		return true
+	case PipStateNone:
+		return true
+	case PipStateQueued:
+		return true
+	case PipStateRunning:
+		return true
+	case PipStateStale:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineRunStatus.
 const (
 	PipelineRunStatusActive     PipelineRunStatus = "active"
@@ -500,25 +653,25 @@ func (e PipelineRunStatus) Valid() bool {
 
 // Defines values for PipelineStepQueue.
 const (
-	Cpu    PipelineStepQueue = "cpu"
-	Gpu    PipelineStepQueue = "gpu"
-	Io     PipelineStepQueue = "io"
-	Llm    PipelineStepQueue = "llm"
-	Render PipelineStepQueue = "render"
+	PipelineStepQueueCpu    PipelineStepQueue = "cpu"
+	PipelineStepQueueGpu    PipelineStepQueue = "gpu"
+	PipelineStepQueueIo     PipelineStepQueue = "io"
+	PipelineStepQueueLlm    PipelineStepQueue = "llm"
+	PipelineStepQueueRender PipelineStepQueue = "render"
 )
 
 // Valid indicates whether the value is a known member of the PipelineStepQueue enum.
 func (e PipelineStepQueue) Valid() bool {
 	switch e {
-	case Cpu:
+	case PipelineStepQueueCpu:
 		return true
-	case Gpu:
+	case PipelineStepQueueGpu:
 		return true
-	case Io:
+	case PipelineStepQueueIo:
 		return true
-	case Llm:
+	case PipelineStepQueueLlm:
 		return true
-	case Render:
+	case PipelineStepQueueRender:
 		return true
 	default:
 		return false
@@ -585,6 +738,87 @@ func (e Role) Valid() bool {
 	case Owner:
 		return true
 	case Viewer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SceneFilter.
+const (
+	SceneFilterAll     SceneFilter = "all"
+	SceneFilterFailed  SceneFilter = "failed"
+	SceneFilterInQueue SceneFilter = "in_queue"
+	SceneFilterMissing SceneFilter = "missing"
+	SceneFilterStale   SceneFilter = "stale"
+)
+
+// Valid indicates whether the value is a known member of the SceneFilter enum.
+func (e SceneFilter) Valid() bool {
+	switch e {
+	case SceneFilterAll:
+		return true
+	case SceneFilterFailed:
+		return true
+	case SceneFilterInQueue:
+		return true
+	case SceneFilterMissing:
+		return true
+	case SceneFilterStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SceneLanguage.
+const (
+	SceneLanguageEn SceneLanguage = "en"
+	SceneLanguageVi SceneLanguage = "vi"
+)
+
+// Valid indicates whether the value is a known member of the SceneLanguage enum.
+func (e SceneLanguage) Valid() bool {
+	switch e {
+	case SceneLanguageEn:
+		return true
+	case SceneLanguageVi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SceneSplitRequestMode.
+const (
+	SceneSplitRequestModeLlm        SceneSplitRequestMode = "llm"
+	SceneSplitRequestModeParagraphs SceneSplitRequestMode = "paragraphs"
+)
+
+// Valid indicates whether the value is a known member of the SceneSplitRequestMode enum.
+func (e SceneSplitRequestMode) Valid() bool {
+	switch e {
+	case SceneSplitRequestModeLlm:
+		return true
+	case SceneSplitRequestModeParagraphs:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SceneSplitResultMode.
+const (
+	SceneSplitResultModeLlm        SceneSplitResultMode = "llm"
+	SceneSplitResultModeParagraphs SceneSplitResultMode = "paragraphs"
+)
+
+// Valid indicates whether the value is a known member of the SceneSplitResultMode enum.
+func (e SceneSplitResultMode) Valid() bool {
+	switch e {
+	case SceneSplitResultModeLlm:
+		return true
+	case SceneSplitResultModeParagraphs:
 		return true
 	default:
 		return false
@@ -663,6 +897,27 @@ func (e StepSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for TakeKind.
+const (
+	TakeKindAlign TakeKind = "align"
+	TakeKindImage TakeKind = "image"
+	TakeKindVoice TakeKind = "voice"
+)
+
+// Valid indicates whether the value is a known member of the TakeKind enum.
+func (e TakeKind) Valid() bool {
+	switch e {
+	case TakeKindAlign:
+		return true
+	case TakeKindImage:
+		return true
+	case TakeKindVoice:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TargetLanguage.
 const (
 	TargetLanguageEn TargetLanguage = "en"
@@ -693,6 +948,24 @@ func (e TrackedVideoSource) Valid() bool {
 	case TrackedVideoSourceManual:
 		return true
 	case TrackedVideoSourcePublication:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VoiceLanguage.
+const (
+	VoiceLanguageEn VoiceLanguage = "en"
+	VoiceLanguageVi VoiceLanguage = "vi"
+)
+
+// Valid indicates whether the value is a known member of the VoiceLanguage enum.
+func (e VoiceLanguage) Valid() bool {
+	switch e {
+	case VoiceLanguageEn:
+		return true
+	case VoiceLanguageVi:
 		return true
 	default:
 		return false
@@ -1028,6 +1301,9 @@ type AssetList struct {
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
+// AssetVariantName defines model for AssetVariantName.
+type AssetVariantName string
+
 // AuditEntry defines model for AuditEntry.
 type AuditEntry struct {
 	Action      string                  `json:"action"`
@@ -1072,6 +1348,125 @@ type ChapterPreview struct {
 	Index     int    `json:"index"`
 	Title     string `json:"title"`
 	WordCount int    `json:"wordCount"`
+}
+
+// Character defines model for Character.
+type Character struct {
+	AppearancePrompt string                `json:"appearancePrompt"`
+	Appearances      []CharacterAppearance `json:"appearances"`
+	Id               openapi_types.UUID    `json:"id"`
+	Loras            []CharacterLora       `json:"loras"`
+	Names            CharacterNames        `json:"names"`
+	NegativePrompt   string                `json:"negativePrompt"`
+	Pinned           bool                  `json:"pinned"`
+
+	// Profile Sent to the LLM with every request for this series while pinned.
+	Profile string `json:"profile"`
+
+	// ProfileTokens Estimated LLM tokens of the profile.
+	ProfileTokens int                `json:"profileTokens"`
+	Refs          []CharacterRef     `json:"refs"`
+	Role          string             `json:"role"`
+	SeriesId      openapi_types.UUID `json:"seriesId"`
+	TriggerToken  string             `json:"triggerToken"`
+	Voices        []CharacterVoice   `json:"voices"`
+}
+
+// CharacterAppearance defines model for CharacterAppearance.
+type CharacterAppearance struct {
+	EpisodeId  openapi_types.UUID `json:"episodeId"`
+	EpisodeIdx int                `json:"episodeIdx"`
+	SceneCount int                `json:"sceneCount"`
+}
+
+// CharacterInput defines model for CharacterInput.
+type CharacterInput struct {
+	AppearancePrompt *string        `json:"appearancePrompt,omitempty"`
+	Names            CharacterNames `json:"names"`
+	NegativePrompt   *string        `json:"negativePrompt,omitempty"`
+	Pinned           *bool          `json:"pinned,omitempty"`
+	Profile          *string        `json:"profile,omitempty"`
+	Role             *string        `json:"role,omitempty"`
+	TriggerToken     *string        `json:"triggerToken,omitempty"`
+}
+
+// CharacterList defines model for CharacterList.
+type CharacterList struct {
+	Items          []Character      `json:"items"`
+	NarratorVoices []CharacterVoice `json:"narratorVoices"`
+
+	// PinnedTokens Estimated LLM tokens every request for this series spends on pinned character profiles.
+	PinnedTokens int `json:"pinnedTokens"`
+}
+
+// CharacterLora defines model for CharacterLora.
+type CharacterLora struct {
+	CreatedAt   time.Time           `json:"createdAt"`
+	DatasetSize int                 `json:"datasetSize"`
+	Id          openapi_types.UUID  `json:"id"`
+	Status      CharacterLoraStatus `json:"status"`
+	StepId      *openapi_types.UUID `json:"stepId,omitempty"`
+
+	// TrainerParams Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+	TrainerParams StringParams `json:"trainerParams"`
+	Version       int          `json:"version"`
+	WeightsFile   *string      `json:"weightsFile,omitempty"`
+}
+
+// CharacterLoraStatus defines model for CharacterLora.Status.
+type CharacterLoraStatus string
+
+// CharacterNames defines model for CharacterNames.
+type CharacterNames struct {
+	En   string `json:"en"`
+	Orig string `json:"orig"`
+	Vi   string `json:"vi"`
+}
+
+// CharacterRef defines model for CharacterRef.
+type CharacterRef struct {
+	Angle    string             `json:"angle"`
+	Approved bool               `json:"approved"`
+	AssetId  openapi_types.UUID `json:"assetId"`
+	Id       openapi_types.UUID `json:"id"`
+	Origin   CharacterRefOrigin `json:"origin"`
+}
+
+// CharacterRefOrigin defines model for CharacterRef.Origin.
+type CharacterRefOrigin string
+
+// CharacterRefCreate defines model for CharacterRefCreate.
+type CharacterRefCreate struct {
+	Angle    *string            `json:"angle,omitempty"`
+	Approved *bool              `json:"approved,omitempty"`
+	AssetId  openapi_types.UUID `json:"assetId"`
+}
+
+// CharacterRefUpdate defines model for CharacterRefUpdate.
+type CharacterRefUpdate struct {
+	Angle    *string `json:"angle,omitempty"`
+	Approved *bool   `json:"approved,omitempty"`
+}
+
+// CharacterSheetRequest defines model for CharacterSheetRequest.
+type CharacterSheetRequest struct {
+	Prompt *string `json:"prompt,omitempty"`
+
+	// RefId The reference image the sheet is edited from.
+	RefId openapi_types.UUID `json:"refId"`
+}
+
+// CharacterVoice defines model for CharacterVoice.
+type CharacterVoice struct {
+	Engine string        `json:"engine"`
+	Lang   VoiceLanguage `json:"lang"`
+
+	// Params Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+	Params StringParams `json:"params"`
+
+	// PreviewAssetId Audio of the latest "Preview line" with this voice.
+	PreviewAssetId *openapi_types.UUID `json:"previewAssetId,omitempty"`
+	VoicePresetId  *openapi_types.UUID `json:"voicePresetId,omitempty"`
 }
 
 // ClaudeCliStatus defines model for ClaudeCliStatus.
@@ -1182,6 +1577,22 @@ type EpisodeUpdateRequest struct {
 // EpisodeUpdateRequestStatus defines model for EpisodeUpdateRequest.Status.
 type EpisodeUpdateRequestStatus string
 
+// GenerateMissingRequest defines model for GenerateMissingRequest.
+type GenerateMissingRequest struct {
+	Kinds *[]TakeKind   `json:"kinds,omitempty"`
+	Lang  SceneLanguage `json:"lang"`
+}
+
+// GenerateMissingResponse defines model for GenerateMissingResponse.
+type GenerateMissingResponse struct {
+	Queued struct {
+		Align int `json:"align"`
+		Image int `json:"image"`
+		Voice int `json:"voice"`
+	} `json:"queued"`
+	RunId *openapi_types.UUID `json:"runId,omitempty"`
+}
+
 // GpuBackendStatus defines model for GpuBackendStatus.
 type GpuBackendStatus struct {
 	Loaded    []string `json:"loaded"`
@@ -1230,6 +1641,45 @@ type HealthStatus struct {
 
 // HealthStatusStatus defines model for HealthStatus.Status.
 type HealthStatusStatus string
+
+// ImageStyle defines model for ImageStyle.
+type ImageStyle struct {
+	BaseModel      string             `json:"baseModel"`
+	Height         int                `json:"height"`
+	Id             openapi_types.UUID `json:"id"`
+	Loras          []ImageStyleLora   `json:"loras"`
+	Name           string             `json:"name"`
+	NegativePrompt string             `json:"negativePrompt"`
+	Sampler        string             `json:"sampler"`
+	Steps          int                `json:"steps"`
+	StylePrompt    string             `json:"stylePrompt"`
+	Width          int                `json:"width"`
+}
+
+// ImageStyleInput defines model for ImageStyleInput.
+type ImageStyleInput struct {
+	// BaseModel A models/manifest.yaml entry whose task is scene.
+	BaseModel      string            `json:"baseModel"`
+	Height         *int              `json:"height,omitempty"`
+	Loras          *[]ImageStyleLora `json:"loras,omitempty"`
+	Name           string            `json:"name"`
+	NegativePrompt *string           `json:"negativePrompt,omitempty"`
+	Sampler        *string           `json:"sampler,omitempty"`
+	Steps          *int              `json:"steps,omitempty"`
+	StylePrompt    *string           `json:"stylePrompt,omitempty"`
+	Width          *int              `json:"width,omitempty"`
+}
+
+// ImageStyleList defines model for ImageStyleList.
+type ImageStyleList struct {
+	Items []ImageStyle `json:"items"`
+}
+
+// ImageStyleLora defines model for ImageStyleLora.
+type ImageStyleLora struct {
+	Name     string  `json:"name"`
+	Strength float32 `json:"strength"`
+}
 
 // Import defines model for Import.
 type Import struct {
@@ -1338,6 +1788,14 @@ type LoginResponse struct {
 	Me        Me     `json:"me"`
 }
 
+// LoraTrainRequest defines model for LoraTrainRequest.
+type LoraTrainRequest struct {
+	// DatasetAssetIds Defaults to every approved reference image.
+	DatasetAssetIds *[]openapi_types.UUID `json:"datasetAssetIds,omitempty"`
+	Rank            *int                  `json:"rank,omitempty"`
+	Steps           *int                  `json:"steps,omitempty"`
+}
+
 // Me defines model for Me.
 type Me struct {
 	ActiveRole     *Role               `json:"activeRole,omitempty"`
@@ -1345,6 +1803,13 @@ type Me struct {
 	Email          string              `json:"email"`
 	Tenants        []TenantMembership  `json:"tenants"`
 	UserId         openapi_types.UUID  `json:"userId"`
+}
+
+// MediaBackfillResponse defines model for MediaBackfillResponse.
+type MediaBackfillResponse struct {
+	Peaks    int                 `json:"peaks"`
+	RunId    *openapi_types.UUID `json:"runId,omitempty"`
+	Variants int                 `json:"variants"`
 }
 
 // ModelActionResult defines model for ModelActionResult.
@@ -1397,6 +1862,9 @@ type ModelList struct {
 	WorkerOnline *bool       `json:"workerOnline,omitempty"`
 }
 
+// MotionPreset defines model for MotionPreset.
+type MotionPreset string
+
 // Origin defines model for Origin.
 type Origin string
 
@@ -1421,6 +1889,23 @@ type ParagraphOp struct {
 
 // ParagraphOpOp defines model for ParagraphOp.Op.
 type ParagraphOpOp string
+
+// Peaks defines model for Peaks.
+type Peaks struct {
+	DurationMs int   `json:"durationMs"`
+	Max        []int `json:"max"`
+
+	// Min Per-peak minimum, scaled to -127..127.
+	Min            []int `json:"min"`
+	PeaksPerSecond int   `json:"peaksPerSecond"`
+	StartMs        int   `json:"startMs"`
+}
+
+// PipKind defines model for PipKind.
+type PipKind string
+
+// PipState defines model for PipState.
+type PipState string
 
 // PipelineRun defines model for PipelineRun.
 type PipelineRun struct {
@@ -1526,6 +2011,170 @@ type RetentionPoint struct {
 // Role defines model for Role.
 type Role string
 
+// Scene defines model for Scene.
+type Scene struct {
+	AlignAssetId *openapi_types.UUID  `json:"alignAssetId,omitempty"`
+	CharacterIds []openapi_types.UUID `json:"characterIds"`
+
+	// DurationMeasured True once a voice take set the duration; before that it is a words-per-minute estimate.
+	DurationMeasured bool                `json:"durationMeasured"`
+	DurationMs       int                 `json:"durationMs"`
+	EpisodeId        openapi_types.UUID  `json:"episodeId"`
+	Id               openapi_types.UUID  `json:"id"`
+	Idx              int                 `json:"idx"`
+	ImageAssetId     *openapi_types.UUID `json:"imageAssetId,omitempty"`
+	ImagePrompt      string              `json:"imagePrompt"`
+	ImageStyleId     *openapi_types.UUID `json:"imageStyleId,omitempty"`
+
+	// ImageVariants True once WebP/AVIF variants exist for the selected image.
+	ImageVariants *bool         `json:"imageVariants,omitempty"`
+	Lang          SceneLanguage `json:"lang"`
+	MotionPreset  MotionPreset  `json:"motionPreset"`
+	Narration     string        `json:"narration"`
+	ParagraphIds  []string      `json:"paragraphIds"`
+
+	// Peaks True once waveform peaks exist for the selected voice take.
+	Peaks    bool           `json:"peaks"`
+	Pips     []ScenePip     `json:"pips"`
+	Segments []SceneSegment `json:"segments"`
+
+	// StartMs Offset of this scene in the episode timeline.
+	StartMs      int                 `json:"startMs"`
+	Tainted      bool                `json:"tainted"`
+	Version      int64               `json:"version"`
+	VoiceAssetId *openapi_types.UUID `json:"voiceAssetId,omitempty"`
+	WorstState   PipState            `json:"worstState"`
+}
+
+// SceneCounts defines model for SceneCounts.
+type SceneCounts struct {
+	All     int `json:"all"`
+	Failed  int `json:"failed"`
+	InQueue int `json:"inQueue"`
+	Missing int `json:"missing"`
+	Stale   int `json:"stale"`
+}
+
+// SceneFilter defines model for SceneFilter.
+type SceneFilter string
+
+// SceneLanguage defines model for SceneLanguage.
+type SceneLanguage string
+
+// SceneList defines model for SceneList.
+type SceneList struct {
+	// ActiveRunIds Runs with queued or running per-scene steps, for the SSE subscription.
+	ActiveRunIds []openapi_types.UUID `json:"activeRunIds"`
+	Counts       SceneCounts          `json:"counts"`
+	Items        []Scene              `json:"items"`
+
+	// MissingCount How many per-scene steps "Generate missing" would queue.
+	MissingCount    int             `json:"missingCount"`
+	NextCursor      *string         `json:"nextCursor,omitempty"`
+	Stages          []StageProgress `json:"stages"`
+	TotalDurationMs int             `json:"totalDurationMs"`
+}
+
+// ScenePatch defines model for ScenePatch.
+type ScenePatch struct {
+	CharacterIds    *[]openapi_types.UUID `json:"characterIds,omitempty"`
+	ClearImageStyle *bool                 `json:"clearImageStyle,omitempty"`
+	ExpectedVersion int64                 `json:"expectedVersion"`
+	ImagePrompt     *string               `json:"imagePrompt,omitempty"`
+	ImageStyleId    *openapi_types.UUID   `json:"imageStyleId,omitempty"`
+	MotionPreset    *MotionPreset         `json:"motionPreset,omitempty"`
+
+	// Narration Replaces the narration; segments are re-derived from it, each quoted line keeping the speaker of the quoted line at the same position. Ignored for segments when segments is also given.
+	Narration *string         `json:"narration,omitempty"`
+	Segments  *[]SceneSegment `json:"segments,omitempty"`
+}
+
+// ScenePip defines model for ScenePip.
+type ScenePip struct {
+	ErrorCode    *string             `json:"errorCode,omitempty"`
+	ErrorMessage *string             `json:"errorMessage,omitempty"`
+	Kind         PipKind             `json:"kind"`
+	Progress     *int                `json:"progress,omitempty"`
+	RunId        *openapi_types.UUID `json:"runId,omitempty"`
+	StaleReason  *string             `json:"staleReason,omitempty"`
+	State        PipState            `json:"state"`
+	StepId       *openapi_types.UUID `json:"stepId,omitempty"`
+}
+
+// SceneRegenerateRequest defines model for SceneRegenerateRequest.
+type SceneRegenerateRequest struct {
+	Kind TakeKind `json:"kind"`
+}
+
+// SceneSegment defines model for SceneSegment.
+type SceneSegment struct {
+	// SpeakerCharacterId Absent for the narrator.
+	SpeakerCharacterId *openapi_types.UUID `json:"speakerCharacterId,omitempty"`
+	Text               string              `json:"text"`
+
+	// UnrecognisedName A speaker name the split could not match to a character; the segment is voiced by the narrator until someone assigns it.
+	UnrecognisedName *string `json:"unrecognisedName,omitempty"`
+}
+
+// SceneSplitConflict A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+type SceneSplitConflict struct {
+	Detail       string `json:"detail"`
+	DroppedCount int    `json:"droppedCount"`
+	EditedCount  int    `json:"editedCount"`
+	Status       int    `json:"status"`
+	TakeCount    int    `json:"takeCount"`
+	Title        string `json:"title"`
+}
+
+// SceneSplitRequest defines model for SceneSplitRequest.
+type SceneSplitRequest struct {
+	CadenceMaxS *int `json:"cadenceMaxS,omitempty"`
+	CadenceMinS *int `json:"cadenceMinS,omitempty"`
+
+	// DiscardWork Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
+	DiscardWork *bool                 `json:"discardWork,omitempty"`
+	Lang        SceneLanguage         `json:"lang"`
+	Mode        SceneSplitRequestMode `json:"mode"`
+}
+
+// SceneSplitRequestMode defines model for SceneSplitRequest.Mode.
+type SceneSplitRequestMode string
+
+// SceneSplitResult defines model for SceneSplitResult.
+type SceneSplitResult struct {
+	// DroppedCount Old scenes the paragraph split deleted, with their takes.
+	DroppedCount *int `json:"droppedCount,omitempty"`
+
+	// KeptCount Scenes whose narration was unchanged, kept with their takes.
+	KeptCount            int                  `json:"keptCount"`
+	Mode                 SceneSplitResultMode `json:"mode"`
+	RunId                *openapi_types.UUID  `json:"runId,omitempty"`
+	SceneCount           int                  `json:"sceneCount"`
+	StepId               *openapi_types.UUID  `json:"stepId,omitempty"`
+	UnrecognisedSpeakers *int                 `json:"unrecognisedSpeakers,omitempty"`
+}
+
+// SceneSplitResultMode defines model for SceneSplitResult.Mode.
+type SceneSplitResultMode string
+
+// SceneTake defines model for SceneTake.
+type SceneTake struct {
+	AssetId    openapi_types.UUID     `json:"assetId"`
+	CreatedAt  time.Time              `json:"createdAt"`
+	DurationMs *int                   `json:"durationMs,omitempty"`
+	Id         openapi_types.UUID     `json:"id"`
+	Kind       TakeKind               `json:"kind"`
+	Params     map[string]interface{} `json:"params"`
+	Selected   bool                   `json:"selected"`
+	Stale      bool                   `json:"stale"`
+	Variants   bool                   `json:"variants"`
+}
+
+// SceneTakeList defines model for SceneTakeList.
+type SceneTakeList struct {
+	Items []SceneTake `json:"items"`
+}
+
 // Series defines model for Series.
 type Series struct {
 	CreatedAt            time.Time          `json:"createdAt"`
@@ -1582,6 +2231,19 @@ type SeriesUpdateRequest struct {
 // SeriesUpdateRequestStatus defines model for SeriesUpdateRequest.Status.
 type SeriesUpdateRequestStatus string
 
+// StageProgress defines model for StageProgress.
+type StageProgress struct {
+	Done  int     `json:"done"`
+	Kind  PipKind `json:"kind"`
+	Total int     `json:"total"`
+}
+
+// StepAccepted defines model for StepAccepted.
+type StepAccepted struct {
+	RunId   openapi_types.UUID   `json:"runId"`
+	StepIds []openapi_types.UUID `json:"stepIds"`
+}
+
 // StepLogUrl defines model for StepLogUrl.
 type StepLogUrl struct {
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -1608,10 +2270,24 @@ type StoryBible struct {
 	UpdatedAt time.Time               `json:"updatedAt"`
 }
 
+// StoryboardSettings defines model for StoryboardSettings.
+type StoryboardSettings struct {
+	CadenceMaxS  int                 `json:"cadenceMaxS"`
+	CadenceMinS  int                 `json:"cadenceMinS"`
+	ImageStyleId *openapi_types.UUID `json:"imageStyleId,omitempty"`
+	SegmentGapMs int                 `json:"segmentGapMs"`
+}
+
+// StringParams Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+type StringParams map[string]string
+
 // SwitchTenantRequest defines model for SwitchTenantRequest.
 type SwitchTenantRequest struct {
 	TenantId openapi_types.UUID `json:"tenantId"`
 }
+
+// TakeKind defines model for TakeKind.
+type TakeKind string
 
 // TargetLanguage defines model for TargetLanguage.
 type TargetLanguage string
@@ -1647,6 +2323,56 @@ type TrackedVideoSource string
 
 // Unavailable Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
 type Unavailable map[string]string
+
+// VoiceAssignment defines model for VoiceAssignment.
+type VoiceAssignment struct {
+	Engine string `json:"engine"`
+
+	// Params Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+	Params        *StringParams       `json:"params,omitempty"`
+	VoicePresetId *openapi_types.UUID `json:"voicePresetId,omitempty"`
+}
+
+// VoiceLanguage defines model for VoiceLanguage.
+type VoiceLanguage string
+
+// VoicePreset defines model for VoicePreset.
+type VoicePreset struct {
+	// Consented True once someone confirmed the reference voice is their own or licensed.
+	Consented   bool               `json:"consented"`
+	ConsentedAt *time.Time         `json:"consentedAt,omitempty"`
+	Engine      string             `json:"engine"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+
+	// Params Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+	Params          StringParams        `json:"params"`
+	RefAudioAssetId *openapi_types.UUID `json:"refAudioAssetId,omitempty"`
+}
+
+// VoicePresetInput defines model for VoicePresetInput.
+type VoicePresetInput struct {
+	// Consent Confirms the reference voice is the uploader's own or licensed; recorded in the audit log.
+	Consent *bool  `json:"consent,omitempty"`
+	Engine  string `json:"engine"`
+	Name    string `json:"name"`
+
+	// Params Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+	Params *StringParams `json:"params,omitempty"`
+
+	// RefAudioAssetId A ready audio asset to clone. Requires consent.
+	RefAudioAssetId *openapi_types.UUID `json:"refAudioAssetId,omitempty"`
+}
+
+// VoicePresetList defines model for VoicePresetList.
+type VoicePresetList struct {
+	Items []VoicePreset `json:"items"`
+}
+
+// VoicePreviewRequest defines model for VoicePreviewRequest.
+type VoicePreviewRequest struct {
+	Text string `json:"text"`
+}
 
 // YPPProgress Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
 type YPPProgress struct {
@@ -1827,6 +2553,15 @@ type CreateEpisodeParams struct {
 	SeriesId openapi_types.UUID `form:"seriesId" json:"seriesId"`
 }
 
+// ListScenesParams defines parameters for ListScenes.
+type ListScenesParams struct {
+	Lang   SceneLanguage `form:"lang" json:"lang"`
+	Filter *SceneFilter  `form:"filter,omitempty" json:"filter,omitempty"`
+	Q      *string       `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string       `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int          `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // StreamEventsParams defines parameters for StreamEvents.
 type StreamEventsParams struct {
 	// Topics Comma-separated pipeline run ids.
@@ -1853,6 +2588,12 @@ type ListRunStepsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetScenePeaksParams defines parameters for GetScenePeaks.
+type GetScenePeaksParams struct {
+	StartMs *int `form:"startMs,omitempty" json:"startMs,omitempty"`
+	EndMs   *int `form:"endMs,omitempty" json:"endMs,omitempty"`
+}
+
 // ListSeriesParams defines parameters for ListSeries.
 type ListSeriesParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -1877,6 +2618,27 @@ type SwitchTenantJSONRequestBody = SwitchTenantRequest
 // UpdateYouTubeChannelAuditJSONRequestBody defines body for UpdateYouTubeChannelAudit for application/json ContentType.
 type UpdateYouTubeChannelAuditJSONRequestBody = YouTubeChannelAuditUpdate
 
+// UpdateCharacterJSONRequestBody defines body for UpdateCharacter for application/json ContentType.
+type UpdateCharacterJSONRequestBody = CharacterInput
+
+// TrainCharacterLoraJSONRequestBody defines body for TrainCharacterLora for application/json ContentType.
+type TrainCharacterLoraJSONRequestBody = LoraTrainRequest
+
+// AddCharacterRefJSONRequestBody defines body for AddCharacterRef for application/json ContentType.
+type AddCharacterRefJSONRequestBody = CharacterRefCreate
+
+// UpdateCharacterRefJSONRequestBody defines body for UpdateCharacterRef for application/json ContentType.
+type UpdateCharacterRefJSONRequestBody = CharacterRefUpdate
+
+// RegenerateCharacterSheetJSONRequestBody defines body for RegenerateCharacterSheet for application/json ContentType.
+type RegenerateCharacterSheetJSONRequestBody = CharacterSheetRequest
+
+// SetCharacterVoiceJSONRequestBody defines body for SetCharacterVoice for application/json ContentType.
+type SetCharacterVoiceJSONRequestBody = VoiceAssignment
+
+// PreviewCharacterVoiceJSONRequestBody defines body for PreviewCharacterVoice for application/json ContentType.
+type PreviewCharacterVoiceJSONRequestBody = VoicePreviewRequest
+
 // UpdateEpisodeJSONRequestBody defines body for UpdateEpisode for application/json ContentType.
 type UpdateEpisodeJSONRequestBody = EpisodeUpdateRequest
 
@@ -1888,6 +2650,12 @@ type PatchDraftJSONRequestBody = DraftPatchRequest
 
 // ApplyDraftStepJSONRequestBody defines body for ApplyDraftStep for application/json ContentType.
 type ApplyDraftStepJSONRequestBody = ApplyDraftStepRequest
+
+// GenerateMissingJSONRequestBody defines body for GenerateMissing for application/json ContentType.
+type GenerateMissingJSONRequestBody = GenerateMissingRequest
+
+// SplitScenesJSONRequestBody defines body for SplitScenes for application/json ContentType.
+type SplitScenesJSONRequestBody = SceneSplitRequest
 
 // CreateImportJSONRequestBody defines body for CreateImport for application/json ContentType.
 type CreateImportJSONRequestBody = ImportCreateRequest
@@ -1901,6 +2669,12 @@ type PreviewImportJSONRequestBody = ImportPreviewRequest
 // CreateRunJSONRequestBody defines body for CreateRun for application/json ContentType.
 type CreateRunJSONRequestBody = CreateRunRequest
 
+// UpdateSceneJSONRequestBody defines body for UpdateScene for application/json ContentType.
+type UpdateSceneJSONRequestBody = ScenePatch
+
+// RegenerateSceneJSONRequestBody defines body for RegenerateScene for application/json ContentType.
+type RegenerateSceneJSONRequestBody = SceneRegenerateRequest
+
 // CreateSeriesJSONRequestBody defines body for CreateSeries for application/json ContentType.
 type CreateSeriesJSONRequestBody = SeriesCreateRequest
 
@@ -1910,8 +2684,23 @@ type UpdateSeriesJSONRequestBody = SeriesUpdateRequest
 // UpdateBibleSectionJSONRequestBody defines body for UpdateBibleSection for application/json ContentType.
 type UpdateBibleSectionJSONRequestBody = BibleSectionUpdateRequest
 
+// CreateCharacterJSONRequestBody defines body for CreateCharacter for application/json ContentType.
+type CreateCharacterJSONRequestBody = CharacterInput
+
 // GenerateSeriesJSONRequestBody defines body for GenerateSeries for application/json ContentType.
 type GenerateSeriesJSONRequestBody = SeriesGenerateRequest
+
+// SetNarratorVoiceJSONRequestBody defines body for SetNarratorVoice for application/json ContentType.
+type SetNarratorVoiceJSONRequestBody = VoiceAssignment
+
+// PutStoryboardSettingsJSONRequestBody defines body for PutStoryboardSettings for application/json ContentType.
+type PutStoryboardSettingsJSONRequestBody = StoryboardSettings
+
+// CreateImageStyleJSONRequestBody defines body for CreateImageStyle for application/json ContentType.
+type CreateImageStyleJSONRequestBody = ImageStyleInput
+
+// UpdateImageStyleJSONRequestBody defines body for UpdateImageStyle for application/json ContentType.
+type UpdateImageStyleJSONRequestBody = ImageStyleInput
 
 // PutLLMSettingsJSONRequestBody defines body for PutLLMSettings for application/json ContentType.
 type PutLLMSettingsJSONRequestBody = LLMSettingsUpdate
@@ -1921,6 +2710,12 @@ type PutLLMApiKeyJSONRequestBody = LLMApiKeyRequest
 
 // TestLLMSettingsJSONRequestBody defines body for TestLLMSettings for application/json ContentType.
 type TestLLMSettingsJSONRequestBody = LLMSettingsTestRequest
+
+// CreateVoicePresetJSONRequestBody defines body for CreateVoicePreset for application/json ContentType.
+type CreateVoicePresetJSONRequestBody = VoicePresetInput
+
+// UpdateVoicePresetJSONRequestBody defines body for UpdateVoicePreset for application/json ContentType.
+type UpdateVoicePresetJSONRequestBody = VoicePresetInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1966,6 +2761,9 @@ type ServerInterface interface {
 	// FinalizeAsset Verify an uploaded object and mark the asset ready
 	// (POST /assets/{id}/finalize)
 	FinalizeAsset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GetAssetVariant Redirect to a short-lived URL of an asset or one of its image variants
+	// (GET /assets/{id}/variants/{variant})
+	GetAssetVariant(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, variant AssetVariantName)
 	// ListAudit Cursor-paginated audit log for the active tenant (owner only)
 	// (GET /audit)
 	ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams)
@@ -1999,6 +2797,33 @@ type ServerInterface interface {
 	// UpdateYouTubeChannelAudit Record whether the Google API project passed YouTube's audit (audited)
 	// (PATCH /channels/{id})
 	UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// DeleteCharacter Delete a character
+	// (DELETE /characters/{id})
+	DeleteCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateCharacter Replace a character's names, prompts and profile
+	// (PUT /characters/{id})
+	UpdateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// TrainCharacterLora Train a new LoRA version from approved references (a gpu step at training priority)
+	// (POST /characters/{id}/loras)
+	TrainCharacterLora(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// AddCharacterRef Attach an uploaded image as a reference; queues its image variants
+	// (POST /characters/{id}/refs)
+	AddCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// DeleteCharacterRef Remove a reference image
+	// (DELETE /characters/{id}/refs/{refId})
+	DeleteCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID)
+	// UpdateCharacterRef Change a reference's angle label or approval
+	// (PATCH /characters/{id}/refs/{refId})
+	UpdateCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID)
+	// RegenerateCharacterSheet Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+	// (POST /characters/{id}/sheet)
+	RegenerateCharacterSheet(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// SetCharacterVoice Assign a character's voice for one language
+	// (PUT /characters/{id}/voices/{lang})
+	SetCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage)
+	// PreviewCharacterVoice Synthesize a preview line with the character's voice (a TTS step)
+	// (POST /characters/{id}/voices/{lang}/preview)
+	PreviewCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage)
 	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
 	// (GET /episodes)
 	ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams)
@@ -2029,6 +2854,15 @@ type ServerInterface interface {
 	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
 	// (POST /episodes/{id}/drafts/{lang}/apply-step)
 	ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// GenerateMissing Queue every missing or stale image, voice and align step of an episode as one batch run
+	// (POST /episodes/{id}/generate-missing)
+	GenerateMissing(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListScenes Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+	// (GET /episodes/{id}/scenes)
+	ListScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListScenesParams)
+	// SplitScenes Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+	// (POST /episodes/{id}/scenes/split)
+	SplitScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -2058,6 +2892,9 @@ type ServerInterface interface {
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
+	// BackfillMedia Queue image variants and waveform peaks for every ready asset that lacks them
+	// (POST /media/backfill)
+	BackfillMedia(w http.ResponseWriter, r *http.Request)
 	// ListModels Every manifest model with its licence, install state and residency
 	// (GET /models)
 	ListModels(w http.ResponseWriter, r *http.Request)
@@ -2088,6 +2925,21 @@ type ServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams)
+	// UpdateScene Edit a scene's narration, segments, prompt, characters, motion or style
+	// (PATCH /scenes/{id})
+	UpdateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GetScenePeaks Waveform peaks of the scene's selected voice take, optionally for a window only
+	// (GET /scenes/{id}/peaks)
+	GetScenePeaks(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params GetScenePeaksParams)
+	// RegenerateScene Queue exactly one step to regenerate one kind of take for one scene
+	// (POST /scenes/{id}/regenerate)
+	RegenerateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListSceneTakes Every take of a scene, for the takes strip and A/B compare
+	// (GET /scenes/{id}/takes)
+	ListSceneTakes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// SelectSceneTake Select a take (also how a revert works)
+	// (POST /scenes/{id}/takes/{takeId}/select)
+	SelectSceneTake(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, takeId openapi_types.UUID)
 	// ListSeries Cursor-paginated list of the active tenant's series
 	// (GET /series)
 	ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams)
@@ -2106,9 +2958,36 @@ type ServerInterface interface {
 	// UpdateBibleSection Update one bible section with an optimistic-concurrency check
 	// (PATCH /series/{id}/bible)
 	UpdateBibleSection(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListCharacters Characters of a series with refs, LoRA versions, voices and episode appearances
+	// (GET /series/{id}/characters)
+	ListCharacters(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// CreateCharacter Create a character
+	// (POST /series/{id}/characters)
+	CreateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
 	// (POST /series/{id}/generate)
 	GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// SetNarratorVoice Assign the narrator's voice of a series for one language
+	// (PUT /series/{id}/narrator-voices/{lang})
+	SetNarratorVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage)
+	// GetStoryboardSettings Storyboard defaults of a series (image style, cadence, segment gap)
+	// (GET /series/{id}/storyboard-settings)
+	GetStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// PutStoryboardSettings Replace the storyboard defaults of a series
+	// (PUT /series/{id}/storyboard-settings)
+	PutStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// ListImageStyles Image styles of this tenant
+	// (GET /settings/image-styles)
+	ListImageStyles(w http.ResponseWriter, r *http.Request)
+	// CreateImageStyle Create an image style
+	// (POST /settings/image-styles)
+	CreateImageStyle(w http.ResponseWriter, r *http.Request)
+	// DeleteImageStyle Delete an image style (scenes using it fall back to the series default)
+	// (DELETE /settings/image-styles/{id})
+	DeleteImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateImageStyle Replace an image style
+	// (PUT /settings/image-styles/{id})
+	UpdateImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
 	// (GET /settings/llm)
 	GetLLMSettings(w http.ResponseWriter, r *http.Request)
@@ -2124,6 +3003,18 @@ type ServerInterface interface {
 	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
 	// (POST /settings/llm/test)
 	TestLLMSettings(w http.ResponseWriter, r *http.Request)
+	// ListVoicePresets Voice presets of this tenant
+	// (GET /settings/voice-presets)
+	ListVoicePresets(w http.ResponseWriter, r *http.Request)
+	// CreateVoicePreset Create a voice preset; a reference voice needs the consent flag, which is audited
+	// (POST /settings/voice-presets)
+	CreateVoicePreset(w http.ResponseWriter, r *http.Request)
+	// DeleteVoicePreset Delete a voice preset that no voice uses
+	// (DELETE /settings/voice-presets/{id})
+	DeleteVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateVoicePreset Replace a voice preset
+	// (PUT /settings/voice-presets/{id})
+	UpdateVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// CancelStep Cancel one step
 	// (POST /steps/{id}/cancel)
 	CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
@@ -2223,6 +3114,12 @@ func (_ Unimplemented) FinalizeAsset(w http.ResponseWriter, r *http.Request, id 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GetAssetVariant Redirect to a short-lived URL of an asset or one of its image variants
+// (GET /assets/{id}/variants/{variant})
+func (_ Unimplemented) GetAssetVariant(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, variant AssetVariantName) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListAudit Cursor-paginated audit log for the active tenant (owner only)
 // (GET /audit)
 func (_ Unimplemented) ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams) {
@@ -2289,6 +3186,60 @@ func (_ Unimplemented) UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// DeleteCharacter Delete a character
+// (DELETE /characters/{id})
+func (_ Unimplemented) DeleteCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateCharacter Replace a character's names, prompts and profile
+// (PUT /characters/{id})
+func (_ Unimplemented) UpdateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// TrainCharacterLora Train a new LoRA version from approved references (a gpu step at training priority)
+// (POST /characters/{id}/loras)
+func (_ Unimplemented) TrainCharacterLora(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AddCharacterRef Attach an uploaded image as a reference; queues its image variants
+// (POST /characters/{id}/refs)
+func (_ Unimplemented) AddCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteCharacterRef Remove a reference image
+// (DELETE /characters/{id}/refs/{refId})
+func (_ Unimplemented) DeleteCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateCharacterRef Change a reference's angle label or approval
+// (PATCH /characters/{id}/refs/{refId})
+func (_ Unimplemented) UpdateCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RegenerateCharacterSheet Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+// (POST /characters/{id}/sheet)
+func (_ Unimplemented) RegenerateCharacterSheet(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetCharacterVoice Assign a character's voice for one language
+// (PUT /characters/{id}/voices/{lang})
+func (_ Unimplemented) SetCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PreviewCharacterVoice Synthesize a preview line with the character's voice (a TTS step)
+// (POST /characters/{id}/voices/{lang}/preview)
+func (_ Unimplemented) PreviewCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
 // (GET /episodes)
 func (_ Unimplemented) ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams) {
@@ -2349,6 +3300,24 @@ func (_ Unimplemented) ApplyDraftStep(w http.ResponseWriter, r *http.Request, id
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GenerateMissing Queue every missing or stale image, voice and align step of an episode as one batch run
+// (POST /episodes/{id}/generate-missing)
+func (_ Unimplemented) GenerateMissing(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListScenes Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+// (GET /episodes/{id}/scenes)
+func (_ Unimplemented) ListScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListScenesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SplitScenes Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+// (POST /episodes/{id}/scenes/split)
+func (_ Unimplemented) SplitScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 // The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 // Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -2402,6 +3371,12 @@ func (_ Unimplemented) PreviewImport(w http.ResponseWriter, r *http.Request, id 
 // ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 // (GET /jobs)
 func (_ Unimplemented) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BackfillMedia Queue image variants and waveform peaks for every ready asset that lacks them
+// (POST /media/backfill)
+func (_ Unimplemented) BackfillMedia(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2465,6 +3440,36 @@ func (_ Unimplemented) ListRunSteps(w http.ResponseWriter, r *http.Request, id o
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// UpdateScene Edit a scene's narration, segments, prompt, characters, motion or style
+// (PATCH /scenes/{id})
+func (_ Unimplemented) UpdateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetScenePeaks Waveform peaks of the scene's selected voice take, optionally for a window only
+// (GET /scenes/{id}/peaks)
+func (_ Unimplemented) GetScenePeaks(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params GetScenePeaksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RegenerateScene Queue exactly one step to regenerate one kind of take for one scene
+// (POST /scenes/{id}/regenerate)
+func (_ Unimplemented) RegenerateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListSceneTakes Every take of a scene, for the takes strip and A/B compare
+// (GET /scenes/{id}/takes)
+func (_ Unimplemented) ListSceneTakes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SelectSceneTake Select a take (also how a revert works)
+// (POST /scenes/{id}/takes/{takeId}/select)
+func (_ Unimplemented) SelectSceneTake(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, takeId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListSeries Cursor-paginated list of the active tenant's series
 // (GET /series)
 func (_ Unimplemented) ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams) {
@@ -2501,9 +3506,63 @@ func (_ Unimplemented) UpdateBibleSection(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListCharacters Characters of a series with refs, LoRA versions, voices and episode appearances
+// (GET /series/{id}/characters)
+func (_ Unimplemented) ListCharacters(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateCharacter Create a character
+// (POST /series/{id}/characters)
+func (_ Unimplemented) CreateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
 // (POST /series/{id}/generate)
 func (_ Unimplemented) GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetNarratorVoice Assign the narrator's voice of a series for one language
+// (PUT /series/{id}/narrator-voices/{lang})
+func (_ Unimplemented) SetNarratorVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetStoryboardSettings Storyboard defaults of a series (image style, cadence, segment gap)
+// (GET /series/{id}/storyboard-settings)
+func (_ Unimplemented) GetStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutStoryboardSettings Replace the storyboard defaults of a series
+// (PUT /series/{id}/storyboard-settings)
+func (_ Unimplemented) PutStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListImageStyles Image styles of this tenant
+// (GET /settings/image-styles)
+func (_ Unimplemented) ListImageStyles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateImageStyle Create an image style
+// (POST /settings/image-styles)
+func (_ Unimplemented) CreateImageStyle(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteImageStyle Delete an image style (scenes using it fall back to the series default)
+// (DELETE /settings/image-styles/{id})
+func (_ Unimplemented) DeleteImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateImageStyle Replace an image style
+// (PUT /settings/image-styles/{id})
+func (_ Unimplemented) UpdateImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2534,6 +3593,30 @@ func (_ Unimplemented) PutLLMApiKey(w http.ResponseWriter, r *http.Request, prov
 // TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
 // (POST /settings/llm/test)
 func (_ Unimplemented) TestLLMSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListVoicePresets Voice presets of this tenant
+// (GET /settings/voice-presets)
+func (_ Unimplemented) ListVoicePresets(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateVoicePreset Create a voice preset; a reference voice needs the consent flag, which is audited
+// (POST /settings/voice-presets)
+func (_ Unimplemented) CreateVoicePreset(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteVoicePreset Delete a voice preset that no voice uses
+// (DELETE /settings/voice-presets/{id})
+func (_ Unimplemented) DeleteVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateVoicePreset Replace a voice preset
+// (PUT /settings/voice-presets/{id})
+func (_ Unimplemented) UpdateVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3096,6 +4179,41 @@ func (siw *ServerInterfaceWrapper) FinalizeAsset(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// GetAssetVariant operation middleware
+func (siw *ServerInterfaceWrapper) GetAssetVariant(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "variant" -------------
+	var variant AssetVariantName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "variant", chi.URLParam(r, "variant"), &variant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "variant", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAssetVariant(w, r, id, variant)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAudit operation middleware
 func (siw *ServerInterfaceWrapper) ListAudit(w http.ResponseWriter, r *http.Request) {
 
@@ -3342,6 +4460,276 @@ func (siw *ServerInterfaceWrapper) UpdateYouTubeChannelAudit(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateYouTubeChannelAudit(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCharacter operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCharacter(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCharacter operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCharacter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCharacter(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TrainCharacterLora operation middleware
+func (siw *ServerInterfaceWrapper) TrainCharacterLora(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TrainCharacterLora(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddCharacterRef operation middleware
+func (siw *ServerInterfaceWrapper) AddCharacterRef(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddCharacterRef(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCharacterRef operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCharacterRef(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "refId" -------------
+	var refId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "refId", chi.URLParam(r, "refId"), &refId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCharacterRef(w, r, id, refId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCharacterRef operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCharacterRef(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "refId" -------------
+	var refId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "refId", chi.URLParam(r, "refId"), &refId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCharacterRef(w, r, id, refId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegenerateCharacterSheet operation middleware
+func (siw *ServerInterfaceWrapper) RegenerateCharacterSheet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegenerateCharacterSheet(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCharacterVoice operation middleware
+func (siw *ServerInterfaceWrapper) SetCharacterVoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang VoiceLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCharacterVoice(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewCharacterVoice operation middleware
+func (siw *ServerInterfaceWrapper) PreviewCharacterVoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang VoiceLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewCharacterVoice(w, r, id, lang)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3696,6 +5084,152 @@ func (siw *ServerInterfaceWrapper) ApplyDraftStep(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GenerateMissing operation middleware
+func (siw *ServerInterfaceWrapper) GenerateMissing(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GenerateMissing(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListScenes operation middleware
+func (siw *ServerInterfaceWrapper) ListScenes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListScenesParams
+
+	// ------------- Required query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "filter" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "filter", r.URL.Query(), &params.Filter, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "filter"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListScenes(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SplitScenes operation middleware
+func (siw *ServerInterfaceWrapper) SplitScenes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SplitScenes(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // StreamEvents operation middleware
 func (siw *ServerInterfaceWrapper) StreamEvents(w http.ResponseWriter, r *http.Request) {
 
@@ -3967,6 +5501,20 @@ func (siw *ServerInterfaceWrapper) ListJobs(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// BackfillMedia operation middleware
+func (siw *ServerInterfaceWrapper) BackfillMedia(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BackfillMedia(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListModels operation middleware
 func (siw *ServerInterfaceWrapper) ListModels(w http.ResponseWriter, r *http.Request) {
 
@@ -4208,6 +5756,174 @@ func (siw *ServerInterfaceWrapper) ListRunSteps(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// UpdateScene operation middleware
+func (siw *ServerInterfaceWrapper) UpdateScene(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateScene(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetScenePeaks operation middleware
+func (siw *ServerInterfaceWrapper) GetScenePeaks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetScenePeaksParams
+
+	// ------------- Optional query parameter "startMs" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "startMs", r.URL.Query(), &params.StartMs, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "startMs"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "startMs", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "endMs" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "endMs", r.URL.Query(), &params.EndMs, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "endMs"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "endMs", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetScenePeaks(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegenerateScene operation middleware
+func (siw *ServerInterfaceWrapper) RegenerateScene(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegenerateScene(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSceneTakes operation middleware
+func (siw *ServerInterfaceWrapper) ListSceneTakes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSceneTakes(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SelectSceneTake operation middleware
+func (siw *ServerInterfaceWrapper) SelectSceneTake(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "takeId" -------------
+	var takeId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "takeId", chi.URLParam(r, "takeId"), &takeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "takeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SelectSceneTake(w, r, id, takeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSeries operation middleware
 func (siw *ServerInterfaceWrapper) ListSeries(w http.ResponseWriter, r *http.Request) {
 
@@ -4372,6 +6088,58 @@ func (siw *ServerInterfaceWrapper) UpdateBibleSection(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListCharacters operation middleware
+func (siw *ServerInterfaceWrapper) ListCharacters(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCharacters(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCharacter operation middleware
+func (siw *ServerInterfaceWrapper) CreateCharacter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCharacter(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GenerateSeries operation middleware
 func (siw *ServerInterfaceWrapper) GenerateSeries(w http.ResponseWriter, r *http.Request) {
 
@@ -4389,6 +6157,173 @@ func (siw *ServerInterfaceWrapper) GenerateSeries(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GenerateSeries(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetNarratorVoice operation middleware
+func (siw *ServerInterfaceWrapper) SetNarratorVoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang VoiceLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetNarratorVoice(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStoryboardSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetStoryboardSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStoryboardSettings(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutStoryboardSettings operation middleware
+func (siw *ServerInterfaceWrapper) PutStoryboardSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutStoryboardSettings(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListImageStyles operation middleware
+func (siw *ServerInterfaceWrapper) ListImageStyles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListImageStyles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateImageStyle operation middleware
+func (siw *ServerInterfaceWrapper) CreateImageStyle(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateImageStyle(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteImageStyle operation middleware
+func (siw *ServerInterfaceWrapper) DeleteImageStyle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteImageStyle(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateImageStyle operation middleware
+func (siw *ServerInterfaceWrapper) UpdateImageStyle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateImageStyle(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4471,6 +6406,86 @@ func (siw *ServerInterfaceWrapper) TestLLMSettings(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.TestLLMSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListVoicePresets operation middleware
+func (siw *ServerInterfaceWrapper) ListVoicePresets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListVoicePresets(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateVoicePreset operation middleware
+func (siw *ServerInterfaceWrapper) CreateVoicePreset(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateVoicePreset(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteVoicePreset operation middleware
+func (siw *ServerInterfaceWrapper) DeleteVoicePreset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteVoicePreset(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateVoicePreset operation middleware
+func (siw *ServerInterfaceWrapper) UpdateVoicePreset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateVoicePreset(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4874,6 +6889,102 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/models/{name}/load", wrapper.LoadModel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/settings/voice-presets", wrapper.ListVoicePresets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/settings/voice-presets", wrapper.CreateVoicePreset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/settings/voice-presets/{id}", wrapper.DeleteVoicePreset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/settings/voice-presets/{id}", wrapper.UpdateVoicePreset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/settings/image-styles", wrapper.ListImageStyles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/settings/image-styles", wrapper.CreateImageStyle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/settings/image-styles/{id}", wrapper.DeleteImageStyle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/settings/image-styles/{id}", wrapper.UpdateImageStyle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/series/{id}/characters", wrapper.ListCharacters)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/series/{id}/characters", wrapper.CreateCharacter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/series/{id}/narrator-voices/{lang}", wrapper.SetNarratorVoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/characters/{id}", wrapper.DeleteCharacter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/characters/{id}", wrapper.UpdateCharacter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/characters/{id}/refs", wrapper.AddCharacterRef)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/characters/{id}/refs/{refId}", wrapper.DeleteCharacterRef)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/characters/{id}/refs/{refId}", wrapper.UpdateCharacterRef)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/characters/{id}/sheet", wrapper.RegenerateCharacterSheet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/characters/{id}/loras", wrapper.TrainCharacterLora)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/characters/{id}/voices/{lang}", wrapper.SetCharacterVoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/characters/{id}/voices/{lang}/preview", wrapper.PreviewCharacterVoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/series/{id}/storyboard-settings", wrapper.GetStoryboardSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/series/{id}/storyboard-settings", wrapper.PutStoryboardSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/episodes/{id}/scenes", wrapper.ListScenes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes/{id}/scenes/split", wrapper.SplitScenes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes/{id}/generate-missing", wrapper.GenerateMissing)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/scenes/{id}", wrapper.UpdateScene)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/scenes/{id}/regenerate", wrapper.RegenerateScene)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/scenes/{id}/takes", wrapper.ListSceneTakes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/scenes/{id}/takes/{takeId}/select", wrapper.SelectSceneTake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/scenes/{id}/peaks", wrapper.GetScenePeaks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/assets/{id}/variants/{variant}", wrapper.GetAssetVariant)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/media/backfill", wrapper.BackfillMedia)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/events", wrapper.StreamEvents)
@@ -5562,6 +7673,45 @@ func (response FinalizeAsset422ApplicationProblemPlusJSONResponse) VisitFinalize
 	return err
 }
 
+type GetAssetVariantRequestObject struct {
+	Id      openapi_types.UUID `json:"id"`
+	Variant AssetVariantName   `json:"variant"`
+}
+
+type GetAssetVariantResponseObject interface {
+	VisitGetAssetVariantResponse(w http.ResponseWriter) error
+}
+
+type GetAssetVariant302ResponseHeaders struct {
+	CacheControl string
+	Location     string
+}
+
+type GetAssetVariant302Response struct {
+	Headers GetAssetVariant302ResponseHeaders
+}
+
+func (response GetAssetVariant302Response) VisitGetAssetVariantResponse(w http.ResponseWriter) error {
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(302)
+	return nil
+}
+
+type GetAssetVariant404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAssetVariant404ApplicationProblemPlusJSONResponse) VisitGetAssetVariantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAuditRequestObject struct {
 	Params ListAuditParams
 }
@@ -5868,6 +8018,399 @@ func (response UpdateYouTubeChannelAudit404ApplicationProblemPlusJSONResponse) V
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCharacterRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type DeleteCharacterResponseObject interface {
+	VisitDeleteCharacterResponse(w http.ResponseWriter) error
+}
+
+type DeleteCharacter204Response struct {
+}
+
+func (response DeleteCharacter204Response) VisitDeleteCharacterResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCharacter404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteCharacter404ApplicationProblemPlusJSONResponse) VisitDeleteCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCharacterRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateCharacterJSONRequestBody
+}
+
+type UpdateCharacterResponseObject interface {
+	VisitUpdateCharacterResponse(w http.ResponseWriter) error
+}
+
+type UpdateCharacter200JSONResponse Character
+
+func (response UpdateCharacter200JSONResponse) VisitUpdateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCharacter400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateCharacter400ApplicationProblemPlusJSONResponse) VisitUpdateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCharacter404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateCharacter404ApplicationProblemPlusJSONResponse) VisitUpdateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrainCharacterLoraRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *TrainCharacterLoraJSONRequestBody
+}
+
+type TrainCharacterLoraResponseObject interface {
+	VisitTrainCharacterLoraResponse(w http.ResponseWriter) error
+}
+
+type TrainCharacterLora202JSONResponse StepAccepted
+
+func (response TrainCharacterLora202JSONResponse) VisitTrainCharacterLoraResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrainCharacterLora404ApplicationProblemPlusJSONResponse Problem
+
+func (response TrainCharacterLora404ApplicationProblemPlusJSONResponse) VisitTrainCharacterLoraResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrainCharacterLora422ApplicationProblemPlusJSONResponse Problem
+
+func (response TrainCharacterLora422ApplicationProblemPlusJSONResponse) VisitTrainCharacterLoraResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCharacterRefRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *AddCharacterRefJSONRequestBody
+}
+
+type AddCharacterRefResponseObject interface {
+	VisitAddCharacterRefResponse(w http.ResponseWriter) error
+}
+
+type AddCharacterRef201JSONResponse CharacterRef
+
+func (response AddCharacterRef201JSONResponse) VisitAddCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCharacterRef404ApplicationProblemPlusJSONResponse Problem
+
+func (response AddCharacterRef404ApplicationProblemPlusJSONResponse) VisitAddCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCharacterRef422ApplicationProblemPlusJSONResponse Problem
+
+func (response AddCharacterRef422ApplicationProblemPlusJSONResponse) VisitAddCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCharacterRefRequestObject struct {
+	Id    openapi_types.UUID `json:"id"`
+	RefId openapi_types.UUID `json:"refId"`
+}
+
+type DeleteCharacterRefResponseObject interface {
+	VisitDeleteCharacterRefResponse(w http.ResponseWriter) error
+}
+
+type DeleteCharacterRef204Response struct {
+}
+
+func (response DeleteCharacterRef204Response) VisitDeleteCharacterRefResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCharacterRef404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteCharacterRef404ApplicationProblemPlusJSONResponse) VisitDeleteCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCharacterRefRequestObject struct {
+	Id    openapi_types.UUID `json:"id"`
+	RefId openapi_types.UUID `json:"refId"`
+	Body  *UpdateCharacterRefJSONRequestBody
+}
+
+type UpdateCharacterRefResponseObject interface {
+	VisitUpdateCharacterRefResponse(w http.ResponseWriter) error
+}
+
+type UpdateCharacterRef200JSONResponse CharacterRef
+
+func (response UpdateCharacterRef200JSONResponse) VisitUpdateCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCharacterRef404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateCharacterRef404ApplicationProblemPlusJSONResponse) VisitUpdateCharacterRefResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateCharacterSheetRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *RegenerateCharacterSheetJSONRequestBody
+}
+
+type RegenerateCharacterSheetResponseObject interface {
+	VisitRegenerateCharacterSheetResponse(w http.ResponseWriter) error
+}
+
+type RegenerateCharacterSheet202JSONResponse StepAccepted
+
+func (response RegenerateCharacterSheet202JSONResponse) VisitRegenerateCharacterSheetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateCharacterSheet404ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateCharacterSheet404ApplicationProblemPlusJSONResponse) VisitRegenerateCharacterSheetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCharacterVoiceRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang VoiceLanguage      `json:"lang"`
+	Body *SetCharacterVoiceJSONRequestBody
+}
+
+type SetCharacterVoiceResponseObject interface {
+	VisitSetCharacterVoiceResponse(w http.ResponseWriter) error
+}
+
+type SetCharacterVoice200JSONResponse CharacterVoice
+
+func (response SetCharacterVoice200JSONResponse) VisitSetCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCharacterVoice404ApplicationProblemPlusJSONResponse Problem
+
+func (response SetCharacterVoice404ApplicationProblemPlusJSONResponse) VisitSetCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCharacterVoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response SetCharacterVoice422ApplicationProblemPlusJSONResponse) VisitSetCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCharacterVoiceRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang VoiceLanguage      `json:"lang"`
+	Body *PreviewCharacterVoiceJSONRequestBody
+}
+
+type PreviewCharacterVoiceResponseObject interface {
+	VisitPreviewCharacterVoiceResponse(w http.ResponseWriter) error
+}
+
+type PreviewCharacterVoice202JSONResponse StepAccepted
+
+func (response PreviewCharacterVoice202JSONResponse) VisitPreviewCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCharacterVoice404ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewCharacterVoice404ApplicationProblemPlusJSONResponse) VisitPreviewCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCharacterVoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewCharacterVoice422ApplicationProblemPlusJSONResponse) VisitPreviewCharacterVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -6269,6 +8812,159 @@ func (response ApplyDraftStep409ApplicationProblemPlusJSONResponse) VisitApplyDr
 	return err
 }
 
+type GenerateMissingRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *GenerateMissingJSONRequestBody
+}
+
+type GenerateMissingResponseObject interface {
+	VisitGenerateMissingResponse(w http.ResponseWriter) error
+}
+
+type GenerateMissing202JSONResponse GenerateMissingResponse
+
+func (response GenerateMissing202JSONResponse) VisitGenerateMissingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateMissing404ApplicationProblemPlusJSONResponse Problem
+
+func (response GenerateMissing404ApplicationProblemPlusJSONResponse) VisitGenerateMissingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScenesRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	Params ListScenesParams
+}
+
+type ListScenesResponseObject interface {
+	VisitListScenesResponse(w http.ResponseWriter) error
+}
+
+type ListScenes200JSONResponse SceneList
+
+func (response ListScenes200JSONResponse) VisitListScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScenes404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListScenes404ApplicationProblemPlusJSONResponse) VisitListScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SplitScenesRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *SplitScenesJSONRequestBody
+}
+
+type SplitScenesResponseObject interface {
+	VisitSplitScenesResponse(w http.ResponseWriter) error
+}
+
+type SplitScenes200JSONResponse SceneSplitResult
+
+func (response SplitScenes200JSONResponse) VisitSplitScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SplitScenes202JSONResponse SceneSplitResult
+
+func (response SplitScenes202JSONResponse) VisitSplitScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SplitScenes404ApplicationProblemPlusJSONResponse Problem
+
+func (response SplitScenes404ApplicationProblemPlusJSONResponse) VisitSplitScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SplitScenes409ApplicationProblemPlusJSONResponse SceneSplitConflict
+
+func (response SplitScenes409ApplicationProblemPlusJSONResponse) VisitSplitScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SplitScenes422ApplicationProblemPlusJSONResponse Problem
+
+func (response SplitScenes422ApplicationProblemPlusJSONResponse) VisitSplitScenesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type StreamEventsRequestObject struct {
 	Params StreamEventsParams
 }
@@ -6590,6 +9286,27 @@ func (response ListJobs400ApplicationProblemPlusJSONResponse) VisitListJobsRespo
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BackfillMediaRequestObject struct {
+}
+
+type BackfillMediaResponseObject interface {
+	VisitBackfillMediaResponse(w http.ResponseWriter) error
+}
+
+type BackfillMedia202JSONResponse MediaBackfillResponse
+
+func (response BackfillMedia202JSONResponse) VisitBackfillMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7016,6 +9733,232 @@ func (response ListRunSteps400ApplicationProblemPlusJSONResponse) VisitListRunSt
 	return err
 }
 
+type UpdateSceneRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateSceneJSONRequestBody
+}
+
+type UpdateSceneResponseObject interface {
+	VisitUpdateSceneResponse(w http.ResponseWriter) error
+}
+
+type UpdateScene200JSONResponse Scene
+
+func (response UpdateScene200JSONResponse) VisitUpdateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateScene400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateScene400ApplicationProblemPlusJSONResponse) VisitUpdateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateScene404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateScene404ApplicationProblemPlusJSONResponse) VisitUpdateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateScene409ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateScene409ApplicationProblemPlusJSONResponse) VisitUpdateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetScenePeaksRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	Params GetScenePeaksParams
+}
+
+type GetScenePeaksResponseObject interface {
+	VisitGetScenePeaksResponse(w http.ResponseWriter) error
+}
+
+type GetScenePeaks200JSONResponse Peaks
+
+func (response GetScenePeaks200JSONResponse) VisitGetScenePeaksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetScenePeaks404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetScenePeaks404ApplicationProblemPlusJSONResponse) VisitGetScenePeaksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateSceneRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *RegenerateSceneJSONRequestBody
+}
+
+type RegenerateSceneResponseObject interface {
+	VisitRegenerateSceneResponse(w http.ResponseWriter) error
+}
+
+type RegenerateScene202JSONResponse StepAccepted
+
+func (response RegenerateScene202JSONResponse) VisitRegenerateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateScene404ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateScene404ApplicationProblemPlusJSONResponse) VisitRegenerateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateScene422ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateScene422ApplicationProblemPlusJSONResponse) VisitRegenerateSceneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSceneTakesRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type ListSceneTakesResponseObject interface {
+	VisitListSceneTakesResponse(w http.ResponseWriter) error
+}
+
+type ListSceneTakes200JSONResponse SceneTakeList
+
+func (response ListSceneTakes200JSONResponse) VisitListSceneTakesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSceneTakes404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListSceneTakes404ApplicationProblemPlusJSONResponse) VisitListSceneTakesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SelectSceneTakeRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	TakeId openapi_types.UUID `json:"takeId"`
+}
+
+type SelectSceneTakeResponseObject interface {
+	VisitSelectSceneTakeResponse(w http.ResponseWriter) error
+}
+
+type SelectSceneTake200JSONResponse Scene
+
+func (response SelectSceneTake200JSONResponse) VisitSelectSceneTakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SelectSceneTake404ApplicationProblemPlusJSONResponse Problem
+
+func (response SelectSceneTake404ApplicationProblemPlusJSONResponse) VisitSelectSceneTakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListSeriesRequestObject struct {
 	Params ListSeriesParams
 }
@@ -7220,6 +10163,93 @@ func (response UpdateBibleSection409ApplicationProblemPlusJSONResponse) VisitUpd
 	return err
 }
 
+type ListCharactersRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type ListCharactersResponseObject interface {
+	VisitListCharactersResponse(w http.ResponseWriter) error
+}
+
+type ListCharacters200JSONResponse CharacterList
+
+func (response ListCharacters200JSONResponse) VisitListCharactersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCharacters404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListCharacters404ApplicationProblemPlusJSONResponse) VisitListCharactersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCharacterRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *CreateCharacterJSONRequestBody
+}
+
+type CreateCharacterResponseObject interface {
+	VisitCreateCharacterResponse(w http.ResponseWriter) error
+}
+
+type CreateCharacter201JSONResponse Character
+
+func (response CreateCharacter201JSONResponse) VisitCreateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCharacter400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateCharacter400ApplicationProblemPlusJSONResponse) VisitCreateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCharacter404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateCharacter404ApplicationProblemPlusJSONResponse) VisitCreateCharacterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GenerateSeriesRequestObject struct {
 	Id   openapi_types.UUID `json:"id"`
 	Body *GenerateSeriesJSONRequestBody
@@ -7267,6 +10297,311 @@ func (response GenerateSeries429ApplicationProblemPlusJSONResponse) VisitGenerat
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetNarratorVoiceRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang VoiceLanguage      `json:"lang"`
+	Body *SetNarratorVoiceJSONRequestBody
+}
+
+type SetNarratorVoiceResponseObject interface {
+	VisitSetNarratorVoiceResponse(w http.ResponseWriter) error
+}
+
+type SetNarratorVoice200JSONResponse CharacterVoice
+
+func (response SetNarratorVoice200JSONResponse) VisitSetNarratorVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetNarratorVoice404ApplicationProblemPlusJSONResponse Problem
+
+func (response SetNarratorVoice404ApplicationProblemPlusJSONResponse) VisitSetNarratorVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetNarratorVoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response SetNarratorVoice422ApplicationProblemPlusJSONResponse) VisitSetNarratorVoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStoryboardSettingsRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetStoryboardSettingsResponseObject interface {
+	VisitGetStoryboardSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetStoryboardSettings200JSONResponse StoryboardSettings
+
+func (response GetStoryboardSettings200JSONResponse) VisitGetStoryboardSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStoryboardSettings404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetStoryboardSettings404ApplicationProblemPlusJSONResponse) VisitGetStoryboardSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStoryboardSettingsRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *PutStoryboardSettingsJSONRequestBody
+}
+
+type PutStoryboardSettingsResponseObject interface {
+	VisitPutStoryboardSettingsResponse(w http.ResponseWriter) error
+}
+
+type PutStoryboardSettings200JSONResponse StoryboardSettings
+
+func (response PutStoryboardSettings200JSONResponse) VisitPutStoryboardSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStoryboardSettings400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStoryboardSettings400ApplicationProblemPlusJSONResponse) VisitPutStoryboardSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStoryboardSettings404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStoryboardSettings404ApplicationProblemPlusJSONResponse) VisitPutStoryboardSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListImageStylesRequestObject struct {
+}
+
+type ListImageStylesResponseObject interface {
+	VisitListImageStylesResponse(w http.ResponseWriter) error
+}
+
+type ListImageStyles200JSONResponse ImageStyleList
+
+func (response ListImageStyles200JSONResponse) VisitListImageStylesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateImageStyleRequestObject struct {
+	Body *CreateImageStyleJSONRequestBody
+}
+
+type CreateImageStyleResponseObject interface {
+	VisitCreateImageStyleResponse(w http.ResponseWriter) error
+}
+
+type CreateImageStyle201JSONResponse ImageStyle
+
+func (response CreateImageStyle201JSONResponse) VisitCreateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateImageStyle400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateImageStyle400ApplicationProblemPlusJSONResponse) VisitCreateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateImageStyle422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateImageStyle422ApplicationProblemPlusJSONResponse) VisitCreateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteImageStyleRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type DeleteImageStyleResponseObject interface {
+	VisitDeleteImageStyleResponse(w http.ResponseWriter) error
+}
+
+type DeleteImageStyle204Response struct {
+}
+
+func (response DeleteImageStyle204Response) VisitDeleteImageStyleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteImageStyle404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteImageStyle404ApplicationProblemPlusJSONResponse) VisitDeleteImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateImageStyleRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateImageStyleJSONRequestBody
+}
+
+type UpdateImageStyleResponseObject interface {
+	VisitUpdateImageStyleResponse(w http.ResponseWriter) error
+}
+
+type UpdateImageStyle200JSONResponse ImageStyle
+
+func (response UpdateImageStyle200JSONResponse) VisitUpdateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateImageStyle400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateImageStyle400ApplicationProblemPlusJSONResponse) VisitUpdateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateImageStyle404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateImageStyle404ApplicationProblemPlusJSONResponse) VisitUpdateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateImageStyle422ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateImageStyle422ApplicationProblemPlusJSONResponse) VisitUpdateImageStyleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7412,6 +10747,186 @@ func (response TestLLMSettings429ApplicationProblemPlusJSONResponse) VisitTestLL
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVoicePresetsRequestObject struct {
+}
+
+type ListVoicePresetsResponseObject interface {
+	VisitListVoicePresetsResponse(w http.ResponseWriter) error
+}
+
+type ListVoicePresets200JSONResponse VoicePresetList
+
+func (response ListVoicePresets200JSONResponse) VisitListVoicePresetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVoicePresetRequestObject struct {
+	Body *CreateVoicePresetJSONRequestBody
+}
+
+type CreateVoicePresetResponseObject interface {
+	VisitCreateVoicePresetResponse(w http.ResponseWriter) error
+}
+
+type CreateVoicePreset201JSONResponse VoicePreset
+
+func (response CreateVoicePreset201JSONResponse) VisitCreateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVoicePreset400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateVoicePreset400ApplicationProblemPlusJSONResponse) VisitCreateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVoicePreset422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateVoicePreset422ApplicationProblemPlusJSONResponse) VisitCreateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVoicePresetRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type DeleteVoicePresetResponseObject interface {
+	VisitDeleteVoicePresetResponse(w http.ResponseWriter) error
+}
+
+type DeleteVoicePreset204Response struct {
+}
+
+func (response DeleteVoicePreset204Response) VisitDeleteVoicePresetResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteVoicePreset404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteVoicePreset404ApplicationProblemPlusJSONResponse) VisitDeleteVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVoicePreset409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteVoicePreset409ApplicationProblemPlusJSONResponse) VisitDeleteVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateVoicePresetRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateVoicePresetJSONRequestBody
+}
+
+type UpdateVoicePresetResponseObject interface {
+	VisitUpdateVoicePresetResponse(w http.ResponseWriter) error
+}
+
+type UpdateVoicePreset200JSONResponse VoicePreset
+
+func (response UpdateVoicePreset200JSONResponse) VisitUpdateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateVoicePreset400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateVoicePreset400ApplicationProblemPlusJSONResponse) VisitUpdateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateVoicePreset404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateVoicePreset404ApplicationProblemPlusJSONResponse) VisitUpdateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateVoicePreset422ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateVoicePreset422ApplicationProblemPlusJSONResponse) VisitUpdateVoicePresetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7582,6 +11097,9 @@ type StrictServerInterface interface {
 	// FinalizeAsset Verify an uploaded object and mark the asset ready
 	// (POST /assets/{id}/finalize)
 	FinalizeAsset(ctx context.Context, request FinalizeAssetRequestObject) (FinalizeAssetResponseObject, error)
+	// GetAssetVariant Redirect to a short-lived URL of an asset or one of its image variants
+	// (GET /assets/{id}/variants/{variant})
+	GetAssetVariant(ctx context.Context, request GetAssetVariantRequestObject) (GetAssetVariantResponseObject, error)
 	// ListAudit Cursor-paginated audit log for the active tenant (owner only)
 	// (GET /audit)
 	ListAudit(ctx context.Context, request ListAuditRequestObject) (ListAuditResponseObject, error)
@@ -7615,6 +11133,33 @@ type StrictServerInterface interface {
 	// UpdateYouTubeChannelAudit Record whether the Google API project passed YouTube's audit (audited)
 	// (PATCH /channels/{id})
 	UpdateYouTubeChannelAudit(ctx context.Context, request UpdateYouTubeChannelAuditRequestObject) (UpdateYouTubeChannelAuditResponseObject, error)
+	// DeleteCharacter Delete a character
+	// (DELETE /characters/{id})
+	DeleteCharacter(ctx context.Context, request DeleteCharacterRequestObject) (DeleteCharacterResponseObject, error)
+	// UpdateCharacter Replace a character's names, prompts and profile
+	// (PUT /characters/{id})
+	UpdateCharacter(ctx context.Context, request UpdateCharacterRequestObject) (UpdateCharacterResponseObject, error)
+	// TrainCharacterLora Train a new LoRA version from approved references (a gpu step at training priority)
+	// (POST /characters/{id}/loras)
+	TrainCharacterLora(ctx context.Context, request TrainCharacterLoraRequestObject) (TrainCharacterLoraResponseObject, error)
+	// AddCharacterRef Attach an uploaded image as a reference; queues its image variants
+	// (POST /characters/{id}/refs)
+	AddCharacterRef(ctx context.Context, request AddCharacterRefRequestObject) (AddCharacterRefResponseObject, error)
+	// DeleteCharacterRef Remove a reference image
+	// (DELETE /characters/{id}/refs/{refId})
+	DeleteCharacterRef(ctx context.Context, request DeleteCharacterRefRequestObject) (DeleteCharacterRefResponseObject, error)
+	// UpdateCharacterRef Change a reference's angle label or approval
+	// (PATCH /characters/{id}/refs/{refId})
+	UpdateCharacterRef(ctx context.Context, request UpdateCharacterRefRequestObject) (UpdateCharacterRefResponseObject, error)
+	// RegenerateCharacterSheet Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+	// (POST /characters/{id}/sheet)
+	RegenerateCharacterSheet(ctx context.Context, request RegenerateCharacterSheetRequestObject) (RegenerateCharacterSheetResponseObject, error)
+	// SetCharacterVoice Assign a character's voice for one language
+	// (PUT /characters/{id}/voices/{lang})
+	SetCharacterVoice(ctx context.Context, request SetCharacterVoiceRequestObject) (SetCharacterVoiceResponseObject, error)
+	// PreviewCharacterVoice Synthesize a preview line with the character's voice (a TTS step)
+	// (POST /characters/{id}/voices/{lang}/preview)
+	PreviewCharacterVoice(ctx context.Context, request PreviewCharacterVoiceRequestObject) (PreviewCharacterVoiceResponseObject, error)
 	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
 	// (GET /episodes)
 	ListEpisodes(ctx context.Context, request ListEpisodesRequestObject) (ListEpisodesResponseObject, error)
@@ -7645,6 +11190,15 @@ type StrictServerInterface interface {
 	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
 	// (POST /episodes/{id}/drafts/{lang}/apply-step)
 	ApplyDraftStep(ctx context.Context, request ApplyDraftStepRequestObject) (ApplyDraftStepResponseObject, error)
+	// GenerateMissing Queue every missing or stale image, voice and align step of an episode as one batch run
+	// (POST /episodes/{id}/generate-missing)
+	GenerateMissing(ctx context.Context, request GenerateMissingRequestObject) (GenerateMissingResponseObject, error)
+	// ListScenes Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+	// (GET /episodes/{id}/scenes)
+	ListScenes(ctx context.Context, request ListScenesRequestObject) (ListScenesResponseObject, error)
+	// SplitScenes Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+	// (POST /episodes/{id}/scenes/split)
+	SplitScenes(ctx context.Context, request SplitScenesRequestObject) (SplitScenesResponseObject, error)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -7674,6 +11228,9 @@ type StrictServerInterface interface {
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(ctx context.Context, request ListJobsRequestObject) (ListJobsResponseObject, error)
+	// BackfillMedia Queue image variants and waveform peaks for every ready asset that lacks them
+	// (POST /media/backfill)
+	BackfillMedia(ctx context.Context, request BackfillMediaRequestObject) (BackfillMediaResponseObject, error)
 	// ListModels Every manifest model with its licence, install state and residency
 	// (GET /models)
 	ListModels(ctx context.Context, request ListModelsRequestObject) (ListModelsResponseObject, error)
@@ -7704,6 +11261,21 @@ type StrictServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(ctx context.Context, request ListRunStepsRequestObject) (ListRunStepsResponseObject, error)
+	// UpdateScene Edit a scene's narration, segments, prompt, characters, motion or style
+	// (PATCH /scenes/{id})
+	UpdateScene(ctx context.Context, request UpdateSceneRequestObject) (UpdateSceneResponseObject, error)
+	// GetScenePeaks Waveform peaks of the scene's selected voice take, optionally for a window only
+	// (GET /scenes/{id}/peaks)
+	GetScenePeaks(ctx context.Context, request GetScenePeaksRequestObject) (GetScenePeaksResponseObject, error)
+	// RegenerateScene Queue exactly one step to regenerate one kind of take for one scene
+	// (POST /scenes/{id}/regenerate)
+	RegenerateScene(ctx context.Context, request RegenerateSceneRequestObject) (RegenerateSceneResponseObject, error)
+	// ListSceneTakes Every take of a scene, for the takes strip and A/B compare
+	// (GET /scenes/{id}/takes)
+	ListSceneTakes(ctx context.Context, request ListSceneTakesRequestObject) (ListSceneTakesResponseObject, error)
+	// SelectSceneTake Select a take (also how a revert works)
+	// (POST /scenes/{id}/takes/{takeId}/select)
+	SelectSceneTake(ctx context.Context, request SelectSceneTakeRequestObject) (SelectSceneTakeResponseObject, error)
 	// ListSeries Cursor-paginated list of the active tenant's series
 	// (GET /series)
 	ListSeries(ctx context.Context, request ListSeriesRequestObject) (ListSeriesResponseObject, error)
@@ -7722,9 +11294,36 @@ type StrictServerInterface interface {
 	// UpdateBibleSection Update one bible section with an optimistic-concurrency check
 	// (PATCH /series/{id}/bible)
 	UpdateBibleSection(ctx context.Context, request UpdateBibleSectionRequestObject) (UpdateBibleSectionResponseObject, error)
+	// ListCharacters Characters of a series with refs, LoRA versions, voices and episode appearances
+	// (GET /series/{id}/characters)
+	ListCharacters(ctx context.Context, request ListCharactersRequestObject) (ListCharactersResponseObject, error)
+	// CreateCharacter Create a character
+	// (POST /series/{id}/characters)
+	CreateCharacter(ctx context.Context, request CreateCharacterRequestObject) (CreateCharacterResponseObject, error)
 	// GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
 	// (POST /series/{id}/generate)
 	GenerateSeries(ctx context.Context, request GenerateSeriesRequestObject) (GenerateSeriesResponseObject, error)
+	// SetNarratorVoice Assign the narrator's voice of a series for one language
+	// (PUT /series/{id}/narrator-voices/{lang})
+	SetNarratorVoice(ctx context.Context, request SetNarratorVoiceRequestObject) (SetNarratorVoiceResponseObject, error)
+	// GetStoryboardSettings Storyboard defaults of a series (image style, cadence, segment gap)
+	// (GET /series/{id}/storyboard-settings)
+	GetStoryboardSettings(ctx context.Context, request GetStoryboardSettingsRequestObject) (GetStoryboardSettingsResponseObject, error)
+	// PutStoryboardSettings Replace the storyboard defaults of a series
+	// (PUT /series/{id}/storyboard-settings)
+	PutStoryboardSettings(ctx context.Context, request PutStoryboardSettingsRequestObject) (PutStoryboardSettingsResponseObject, error)
+	// ListImageStyles Image styles of this tenant
+	// (GET /settings/image-styles)
+	ListImageStyles(ctx context.Context, request ListImageStylesRequestObject) (ListImageStylesResponseObject, error)
+	// CreateImageStyle Create an image style
+	// (POST /settings/image-styles)
+	CreateImageStyle(ctx context.Context, request CreateImageStyleRequestObject) (CreateImageStyleResponseObject, error)
+	// DeleteImageStyle Delete an image style (scenes using it fall back to the series default)
+	// (DELETE /settings/image-styles/{id})
+	DeleteImageStyle(ctx context.Context, request DeleteImageStyleRequestObject) (DeleteImageStyleResponseObject, error)
+	// UpdateImageStyle Replace an image style
+	// (PUT /settings/image-styles/{id})
+	UpdateImageStyle(ctx context.Context, request UpdateImageStyleRequestObject) (UpdateImageStyleResponseObject, error)
 	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
 	// (GET /settings/llm)
 	GetLLMSettings(ctx context.Context, request GetLLMSettingsRequestObject) (GetLLMSettingsResponseObject, error)
@@ -7740,6 +11339,18 @@ type StrictServerInterface interface {
 	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
 	// (POST /settings/llm/test)
 	TestLLMSettings(ctx context.Context, request TestLLMSettingsRequestObject) (TestLLMSettingsResponseObject, error)
+	// ListVoicePresets Voice presets of this tenant
+	// (GET /settings/voice-presets)
+	ListVoicePresets(ctx context.Context, request ListVoicePresetsRequestObject) (ListVoicePresetsResponseObject, error)
+	// CreateVoicePreset Create a voice preset; a reference voice needs the consent flag, which is audited
+	// (POST /settings/voice-presets)
+	CreateVoicePreset(ctx context.Context, request CreateVoicePresetRequestObject) (CreateVoicePresetResponseObject, error)
+	// DeleteVoicePreset Delete a voice preset that no voice uses
+	// (DELETE /settings/voice-presets/{id})
+	DeleteVoicePreset(ctx context.Context, request DeleteVoicePresetRequestObject) (DeleteVoicePresetResponseObject, error)
+	// UpdateVoicePreset Replace a voice preset
+	// (PUT /settings/voice-presets/{id})
+	UpdateVoicePreset(ctx context.Context, request UpdateVoicePresetRequestObject) (UpdateVoicePresetResponseObject, error)
 	// CancelStep Cancel one step
 	// (POST /steps/{id}/cancel)
 	CancelStep(ctx context.Context, request CancelStepRequestObject) (CancelStepResponseObject, error)
@@ -8174,6 +11785,33 @@ func (sh *strictHandler) FinalizeAsset(w http.ResponseWriter, r *http.Request, i
 	}
 }
 
+// GetAssetVariant operation middleware
+func (sh *strictHandler) GetAssetVariant(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, variant AssetVariantName) {
+	var request GetAssetVariantRequestObject
+
+	request.Id = id
+	request.Variant = variant
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAssetVariant(ctx, request.(GetAssetVariantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAssetVariant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAssetVariantResponseObject); ok {
+		if err := validResponse.VisitGetAssetVariantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAudit operation middleware
 func (sh *strictHandler) ListAudit(w http.ResponseWriter, r *http.Request, params ListAuditParams) {
 	var request ListAuditRequestObject
@@ -8460,6 +12098,293 @@ func (sh *strictHandler) UpdateYouTubeChannelAudit(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateYouTubeChannelAuditResponseObject); ok {
 		if err := validResponse.VisitUpdateYouTubeChannelAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCharacter operation middleware
+func (sh *strictHandler) DeleteCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request DeleteCharacterRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCharacter(ctx, request.(DeleteCharacterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCharacter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCharacterResponseObject); ok {
+		if err := validResponse.VisitDeleteCharacterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCharacter operation middleware
+func (sh *strictHandler) UpdateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateCharacterRequestObject
+
+	request.Id = id
+
+	var body UpdateCharacterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCharacter(ctx, request.(UpdateCharacterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCharacter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCharacterResponseObject); ok {
+		if err := validResponse.VisitUpdateCharacterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TrainCharacterLora operation middleware
+func (sh *strictHandler) TrainCharacterLora(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request TrainCharacterLoraRequestObject
+
+	request.Id = id
+
+	var body TrainCharacterLoraJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TrainCharacterLora(ctx, request.(TrainCharacterLoraRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TrainCharacterLora")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TrainCharacterLoraResponseObject); ok {
+		if err := validResponse.VisitTrainCharacterLoraResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddCharacterRef operation middleware
+func (sh *strictHandler) AddCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request AddCharacterRefRequestObject
+
+	request.Id = id
+
+	var body AddCharacterRefJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddCharacterRef(ctx, request.(AddCharacterRefRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddCharacterRef")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddCharacterRefResponseObject); ok {
+		if err := validResponse.VisitAddCharacterRefResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCharacterRef operation middleware
+func (sh *strictHandler) DeleteCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID) {
+	var request DeleteCharacterRefRequestObject
+
+	request.Id = id
+	request.RefId = refId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCharacterRef(ctx, request.(DeleteCharacterRefRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCharacterRef")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCharacterRefResponseObject); ok {
+		if err := validResponse.VisitDeleteCharacterRefResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCharacterRef operation middleware
+func (sh *strictHandler) UpdateCharacterRef(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, refId openapi_types.UUID) {
+	var request UpdateCharacterRefRequestObject
+
+	request.Id = id
+	request.RefId = refId
+
+	var body UpdateCharacterRefJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCharacterRef(ctx, request.(UpdateCharacterRefRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCharacterRef")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCharacterRefResponseObject); ok {
+		if err := validResponse.VisitUpdateCharacterRefResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegenerateCharacterSheet operation middleware
+func (sh *strictHandler) RegenerateCharacterSheet(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request RegenerateCharacterSheetRequestObject
+
+	request.Id = id
+
+	var body RegenerateCharacterSheetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegenerateCharacterSheet(ctx, request.(RegenerateCharacterSheetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegenerateCharacterSheet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegenerateCharacterSheetResponseObject); ok {
+		if err := validResponse.VisitRegenerateCharacterSheetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCharacterVoice operation middleware
+func (sh *strictHandler) SetCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	var request SetCharacterVoiceRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body SetCharacterVoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCharacterVoice(ctx, request.(SetCharacterVoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCharacterVoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCharacterVoiceResponseObject); ok {
+		if err := validResponse.VisitSetCharacterVoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewCharacterVoice operation middleware
+func (sh *strictHandler) PreviewCharacterVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	var request PreviewCharacterVoiceRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body PreviewCharacterVoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewCharacterVoice(ctx, request.(PreviewCharacterVoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewCharacterVoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewCharacterVoiceResponseObject); ok {
+		if err := validResponse.VisitPreviewCharacterVoiceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8760,6 +12685,99 @@ func (sh *strictHandler) ApplyDraftStep(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GenerateMissing operation middleware
+func (sh *strictHandler) GenerateMissing(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GenerateMissingRequestObject
+
+	request.Id = id
+
+	var body GenerateMissingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GenerateMissing(ctx, request.(GenerateMissingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GenerateMissing")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GenerateMissingResponseObject); ok {
+		if err := validResponse.VisitGenerateMissingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListScenes operation middleware
+func (sh *strictHandler) ListScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListScenesParams) {
+	var request ListScenesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListScenes(ctx, request.(ListScenesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListScenes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListScenesResponseObject); ok {
+		if err := validResponse.VisitListScenesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SplitScenes operation middleware
+func (sh *strictHandler) SplitScenes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request SplitScenesRequestObject
+
+	request.Id = id
+
+	var body SplitScenesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SplitScenes(ctx, request.(SplitScenesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SplitScenes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SplitScenesResponseObject); ok {
+		if err := validResponse.VisitSplitScenesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // StreamEvents operation middleware
 func (sh *strictHandler) StreamEvents(w http.ResponseWriter, r *http.Request, params StreamEventsParams) {
 	var request StreamEventsRequestObject
@@ -9005,6 +13023,30 @@ func (sh *strictHandler) ListJobs(w http.ResponseWriter, r *http.Request, params
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListJobsResponseObject); ok {
 		if err := validResponse.VisitListJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BackfillMedia operation middleware
+func (sh *strictHandler) BackfillMedia(w http.ResponseWriter, r *http.Request) {
+	var request BackfillMediaRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BackfillMedia(ctx, request.(BackfillMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BackfillMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BackfillMediaResponseObject); ok {
+		if err := validResponse.VisitBackfillMediaResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9272,6 +13314,152 @@ func (sh *strictHandler) ListRunSteps(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
+// UpdateScene operation middleware
+func (sh *strictHandler) UpdateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateSceneRequestObject
+
+	request.Id = id
+
+	var body UpdateSceneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateScene(ctx, request.(UpdateSceneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateScene")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSceneResponseObject); ok {
+		if err := validResponse.VisitUpdateSceneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetScenePeaks operation middleware
+func (sh *strictHandler) GetScenePeaks(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params GetScenePeaksParams) {
+	var request GetScenePeaksRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetScenePeaks(ctx, request.(GetScenePeaksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetScenePeaks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetScenePeaksResponseObject); ok {
+		if err := validResponse.VisitGetScenePeaksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegenerateScene operation middleware
+func (sh *strictHandler) RegenerateScene(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request RegenerateSceneRequestObject
+
+	request.Id = id
+
+	var body RegenerateSceneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegenerateScene(ctx, request.(RegenerateSceneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegenerateScene")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegenerateSceneResponseObject); ok {
+		if err := validResponse.VisitRegenerateSceneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSceneTakes operation middleware
+func (sh *strictHandler) ListSceneTakes(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request ListSceneTakesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSceneTakes(ctx, request.(ListSceneTakesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSceneTakes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSceneTakesResponseObject); ok {
+		if err := validResponse.VisitListSceneTakesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SelectSceneTake operation middleware
+func (sh *strictHandler) SelectSceneTake(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, takeId openapi_types.UUID) {
+	var request SelectSceneTakeRequestObject
+
+	request.Id = id
+	request.TakeId = takeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SelectSceneTake(ctx, request.(SelectSceneTakeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SelectSceneTake")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SelectSceneTakeResponseObject); ok {
+		if err := validResponse.VisitSelectSceneTakeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListSeries operation middleware
 func (sh *strictHandler) ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams) {
 	var request ListSeriesRequestObject
@@ -9447,6 +13635,65 @@ func (sh *strictHandler) UpdateBibleSection(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListCharacters operation middleware
+func (sh *strictHandler) ListCharacters(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request ListCharactersRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCharacters(ctx, request.(ListCharactersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCharacters")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCharactersResponseObject); ok {
+		if err := validResponse.VisitListCharactersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCharacter operation middleware
+func (sh *strictHandler) CreateCharacter(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request CreateCharacterRequestObject
+
+	request.Id = id
+
+	var body CreateCharacterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCharacter(ctx, request.(CreateCharacterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCharacter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCharacterResponseObject); ok {
+		if err := validResponse.VisitCreateCharacterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GenerateSeries operation middleware
 func (sh *strictHandler) GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	var request GenerateSeriesRequestObject
@@ -9476,6 +13723,213 @@ func (sh *strictHandler) GenerateSeries(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GenerateSeriesResponseObject); ok {
 		if err := validResponse.VisitGenerateSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetNarratorVoice operation middleware
+func (sh *strictHandler) SetNarratorVoice(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang VoiceLanguage) {
+	var request SetNarratorVoiceRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body SetNarratorVoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetNarratorVoice(ctx, request.(SetNarratorVoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetNarratorVoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetNarratorVoiceResponseObject); ok {
+		if err := validResponse.VisitSetNarratorVoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStoryboardSettings operation middleware
+func (sh *strictHandler) GetStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetStoryboardSettingsRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStoryboardSettings(ctx, request.(GetStoryboardSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStoryboardSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStoryboardSettingsResponseObject); ok {
+		if err := validResponse.VisitGetStoryboardSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutStoryboardSettings operation middleware
+func (sh *strictHandler) PutStoryboardSettings(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request PutStoryboardSettingsRequestObject
+
+	request.Id = id
+
+	var body PutStoryboardSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutStoryboardSettings(ctx, request.(PutStoryboardSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutStoryboardSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutStoryboardSettingsResponseObject); ok {
+		if err := validResponse.VisitPutStoryboardSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListImageStyles operation middleware
+func (sh *strictHandler) ListImageStyles(w http.ResponseWriter, r *http.Request) {
+	var request ListImageStylesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListImageStyles(ctx, request.(ListImageStylesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListImageStyles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListImageStylesResponseObject); ok {
+		if err := validResponse.VisitListImageStylesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateImageStyle operation middleware
+func (sh *strictHandler) CreateImageStyle(w http.ResponseWriter, r *http.Request) {
+	var request CreateImageStyleRequestObject
+
+	var body CreateImageStyleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateImageStyle(ctx, request.(CreateImageStyleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateImageStyle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateImageStyleResponseObject); ok {
+		if err := validResponse.VisitCreateImageStyleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteImageStyle operation middleware
+func (sh *strictHandler) DeleteImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request DeleteImageStyleRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteImageStyle(ctx, request.(DeleteImageStyleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteImageStyle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteImageStyleResponseObject); ok {
+		if err := validResponse.VisitDeleteImageStyleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateImageStyle operation middleware
+func (sh *strictHandler) UpdateImageStyle(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateImageStyleRequestObject
+
+	request.Id = id
+
+	var body UpdateImageStyleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateImageStyle(ctx, request.(UpdateImageStyleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateImageStyle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateImageStyleResponseObject); ok {
+		if err := validResponse.VisitUpdateImageStyleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9629,6 +14083,120 @@ func (sh *strictHandler) TestLLMSettings(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// ListVoicePresets operation middleware
+func (sh *strictHandler) ListVoicePresets(w http.ResponseWriter, r *http.Request) {
+	var request ListVoicePresetsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListVoicePresets(ctx, request.(ListVoicePresetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListVoicePresets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListVoicePresetsResponseObject); ok {
+		if err := validResponse.VisitListVoicePresetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateVoicePreset operation middleware
+func (sh *strictHandler) CreateVoicePreset(w http.ResponseWriter, r *http.Request) {
+	var request CreateVoicePresetRequestObject
+
+	var body CreateVoicePresetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateVoicePreset(ctx, request.(CreateVoicePresetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateVoicePreset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateVoicePresetResponseObject); ok {
+		if err := validResponse.VisitCreateVoicePresetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteVoicePreset operation middleware
+func (sh *strictHandler) DeleteVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request DeleteVoicePresetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteVoicePreset(ctx, request.(DeleteVoicePresetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteVoicePreset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteVoicePresetResponseObject); ok {
+		if err := validResponse.VisitDeleteVoicePresetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateVoicePreset operation middleware
+func (sh *strictHandler) UpdateVoicePreset(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateVoicePresetRequestObject
+
+	request.Id = id
+
+	var body UpdateVoicePresetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateVoicePreset(ctx, request.(UpdateVoicePresetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateVoicePreset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateVoicePresetResponseObject); ok {
+		if err := validResponse.VisitUpdateVoicePresetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CancelStep operation middleware
 func (sh *strictHandler) CancelStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	var request CancelStepRequestObject
@@ -9712,230 +14280,320 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"qYXOBs8G+zwX+1eHg5v3N/8/AAD//w==",
+	"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",
+	"H0ShTJRa6Gz0zeiQ5+Lw+uno07tP/38AAAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

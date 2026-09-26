@@ -41,6 +41,9 @@ type AIActionHandler struct {
 
 	Registry *registry.Registry
 	Queries  *dbgen.Queries
+	// PinCharacters adds the series' pinned character profiles to every
+	// request as their own data block (STORY_PIN_CHARACTERS, default on).
+	PinCharacters bool
 }
 
 var _ pipeline.StepHandler = (*AIActionHandler)(nil)
@@ -171,6 +174,7 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 	built := storyctx.Build(h.templateKey, storyctx.BuildRequest{
 		BibleExcerpt: storyctx.TaintedContent{Text: bibleExcerpt, Origin: originOf(bibleTainted), Tainted: bibleTainted},
 		Target:       storyctx.TaintedContent{Text: fmt.Sprintf("Write the ordered beat outline for episode %d of this series.", idx), Origin: llm.OriginUser},
+		Characters:   h.pinnedProfiles(ctx, tenantID, seriesID),
 		TokenBudget:  defaultTokenBudget,
 	})
 
@@ -281,6 +285,7 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 		BibleExcerpt: storyctx.TaintedContent{Text: bibleExcerpt, Origin: originOf(bibleTainted), Tainted: bibleTainted},
 		Previously:   storyctx.TaintedContent{Text: draft.Summary, Origin: originOf(draft.SummaryTainted), Tainted: draft.SummaryTainted},
 		Target:       storyctx.TaintedContent{Text: targetText, Origin: originOf(targetTainted), Tainted: targetTainted},
+		Characters:   h.pinnedProfiles(ctx, tenantID, idconv.FromPg(episode.SeriesID)),
 		Instruction:  instruction,
 		TokenBudget:  defaultTokenBudget,
 	})
@@ -352,6 +357,7 @@ func (h *AIActionHandler) runTranslate(ctx context.Context, sc *pipeline.StepCon
 		BibleExcerpt:       storyctx.TaintedContent{Text: bibleExcerpt, Origin: originOf(bibleTainted), Tainted: bibleTainted},
 		Target:             storyctx.TaintedContent{Text: targetText, Origin: originOf(targetTainted), Tainted: targetTainted},
 		TargetLanguageName: targetLanguageName(targetLang),
+		Characters:         h.pinnedProfiles(ctx, tenantID, idconv.FromPg(episode.SeriesID)),
 		TokenBudget:        defaultTokenBudget,
 	})
 
@@ -620,4 +626,32 @@ func mapKeys(m map[string]string) []string {
 		out = append(out, k)
 	}
 	return out
+}
+
+// pinnedProfiles renders the series' pinned character profiles as one
+// block ("Name (other names): profile" per line). Profiles are written by
+// the workspace's own users, so the block is origin=user and untainted.
+// A lookup failure only drops the block: the action still runs.
+func (h *AIActionHandler) pinnedProfiles(ctx context.Context, tenantID, seriesID uuid.UUID) storyctx.TaintedContent {
+	if !h.PinCharacters {
+		return storyctx.TaintedContent{}
+	}
+	rows, err := h.Queries.ListPinnedCharacterProfiles(ctx, dbgen.ListPinnedCharacterProfilesParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
+	if err != nil || len(rows) == 0 {
+		return storyctx.TaintedContent{}
+	}
+	var b strings.Builder
+	for _, r := range rows {
+		var names []string
+		for _, n := range []string{r.NameEn, r.NameOrig, r.NameVi} {
+			if n != "" {
+				names = append(names, n)
+			}
+		}
+		b.WriteString(strings.Join(names, " / "))
+		b.WriteString(": ")
+		b.WriteString(strings.TrimSpace(r.Profile))
+		b.WriteString("\n")
+	}
+	return storyctx.TaintedContent{Text: b.String(), Origin: llm.OriginUser}
 }

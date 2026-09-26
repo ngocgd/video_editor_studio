@@ -74,9 +74,22 @@ func (m *Memory) Allow(key string) bool {
 // Middleware applies Allow keyed by the client IP to every request,
 // returning 429 via onReject when the bucket is empty.
 func (m *Memory) Middleware(clientIP func(*http.Request) string, onReject http.HandlerFunc) func(http.Handler) http.Handler {
+	return SplitMiddleware(m, m, func(*http.Request) bool { return false }, clientIP, onReject)
+}
+
+// SplitMiddleware applies the dedicated bucket to requests for which
+// dedicated returns true and the general bucket to every other request,
+// both keyed by the client IP. It keeps a class of cheap, high-volume
+// requests (media redirects of a storyboard page) from spending the
+// budget the rest of the API, login included, depends on.
+func SplitMiddleware(general, dedicatedBucket *Memory, dedicated func(*http.Request) bool, clientIP func(*http.Request) string, onReject http.HandlerFunc) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !m.Allow(clientIP(r)) {
+			bucket := general
+			if dedicated(r) {
+				bucket = dedicatedBucket
+			}
+			if !bucket.Allow(clientIP(r)) {
 				onReject(w, r)
 				return
 			}

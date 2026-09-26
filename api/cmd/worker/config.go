@@ -86,4 +86,11 @@ type config struct {
 	YouTubeQuota youtube.QuotaConfig
 	// AnalyticsWorkers bounds concurrent channel syncs.
 	AnalyticsWorkers int `env:"WORKER_ANALYTICS_CONCURRENCY" envDefault:"2"`
+
+	// PinCharacters mirrors cmd/api's STORY_PIN_CHARACTERS: the worker is
+	// what actually builds the LLM requests.
+	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
+
+	// FFmpegPath is the ffmpeg binary the media and voice steps run.
+	FFmpegPath string `env:"FFMPEG_PATH" envDefault:"ffmpeg"`
 }

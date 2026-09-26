@@ -31,7 +31,7 @@ func runStatus(t *testing.T, pool *pgxpool.Pool, runID uuid.UUID) string {
 func TestRunRollsUpToDoneWhenEveryStepFinishes(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("rollup-ok", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("rollup-ok", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "rollup-done-tenant")
@@ -71,10 +71,10 @@ func TestRunRollsUpToDoneWhenEveryStepFinishes(t *testing.T) {
 func TestPermanentFailureCascadeCancelsDependentsAndFailsTheRun(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "rollup-bad", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "rollup-bad", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		return nil, pipeline.ErrValidation
 	}})
-	registry.Register(succeedsImmediately("rollup-dependent", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("rollup-dependent", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "rollup-failed-tenant")
@@ -112,7 +112,7 @@ func TestPermanentFailureCascadeCancelsDependentsAndFailsTheRun(t *testing.T) {
 func TestRetryStepRejectsInactiveRun(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "retry-inactive-run", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "retry-inactive-run", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		return nil, pipeline.ErrValidation
 	}})
 	engine, pool := pipelineEngine(t, registry)
@@ -147,7 +147,7 @@ func TestRetryStepRejectsInactiveRun(t *testing.T) {
 func TestRetryStepRejectsUnmetDependency(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "retry-unmet-dep", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "retry-unmet-dep", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		return nil, pipeline.ErrValidation
 	}})
 	engine, pool := pipelineEngine(t, registry)
@@ -195,8 +195,8 @@ func TestRetryStepRejectsUnmetDependency(t *testing.T) {
 func TestMarkStaleDependentsReopensDoneStepAndReArmsIt(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("stale-dep-upstream", pipeline.QueueCPU))
-	registry.Register(succeedsImmediately("stale-dep-downstream", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("stale-dep-upstream", testQueue))
+	registry.Register(succeedsImmediately("stale-dep-downstream", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "stale-dep-tenant")

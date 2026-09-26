@@ -40,6 +40,9 @@ RUN curl -sSL -o /tmp/golangci-lint.tar.gz \
     && mv /tmp/golangci-lint-2.14.0-linux-amd64/golangci-lint /usr/local/bin/golangci-lint \
     && rm -rf /tmp/golangci-lint.tar.gz /tmp/golangci-lint-2.14.0-linux-amd64
 
+# The same static ffmpeg the worker image ships, for the media tests.
+COPY --from=mwader/static-ffmpeg@sha256:11a44711684c0b9f754c047dcd64235b8b52deab251bd0e0a86f22faa160749c /ffmpeg /usr/local/bin/ffmpeg
+
 # Redocly CLI for OpenAPI bundling, pinned version.
 RUN npm install -g @redocly/cli@1.25.11 && npm cache clean --force
 

@@ -88,7 +88,7 @@ func TestStreamEventsThroughCaddyDeliversIncrementallyAndRejectsOtherTenant(t *t
 	registry := pipeline.NewRegistry()
 	handlerStarted := make(chan struct{})
 	releaseHandler := make(chan struct{})
-	registry.Register(&fakeHandler{kind: "sse-http-step", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "sse-http-step", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		close(handlerStarted)
 		<-releaseHandler
 		return pipeline.Output{}, nil

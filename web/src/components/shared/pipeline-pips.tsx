@@ -15,7 +15,7 @@ export interface PipelinePip {
 export function PipelinePips({ pips }: { pips: PipelinePip[] }) {
   return (
     <TooltipPrimitive.Provider delayDuration={300}>
-      <ul className="flex items-center gap-1" aria-label="Pipeline steps">
+      <ul className="flex flex-wrap items-center gap-1 overflow-hidden" aria-label="Pipeline steps">
         {pips.map((pip) => (
           <li key={pip.key}>
             {pip.staleReason ? (

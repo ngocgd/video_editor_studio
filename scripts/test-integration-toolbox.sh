@@ -12,6 +12,8 @@
 #   docker compose -p <project> -f deploy/compose.yml -f deploy/compose.integration.yml \
 #       --env-file .env up -d --wait --build
 #   PROJECT=<project> scripts/test-integration-toolbox.sh [-run Pattern]
+#   (INTEGRATION_TAGS=integration,live adds the live-LLM checks, for a
+#   stack started with a real provider such as COMPOSE_PROFILES=claude-cli)
 #   docker compose -p <project> -f deploy/compose.yml -f deploy/compose.integration.yml \
 #       --env-file .env down -v
 #
@@ -55,6 +57,10 @@ exec docker run --rm \
     -e OWNER_DATABASE_URL="postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD:?set in .env}@postgres:5432/loomtale?sslmode=disable" \
     -e DATABASE_URL="postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set in .env}@postgres:5432/loomtale?sslmode=disable" \
     -e BACKUP_DATABASE_URL="postgres://loomtale_backup:${POSTGRES_BACKUP_PASSWORD:?set in .env}@postgres:5432/loomtale?sslmode=disable" \
+    -e MINIO_ENDPOINT="minio:9000" \
+    -e MINIO_BUCKET="loomtale" \
+    -e MINIO_APP_ACCESS_KEY="${MINIO_APP_ACCESS_KEY:?set in .env}" \
+    -e MINIO_APP_SECRET_KEY="${MINIO_APP_SECRET_KEY:?set in .env}" \
     --entrypoint go \
     loomtale/toolbox:local \
-    test -tags=integration ./internal/integration/... -race -count=1 -v "$@"
+    test -tags="${INTEGRATION_TAGS:-integration}" ./internal/integration/... -race -count=1 -v "$@"

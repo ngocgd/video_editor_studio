@@ -120,6 +120,54 @@ paths:
     $ref: paths/models.yaml#/pauseModelInstall
   /models/{name}/load:
     $ref: paths/models.yaml#/loadModel
+  /settings/voice-presets:
+    $ref: paths/presets.yaml#/voicePresets
+  /settings/voice-presets/{id}:
+    $ref: paths/presets.yaml#/voicePresetItem
+  /settings/image-styles:
+    $ref: paths/presets.yaml#/imageStyles
+  /settings/image-styles/{id}:
+    $ref: paths/presets.yaml#/imageStyleItem
+  /series/{id}/characters:
+    $ref: paths/characters.yaml#/seriesCharacters
+  /series/{id}/narrator-voices/{lang}:
+    $ref: paths/characters.yaml#/narratorVoice
+  /characters/{id}:
+    $ref: paths/characters.yaml#/characterItem
+  /characters/{id}/refs:
+    $ref: paths/characters.yaml#/characterRefs
+  /characters/{id}/refs/{refId}:
+    $ref: paths/characters.yaml#/characterRefItem
+  /characters/{id}/sheet:
+    $ref: paths/characters.yaml#/characterSheet
+  /characters/{id}/loras:
+    $ref: paths/characters.yaml#/characterLoras
+  /characters/{id}/voices/{lang}:
+    $ref: paths/characters.yaml#/characterVoice
+  /characters/{id}/voices/{lang}/preview:
+    $ref: paths/characters.yaml#/characterVoicePreview
+  /series/{id}/storyboard-settings:
+    $ref: paths/scenes.yaml#/storyboardSettings
+  /episodes/{id}/scenes:
+    $ref: paths/scenes.yaml#/episodeScenes
+  /episodes/{id}/scenes/split:
+    $ref: paths/scenes.yaml#/episodeSceneSplit
+  /episodes/{id}/generate-missing:
+    $ref: paths/scenes.yaml#/generateMissing
+  /scenes/{id}:
+    $ref: paths/scenes.yaml#/sceneItem
+  /scenes/{id}/regenerate:
+    $ref: paths/scenes.yaml#/sceneRegenerate
+  /scenes/{id}/takes:
+    $ref: paths/scenes.yaml#/sceneTakes
+  /scenes/{id}/takes/{takeId}/select:
+    $ref: paths/scenes.yaml#/sceneTakeSelect
+  /scenes/{id}/peaks:
+    $ref: paths/scenes.yaml#/scenePeaks
+  /assets/{id}/variants/{variant}:
+    $ref: paths/media.yaml#/assetVariant
+  /media/backfill:
+    $ref: paths/media.yaml#/mediaBackfill
   /events:
     $ref: paths/events.yaml#/events
 components:

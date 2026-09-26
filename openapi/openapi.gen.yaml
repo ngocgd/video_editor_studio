@@ -1890,6 +1890,1106 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /settings/voice-presets:
+    get:
+      operationId: listVoicePresets
+      summary: Voice presets of this tenant
+      tags:
+        - storyboard
+      x-min-role: viewer
+      responses:
+        '200':
+          description: voice presets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoicePresetList'
+    post:
+      operationId: createVoicePreset
+      summary: Create a voice preset; a reference voice needs the consent flag, which is audited
+      tags:
+        - storyboard
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoicePresetInput'
+      responses:
+        '201':
+          description: voice preset created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoicePreset'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /settings/voice-presets/{id}:
+    put:
+      operationId: updateVoicePreset
+      summary: Replace a voice preset
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoicePresetInput'
+      responses:
+        '200':
+          description: voice preset updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoicePreset'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      operationId: deleteVoicePreset
+      summary: Delete a voice preset that no voice uses
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: deleted
+        '404':
+          description: voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: a character or narrator voice still uses it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /settings/image-styles:
+    get:
+      operationId: listImageStyles
+      summary: Image styles of this tenant
+      tags:
+        - storyboard
+      x-min-role: viewer
+      responses:
+        '200':
+          description: image styles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageStyleList'
+    post:
+      operationId: createImageStyle
+      summary: Create an image style
+      tags:
+        - storyboard
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageStyleInput'
+      responses:
+        '201':
+          description: image style created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageStyle'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: base model is not a scene model in the manifest
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /settings/image-styles/{id}:
+    put:
+      operationId: updateImageStyle
+      summary: Replace an image style
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageStyleInput'
+      responses:
+        '200':
+          description: image style updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageStyle'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: image style not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: base model is not a scene model in the manifest
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      operationId: deleteImageStyle
+      summary: Delete an image style (scenes using it fall back to the series default)
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: deleted
+        '404':
+          description: image style not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}/characters:
+    get:
+      operationId: listCharacters
+      summary: Characters of a series with refs, LoRA versions, voices and episode appearances
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: characters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterList'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    post:
+      operationId: createCharacter
+      summary: Create a character
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterInput'
+      responses:
+        '201':
+          description: character created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}/narrator-voices/{lang}:
+    put:
+      operationId: setNarratorVoice
+      summary: Assign the narrator's voice of a series for one language
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/VoiceLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceAssignment'
+      responses:
+        '200':
+          description: voice assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterVoice'
+        '404':
+          description: series or voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: a parameter is a server-set control key, unknown, or malformed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}:
+    put:
+      operationId: updateCharacter
+      summary: Replace a character's names, prompts and profile
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterInput'
+      responses:
+        '200':
+          description: character updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: character not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      operationId: deleteCharacter
+      summary: Delete a character
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: deleted
+        '404':
+          description: character not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/refs:
+    post:
+      operationId: addCharacterRef
+      summary: Attach an uploaded image as a reference; queues its image variants
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterRefCreate'
+      responses:
+        '201':
+          description: reference added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterRef'
+        '404':
+          description: character or asset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: the asset is not a ready image
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/refs/{refId}:
+    patch:
+      operationId: updateCharacterRef
+      summary: Change a reference's angle label or approval
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: refId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterRefUpdate'
+      responses:
+        '200':
+          description: reference updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterRef'
+        '404':
+          description: reference not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      operationId: deleteCharacterRef
+      summary: Remove a reference image
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: refId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: deleted
+        '404':
+          description: reference not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/sheet:
+    post:
+      operationId: regenerateCharacterSheet
+      summary: Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterSheetRequest'
+      responses:
+        '202':
+          description: sheet step queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepAccepted'
+        '404':
+          description: character or reference not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/loras:
+    post:
+      operationId: trainCharacterLora
+      summary: Train a new LoRA version from approved references (a gpu step at training priority)
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoraTrainRequest'
+      responses:
+        '202':
+          description: training step queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepAccepted'
+        '404':
+          description: character not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: no approved reference images to train on
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/voices/{lang}:
+    put:
+      operationId: setCharacterVoice
+      summary: Assign a character's voice for one language
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/VoiceLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceAssignment'
+      responses:
+        '200':
+          description: voice assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterVoice'
+        '404':
+          description: character or voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: a parameter is a server-set control key, unknown, or malformed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /characters/{id}/voices/{lang}/preview:
+    post:
+      operationId: previewCharacterVoice
+      summary: Synthesize a preview line with the character's voice (a TTS step)
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/VoiceLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoicePreviewRequest'
+      responses:
+        '202':
+          description: preview step queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepAccepted'
+        '404':
+          description: character not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: no voice assigned for this language
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}/storyboard-settings:
+    get:
+      operationId: getStoryboardSettings
+      summary: Storyboard defaults of a series (image style, cadence, segment gap)
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryboardSettings'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      operationId: putStoryboardSettings
+      summary: Replace the storyboard defaults of a series
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryboardSettings'
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryboardSettings'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: series or image style not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/scenes:
+    get:
+      operationId: listScenes
+      summary: Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/SceneLanguage'
+        - name: filter
+          in: query
+          schema:
+            $ref: '#/components/schemas/SceneFilter'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 20
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+      responses:
+        '200':
+          description: scenes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneList'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/scenes/split:
+    post:
+      operationId: splitScenes
+      summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SceneSplitRequest'
+      responses:
+        '200':
+          description: paragraph split applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneSplitResult'
+        '202':
+          description: LLM split step queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneSplitResult'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: the split would delete edited scenes or takes and discardWork was not set; nothing changed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/SceneSplitConflict'
+        '422':
+          description: no draft for this language, or it is empty
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/generate-missing:
+    post:
+      operationId: generateMissing
+      summary: Queue every missing or stale image, voice and align step of an episode as one batch run
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateMissingRequest'
+      responses:
+        '202':
+          description: batch queued (queued counts may all be zero)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateMissingResponse'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /scenes/{id}:
+    patch:
+      operationId: updateScene
+      summary: Edit a scene's narration, segments, prompt, characters, motion or style
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenePatch'
+      responses:
+        '200':
+          description: scene updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scene'
+        '400':
+          description: invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: scene not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: the scene changed since expectedVersion
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /scenes/{id}/regenerate:
+    post:
+      operationId: regenerateScene
+      summary: Queue exactly one step to regenerate one kind of take for one scene
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SceneRegenerateRequest'
+      responses:
+        '202':
+          description: step queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepAccepted'
+        '404':
+          description: scene not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: the scene has no voice take to align
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /scenes/{id}/takes:
+    get:
+      operationId: listSceneTakes
+      summary: Every take of a scene, for the takes strip and A/B compare
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: takes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneTakeList'
+        '404':
+          description: scene not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /scenes/{id}/takes/{takeId}/select:
+    post:
+      operationId: selectSceneTake
+      summary: Select a take (also how a revert works)
+      tags:
+        - storyboard
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: takeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: scene with the take selected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scene'
+        '404':
+          description: scene or take not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /scenes/{id}/peaks:
+    get:
+      operationId: getScenePeaks
+      summary: Waveform peaks of the scene's selected voice take, optionally for a window only
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startMs
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: endMs
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: peaks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Peaks'
+        '404':
+          description: scene or peaks not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /assets/{id}/variants/{variant}:
+    get:
+      operationId: getAssetVariant
+      summary: Redirect to a short-lived URL of an asset or one of its image variants
+      tags:
+        - storyboard
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: variant
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AssetVariantName'
+      responses:
+        '302':
+          description: redirect to the object
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+            Cache-Control:
+              required: true
+              description: The redirect is cached privately for less than the target URL's lifetime.
+              schema:
+                type: string
+        '404':
+          description: asset or variant not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /media/backfill:
+    post:
+      operationId: backfillMedia
+      summary: Queue image variants and waveform peaks for every ready asset that lacks them
+      tags:
+        - storyboard
+      x-min-role: owner
+      responses:
+        '202':
+          description: derivative steps queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaBackfillResponse'
   /events:
     get:
       operationId: streamEvents
@@ -3770,6 +4870,967 @@ components:
         stepId:
           type: string
           format: uuid
+    StringParams:
+      type: object
+      description: Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+      maxProperties: 32
+      additionalProperties:
+        type: string
+        maxLength: 200
+    VoicePreset:
+      type: object
+      required:
+        - id
+        - name
+        - engine
+        - params
+        - consented
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        engine:
+          type: string
+        refAudioAssetId:
+          type: string
+          format: uuid
+        params:
+          $ref: '#/components/schemas/StringParams'
+        consented:
+          type: boolean
+          description: True once someone confirmed the reference voice is their own or licensed.
+        consentedAt:
+          type: string
+          format: date-time
+    VoicePresetList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VoicePreset'
+    VoicePresetInput:
+      type: object
+      required:
+        - name
+        - engine
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        engine:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+        refAudioAssetId:
+          type: string
+          format: uuid
+          description: A ready audio asset to clone. Requires consent.
+        params:
+          $ref: '#/components/schemas/StringParams'
+        consent:
+          type: boolean
+          description: Confirms the reference voice is the uploader's own or licensed; recorded in the audit log.
+    ImageStyleLora:
+      type: object
+      required:
+        - name
+        - strength
+      properties:
+        name:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$
+        strength:
+          type: number
+          minimum: -2
+          maximum: 2
+    ImageStyle:
+      type: object
+      required:
+        - id
+        - name
+        - stylePrompt
+        - negativePrompt
+        - baseModel
+        - sampler
+        - steps
+        - width
+        - height
+        - loras
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        stylePrompt:
+          type: string
+        negativePrompt:
+          type: string
+        baseModel:
+          type: string
+        sampler:
+          type: string
+        steps:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        loras:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageStyleLora'
+    ImageStyleList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageStyle'
+    ImageStyleInput:
+      type: object
+      required:
+        - name
+        - baseModel
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        stylePrompt:
+          type: string
+          maxLength: 2000
+        negativePrompt:
+          type: string
+          maxLength: 2000
+        baseModel:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+          description: A models/manifest.yaml entry whose task is scene.
+        sampler:
+          type: string
+          maxLength: 50
+        steps:
+          type: integer
+          minimum: 1
+          maximum: 150
+        width:
+          type: integer
+          minimum: 64
+          maximum: 4096
+        height:
+          type: integer
+          minimum: 64
+          maximum: 4096
+        loras:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/ImageStyleLora'
+    CharacterNames:
+      type: object
+      required:
+        - orig
+        - en
+        - vi
+      properties:
+        orig:
+          type: string
+          maxLength: 100
+        en:
+          type: string
+          maxLength: 100
+        vi:
+          type: string
+          maxLength: 100
+    CharacterRef:
+      type: object
+      required:
+        - id
+        - assetId
+        - angle
+        - approved
+        - origin
+      properties:
+        id:
+          type: string
+          format: uuid
+        assetId:
+          type: string
+          format: uuid
+        angle:
+          type: string
+        approved:
+          type: boolean
+        origin:
+          type: string
+          enum:
+            - upload
+            - generated
+    CharacterLora:
+      type: object
+      required:
+        - id
+        - version
+        - status
+        - datasetSize
+        - trainerParams
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+        status:
+          type: string
+          enum:
+            - queued
+            - training
+            - ready
+            - failed
+        datasetSize:
+          type: integer
+        trainerParams:
+          $ref: '#/components/schemas/StringParams'
+        weightsFile:
+          type: string
+        stepId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    VoiceLanguage:
+      type: string
+      enum:
+        - en
+        - vi
+    CharacterVoice:
+      type: object
+      required:
+        - lang
+        - engine
+        - params
+      properties:
+        lang:
+          $ref: '#/components/schemas/VoiceLanguage'
+        engine:
+          type: string
+        voicePresetId:
+          type: string
+          format: uuid
+        params:
+          $ref: '#/components/schemas/StringParams'
+        previewAssetId:
+          type: string
+          format: uuid
+          description: Audio of the latest "Preview line" with this voice.
+    CharacterAppearance:
+      type: object
+      required:
+        - episodeId
+        - episodeIdx
+        - sceneCount
+      properties:
+        episodeId:
+          type: string
+          format: uuid
+        episodeIdx:
+          type: integer
+        sceneCount:
+          type: integer
+    Character:
+      type: object
+      required:
+        - id
+        - seriesId
+        - names
+        - role
+        - appearancePrompt
+        - negativePrompt
+        - triggerToken
+        - profile
+        - profileTokens
+        - pinned
+        - refs
+        - loras
+        - voices
+        - appearances
+      properties:
+        id:
+          type: string
+          format: uuid
+        seriesId:
+          type: string
+          format: uuid
+        names:
+          $ref: '#/components/schemas/CharacterNames'
+        role:
+          type: string
+        appearancePrompt:
+          type: string
+        negativePrompt:
+          type: string
+        triggerToken:
+          type: string
+        profile:
+          type: string
+          description: Sent to the LLM with every request for this series while pinned.
+        profileTokens:
+          type: integer
+          description: Estimated LLM tokens of the profile.
+        pinned:
+          type: boolean
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterRef'
+        loras:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterLora'
+        voices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterVoice'
+        appearances:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterAppearance'
+    CharacterList:
+      type: object
+      required:
+        - items
+        - narratorVoices
+        - pinnedTokens
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Character'
+        narratorVoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterVoice'
+        pinnedTokens:
+          type: integer
+          description: Estimated LLM tokens every request for this series spends on pinned character profiles.
+    CharacterInput:
+      type: object
+      required:
+        - names
+      properties:
+        names:
+          $ref: '#/components/schemas/CharacterNames'
+        role:
+          type: string
+          maxLength: 100
+        appearancePrompt:
+          type: string
+          maxLength: 2000
+        negativePrompt:
+          type: string
+          maxLength: 1000
+        triggerToken:
+          type: string
+          pattern: ^[A-Za-z0-9_]{0,40}$
+        profile:
+          type: string
+          maxLength: 8000
+        pinned:
+          type: boolean
+    VoiceAssignment:
+      type: object
+      required:
+        - engine
+      properties:
+        engine:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+        voicePresetId:
+          type: string
+          format: uuid
+        params:
+          $ref: '#/components/schemas/StringParams'
+    CharacterRefCreate:
+      type: object
+      required:
+        - assetId
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        angle:
+          type: string
+          maxLength: 40
+        approved:
+          type: boolean
+    CharacterRefUpdate:
+      type: object
+      properties:
+        angle:
+          type: string
+          maxLength: 40
+        approved:
+          type: boolean
+    CharacterSheetRequest:
+      type: object
+      required:
+        - refId
+      properties:
+        refId:
+          type: string
+          format: uuid
+          description: The reference image the sheet is edited from.
+        prompt:
+          type: string
+          maxLength: 1000
+    StepAccepted:
+      type: object
+      required:
+        - runId
+        - stepIds
+      properties:
+        runId:
+          type: string
+          format: uuid
+        stepIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    LoraTrainRequest:
+      type: object
+      properties:
+        datasetAssetIds:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+            format: uuid
+          description: Defaults to every approved reference image.
+        steps:
+          type: integer
+          minimum: 100
+          maximum: 10000
+        rank:
+          type: integer
+          minimum: 4
+          maximum: 128
+    VoicePreviewRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+    StoryboardSettings:
+      type: object
+      required:
+        - cadenceMinS
+        - cadenceMaxS
+        - segmentGapMs
+      properties:
+        imageStyleId:
+          type: string
+          format: uuid
+        cadenceMinS:
+          type: integer
+          minimum: 5
+          maximum: 300
+        cadenceMaxS:
+          type: integer
+          minimum: 5
+          maximum: 600
+        segmentGapMs:
+          type: integer
+          minimum: 0
+          maximum: 5000
+    SceneLanguage:
+      type: string
+      enum:
+        - en
+        - vi
+    SceneFilter:
+      type: string
+      enum:
+        - all
+        - stale
+        - failed
+        - missing
+        - in_queue
+    SceneSegment:
+      type: object
+      required:
+        - text
+      properties:
+        speakerCharacterId:
+          type: string
+          format: uuid
+          description: Absent for the narrator.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        unrecognisedName:
+          type: string
+          description: A speaker name the split could not match to a character; the segment is voiced by the narrator until someone assigns it.
+    MotionPreset:
+      type: string
+      enum:
+        - ken_burns
+        - parallax
+        - static
+    PipKind:
+      type: string
+      enum:
+        - text
+        - image
+        - voice
+        - align
+        - motion
+    PipState:
+      type: string
+      enum:
+        - done
+        - running
+        - queued
+        - failed
+        - stale
+        - none
+    ScenePip:
+      type: object
+      required:
+        - kind
+        - state
+      properties:
+        kind:
+          $ref: '#/components/schemas/PipKind'
+        state:
+          $ref: '#/components/schemas/PipState'
+        stepId:
+          type: string
+          format: uuid
+        runId:
+          type: string
+          format: uuid
+        progress:
+          type: integer
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
+        staleReason:
+          type: string
+    Scene:
+      type: object
+      required:
+        - id
+        - episodeId
+        - lang
+        - idx
+        - paragraphIds
+        - narration
+        - segments
+        - imagePrompt
+        - characterIds
+        - motionPreset
+        - durationMs
+        - durationMeasured
+        - startMs
+        - tainted
+        - version
+        - pips
+        - worstState
+        - peaks
+      properties:
+        id:
+          type: string
+          format: uuid
+        episodeId:
+          type: string
+          format: uuid
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+        idx:
+          type: integer
+        paragraphIds:
+          type: array
+          items:
+            type: string
+        narration:
+          type: string
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/SceneSegment'
+        imagePrompt:
+          type: string
+        characterIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        motionPreset:
+          $ref: '#/components/schemas/MotionPreset'
+        imageStyleId:
+          type: string
+          format: uuid
+        durationMs:
+          type: integer
+        durationMeasured:
+          type: boolean
+          description: True once a voice take set the duration; before that it is a words-per-minute estimate.
+        startMs:
+          type: integer
+          description: Offset of this scene in the episode timeline.
+        tainted:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+        pips:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenePip'
+        worstState:
+          $ref: '#/components/schemas/PipState'
+        imageAssetId:
+          type: string
+          format: uuid
+        imageVariants:
+          type: boolean
+          description: True once WebP/AVIF variants exist for the selected image.
+        voiceAssetId:
+          type: string
+          format: uuid
+        alignAssetId:
+          type: string
+          format: uuid
+        peaks:
+          type: boolean
+          description: True once waveform peaks exist for the selected voice take.
+    SceneCounts:
+      type: object
+      required:
+        - all
+        - stale
+        - failed
+        - missing
+        - inQueue
+      properties:
+        all:
+          type: integer
+        stale:
+          type: integer
+        failed:
+          type: integer
+        missing:
+          type: integer
+        inQueue:
+          type: integer
+    StageProgress:
+      type: object
+      required:
+        - kind
+        - done
+        - total
+      properties:
+        kind:
+          $ref: '#/components/schemas/PipKind'
+        done:
+          type: integer
+        total:
+          type: integer
+    SceneList:
+      type: object
+      required:
+        - items
+        - counts
+        - stages
+        - totalDurationMs
+        - activeRunIds
+        - missingCount
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scene'
+        counts:
+          $ref: '#/components/schemas/SceneCounts'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/StageProgress'
+        totalDurationMs:
+          type: integer
+        activeRunIds:
+          type: array
+          description: Runs with queued or running per-scene steps, for the SSE subscription.
+          items:
+            type: string
+            format: uuid
+        missingCount:
+          type: integer
+          description: How many per-scene steps "Generate missing" would queue.
+        nextCursor:
+          type: string
+    SceneSplitRequest:
+      type: object
+      required:
+        - lang
+        - mode
+      properties:
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+        mode:
+          type: string
+          enum:
+            - paragraphs
+            - llm
+        cadenceMinS:
+          type: integer
+          minimum: 5
+          maximum: 300
+        cadenceMaxS:
+          type: integer
+          minimum: 5
+          maximum: 600
+        discardWork:
+          type: boolean
+          default: false
+          description: Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
+    SceneSplitResult:
+      type: object
+      required:
+        - mode
+        - sceneCount
+        - keptCount
+      properties:
+        mode:
+          type: string
+          enum:
+            - paragraphs
+            - llm
+        sceneCount:
+          type: integer
+        keptCount:
+          type: integer
+          description: Scenes whose narration was unchanged, kept with their takes.
+        droppedCount:
+          type: integer
+          description: Old scenes the paragraph split deleted, with their takes.
+        unrecognisedSpeakers:
+          type: integer
+        runId:
+          type: string
+          format: uuid
+        stepId:
+          type: string
+          format: uuid
+    SceneSplitConflict:
+      description: A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+      type: object
+      required:
+        - title
+        - status
+        - detail
+        - droppedCount
+        - editedCount
+        - takeCount
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        droppedCount:
+          type: integer
+        editedCount:
+          type: integer
+        takeCount:
+          type: integer
+    TakeKind:
+      type: string
+      enum:
+        - image
+        - voice
+        - align
+    GenerateMissingRequest:
+      type: object
+      required:
+        - lang
+      properties:
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+        kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TakeKind'
+    GenerateMissingResponse:
+      type: object
+      required:
+        - queued
+      properties:
+        runId:
+          type: string
+          format: uuid
+        queued:
+          type: object
+          required:
+            - image
+            - voice
+            - align
+          properties:
+            image:
+              type: integer
+            voice:
+              type: integer
+            align:
+              type: integer
+    ScenePatch:
+      type: object
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        narration:
+          type: string
+          minLength: 1
+          maxLength: 20000
+          description: Replaces the narration; segments are re-derived from it, each quoted line keeping the speaker of the quoted line at the same position. Ignored for segments when segments is also given.
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/SceneSegment'
+        imagePrompt:
+          type: string
+          maxLength: 4000
+        characterIds:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            format: uuid
+        motionPreset:
+          $ref: '#/components/schemas/MotionPreset'
+        imageStyleId:
+          type: string
+          format: uuid
+        clearImageStyle:
+          type: boolean
+    SceneRegenerateRequest:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/TakeKind'
+    SceneTake:
+      type: object
+      required:
+        - id
+        - kind
+        - assetId
+        - selected
+        - stale
+        - createdAt
+        - params
+        - variants
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/TakeKind'
+        assetId:
+          type: string
+          format: uuid
+        selected:
+          type: boolean
+        stale:
+          type: boolean
+        durationMs:
+          type: integer
+        variants:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        params:
+          type: object
+          additionalProperties: true
+    SceneTakeList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SceneTake'
+    Peaks:
+      type: object
+      required:
+        - peaksPerSecond
+        - startMs
+        - durationMs
+        - min
+        - max
+      properties:
+        peaksPerSecond:
+          type: integer
+        startMs:
+          type: integer
+        durationMs:
+          type: integer
+        min:
+          type: array
+          description: Per-peak minimum, scaled to -127..127.
+          items:
+            type: integer
+        max:
+          type: array
+          items:
+            type: integer
+    AssetVariantName:
+      type: string
+      enum:
+        - original
+        - webp-320
+        - webp-640
+        - webp-1280
+        - avif-320
+        - avif-640
+        - avif-1280
+    MediaBackfillResponse:
+      type: object
+      required:
+        - variants
+        - peaks
+      properties:
+        runId:
+          type: string
+          format: uuid
+        variants:
+          type: integer
+        peaks:
+          type: integer
   parameters:
     analyticsChannelId:
       name: id
