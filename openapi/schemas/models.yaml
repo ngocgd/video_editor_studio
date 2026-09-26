@@ -1,0 +1,78 @@
+ModelLicence:
+  type: object
+  required: [spdx, url, verified, allowed]
+  properties:
+    spdx:
+      type: string
+    url:
+      type: string
+    verified:
+      type: string
+      description: Date (YYYY-MM-DD) the licence was last checked by hand.
+    allowed:
+      type: boolean
+      description: Whether the licence is on the commercial-use allowlist.
+ModelInfo:
+  type: object
+  required: [name, task, title, engine, licence, sizeBytes, vramMb, status, bytesDone, bytesTotal, loaded, overBudget]
+  properties:
+    name:
+      type: string
+    task:
+      type: string
+    title:
+      type: string
+    engine:
+      type: string
+    licence:
+      $ref: "#/ModelLicence"
+    sizeBytes:
+      type: integer
+      format: int64
+    vramMb:
+      type: integer
+      format: int64
+    status:
+      type: string
+      enum: [not_installed, downloading, paused, installed, failed, blocked]
+    bytesDone:
+      type: integer
+      format: int64
+    bytesTotal:
+      type: integer
+      format: int64
+    loaded:
+      type: boolean
+      description: True when the worker reports this model as the resident GPU model.
+    overBudget:
+      type: boolean
+      description: True when the model's planned VRAM exceeds the measured budget.
+    error:
+      type: string
+    installedAt:
+      type: string
+      format: date-time
+ModelList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/ModelInfo"
+    budgetMb:
+      type: integer
+      format: int64
+      description: Measured VRAM budget (free at worker boot minus the render reserve), when the worker has reported one.
+    workerOnline:
+      type: boolean
+ModelActionResult:
+  type: object
+  required: [runId, stepId]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    stepId:
+      type: string
+      format: uuid

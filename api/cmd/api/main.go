@@ -29,6 +29,8 @@ import (
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
+	"loomtale/api/internal/models"
+	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
@@ -144,7 +146,17 @@ func run() error {
 		return err
 	}
 	quotaChecker := &quota.Checker{}
-	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, pipeline.NewRegistry(), []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
+	manifest, err := models.Embedded()
+	if err != nil {
+		return err
+	}
+	modelStore := &models.Store{Queries: queries}
+	// The api process only enqueues models.* steps; their handlers are
+	// registered here so Enqueue can resolve queue and model, and they
+	// refuse to Run (only the worker has the models volume and the GPU).
+	stepRegistry := pipeline.NewRegistry()
+	models.RegisterSteps(stepRegistry, manifest, modelStore, nil, nil)
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
@@ -225,6 +237,13 @@ func run() error {
 			Queries:       queries,
 			WorkerStatus:  &workerstatus.Store{Queries: queries},
 			TestRateLimit: ratelimit.NewDBBucket(queries, 5, 5.0/60),
+		},
+		ModelsAPI: &modelsapi.ModelsAPI{
+			Manifest:     manifest,
+			Store:        modelStore,
+			Queries:      queries,
+			Engine:       engine,
+			WorkerStatus: &workerstatus.Store{Queries: queries},
 		},
 	}
 

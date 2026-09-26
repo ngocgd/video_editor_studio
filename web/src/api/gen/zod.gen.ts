@@ -289,6 +289,48 @@ export const zLlmSettingsTestResult = z.object({
     detail: z.string().optional()
 });
 
+export const zModelLicence = z.object({
+    spdx: z.string(),
+    url: z.string(),
+    verified: z.string(),
+    allowed: z.boolean()
+});
+
+export const zModelInfo = z.object({
+    name: z.string(),
+    task: z.string(),
+    title: z.string(),
+    engine: z.string(),
+    licence: zModelLicence,
+    sizeBytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    vramMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    status: z.enum([
+        'not_installed',
+        'downloading',
+        'paused',
+        'installed',
+        'failed',
+        'blocked'
+    ]),
+    bytesDone: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    bytesTotal: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    loaded: z.boolean(),
+    overBudget: z.boolean(),
+    error: z.string().optional(),
+    installedAt: z.string().datetime().optional()
+});
+
+export const zModelList = z.object({
+    items: z.array(zModelInfo),
+    budgetMb: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    workerOnline: z.boolean().optional()
+});
+
+export const zModelActionResult = z.object({
+    runId: z.string().uuid(),
+    stepId: z.string().uuid()
+});
+
 /**
  * process is alive
  */
@@ -474,6 +516,43 @@ export const zTestLlmSettingsBody = zLlmSettingsTestRequest;
  * test result
  */
 export const zTestLlmSettingsResponse = zLlmSettingsTestResult;
+
+/**
+ * model list
+ */
+export const zListModelsResponse = zModelList;
+
+/**
+ * unload queued
+ */
+export const zUnloadModelsResponse = zModelActionResult;
+
+export const zInstallModelPath = z.object({
+    name: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/)
+});
+
+/**
+ * install queued
+ */
+export const zInstallModelResponse = zModelInfo;
+
+export const zPauseModelInstallPath = z.object({
+    name: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/)
+});
+
+/**
+ * download paused
+ */
+export const zPauseModelInstallResponse = zModelInfo;
+
+export const zLoadModelPath = z.object({
+    name: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/)
+});
+
+/**
+ * load queued
+ */
+export const zLoadModelResponse = zModelActionResult;
 
 export const zStreamEventsQuery = z.object({
     topics: z.string()

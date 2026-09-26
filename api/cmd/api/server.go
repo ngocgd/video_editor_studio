@@ -6,6 +6,7 @@ import (
 	"loomtale/api/internal/authapi"
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
+	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/pipelineapi"
 	"loomtale/api/internal/settingsapi"
 )
@@ -21,6 +22,7 @@ type server struct {
 	*auditapi.AuditAPI
 	*pipelineapi.PipelineAPI
 	*settingsapi.SettingsAPI
+	*modelsapi.ModelsAPI
 }
 
 var _ gen.StrictServerInterface = (*server)(nil)

@@ -601,6 +601,145 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /models:
+    get:
+      operationId: listModels
+      summary: Every manifest model with its licence, install state and residency
+      tags:
+        - models
+      x-min-role: viewer
+      responses:
+        '200':
+          description: model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+  /models/unload:
+    post:
+      operationId: unloadModels
+      summary: Unload every resident GPU model (a models.unload step on the gpu queue)
+      tags:
+        - models
+      x-min-role: editor
+      responses:
+        '202':
+          description: unload queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelActionResult'
+  /models/{name}/install:
+    post:
+      operationId: installModel
+      summary: Download and verify a model (a models.pull step on the io queue), or resume a paused download
+      tags:
+        - models
+      x-min-role: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+      responses:
+        '202':
+          description: install queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInfo'
+        '404':
+          description: no such model in the manifest
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: already installed or already downloading
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: licence not in the allowlist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /models/{name}/pause:
+    post:
+      operationId: pauseModelInstall
+      summary: Pause a running download; partial files are kept and a later install resumes them
+      tags:
+        - models
+      x-min-role: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+      responses:
+        '200':
+          description: download paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInfo'
+        '404':
+          description: no such model in the manifest
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: no download is running for this model
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /models/{name}/load:
+    post:
+      operationId: loadModel
+      summary: Make a model the single resident GPU model (a models.load step on the gpu queue)
+      tags:
+        - models
+      x-min-role: editor
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-z0-9][a-z0-9.-]{1,62}$
+      responses:
+        '202':
+          description: load queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelActionResult'
+        '404':
+          description: no such model in the manifest
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: model is not installed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: licence not in the allowlist
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /events:
     get:
       operationId: streamEvents
@@ -1274,3 +1413,106 @@ components:
           type: boolean
         detail:
           type: string
+    ModelLicence:
+      type: object
+      required:
+        - spdx
+        - url
+        - verified
+        - allowed
+      properties:
+        spdx:
+          type: string
+        url:
+          type: string
+        verified:
+          type: string
+          description: Date (YYYY-MM-DD) the licence was last checked by hand.
+        allowed:
+          type: boolean
+          description: Whether the licence is on the commercial-use allowlist.
+    ModelInfo:
+      type: object
+      required:
+        - name
+        - task
+        - title
+        - engine
+        - licence
+        - sizeBytes
+        - vramMb
+        - status
+        - bytesDone
+        - bytesTotal
+        - loaded
+        - overBudget
+      properties:
+        name:
+          type: string
+        task:
+          type: string
+        title:
+          type: string
+        engine:
+          type: string
+        licence:
+          $ref: '#/components/schemas/ModelLicence'
+        sizeBytes:
+          type: integer
+          format: int64
+        vramMb:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - not_installed
+            - downloading
+            - paused
+            - installed
+            - failed
+            - blocked
+        bytesDone:
+          type: integer
+          format: int64
+        bytesTotal:
+          type: integer
+          format: int64
+        loaded:
+          type: boolean
+          description: True when the worker reports this model as the resident GPU model.
+        overBudget:
+          type: boolean
+          description: True when the model's planned VRAM exceeds the measured budget.
+        error:
+          type: string
+        installedAt:
+          type: string
+          format: date-time
+    ModelList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelInfo'
+        budgetMb:
+          type: integer
+          format: int64
+          description: Measured VRAM budget (free at worker boot minus the render reserve), when the worker has reported one.
+        workerOnline:
+          type: boolean
+    ModelActionResult:
+      type: object
+      required:
+        - runId
+        - stepId
+      properties:
+        runId:
+          type: string
+          format: uuid
+        stepId:
+          type: string
+          format: uuid

@@ -52,6 +52,16 @@ paths:
     $ref: paths/settings_llm.yaml#/llmSettings
   /settings/llm/test:
     $ref: paths/settings_llm.yaml#/testLLMSettings
+  /models:
+    $ref: paths/models.yaml#/listModels
+  /models/unload:
+    $ref: paths/models.yaml#/unloadModels
+  /models/{name}/install:
+    $ref: paths/models.yaml#/installModel
+  /models/{name}/pause:
+    $ref: paths/models.yaml#/pauseModelInstall
+  /models/{name}/load:
+    $ref: paths/models.yaml#/loadModel
   /events:
     $ref: paths/events.yaml#/events
 components:

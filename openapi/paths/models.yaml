@@ -1,0 +1,134 @@
+listModels:
+  get:
+    operationId: listModels
+    summary: Every manifest model with its licence, install state and residency
+    tags: [models]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: model list
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/models.yaml#/ModelList"
+installModel:
+  post:
+    operationId: installModel
+    summary: Download and verify a model (a models.pull step on the io queue), or resume a paused download
+    tags: [models]
+    x-min-role: owner
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+    responses:
+      "202":
+        description: install queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/models.yaml#/ModelInfo"
+      "404":
+        description: no such model in the manifest
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: already installed or already downloading
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: licence not in the allowlist
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+pauseModelInstall:
+  post:
+    operationId: pauseModelInstall
+    summary: Pause a running download; partial files are kept and a later install resumes them
+    tags: [models]
+    x-min-role: owner
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+    responses:
+      "200":
+        description: download paused
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/models.yaml#/ModelInfo"
+      "404":
+        description: no such model in the manifest
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: no download is running for this model
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+loadModel:
+  post:
+    operationId: loadModel
+    summary: Make a model the single resident GPU model (a models.load step on the gpu queue)
+    tags: [models]
+    x-min-role: editor
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+    responses:
+      "202":
+        description: load queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/models.yaml#/ModelActionResult"
+      "404":
+        description: no such model in the manifest
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: model is not installed
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: licence not in the allowlist
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+unloadModels:
+  post:
+    operationId: unloadModels
+    summary: Unload every resident GPU model (a models.unload step on the gpu queue)
+    tags: [models]
+    x-min-role: editor
+    responses:
+      "202":
+        description: unload queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/models.yaml#/ModelActionResult"
