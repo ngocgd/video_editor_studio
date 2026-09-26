@@ -40,6 +40,9 @@ var (
 	ErrChecksumMismatch = fmt.Errorf("models: checksum mismatch: %w", pipeline.ErrValidation)
 	// ErrInsufficientDisk is the disk pre-flight refusing a download.
 	ErrInsufficientDisk = fmt.Errorf("models: not enough free disk: %w", pipeline.ErrValidation)
+	// ErrHostDiskUnknown is the disk pre-flight refusing a download
+	// because it cannot read the free space of the host disk.
+	ErrHostDiskUnknown = fmt.Errorf("models: host disk free space unknown: %w", pipeline.ErrValidation)
 	// ErrHostNotAllowed is a download URL or redirect outside the
 	// allowlist.
 	ErrHostNotAllowed = fmt.Errorf("models: download host not allowed: %w", pipeline.ErrValidation)
@@ -63,8 +66,15 @@ type Downloader struct {
 	// AllowedHosts defaults to DefaultAllowedHosts; a host matches if it
 	// equals an entry or is a subdomain of one.
 	AllowedHosts []string
-	// FreeBytes reports free space on the filesystem holding Dir;
-	// defaults to statfs.
+	// HostDiskDir is a directory bind-mounted from the host drive that
+	// holds Docker's data disk. On Docker Desktop/WSL2 the models volume
+	// lives inside a growing virtual disk, so statfs on Dir reports the
+	// virtual disk's maximum size rather than what the host has left;
+	// statfs on a host bind mount reports the real drive. Downloads are
+	// refused while it is empty or unreadable.
+	HostDiskDir string
+	// FreeBytes reports free space on the filesystem holding a
+	// directory; defaults to statfs.
 	FreeBytes func(dir string) (int64, error)
 	// HeadroomBytes defaults to DefaultHeadroomBytes.
 	HeadroomBytes int64
@@ -178,8 +188,12 @@ func (d *Downloader) inspect(ctx context.Context, f File) (fileState, error) {
 	return st, nil
 }
 
-// preflight refuses the install unless the disk has room for every byte
-// still to download plus the headroom.
+// preflight refuses the install unless both the models volume and the
+// host disk have room for every byte still to download plus the
+// headroom. The host figure is what bounds the check on Docker Desktop:
+// every downloaded byte grows the virtual disk by up to one byte, so the
+// host drive must hold the whole remaining download on top of the
+// headroom, whatever the volume itself reports.
 func (d *Downloader) preflight(plan []fileState) error {
 	var need int64
 	for _, st := range plan {
@@ -194,10 +208,17 @@ func (d *Downloader) preflight(plan []fileState) error {
 	if freeFn == nil {
 		freeFn = diskFree
 	}
+	if d.HostDiskDir == "" {
+		return fmt.Errorf("%w: no host disk directory configured (set MODELS_HOST_DISK_DIR to a bind mount on the drive that holds the Docker data disk)", ErrHostDiskUnknown)
+	}
+	hostFree, err := freeFn(d.HostDiskDir)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %v", ErrHostDiskUnknown, d.HostDiskDir, err)
+	}
 	if err := os.MkdirAll(filepath.Join(d.Dir, stagingDir), 0o755); err != nil {
 		return err
 	}
-	free, err := freeFn(d.Dir)
+	volumeFree, err := freeFn(d.Dir)
 	if err != nil {
 		return fmt.Errorf("models: disk pre-flight: %w", err)
 	}
@@ -205,8 +226,8 @@ func (d *Downloader) preflight(plan []fileState) error {
 	if headroom == 0 {
 		headroom = DefaultHeadroomBytes
 	}
-	if free < need+headroom {
-		return fmt.Errorf("%w: need %d bytes plus %d headroom, %d free", ErrInsufficientDisk, need, headroom, free)
+	if free := min(hostFree, volumeFree); free < need+headroom {
+		return fmt.Errorf("%w: need %d bytes plus %d headroom, %d free on the host disk, %d free on the models volume", ErrInsufficientDisk, need, headroom, hostFree, volumeFree)
 	}
 	return nil
 }

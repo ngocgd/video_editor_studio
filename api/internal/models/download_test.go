@@ -123,7 +123,7 @@ func newFixture(t *testing.T) *fixture {
 		{Path: "text_encoders/b.gguf", Remote: "b.gguf", SHA256: sum(data["b.gguf"]), Size: 3000},
 	}
 	d := &Downloader{
-		Dir: dir, BaseURL: srv.URL, Files: files, AllowedHosts: []string{"127.0.0.1"},
+		Dir: dir, HostDiskDir: t.TempDir(), BaseURL: srv.URL, Files: files, AllowedHosts: []string{"127.0.0.1"},
 		FreeBytes: func(string) (int64, error) { return 1 << 50, nil },
 	}
 	return &fixture{dir: dir, hub: hub, files: files, d: d, entry: entry, data: data}
@@ -265,6 +265,58 @@ func TestInstallDiskPreflightRefusesWithoutHeadroom(t *testing.T) {
 	f.d.FreeBytes = func(string) (int64, error) { return 9000, nil }
 	if err := f.d.Install(context.Background(), f.entry, nil); err != nil {
 		t.Fatalf("exactly enough space must pass: %v", err)
+	}
+}
+
+// freeByDir reports volume bytes free for the models volume and host
+// bytes free for the host disk directory, like Docker Desktop, where the
+// volume's virtual disk claims far more room than the host drive has.
+func (f *fixture) freeByDir(volume, host int64) func(string) (int64, error) {
+	return func(dir string) (int64, error) {
+		if dir == f.d.HostDiskDir {
+			return host, nil
+		}
+		return volume, nil
+	}
+}
+
+func TestInstallDiskPreflightIsBoundedByTheHostDisk(t *testing.T) {
+	f := newFixture(t)
+	f.d.HeadroomBytes = 1000
+	// The volume claims ~800 GB free (the virtual disk's maximum), the
+	// host drive holds one byte less than the download plus headroom.
+	f.d.FreeBytes = f.freeByDir(800<<30, 8999)
+	err := f.d.Install(context.Background(), f.entry, nil)
+	if !errors.Is(err, ErrInsufficientDisk) {
+		t.Fatalf("expected the host disk figure to refuse the download, got %v", err)
+	}
+	if _, requests := f.hub.stats(); requests != 0 {
+		t.Fatal("the pre-flight must run before any download")
+	}
+	// A roomy host never lifts a full volume.
+	f.d.FreeBytes = f.freeByDir(8999, 800<<30)
+	if err := f.d.Install(context.Background(), f.entry, nil); !errors.Is(err, ErrInsufficientDisk) {
+		t.Fatalf("expected the models volume figure to refuse the download, got %v", err)
+	}
+	f.d.FreeBytes = f.freeByDir(800<<30, 9000)
+	if err := f.d.Install(context.Background(), f.entry, nil); err != nil {
+		t.Fatalf("a host with exactly enough space must pass: %v", err)
+	}
+}
+
+func TestInstallDiskPreflightRefusesWithoutAHostDiskFigure(t *testing.T) {
+	f := newFixture(t)
+	f.d.HostDiskDir = ""
+	if err := f.d.Install(context.Background(), f.entry, nil); !errors.Is(err, ErrHostDiskUnknown) {
+		t.Fatalf("expected a missing host disk directory to refuse, got %v", err)
+	}
+	f.d.HostDiskDir = filepath.Join(t.TempDir(), "not-mounted")
+	f.d.FreeBytes = nil // real statfs: the directory does not exist
+	if err := f.d.Install(context.Background(), f.entry, nil); !errors.Is(err, ErrHostDiskUnknown) {
+		t.Fatalf("expected an unreadable host disk directory to refuse, got %v", err)
+	}
+	if _, requests := f.hub.stats(); requests != 0 {
+		t.Fatal("a download with no host disk figure must never start")
 	}
 }
 
