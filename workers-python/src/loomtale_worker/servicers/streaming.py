@@ -86,20 +86,35 @@ async def finish_job(
         await context.abort(grpc.StatusCode.INTERNAL, f"{engine} failed: {exc}")
 
 
+# HTTP statuses on a presigned transfer that a later attempt can cure.
+# Object storage answers 403 when a presigned URL has expired (a long job
+# can outlive the URL it was given). The Go step handlers presign inside
+# each attempt, so a retry carries fresh URLs. 408 and 429 are transient
+# by definition.
+_RETRYABLE_TRANSFER_STATUSES = frozenset({403, 408, 429})
+
+
+def transfer_status(http_status: int) -> grpc.StatusCode:
+    """Maps a failed presigned GET/PUT onto the gRPC status the Go side
+    classifies: UNAVAILABLE is retried, INVALID_ARGUMENT is a permanent
+    validation failure. Any other 4xx (a malformed request, a missing
+    object, a body the store refuses) cannot succeed on retry."""
+    if 400 <= http_status < 500 and http_status not in _RETRYABLE_TRANSFER_STATUSES:
+        return grpc.StatusCode.INVALID_ARGUMENT
+    return grpc.StatusCode.UNAVAILABLE
+
+
 async def fetch_input(context: grpc.aio.ServicerContext, url: str, max_bytes: int) -> bytes:
-    """Downloads a job input from its presigned URL. A rejected URL (4xx,
-    e.g. expired or wrong) or an oversized body is the caller's error
-    (INVALID_ARGUMENT, not retried); a network failure or 5xx is
-    UNAVAILABLE, which the pipeline retries."""
+    """Downloads a job input from its presigned URL. See transfer_status
+    for how an HTTP failure maps to a gRPC status; an oversized body is
+    the caller's error (INVALID_ARGUMENT, not retried)."""
     try:
         return await transfer.download(url, max_bytes=max_bytes)
     except transfer.TransferTooLargeError as exc:
         await abort_invalid(context, str(exc))
     except httpx.HTTPStatusError as exc:
         code = exc.response.status_code
-        status = (
-            grpc.StatusCode.INVALID_ARGUMENT if 400 <= code < 500 else grpc.StatusCode.UNAVAILABLE
-        )
+        status = transfer_status(code)
         await context.abort(status, f"input download failed with HTTP {code}")
     except httpx.HTTPError as exc:
         await context.abort(
@@ -112,14 +127,12 @@ async def push_output(
     context: grpc.aio.ServicerContext, url: str, data: bytes, content_type: str
 ) -> None:
     """Uploads a job output to its presigned URL, with the same status
-    mapping as fetch_input."""
+    mapping as fetch_input (transfer_status)."""
     try:
         await transfer.upload(url, data, content_type=content_type)
     except httpx.HTTPStatusError as exc:
         code = exc.response.status_code
-        status = (
-            grpc.StatusCode.INVALID_ARGUMENT if 400 <= code < 500 else grpc.StatusCode.UNAVAILABLE
-        )
+        status = transfer_status(code)
         await context.abort(status, f"output upload failed with HTTP {code}")
     except httpx.HTTPError as exc:
         await context.abort(
