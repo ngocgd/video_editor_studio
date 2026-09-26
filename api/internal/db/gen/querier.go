@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	AdvanceReportingJobCursor(ctx context.Context, arg AdvanceReportingJobCursorParams) error
 	// Used to cascade-cancel the downstream of a permanently failed step:
 	// a "pending" step whose upstream will never produce output can never
 	// become ready on its own, so it must be cancelled explicitly or the run
@@ -20,12 +21,18 @@ type Querier interface {
 	CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) ([]PipelineStep, error)
 	CancelScopeSteps(ctx context.Context, arg CancelScopeStepsParams) ([]PipelineStep, error)
 	CancelStep(ctx context.Context, arg CancelStepParams) (PipelineStep, error)
+	ChannelDailySeries(ctx context.Context, arg ChannelDailySeriesParams) ([]ChannelDailySeriesRow, error)
+	// Public watch hours over [from_date, to_date], the YPP 12-month window.
+	ChannelWatchHoursWindow(ctx context.Context, arg ChannelWatchHoursWindowParams) (ChannelWatchHoursWindowRow, error)
 	// Model installs, verified files and benchmarks. Not tenant-scoped (see
 	// the models migration): one GPU and one models volume per deployment.
 	// Moves a model into "downloading" unless a pull is already running for
 	// it. Returns no row when one is, so the caller can answer 409 instead
 	// of starting a second concurrent download into the same files.
 	ClaimModelInstall(ctx context.Context, arg ClaimModelInstallParams) (ModelInstall, error)
+	// Records a report as ingested. Returns no row when it already was, and
+	// must run in the same transaction as the report's rows.
+	ClaimReportingReport(ctx context.Context, arg ClaimReportingReportParams) (string, error)
 	// The only fence: a handler only owns the rows this query returns. Driven
 	// solely by River job args (step ids the dispatcher itself enqueued),
 	// never by request input, so it is not tenant-filtered.
@@ -85,11 +92,20 @@ type Querier interface {
 	DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error
 	// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
 	DeleteStaleRateLimitBuckets(ctx context.Context) error
+	// Drops the channel's suggestions whose "video/rule" key is not in keep:
+	// the rule no longer fires for them.
+	DeleteSuggestionsExcept(ctx context.Context, arg DeleteSuggestionsExceptParams) error
+	DeleteTrackedVideo(ctx context.Context, arg DeleteTrackedVideoParams) (int64, error)
+	DeleteVideoRetention(ctx context.Context, arg DeleteVideoRetentionParams) error
+	FailAnalyticsSync(ctx context.Context, arg FailAnalyticsSyncParams) error
 	// Used by the reconciler when a "queued" step has exceeded its stranded
 	// re-enqueue budget: unlike CommitStepFailed this fences on status =
 	// 'queued', not 'running', since a stranded step was never re-claimed.
 	// lint-tenant-queries:allow: internal reconciler write, not caller input
 	FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) (PipelineStep, error)
+	// A NULL through date or subscriber count keeps the stored one.
+	FinishAnalyticsSync(ctx context.Context, arg FinishAnalyticsSyncParams) error
+	GetAnalyticsSyncState(ctx context.Context, arg GetAnalyticsSyncStateParams) (AnalyticsSyncState, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
 	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
@@ -109,6 +125,7 @@ type Querier interface {
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	GetModelInstall(ctx context.Context, name string) (ModelInstall, error)
 	GetQuotaUnits(ctx context.Context, arg GetQuotaUnitsParams) (int32, error)
+	GetReportingJob(ctx context.Context, arg GetReportingJobParams) (AnalyticsReportingJob, error)
 	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
 	// Batch existence check for SSE topic authorization: one query for every
 	// requested topic instead of one round trip each.
@@ -124,6 +141,7 @@ type Querier interface {
 	GetStoryBible(ctx context.Context, arg GetStoryBibleParams) (StoryBible, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
 	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
+	GetTrackedVideo(ctx context.Context, arg GetTrackedVideoParams) (AnalyticsTrackedVideo, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetVoiceRateCalibration(ctx context.Context, voiceKey string) (VoiceRateCalibration, error)
@@ -141,12 +159,21 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDraftRevision(ctx context.Context, arg InsertDraftRevisionParams) error
 	InsertModelBenchmark(ctx context.Context, arg InsertModelBenchmarkParams) error
+	InsertReportingJob(ctx context.Context, arg InsertReportingJobParams) (AnalyticsReportingJob, error)
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
 	// transaction stays within the enqueue latency budget.
 	InsertStepBatch(ctx context.Context, arg []InsertStepBatchParams) *InsertStepBatchBatchResults
 	InsertStepDepBatch(ctx context.Context, arg []InsertStepDepBatchParams) *InsertStepDepBatchBatchResults
+	// rows: [{"ratio":..,"watch":..,"relative":..}].
+	InsertVideoRetention(ctx context.Context, arg InsertVideoRetentionParams) error
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	// Analytics: tracked videos, daily metrics from the Analytics API and the
+	// Reporting API reach report, retention, sync bookkeeping, suggestions.
+	// Batched writes take their rows as one jsonb array so NULL ("not
+	// available from the API") survives the trip, which Go slices cannot carry.
+	// lint-tenant-queries:allow: the daily sync walks every tenant's connected channels
+	ListChannelsForAnalyticsSync(ctx context.Context) ([]ListChannelsForAnalyticsSyncRow, error)
 	ListDraftRevisions(ctx context.Context, arg ListDraftRevisionsParams) ([]EpisodeDraftRevision, error)
 	ListEpisodesBySeries(ctx context.Context, arg ListEpisodesBySeriesParams) ([]Episode, error)
 	// One query for the episode list: word count and draft presence per
@@ -168,6 +195,13 @@ type Querier interface {
 	ListModelInstalls(ctx context.Context) ([]ModelInstall, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
+	ListSuggestions(ctx context.Context, arg ListSuggestionsParams) ([]AnalyticsSuggestion, error)
+	ListTrackedVideos(ctx context.Context, arg ListTrackedVideosParams) ([]AnalyticsTrackedVideo, error)
+	// Tracked videos of a channel with totals over [from_date, to_date].
+	// Averages are view-weighted and CTR is impression-weighted. Each *_days
+	// count says on how many days the metric was available: 0 means "not
+	// available from the API" rather than a real zero.
+	ListVideoTotals(ctx context.Context, arg ListVideoTotalsParams) ([]ListVideoTotalsRow, error)
 	ListYouTubeChannels(ctx context.Context, tenantID pgtype.UUID) ([]YoutubeChannel, error)
 	// Serializes concurrent Enqueue calls for the same tenant so the
 	// quota check-then-insert in Engine.Enqueue cannot race: every caller
@@ -208,6 +242,9 @@ type Querier interface {
 	PauseModelInstall(ctx context.Context, name string) (ModelInstall, error)
 	// lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
 	PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineStep, error)
+	// The last day with reach data for the channel, NULL before the first
+	// reach report has been ingested.
+	ReachDataThrough(ctx context.Context, arg ReachDataThroughParams) (pgtype.Date, error)
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
 	ReadySweepBatch(ctx context.Context, pageLimit int32) ([]PipelineStep, error)
 	RecomputeRemainingDeps(ctx context.Context, arg RecomputeRemainingDepsParams) (PipelineStep, error)
@@ -249,7 +286,12 @@ type Querier interface {
 	// regenerating the bible never overwrites user edits.
 	SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
+	SetSuggestionDismissed(ctx context.Context, arg SetSuggestionDismissedParams) (int64, error)
 	SetYouTubeChannelStatus(ctx context.Context, arg SetYouTubeChannelStatusParams) (YoutubeChannel, error)
+	// Marks a channel's sync running. Returns no row when another sync of
+	// the same channel started less than stale_after ago and is still
+	// running, so concurrent syncs of one channel never overlap.
+	StartAnalyticsSync(ctx context.Context, arg StartAnalyticsSyncParams) (AnalyticsSyncState, error)
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
 	// itself never passes through an intermediate "canceled" state that a
@@ -280,9 +322,28 @@ type Querier interface {
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpdateYouTubeChannelAudit(ctx context.Context, arg UpdateYouTubeChannelAuditParams) (YoutubeChannel, error)
 	UpdateYouTubeChannelEligibility(ctx context.Context, arg UpdateYouTubeChannelEligibilityParams) (YoutubeChannel, error)
+	// rows: [{"date":"YYYY-MM-DD","views":..,"minutes":..,"subs_gained":..,
+	// "subs_lost":..,"unavailable":{..}}].
+	UpsertChannelMetricsDaily(ctx context.Context, arg UpsertChannelMetricsDailyParams) error
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
+	// A new rule version re-opens a dismissed suggestion.
+	UpsertSuggestion(ctx context.Context, arg UpsertSuggestionParams) error
+	// A video already tracked keeps its source when it came from a
+	// publication (a manual add never downgrades it) and gains metadata.
+	UpsertTrackedVideo(ctx context.Context, arg UpsertTrackedVideoParams) (AnalyticsTrackedVideo, error)
+	// rows: [{"video":..,"date":"YYYY-MM-DD","views":..,"minutes":..,
+	// "avg_duration":..,"avg_percentage":..,"subs_gained":..,"unavailable":{..}}].
+	// Only the Analytics API columns are written; the keys listed in
+	// clear_keys are dropped from unavailable before the row's own reasons
+	// are merged in, so reach-report reasons are left alone.
+	UpsertVideoAnalyticsDaily(ctx context.Context, arg UpsertVideoAnalyticsDailyParams) error
+	// rows: [{"video":..,"date":"YYYY-MM-DD","impressions":..,"ctr":..}], one
+	// per video and day, already aggregated across the report's other
+	// dimensions. Values replace (never add to) what is stored, so a report
+	// re-delivered or a backfill for the same days cannot double count.
+	UpsertVideoReachDaily(ctx context.Context, arg UpsertVideoReachDailyParams) error
 	// Measured narration speed per voice (see the voice_rate_calibrations
 	// migration). Not tenant-scoped.
 	UpsertVoiceRateCalibration(ctx context.Context, arg UpsertVoiceRateCalibrationParams) error
@@ -290,6 +351,8 @@ type Querier interface {
 	// Connect or reconnect: a channel already known to the tenant keeps its id
 	// (and so its secret owner_ref and any publications) and becomes connected.
 	UpsertYouTubeChannel(ctx context.Context, arg UpsertYouTubeChannelParams) (YoutubeChannel, error)
+	VideoDailySeries(ctx context.Context, arg VideoDailySeriesParams) ([]VideoDailySeriesRow, error)
+	VideoRetentionCurve(ctx context.Context, arg VideoRetentionCurveParams) ([]VideoRetentionCurveRow, error)
 }
 
 var _ Querier = (*Queries)(nil)
