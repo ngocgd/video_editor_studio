@@ -171,9 +171,20 @@ The fourth review (`plans/reports/code-reviewer-260926-1757-phase-07-characters-
 | 1. Docker engine down because its data disk is attached to Windows | **Still blocked.** Freeing space on C: (327 GB are free now) does not help. `docker info` still answers 500 on `dockerDesktopLinuxEngine`. `Get-DiskImage` still reports `docker_data.vhdx` as attached, and `Get-Disk` still lists it as disk 1 (read-only, online). Docker Desktop has been running since 17:29. This session is not elevated, so it cannot run `Dismount-DiskImage`, and detaching the disk affects every lane, so it needs the user. The user has to run these steps in an elevated PowerShell: quit Docker Desktop, run `Dismount-DiskImage -ImagePath 'C:\Users\ADMIN\AppData\Local\Docker\wsl\disk\docker_data.vhdx'`, run `wsl --shutdown`, and start Docker Desktop again. | none |
 | 2. The Docker-only checks have not run on HEAD | **Still pending**, because they depend on item 1. HEAD has not changed since the fourth review, and the host checks were green there: gen with no drift, vet, golangci-lint, the tenant lints, go test, pytest and the web checks. So they were not repeated. Once Docker is back, the order is: `scripts/tb.sh gen lint test` (with -race). Then the heavy script under the lock runs the integration suite (including `TestResplitAfterANarrationEditNeedsConfirmation`), Playwright with `--workers=1` and the live claude-cli split. Then main is merged in, the two sides are reconciled, and the same checks run again. The merge, and the success criteria for the split, per-scene stale marking and the 60 fps grid and timeline, wait on these checks. | none |
 
+## Review round 5: fixes
+
+The fifth review (`plans/reports/code-reviewer-260926-1807-phase-07-characters-storyboard-review.md`) again found no Critical or High defects. Its two blocking items are both about Docker. The user reported that the disk space problem is handled. The outcomes at 18:12 local on `fffb9f1` follow.
+
+| Item | Outcome | Commits |
+|---|---|---|
+| 1. Docker engine down because its data disk is attached to Windows | **Still blocked.** `docker info` still answers 500 on `dockerDesktopLinuxEngine`. `Get-Disk` still lists `docker_data.vhdx` as disk 1 (read-only, online), so the Docker VM still cannot mount its data disk. Freeing space does not fix this, because space was never the cause. This session tried to run `Dismount-DiskImage` itself, but the permission system refused it because it changes a resource that every lane shares. The user has to run these steps in an elevated PowerShell: quit Docker Desktop, run `Dismount-DiskImage -ImagePath 'C:\Users\ADMIN\AppData\Local\Docker\wsl\disk\docker_data.vhdx'`, run `wsl --shutdown`, and start Docker Desktop again. | none |
+| 2. The Docker-only checks have not run on HEAD | **Still pending**, because they depend on item 1. The code has not changed since the fourth review, and the fifth review found the host checks green. The order stays the same as in round 4. | none |
+
+The fifth review's new Low finding (PATCH on a scene accepts segments and narration that disagree) is not blocking. It is left for a follow-up and is outside this run's scope.
+
 ## Unresolved questions
 
-- Verification cannot finish until the user detaches `docker_data.vhdx` in an elevated PowerShell. A restart alone did not help. Four rounds are now blocked on it.
+- Verification cannot finish until the user detaches `docker_data.vhdx` in an elevated PowerShell. Freeing disk space and restarting Docker did not help. Five rounds are now blocked on it.
 - The re-split guard asks for confirmation instead of keeping edited scenes. Is a confirmation enough, or should edited scenes be kept and flagged?
 - Should the rollup's `pipeline_steps_scope_latest_idx` index stay in this phase's migration, since the pipeline tables are owned by phase 3? It is needed for the 60 ms budget.
 - Is 166.76 KB for the authenticated shell acceptable, or should the generated client be split per domain?
