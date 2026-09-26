@@ -52,11 +52,64 @@ type BackupRun struct {
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
+type Episode struct {
+	ID                       pgtype.UUID        `json:"id"`
+	TenantID                 pgtype.UUID        `json:"tenant_id"`
+	SeriesID                 pgtype.UUID        `json:"series_id"`
+	Idx                      int32              `json:"idx"`
+	Title                    string             `json:"title"`
+	Outline                  []byte             `json:"outline"`
+	Status                   string             `json:"status"`
+	SourceImportChapterIndex pgtype.Int4        `json:"source_import_chapter_index"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+}
+
+type EpisodeDraft struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	EpisodeID      pgtype.UUID        `json:"episode_id"`
+	Lang           string             `json:"lang"`
+	Paragraphs     []byte             `json:"paragraphs"`
+	Version        int64              `json:"version"`
+	WordCount      int32              `json:"word_count"`
+	Summary        string             `json:"summary"`
+	SummaryTainted bool               `json:"summary_tainted"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type EpisodeDraftRevision struct {
+	ID         pgtype.UUID        `json:"id"`
+	TenantID   pgtype.UUID        `json:"tenant_id"`
+	DraftID    pgtype.UUID        `json:"draft_id"`
+	Version    int64              `json:"version"`
+	Paragraphs []byte             `json:"paragraphs"`
+	WordCount  int32              `json:"word_count"`
+	CreatedBy  pgtype.UUID        `json:"created_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type GooseDbVersion struct {
 	ID        int32            `json:"id"`
 	VersionID int64            `json:"version_id"`
 	IsApplied bool             `json:"is_applied"`
 	Tstamp    pgtype.Timestamp `json:"tstamp"`
+}
+
+type Import struct {
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	SeriesID    pgtype.UUID        `json:"series_id"`
+	AssetID     pgtype.UUID        `json:"asset_id"`
+	Encoding    string             `json:"encoding"`
+	SplitPreset string             `json:"split_preset"`
+	Status      string             `json:"status"`
+	Chapters    []byte             `json:"chapters"`
+	ErrorMsg    pgtype.Text        `json:"error_msg"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type LlmSetting struct {
@@ -157,6 +210,7 @@ type PipelineStep struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	StrandedRequeues int32              `json:"stranded_requeues"`
 	GpuOomCount      int32              `json:"gpu_oom_count"`
+	Input            []byte             `json:"input"`
 }
 
 type PipelineStepDep struct {
@@ -184,6 +238,21 @@ type Secret struct {
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Series struct {
+	ID                   pgtype.UUID        `json:"id"`
+	TenantID             pgtype.UUID        `json:"tenant_id"`
+	Title                string             `json:"title"`
+	Genre                string             `json:"genre"`
+	TargetLanguages      []string           `json:"target_languages"`
+	TargetEpisodeMinutes int32              `json:"target_episode_minutes"`
+	PlannedEpisodeCount  int32              `json:"planned_episode_count"`
+	StyleNotes           string             `json:"style_notes"`
+	Status               string             `json:"status"`
+	CreatedBy            pgtype.UUID        `json:"created_by"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Session struct {
 	ID             pgtype.UUID        `json:"id"`
 	UserID         pgtype.UUID        `json:"user_id"`
@@ -193,6 +262,15 @@ type Session struct {
 	LastSeenAt     pgtype.Timestamptz `json:"last_seen_at"`
 	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
 	RevokedAt      pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type StoryBible struct {
+	ID        pgtype.UUID        `json:"id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	SeriesID  pgtype.UUID        `json:"series_id"`
+	Sections  []byte             `json:"sections"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Tenant struct {

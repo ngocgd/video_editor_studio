@@ -9,6 +9,7 @@ import (
 	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/pipelineapi"
 	"loomtale/api/internal/settingsapi"
+	"loomtale/api/internal/story"
 )
 
 // server composes every domain handler into the single type
@@ -22,6 +23,7 @@ type server struct {
 	*auditapi.AuditAPI
 	*pipelineapi.PipelineAPI
 	*settingsapi.SettingsAPI
+	*story.StoryAPI
 	*modelsapi.ModelsAPI
 }
 

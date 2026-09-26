@@ -8,6 +8,11 @@ services:
   postgres:
     ports:
       - "127.0.0.1:5432:5432"
+  # The whole integration suite reaches the API from one client IP, which
+  # exceeds the default 100 requests/minute general budget.
+  api:
+    environment:
+      API_RATE_LIMIT_PER_MINUTE: "1000"
   # GitHub-hosted runners have 4 vCPUs; Docker rejects a cpus limit above the host count.
   worker:
     cpus: 2

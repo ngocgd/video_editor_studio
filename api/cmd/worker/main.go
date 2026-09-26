@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,12 +23,18 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/providers/bootstrap"
+	"loomtale/api/internal/providers/llmcheck"
+	"loomtale/api/internal/providers/workerstatus"
+	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/storage"
+	"loomtale/api/internal/story"
 )
 
 const healthAddr = "127.0.0.1:8081"
@@ -74,7 +81,42 @@ func run() error {
 	}
 	logSink := &pipeline.AssetLogSink{Queries: queries, Storage: internalStore}
 
+	// The envelope-encryption KEK must be the same one cmd/api mounts
+	// (MASTER_KEY_PATH), since this worker opens the same tenants' BYOK
+	// secrets that cmd/api's Settings > LLM page writes.
+	kek, keyID, err := envelope.LoadKEK(cfg.MasterKeyPath)
+	if err != nil {
+		return err
+	}
+	sealer, err := envelope.NewSealer(keyID, kek)
+	if err != nil {
+		return err
+	}
+	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+
+	llmRegistry, _, err := bootstrap.Build(bootstrap.Config{
+		AppMode:               cfg.AppMode,
+		AllowedProviderHosts:  cfg.AllowedProviderHosts,
+		OllamaURL:             cfg.OllamaURL,
+		OllamaModel:           cfg.OllamaModel,
+		LLMCLIURL:             cfg.LLMCLIURL,
+		LLMCLIBearerTokenPath: cfg.LLMCLIBearerTokenPath,
+		AnthropicAPIKeyPath:   cfg.AnthropicAPIKeyPath,
+		AnthropicModel:        cfg.AnthropicModel,
+		GeminiAPIKeyPath:      cfg.GeminiAPIKeyPath,
+		GeminiModel:           cfg.GeminiModel,
+	}, queries, secretsStore)
+	if err != nil {
+		return err
+	}
+
 	registry := pipeline.NewRegistry()
+	for _, h := range story.Handlers(llmRegistry, queries) {
+		registry.Register(h)
+	}
+	for _, h := range llmcheck.Handlers(llmRegistry) {
+		registry.Register(h)
+	}
 
 	manifest, err := models.Embedded()
 	if err != nil {
@@ -90,28 +132,39 @@ func run() error {
 	// models volume (read-write, for pulls) and the GPU network (for
 	// load/unload). A worker without them registers nothing, so it never
 	// claims a step it cannot run.
-	if cfg.WorkerGPU && cfg.ModelsDir != "" {
+	modelSteps := cfg.WorkerGPU && cfg.ModelsDir != ""
+	if modelSteps {
 		downloader := &models.Downloader{Dir: cfg.ModelsDir, HostDiskDir: cfg.ModelsHostDiskDir, HTTP: downloadHTTPClient(), Files: modelStore}
 		models.RegisterSteps(registry, manifest, modelStore, downloader, residency)
 	}
-	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)
+	saasMode := strings.EqualFold(cfg.AppMode, "saas")
+	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager, func(ctx context.Context) map[string]workerstatus.ProviderInfo {
+		return llmProviderStatus(ctx, llmRegistry.Providers, saasMode)
+	})
 
-	// A worker with no registered handler for any kind must never fetch a
-	// job at all: claiming a step it cannot run destroys it (the CAS
-	// claim is a one-way door). This is the only thing standing between
-	// today's empty registry (nothing past phase 3 has registered a
-	// handler yet) and every gpu/cpu/llm/render/io queue getting worked
-	// by a process that immediately fails everything with "no handler".
+	// A worker must never enable a queue no registered handler actually
+	// resolves to: claiming a step it cannot run destroys it (the CAS
+	// claim is a one-way door). The llm.* handlers (see story.Handlers
+	// above) only ever resolve to QueueLLM or, for the Ollama provider,
+	// QueueGPU (see registry.Registry.QueueFor), and models.pull uses
+	// QueueIO only where the models steps are registered — so cpu/render
+	// (and io elsewhere) stay disabled here until a later phase registers a
+	// handler that actually uses them; enabling them unconditionally
+	// whenever registry.Len() > 0 (as before phase 6, when the registry
+	// was always empty and this was moot) would let this process's cpu/
+	// render/io queue slots steal and permanently snooze jobs meant for
+	// another registry/handler entirely, including other processes and
+	// tests sharing the same Postgres instance.
 	var queueConfig map[string]river.QueueConfig
 	if registry.Len() > 0 {
 		queueConfig = map[string]river.QueueConfig{
-			pipeline.QueueCPU:    {MaxWorkers: cfg.CPUWorkers},
-			pipeline.QueueLLM:    {MaxWorkers: cfg.LLMWorkers},
-			pipeline.QueueRender: {MaxWorkers: cfg.RenderWorkers},
-			pipeline.QueueIO:     {MaxWorkers: cfg.IOWorkers},
+			pipeline.QueueLLM: {MaxWorkers: cfg.LLMWorkers},
 		}
 		if cfg.WorkerGPU {
 			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
+		}
+		if modelSteps {
+			queueConfig[pipeline.QueueIO] = river.QueueConfig{MaxWorkers: cfg.IOWorkers}
 		}
 	}
 

@@ -23,7 +23,7 @@ Source of truth: [contract](../reports/brainstorm-260924-2128-story-video-studio
 | 3 | [Job orchestration, GPU slot, SSE](phase-03-job-orchestration-sse.md) | 26h | 2 | C (with 4, 5) | completed |
 | 4 | [Providers, gRPC, Python worker, llm-cli sidecar](phase-04-provider-layer-workers.md) | 24h | 2, 1b (VRAM baseline); pact with 3 | C | completed |
 | 5 | [Frontend foundation and shared components](phase-05-frontend-foundation.md) | 18h | 2; step 7 needs 3 | C | completed |
-| 6 | [Story writer, import, LLM settings UI](phase-06-story-writer-import.md) | 24h | 3, 4, 5 | D | pending |
+| 6 | [Story writer, import, LLM settings UI](phase-06-story-writer-import.md) | 24h | 3, 4, 5 | D | completed (provider switch completing on a second provider pending: only claude-cli is available; Ollama variant deferred to 9c) |
 | 7 | [Characters, storyboard, scene editor](phase-07-characters-storyboard.md) | 28h | 6 | E | pending |
 | 8 | [Render pipeline and Library](phase-08-render-pipeline-library.md) | 28h | 3, 7 | F (with 9a→9c) | pending |
 | 9a | [Manifest, ComfyUI, image engines](phase-09a-comfyui-image-engines.md) | 26h | 1b, 4; e2e steps need 7; UI needs 5 | F | completed (criteria needing model weights pending: model downloads paused by the user) |

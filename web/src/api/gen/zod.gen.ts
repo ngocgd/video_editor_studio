@@ -286,7 +286,296 @@ export const zLlmSettingsTestRequest = z.object({
 export const zLlmSettingsTestResult = z.object({
     provider: z.string(),
     ok: z.boolean(),
+    detail: z.string().optional(),
+    latencyMs: z.number().int().optional()
+});
+
+export const zLlmApiKeyRequest = z.object({
+    apiKey: z.string().min(1).max(4096)
+});
+
+export const zClaudeCliStatus = z.object({
+    installed: z.boolean(),
+    version: z.string().optional(),
+    authenticated: z.boolean(),
+    toolsDisabled: z.boolean(),
     detail: z.string().optional()
+});
+
+export const zTargetLanguage = z.enum(['en', 'vi']);
+
+export const zSeries = z.object({
+    id: z.string().uuid(),
+    title: z.string(),
+    genre: z.string().optional(),
+    targetLanguages: z.array(zTargetLanguage),
+    targetEpisodeMinutes: z.number().int(),
+    plannedEpisodeCount: z.number().int(),
+    styleNotes: z.string().optional(),
+    status: z.enum([
+        'draft',
+        'active',
+        'archived'
+    ]),
+    createdAt: z.string().datetime()
+});
+
+export const zSeriesList = z.object({
+    items: z.array(zSeries),
+    nextCursor: z.string().optional()
+});
+
+export const zSeriesCreateRequest = z.object({
+    title: z.string().min(1).max(200),
+    genre: z.string().max(100).optional(),
+    targetLanguages: z.array(zTargetLanguage).min(1),
+    targetEpisodeMinutes: z.number().int().gte(1).lte(120),
+    plannedEpisodeCount: z.number().int().gte(1).lte(500),
+    styleNotes: z.string().max(4000).optional()
+});
+
+export const zSeriesUpdateRequest = zSeriesCreateRequest.and(z.object({
+    status: z.enum([
+        'draft',
+        'active',
+        'archived'
+    ]).optional()
+}));
+
+/**
+ * Kicks off the settings -> bible seed -> episode outlines wizard.
+ */
+export const zSeriesGenerateRequest = z.object({
+    episodeCount: z.number().int().gte(1).lte(500).optional()
+});
+
+export const zSeriesGenerateResponse = z.object({
+    runId: z.string().uuid()
+});
+
+export const zOrigin = z.enum([
+    'user',
+    'import',
+    'model'
+]);
+
+export const zBibleSection = z.object({
+    content: z.string(),
+    origin: zOrigin,
+    tainted: z.boolean(),
+    version: z.number().int()
+});
+
+export const zStoryBible = z.object({
+    seriesId: z.string().uuid(),
+    sections: z.record(zBibleSection),
+    updatedAt: z.string().datetime()
+});
+
+export const zBibleSectionUpdateRequest = z.object({
+    section: z.enum([
+        'world',
+        'cultivation_realms',
+        'arcs',
+        'style_guide',
+        'running_summary',
+        'glossary'
+    ]),
+    content: z.string().max(20000),
+    expectedVersion: z.number().int()
+});
+
+export const zOutlineBeat = z.object({
+    id: z.string(),
+    summary: z.string(),
+    targetWords: z.number().int(),
+    tainted: z.boolean().optional()
+});
+
+export const zDraftStatus = z.object({
+    wordCount: z.number().int().optional(),
+    version: z.number().int().optional()
+});
+
+export const zEpisode = z.object({
+    id: z.string().uuid(),
+    seriesId: z.string().uuid(),
+    idx: z.number().int(),
+    title: z.string(),
+    outline: z.array(zOutlineBeat),
+    status: z.enum([
+        'planned',
+        'outlined',
+        'drafting',
+        'draft',
+        'reviewed'
+    ]),
+    drafts: z.record(zDraftStatus).optional(),
+    durationEstimateMinutes: z.record(z.number()).optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zEpisodeList = z.object({
+    items: z.array(zEpisode),
+    nextCursor: z.string().optional()
+});
+
+export const zEpisodeUpdateRequest = z.object({
+    title: z.string().max(200).optional(),
+    status: z.enum([
+        'planned',
+        'outlined',
+        'drafting',
+        'draft',
+        'reviewed'
+    ]).optional()
+});
+
+export const zAiActionRequest = z.object({
+    action: z.enum([
+        'outline',
+        'expand_beat',
+        'continue',
+        'rewrite',
+        'expand',
+        'shorten',
+        'tone',
+        'translate',
+        'summarise'
+    ]),
+    lang: zTargetLanguage,
+    paragraphIds: z.array(z.string()).optional(),
+    beatId: z.string().optional(),
+    instruction: z.string().max(500).optional()
+});
+
+export const zAiActionResponse = z.object({
+    stepId: z.string().uuid(),
+    runId: z.string().uuid()
+});
+
+/**
+ * The step's current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step's SSE transition and then fetches this once the step reaches a terminal status.
+ */
+export const zAiActionResult = z.object({
+    status: z.enum([
+        'pending',
+        'queued',
+        'running',
+        'done',
+        'failed',
+        'canceled'
+    ]),
+    provider: z.string().optional(),
+    lang: zTargetLanguage.optional(),
+    text: z.string().optional(),
+    tainted: z.boolean().optional(),
+    errorDetail: z.string().optional()
+});
+
+/**
+ * Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+ */
+export const zDraftLanguage = z.enum([
+    'en',
+    'vi',
+    'zh'
+]);
+
+export const zDraftParagraph = z.object({
+    id: z.string(),
+    text: z.string(),
+    origin: zOrigin,
+    tainted: z.boolean()
+});
+
+export const zEpisodeDraft = z.object({
+    episodeId: z.string().uuid(),
+    lang: zDraftLanguage,
+    paragraphs: z.array(zDraftParagraph),
+    version: z.number().int(),
+    wordCount: z.number().int(),
+    durationEstimateMinutes: z.number().optional(),
+    summary: z.string().optional(),
+    summaryTainted: z.boolean().optional()
+});
+
+export const zParagraphOp = z.object({
+    op: z.enum([
+        'upsert',
+        'delete',
+        'move'
+    ]),
+    paragraphId: z.string(),
+    text: z.string().optional(),
+    afterParagraphId: z.string().optional()
+});
+
+export const zDraftPatchRequest = z.object({
+    expectedVersion: z.number().int(),
+    ops: z.array(zParagraphOp).min(1).max(200)
+});
+
+/**
+ * Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
+ */
+export const zApplyDraftStepRequest = z.object({
+    stepId: z.string().uuid(),
+    paragraphIds: z.array(z.string()).optional(),
+    afterParagraphId: z.string().optional()
+});
+
+export const zChapterPreview = z.object({
+    index: z.number().int(),
+    title: z.string(),
+    wordCount: z.number().int()
+});
+
+export const zImport = z.object({
+    id: z.string().uuid(),
+    seriesId: z.string().uuid().optional(),
+    assetId: z.string().uuid().optional(),
+    encoding: z.string().optional(),
+    splitPreset: z.string().optional(),
+    status: z.enum([
+        'uploaded',
+        'preview',
+        'committed',
+        'failed'
+    ]),
+    chapters: z.array(zChapterPreview).optional(),
+    errorMsg: z.string().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zImportList = z.object({
+    items: z.array(zImport),
+    nextCursor: z.string().optional()
+});
+
+export const zImportCreateRequest = z.object({
+    assetId: z.string().uuid(),
+    seriesId: z.string().uuid().optional()
+});
+
+export const zImportPreviewRequest = z.object({
+    splitPreset: z.enum([
+        'zh_chapter',
+        'en_chapter',
+        'vi_chuong',
+        'auto'
+    ]).optional().default('auto')
+});
+
+export const zImportCommitRequest = z.object({
+    seriesId: z.string().uuid(),
+    chapterIndexes: z.array(z.number().int()).optional(),
+    translateToLang: zTargetLanguage.optional()
+});
+
+export const zImportCommitResponse = z.object({
+    episodeIds: z.array(z.string().uuid()),
+    runId: z.string().uuid().optional()
 });
 
 export const zModelLicence = z.object({
@@ -516,6 +805,243 @@ export const zTestLlmSettingsBody = zLlmSettingsTestRequest;
  * test result
  */
 export const zTestLlmSettingsResponse = zLlmSettingsTestResult;
+
+export const zPutLlmApiKeyBody = zLlmApiKeyRequest;
+
+export const zPutLlmApiKeyPath = z.object({
+    provider: z.string()
+});
+
+/**
+ * key stored
+ */
+export const zPutLlmApiKeyResponse = z.void();
+
+/**
+ * claude CLI status
+ */
+export const zGetClaudeCliStatusResponse = zClaudeCliStatus;
+
+export const zListSeriesQuery = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of series
+ */
+export const zListSeriesResponse = zSeriesList;
+
+export const zCreateSeriesBody = zSeriesCreateRequest;
+
+/**
+ * series created
+ */
+export const zCreateSeriesResponse = zSeries;
+
+export const zGetSeriesPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * series settings
+ */
+export const zGetSeriesResponse = zSeries;
+
+export const zUpdateSeriesBody = zSeriesUpdateRequest;
+
+export const zUpdateSeriesPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * series updated
+ */
+export const zUpdateSeriesResponse = zSeries;
+
+export const zGenerateSeriesBody = zSeriesGenerateRequest;
+
+export const zGenerateSeriesPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * generation run created; progress streams over SSE
+ */
+export const zGenerateSeriesResponse = zSeriesGenerateResponse;
+
+export const zGetBiblePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * story bible
+ */
+export const zGetBibleResponse = zStoryBible;
+
+export const zUpdateBibleSectionBody = zBibleSectionUpdateRequest;
+
+export const zUpdateBibleSectionPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * bible section updated
+ */
+export const zUpdateBibleSectionResponse = zStoryBible;
+
+export const zListEpisodesQuery = z.object({
+    seriesId: z.string().uuid(),
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of episodes
+ */
+export const zListEpisodesResponse = zEpisodeList;
+
+export const zCreateEpisodeQuery = z.object({
+    seriesId: z.string().uuid()
+});
+
+/**
+ * episode created
+ */
+export const zCreateEpisodeResponse = zEpisode;
+
+export const zGetEpisodePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * episode
+ */
+export const zGetEpisodeResponse = zEpisode;
+
+export const zUpdateEpisodeBody = zEpisodeUpdateRequest;
+
+export const zUpdateEpisodePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * episode updated
+ */
+export const zUpdateEpisodeResponse = zEpisode;
+
+export const zCreateAiActionBody = zAiActionRequest;
+
+export const zCreateAiActionPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * AI action step created; poll getAiActionResult with the returned stepId for the result
+ */
+export const zCreateAiActionResponse = zAiActionResponse;
+
+export const zGetAiActionResultPath = z.object({
+    id: z.string().uuid(),
+    stepId: z.string().uuid()
+});
+
+/**
+ * current step status, with text once done
+ */
+export const zGetAiActionResultResponse = zAiActionResult;
+
+export const zGetDraftPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * draft
+ */
+export const zGetDraftResponse = zEpisodeDraft;
+
+export const zPatchDraftBody = zDraftPatchRequest;
+
+export const zPatchDraftPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * draft updated
+ */
+export const zPatchDraftResponse = zEpisodeDraft;
+
+export const zCreateDraftPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * a draft already existed; it is returned unchanged
+ */
+export const zCreateDraftResponse = zEpisodeDraft;
+
+export const zApplyDraftStepBody = zApplyDraftStepRequest;
+
+export const zApplyDraftStepPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * draft updated with the step's output
+ */
+export const zApplyDraftStepResponse = zEpisodeDraft;
+
+export const zListImportsQuery = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().gte(1).lte(200).optional()
+});
+
+/**
+ * page of imports
+ */
+export const zListImportsResponse = zImportList;
+
+export const zCreateImportBody = zImportCreateRequest;
+
+/**
+ * import registered
+ */
+export const zCreateImportResponse = zImport;
+
+export const zGetImportPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * import
+ */
+export const zGetImportResponse = zImport;
+
+export const zPreviewImportBody = zImportPreviewRequest;
+
+export const zPreviewImportPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * chapter preview
+ */
+export const zPreviewImportResponse = zImport;
+
+export const zCommitImportBody = zImportCommitRequest;
+
+export const zCommitImportPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * episodes created from the selected chapters
+ */
+export const zCommitImportResponse = zImportCommitResponse;
 
 /**
  * model list

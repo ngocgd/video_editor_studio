@@ -24,6 +24,75 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AiActionRequestAction.
+const (
+	Continue   AiActionRequestAction = "continue"
+	Expand     AiActionRequestAction = "expand"
+	ExpandBeat AiActionRequestAction = "expand_beat"
+	Outline    AiActionRequestAction = "outline"
+	Rewrite    AiActionRequestAction = "rewrite"
+	Shorten    AiActionRequestAction = "shorten"
+	Summarise  AiActionRequestAction = "summarise"
+	Tone       AiActionRequestAction = "tone"
+	Translate  AiActionRequestAction = "translate"
+)
+
+// Valid indicates whether the value is a known member of the AiActionRequestAction enum.
+func (e AiActionRequestAction) Valid() bool {
+	switch e {
+	case Continue:
+		return true
+	case Expand:
+		return true
+	case ExpandBeat:
+		return true
+	case Outline:
+		return true
+	case Rewrite:
+		return true
+	case Shorten:
+		return true
+	case Summarise:
+		return true
+	case Tone:
+		return true
+	case Translate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiActionResultStatus.
+const (
+	AiActionResultStatusCanceled AiActionResultStatus = "canceled"
+	AiActionResultStatusDone     AiActionResultStatus = "done"
+	AiActionResultStatusFailed   AiActionResultStatus = "failed"
+	AiActionResultStatusPending  AiActionResultStatus = "pending"
+	AiActionResultStatusQueued   AiActionResultStatus = "queued"
+	AiActionResultStatusRunning  AiActionResultStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AiActionResultStatus enum.
+func (e AiActionResultStatus) Valid() bool {
+	switch e {
+	case AiActionResultStatusCanceled:
+		return true
+	case AiActionResultStatusDone:
+		return true
+	case AiActionResultStatusFailed:
+		return true
+	case AiActionResultStatusPending:
+		return true
+	case AiActionResultStatusQueued:
+		return true
+	case AiActionResultStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AssetStatus.
 const (
 	AssetStatusFailed  AssetStatus = "failed"
@@ -69,6 +138,36 @@ func (e AssetKind) Valid() bool {
 	}
 }
 
+// Defines values for BibleSectionUpdateRequestSection.
+const (
+	Arcs              BibleSectionUpdateRequestSection = "arcs"
+	CultivationRealms BibleSectionUpdateRequestSection = "cultivation_realms"
+	Glossary          BibleSectionUpdateRequestSection = "glossary"
+	RunningSummary    BibleSectionUpdateRequestSection = "running_summary"
+	StyleGuide        BibleSectionUpdateRequestSection = "style_guide"
+	World             BibleSectionUpdateRequestSection = "world"
+)
+
+// Valid indicates whether the value is a known member of the BibleSectionUpdateRequestSection enum.
+func (e BibleSectionUpdateRequestSection) Valid() bool {
+	switch e {
+	case Arcs:
+		return true
+	case CultivationRealms:
+		return true
+	case Glossary:
+		return true
+	case RunningSummary:
+		return true
+	case StyleGuide:
+		return true
+	case World:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateRunRequestPriorityClass.
 const (
 	Batch       CreateRunRequestPriorityClass = "batch"
@@ -93,6 +192,81 @@ func (e CreateRunRequestPriorityClass) Valid() bool {
 	}
 }
 
+// Defines values for DraftLanguage.
+const (
+	DraftLanguageEn DraftLanguage = "en"
+	DraftLanguageVi DraftLanguage = "vi"
+	DraftLanguageZh DraftLanguage = "zh"
+)
+
+// Valid indicates whether the value is a known member of the DraftLanguage enum.
+func (e DraftLanguage) Valid() bool {
+	switch e {
+	case DraftLanguageEn:
+		return true
+	case DraftLanguageVi:
+		return true
+	case DraftLanguageZh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EpisodeStatus.
+const (
+	EpisodeStatusDraft    EpisodeStatus = "draft"
+	EpisodeStatusDrafting EpisodeStatus = "drafting"
+	EpisodeStatusOutlined EpisodeStatus = "outlined"
+	EpisodeStatusPlanned  EpisodeStatus = "planned"
+	EpisodeStatusReviewed EpisodeStatus = "reviewed"
+)
+
+// Valid indicates whether the value is a known member of the EpisodeStatus enum.
+func (e EpisodeStatus) Valid() bool {
+	switch e {
+	case EpisodeStatusDraft:
+		return true
+	case EpisodeStatusDrafting:
+		return true
+	case EpisodeStatusOutlined:
+		return true
+	case EpisodeStatusPlanned:
+		return true
+	case EpisodeStatusReviewed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EpisodeUpdateRequestStatus.
+const (
+	EpisodeUpdateRequestStatusDraft    EpisodeUpdateRequestStatus = "draft"
+	EpisodeUpdateRequestStatusDrafting EpisodeUpdateRequestStatus = "drafting"
+	EpisodeUpdateRequestStatusOutlined EpisodeUpdateRequestStatus = "outlined"
+	EpisodeUpdateRequestStatusPlanned  EpisodeUpdateRequestStatus = "planned"
+	EpisodeUpdateRequestStatusReviewed EpisodeUpdateRequestStatus = "reviewed"
+)
+
+// Valid indicates whether the value is a known member of the EpisodeUpdateRequestStatus enum.
+func (e EpisodeUpdateRequestStatus) Valid() bool {
+	switch e {
+	case EpisodeUpdateRequestStatusDraft:
+		return true
+	case EpisodeUpdateRequestStatusDrafting:
+		return true
+	case EpisodeUpdateRequestStatusOutlined:
+		return true
+	case EpisodeUpdateRequestStatusPlanned:
+		return true
+	case EpisodeUpdateRequestStatusReviewed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatusStatus.
 const (
 	HealthStatusStatusOk HealthStatusStatus = "ok"
@@ -102,6 +276,54 @@ const (
 func (e HealthStatusStatus) Valid() bool {
 	switch e {
 	case HealthStatusStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportStatus.
+const (
+	ImportStatusCommitted ImportStatus = "committed"
+	ImportStatusFailed    ImportStatus = "failed"
+	ImportStatusPreview   ImportStatus = "preview"
+	ImportStatusUploaded  ImportStatus = "uploaded"
+)
+
+// Valid indicates whether the value is a known member of the ImportStatus enum.
+func (e ImportStatus) Valid() bool {
+	switch e {
+	case ImportStatusCommitted:
+		return true
+	case ImportStatusFailed:
+		return true
+	case ImportStatusPreview:
+		return true
+	case ImportStatusUploaded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportPreviewRequestSplitPreset.
+const (
+	Auto      ImportPreviewRequestSplitPreset = "auto"
+	EnChapter ImportPreviewRequestSplitPreset = "en_chapter"
+	ViChuong  ImportPreviewRequestSplitPreset = "vi_chuong"
+	ZhChapter ImportPreviewRequestSplitPreset = "zh_chapter"
+)
+
+// Valid indicates whether the value is a known member of the ImportPreviewRequestSplitPreset enum.
+func (e ImportPreviewRequestSplitPreset) Valid() bool {
+	switch e {
+	case Auto:
+		return true
+	case EnChapter:
+		return true
+	case ViChuong:
+		return true
+	case ZhChapter:
 		return true
 	default:
 		return false
@@ -132,6 +354,48 @@ func (e ModelInfoStatus) Valid() bool {
 	case ModelInfoStatusNotInstalled:
 		return true
 	case ModelInfoStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Origin.
+const (
+	OriginImport Origin = "import"
+	OriginModel  Origin = "model"
+	OriginUser   Origin = "user"
+)
+
+// Valid indicates whether the value is a known member of the Origin enum.
+func (e Origin) Valid() bool {
+	switch e {
+	case OriginImport:
+		return true
+	case OriginModel:
+		return true
+	case OriginUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ParagraphOpOp.
+const (
+	Delete ParagraphOpOp = "delete"
+	Move   ParagraphOpOp = "move"
+	Upsert ParagraphOpOp = "upsert"
+)
+
+// Valid indicates whether the value is a known member of the ParagraphOpOp enum.
+func (e ParagraphOpOp) Valid() bool {
+	switch e {
+	case Delete:
+		return true
+	case Move:
+		return true
+	case Upsert:
 		return true
 	default:
 		return false
@@ -258,6 +522,48 @@ func (e Role) Valid() bool {
 	}
 }
 
+// Defines values for SeriesStatus.
+const (
+	SeriesStatusActive   SeriesStatus = "active"
+	SeriesStatusArchived SeriesStatus = "archived"
+	SeriesStatusDraft    SeriesStatus = "draft"
+)
+
+// Valid indicates whether the value is a known member of the SeriesStatus enum.
+func (e SeriesStatus) Valid() bool {
+	switch e {
+	case SeriesStatusActive:
+		return true
+	case SeriesStatusArchived:
+		return true
+	case SeriesStatusDraft:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SeriesUpdateRequestStatus.
+const (
+	SeriesUpdateRequestStatusActive   SeriesUpdateRequestStatus = "active"
+	SeriesUpdateRequestStatusArchived SeriesUpdateRequestStatus = "archived"
+	SeriesUpdateRequestStatusDraft    SeriesUpdateRequestStatus = "draft"
+)
+
+// Valid indicates whether the value is a known member of the SeriesUpdateRequestStatus enum.
+func (e SeriesUpdateRequestStatus) Valid() bool {
+	switch e {
+	case SeriesUpdateRequestStatusActive:
+		return true
+	case SeriesUpdateRequestStatusArchived:
+		return true
+	case SeriesUpdateRequestStatusDraft:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StepSummaryStatus.
 const (
 	StepSummaryStatusCanceled StepSummaryStatus = "canceled"
@@ -286,6 +592,67 @@ func (e StepSummaryStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// Defines values for TargetLanguage.
+const (
+	TargetLanguageEn TargetLanguage = "en"
+	TargetLanguageVi TargetLanguage = "vi"
+)
+
+// Valid indicates whether the value is a known member of the TargetLanguage enum.
+func (e TargetLanguage) Valid() bool {
+	switch e {
+	case TargetLanguageEn:
+		return true
+	case TargetLanguageVi:
+		return true
+	default:
+		return false
+	}
+}
+
+// AiActionRequest defines model for AiActionRequest.
+type AiActionRequest struct {
+	Action AiActionRequestAction `json:"action"`
+	BeatId *string               `json:"beatId,omitempty"`
+
+	// Instruction The user's own free-text instruction; sent as a separate, length-capped, origin=user data block, never concatenated into the system template.
+	Instruction  *string        `json:"instruction,omitempty"`
+	Lang         TargetLanguage `json:"lang"`
+	ParagraphIds *[]string      `json:"paragraphIds,omitempty"`
+}
+
+// AiActionRequestAction defines model for AiActionRequest.Action.
+type AiActionRequestAction string
+
+// AiActionResponse defines model for AiActionResponse.
+type AiActionResponse struct {
+	RunId  openapi_types.UUID `json:"runId"`
+	StepId openapi_types.UUID `json:"stepId"`
+}
+
+// AiActionResult The step's current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step's SSE transition and then fetches this once the step reaches a terminal status.
+type AiActionResult struct {
+	ErrorDetail *string              `json:"errorDetail,omitempty"`
+	Lang        *TargetLanguage      `json:"lang,omitempty"`
+	Provider    *string              `json:"provider,omitempty"`
+	Status      AiActionResultStatus `json:"status"`
+	Tainted     *bool                `json:"tainted,omitempty"`
+	Text        *string              `json:"text,omitempty"`
+}
+
+// AiActionResultStatus defines model for AiActionResult.Status.
+type AiActionResultStatus string
+
+// ApplyDraftStepRequest Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
+type ApplyDraftStepRequest struct {
+	// AfterParagraphId For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
+	AfterParagraphId *string `json:"afterParagraphId,omitempty"`
+
+	// ParagraphIds The paragraphs the action was run against (its selection).
+	ParagraphIds *[]string          `json:"paragraphIds,omitempty"`
+	StepId       openapi_types.UUID `json:"stepId"`
 }
 
 // Asset defines model for Asset.
@@ -333,6 +700,45 @@ type AuditList struct {
 	NextCursor *string      `json:"nextCursor,omitempty"`
 }
 
+// BibleSection defines model for BibleSection.
+type BibleSection struct {
+	// Content Plain text for prose sections; JSON-encoded array text for the glossary section.
+	Content string `json:"content"`
+	Origin  Origin `json:"origin"`
+	Tainted bool   `json:"tainted"`
+	Version int    `json:"version"`
+}
+
+// BibleSectionUpdateRequest defines model for BibleSectionUpdateRequest.
+type BibleSectionUpdateRequest struct {
+	Content string `json:"content"`
+
+	// ExpectedVersion Optimistic-concurrency check against the section's current version; a mismatch returns 409.
+	ExpectedVersion int                              `json:"expectedVersion"`
+	Section         BibleSectionUpdateRequestSection `json:"section"`
+}
+
+// BibleSectionUpdateRequestSection defines model for BibleSectionUpdateRequest.Section.
+type BibleSectionUpdateRequestSection string
+
+// ChapterPreview defines model for ChapterPreview.
+type ChapterPreview struct {
+	Index     int    `json:"index"`
+	Title     string `json:"title"`
+	WordCount int    `json:"wordCount"`
+}
+
+// ClaudeCliStatus defines model for ClaudeCliStatus.
+type ClaudeCliStatus struct {
+	Authenticated bool    `json:"authenticated"`
+	Detail        *string `json:"detail,omitempty"`
+	Installed     bool    `json:"installed"`
+
+	// ToolsDisabled Always true; the llm-cli sidecar runs claude with tool use disabled.
+	ToolsDisabled bool    `json:"toolsDisabled"`
+	Version       *string `json:"version,omitempty"`
+}
+
 // CreateRunRequest defines model for CreateRunRequest.
 type CreateRunRequest struct {
 	Kind string `json:"kind"`
@@ -361,6 +767,74 @@ type CreateStepSpec struct {
 type CsrfToken struct {
 	Token string `json:"token"`
 }
+
+// DraftLanguage Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+type DraftLanguage string
+
+// DraftParagraph defines model for DraftParagraph.
+type DraftParagraph struct {
+	Id      string `json:"id"`
+	Origin  Origin `json:"origin"`
+	Tainted bool   `json:"tainted"`
+	Text    string `json:"text"`
+}
+
+// DraftPatchRequest defines model for DraftPatchRequest.
+type DraftPatchRequest struct {
+	ExpectedVersion int           `json:"expectedVersion"`
+	Ops             []ParagraphOp `json:"ops"`
+}
+
+// DraftStatus defines model for DraftStatus.
+type DraftStatus struct {
+	Version   *int `json:"version,omitempty"`
+	WordCount *int `json:"wordCount,omitempty"`
+}
+
+// Episode defines model for Episode.
+type Episode struct {
+	CreatedAt               time.Time               `json:"createdAt"`
+	Drafts                  *map[string]DraftStatus `json:"drafts,omitempty"`
+	DurationEstimateMinutes *map[string]float32     `json:"durationEstimateMinutes,omitempty"`
+	Id                      openapi_types.UUID      `json:"id"`
+	Idx                     int                     `json:"idx"`
+	Outline                 []OutlineBeat           `json:"outline"`
+	SeriesId                openapi_types.UUID      `json:"seriesId"`
+	Status                  EpisodeStatus           `json:"status"`
+	Title                   string                  `json:"title"`
+}
+
+// EpisodeStatus defines model for Episode.Status.
+type EpisodeStatus string
+
+// EpisodeDraft defines model for EpisodeDraft.
+type EpisodeDraft struct {
+	DurationEstimateMinutes *float32           `json:"durationEstimateMinutes,omitempty"`
+	EpisodeId               openapi_types.UUID `json:"episodeId"`
+
+	// Lang Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+	Lang           DraftLanguage    `json:"lang"`
+	Paragraphs     []DraftParagraph `json:"paragraphs"`
+	Summary        *string          `json:"summary,omitempty"`
+	SummaryTainted *bool            `json:"summaryTainted,omitempty"`
+	Version        int              `json:"version"`
+	WordCount      int              `json:"wordCount"`
+}
+
+// EpisodeList defines model for EpisodeList.
+type EpisodeList struct {
+	Items      []Episode `json:"items"`
+	NextCursor *string   `json:"nextCursor,omitempty"`
+}
+
+// EpisodeUpdateRequest defines model for EpisodeUpdateRequest.
+type EpisodeUpdateRequest struct {
+	Status *EpisodeUpdateRequestStatus `json:"status,omitempty"`
+	Title  *string                     `json:"title,omitempty"`
+}
+
+// EpisodeUpdateRequestStatus defines model for EpisodeUpdateRequest.Status.
+type EpisodeUpdateRequestStatus string
 
 // GpuBackendStatus defines model for GpuBackendStatus.
 type GpuBackendStatus struct {
@@ -411,6 +885,58 @@ type HealthStatus struct {
 // HealthStatusStatus defines model for HealthStatus.Status.
 type HealthStatusStatus string
 
+// Import defines model for Import.
+type Import struct {
+	AssetId     *openapi_types.UUID `json:"assetId,omitempty"`
+	Chapters    *[]ChapterPreview   `json:"chapters,omitempty"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	Encoding    *string             `json:"encoding,omitempty"`
+	ErrorMsg    *string             `json:"errorMsg,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+	SeriesId    *openapi_types.UUID `json:"seriesId,omitempty"`
+	SplitPreset *string             `json:"splitPreset,omitempty"`
+	Status      ImportStatus        `json:"status"`
+}
+
+// ImportStatus defines model for Import.Status.
+type ImportStatus string
+
+// ImportCommitRequest defines model for ImportCommitRequest.
+type ImportCommitRequest struct {
+	// ChapterIndexes Empty means every previewed chapter.
+	ChapterIndexes  *[]int             `json:"chapterIndexes,omitempty"`
+	SeriesId        openapi_types.UUID `json:"seriesId"`
+	TranslateToLang *TargetLanguage    `json:"translateToLang,omitempty"`
+}
+
+// ImportCommitResponse defines model for ImportCommitResponse.
+type ImportCommitResponse struct {
+	EpisodeIds []openapi_types.UUID `json:"episodeIds"`
+
+	// RunId Set only when translateToLang triggered llm.translate steps.
+	RunId *openapi_types.UUID `json:"runId,omitempty"`
+}
+
+// ImportCreateRequest defines model for ImportCreateRequest.
+type ImportCreateRequest struct {
+	AssetId  openapi_types.UUID  `json:"assetId"`
+	SeriesId *openapi_types.UUID `json:"seriesId,omitempty"`
+}
+
+// ImportList defines model for ImportList.
+type ImportList struct {
+	Items      []Import `json:"items"`
+	NextCursor *string  `json:"nextCursor,omitempty"`
+}
+
+// ImportPreviewRequest defines model for ImportPreviewRequest.
+type ImportPreviewRequest struct {
+	SplitPreset *ImportPreviewRequestSplitPreset `json:"splitPreset,omitempty"`
+}
+
+// ImportPreviewRequestSplitPreset defines model for ImportPreviewRequest.SplitPreset.
+type ImportPreviewRequestSplitPreset string
+
 // LLMActionOverrides defines model for LLMActionOverrides.
 type LLMActionOverrides struct {
 	Draft      *string `json:"draft,omitempty"`
@@ -419,6 +945,12 @@ type LLMActionOverrides struct {
 	SceneSplit *string `json:"scene_split,omitempty"`
 	Summary    *string `json:"summary,omitempty"`
 	Translate  *string `json:"translate,omitempty"`
+}
+
+// LLMApiKeyRequest defines model for LLMApiKeyRequest.
+type LLMApiKeyRequest struct {
+	// ApiKey Write-only; never echoed back. Stored envelope-encrypted (kind=llm_api_key, owner_ref=provider).
+	ApiKey string `json:"apiKey"`
 }
 
 // LLMSettings defines model for LLMSettings.
@@ -436,9 +968,10 @@ type LLMSettingsTestRequest struct {
 
 // LLMSettingsTestResult defines model for LLMSettingsTestResult.
 type LLMSettingsTestResult struct {
-	Detail   *string `json:"detail,omitempty"`
-	Ok       bool    `json:"ok"`
-	Provider string  `json:"provider"`
+	Detail    *string `json:"detail,omitempty"`
+	LatencyMs *int    `json:"latencyMs,omitempty"`
+	Ok        bool    `json:"ok"`
+	Provider  string  `json:"provider"`
 }
 
 // LLMSettingsUpdate defines model for LLMSettingsUpdate.
@@ -517,6 +1050,31 @@ type ModelList struct {
 	Items        []ModelInfo `json:"items"`
 	WorkerOnline *bool       `json:"workerOnline,omitempty"`
 }
+
+// Origin defines model for Origin.
+type Origin string
+
+// OutlineBeat defines model for OutlineBeat.
+type OutlineBeat struct {
+	Id      string `json:"id"`
+	Summary string `json:"summary"`
+
+	// Tainted True when the bible excerpt used to generate this episode's outline was itself tainted.
+	Tainted     *bool `json:"tainted,omitempty"`
+	TargetWords int   `json:"targetWords"`
+}
+
+// ParagraphOp defines model for ParagraphOp.
+type ParagraphOp struct {
+	// AfterParagraphId For op=move, the paragraph id to place this one after (empty string means first).
+	AfterParagraphId *string       `json:"afterParagraphId,omitempty"`
+	Op               ParagraphOpOp `json:"op"`
+	ParagraphId      string        `json:"paragraphId"`
+	Text             *string       `json:"text,omitempty"`
+}
+
+// ParagraphOpOp defines model for ParagraphOp.Op.
+type ParagraphOpOp string
 
 // PipelineRun defines model for PipelineRun.
 type PipelineRun struct {
@@ -613,6 +1171,62 @@ type ReadyStatusStatus string
 // Role defines model for Role.
 type Role string
 
+// Series defines model for Series.
+type Series struct {
+	CreatedAt            time.Time          `json:"createdAt"`
+	Genre                *string            `json:"genre,omitempty"`
+	Id                   openapi_types.UUID `json:"id"`
+	PlannedEpisodeCount  int                `json:"plannedEpisodeCount"`
+	Status               SeriesStatus       `json:"status"`
+	StyleNotes           *string            `json:"styleNotes,omitempty"`
+	TargetEpisodeMinutes int                `json:"targetEpisodeMinutes"`
+	TargetLanguages      []TargetLanguage   `json:"targetLanguages"`
+	Title                string             `json:"title"`
+}
+
+// SeriesStatus defines model for Series.Status.
+type SeriesStatus string
+
+// SeriesCreateRequest defines model for SeriesCreateRequest.
+type SeriesCreateRequest struct {
+	Genre                *string          `json:"genre,omitempty"`
+	PlannedEpisodeCount  int              `json:"plannedEpisodeCount"`
+	StyleNotes           *string          `json:"styleNotes,omitempty"`
+	TargetEpisodeMinutes int              `json:"targetEpisodeMinutes"`
+	TargetLanguages      []TargetLanguage `json:"targetLanguages"`
+	Title                string           `json:"title"`
+}
+
+// SeriesGenerateRequest Kicks off the settings -> bible seed -> episode outlines wizard.
+type SeriesGenerateRequest struct {
+	EpisodeCount *int `json:"episodeCount,omitempty"`
+}
+
+// SeriesGenerateResponse defines model for SeriesGenerateResponse.
+type SeriesGenerateResponse struct {
+	RunId openapi_types.UUID `json:"runId"`
+}
+
+// SeriesList defines model for SeriesList.
+type SeriesList struct {
+	Items      []Series `json:"items"`
+	NextCursor *string  `json:"nextCursor,omitempty"`
+}
+
+// SeriesUpdateRequest defines model for SeriesUpdateRequest.
+type SeriesUpdateRequest struct {
+	Genre                *string                    `json:"genre,omitempty"`
+	PlannedEpisodeCount  int                        `json:"plannedEpisodeCount"`
+	Status               *SeriesUpdateRequestStatus `json:"status,omitempty"`
+	StyleNotes           *string                    `json:"styleNotes,omitempty"`
+	TargetEpisodeMinutes int                        `json:"targetEpisodeMinutes"`
+	TargetLanguages      []TargetLanguage           `json:"targetLanguages"`
+	Title                string                     `json:"title"`
+}
+
+// SeriesUpdateRequestStatus defines model for SeriesUpdateRequest.Status.
+type SeriesUpdateRequestStatus string
+
 // StepLogUrl defines model for StepLogUrl.
 type StepLogUrl struct {
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -632,10 +1246,20 @@ type StepSummary struct {
 // StepSummaryStatus defines model for StepSummary.Status.
 type StepSummaryStatus string
 
+// StoryBible defines model for StoryBible.
+type StoryBible struct {
+	Sections  map[string]BibleSection `json:"sections"`
+	SeriesId  openapi_types.UUID      `json:"seriesId"`
+	UpdatedAt time.Time               `json:"updatedAt"`
+}
+
 // SwitchTenantRequest defines model for SwitchTenantRequest.
 type SwitchTenantRequest struct {
 	TenantId openapi_types.UUID `json:"tenantId"`
 }
+
+// TargetLanguage defines model for TargetLanguage.
+type TargetLanguage string
 
 // TenantMembership defines model for TenantMembership.
 type TenantMembership struct {
@@ -656,10 +1280,28 @@ type ListAuditParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListEpisodesParams defines parameters for ListEpisodes.
+type ListEpisodesParams struct {
+	SeriesId openapi_types.UUID `form:"seriesId" json:"seriesId"`
+	Cursor   *string            `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit    *int               `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateEpisodeParams defines parameters for CreateEpisode.
+type CreateEpisodeParams struct {
+	SeriesId openapi_types.UUID `form:"seriesId" json:"seriesId"`
+}
+
 // StreamEventsParams defines parameters for StreamEvents.
 type StreamEventsParams struct {
 	// Topics Comma-separated pipeline run ids.
 	Topics string `form:"topics" json:"topics"`
+}
+
+// ListImportsParams defines parameters for ListImports.
+type ListImportsParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListJobsParams defines parameters for ListJobs.
@@ -676,6 +1318,12 @@ type ListRunStepsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListSeriesParams defines parameters for ListSeries.
+type ListSeriesParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // PresignAssetJSONRequestBody defines body for PresignAsset for application/json ContentType.
 type PresignAssetJSONRequestBody = PresignRequest
 
@@ -685,11 +1333,47 @@ type LoginJSONRequestBody = LoginRequest
 // SwitchTenantJSONRequestBody defines body for SwitchTenant for application/json ContentType.
 type SwitchTenantJSONRequestBody = SwitchTenantRequest
 
+// UpdateEpisodeJSONRequestBody defines body for UpdateEpisode for application/json ContentType.
+type UpdateEpisodeJSONRequestBody = EpisodeUpdateRequest
+
+// CreateAiActionJSONRequestBody defines body for CreateAiAction for application/json ContentType.
+type CreateAiActionJSONRequestBody = AiActionRequest
+
+// PatchDraftJSONRequestBody defines body for PatchDraft for application/json ContentType.
+type PatchDraftJSONRequestBody = DraftPatchRequest
+
+// ApplyDraftStepJSONRequestBody defines body for ApplyDraftStep for application/json ContentType.
+type ApplyDraftStepJSONRequestBody = ApplyDraftStepRequest
+
+// CreateImportJSONRequestBody defines body for CreateImport for application/json ContentType.
+type CreateImportJSONRequestBody = ImportCreateRequest
+
+// CommitImportJSONRequestBody defines body for CommitImport for application/json ContentType.
+type CommitImportJSONRequestBody = ImportCommitRequest
+
+// PreviewImportJSONRequestBody defines body for PreviewImport for application/json ContentType.
+type PreviewImportJSONRequestBody = ImportPreviewRequest
+
 // CreateRunJSONRequestBody defines body for CreateRun for application/json ContentType.
 type CreateRunJSONRequestBody = CreateRunRequest
 
+// CreateSeriesJSONRequestBody defines body for CreateSeries for application/json ContentType.
+type CreateSeriesJSONRequestBody = SeriesCreateRequest
+
+// UpdateSeriesJSONRequestBody defines body for UpdateSeries for application/json ContentType.
+type UpdateSeriesJSONRequestBody = SeriesUpdateRequest
+
+// UpdateBibleSectionJSONRequestBody defines body for UpdateBibleSection for application/json ContentType.
+type UpdateBibleSectionJSONRequestBody = BibleSectionUpdateRequest
+
+// GenerateSeriesJSONRequestBody defines body for GenerateSeries for application/json ContentType.
+type GenerateSeriesJSONRequestBody = SeriesGenerateRequest
+
 // PutLLMSettingsJSONRequestBody defines body for PutLLMSettings for application/json ContentType.
 type PutLLMSettingsJSONRequestBody = LLMSettingsUpdate
+
+// PutLLMApiKeyJSONRequestBody defines body for PutLLMApiKey for application/json ContentType.
+type PutLLMApiKeyJSONRequestBody = LLMApiKeyRequest
 
 // TestLLMSettingsJSONRequestBody defines body for TestLLMSettings for application/json ContentType.
 type TestLLMSettingsJSONRequestBody = LLMSettingsTestRequest
@@ -726,6 +1410,36 @@ type ServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(w http.ResponseWriter, r *http.Request)
+	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+	// (GET /episodes)
+	ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams)
+	// CreateEpisode Append a new, empty episode to a series
+	// (POST /episodes)
+	CreateEpisode(w http.ResponseWriter, r *http.Request, params CreateEpisodeParams)
+	// GetEpisode Episode outline and metadata
+	// (GET /episodes/{id})
+	GetEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateEpisode Update episode title/status
+	// (PATCH /episodes/{id})
+	UpdateEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// CreateAiAction Enqueue a streaming AI writing action at interactive priority
+	// (POST /episodes/{id}/ai-actions)
+	CreateAiAction(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GetAiActionResult Poll an AI action step's status and, once done, its generated text
+	// (GET /episodes/{id}/ai-actions/{stepId})
+	GetAiActionResult(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, stepId openapi_types.UUID)
+	// GetDraft The episode's draft for one language
+	// (GET /episodes/{id}/drafts/{lang})
+	GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
+	// (PATCH /episodes/{id}/drafts/{lang})
+	PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// CreateDraft Create an empty draft for this episode/language if one does not already exist
+	// (PUT /episodes/{id}/drafts/{lang})
+	CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+	// (POST /episodes/{id}/drafts/{lang}/apply-step)
+	ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -737,6 +1451,21 @@ type ServerInterface interface {
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
+	// ListImports Cursor-paginated list of the active tenant's imports
+	// (GET /imports)
+	ListImports(w http.ResponseWriter, r *http.Request, params ListImportsParams)
+	// CreateImport Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+	// (POST /imports)
+	CreateImport(w http.ResponseWriter, r *http.Request)
+	// GetImport Import status and chapter preview
+	// (GET /imports/{id})
+	GetImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// CommitImport Turn previewed chapters into episodes, optionally translating each
+	// (POST /imports/{id}/commit)
+	CommitImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// PreviewImport Detect encoding and split into chapters using a regex preset, without committing episodes
+	// (POST /imports/{id}/preview)
+	PreviewImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
@@ -770,12 +1499,39 @@ type ServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params ListRunStepsParams)
+	// ListSeries Cursor-paginated list of the active tenant's series
+	// (GET /series)
+	ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams)
+	// CreateSeries Create a new series (settings only; no bible or episodes yet)
+	// (POST /series)
+	CreateSeries(w http.ResponseWriter, r *http.Request)
+	// GetSeries Series settings
+	// (GET /series/{id})
+	GetSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateSeries Update series settings
+	// (PATCH /series/{id})
+	UpdateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GetBible The series' story bible sections
+	// (GET /series/{id}/bible)
+	GetBible(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateBibleSection Update one bible section with an optimistic-concurrency check
+	// (PATCH /series/{id}/bible)
+	UpdateBibleSection(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+	// (POST /series/{id}/generate)
+	GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
 	// (GET /settings/llm)
 	GetLLMSettings(w http.ResponseWriter, r *http.Request)
 	// PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
 	// (PUT /settings/llm)
 	PutLLMSettings(w http.ResponseWriter, r *http.Request)
+	// GetClaudeCliStatus claude CLI version and auth state, as reported by the llm-cli sidecar
+	// (GET /settings/llm/cli-status)
+	GetClaudeCliStatus(w http.ResponseWriter, r *http.Request)
+	// PutLLMApiKey Store (or replace) the active tenant's API key for a provider; write-only, audited
+	// (PUT /settings/llm/keys/{provider})
+	PutLLMApiKey(w http.ResponseWriter, r *http.Request, provider string)
 	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
 	// (POST /settings/llm/test)
 	TestLLMSettings(w http.ResponseWriter, r *http.Request)
@@ -854,6 +1610,66 @@ func (_ Unimplemented) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+// (GET /episodes)
+func (_ Unimplemented) ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateEpisode Append a new, empty episode to a series
+// (POST /episodes)
+func (_ Unimplemented) CreateEpisode(w http.ResponseWriter, r *http.Request, params CreateEpisodeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetEpisode Episode outline and metadata
+// (GET /episodes/{id})
+func (_ Unimplemented) GetEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateEpisode Update episode title/status
+// (PATCH /episodes/{id})
+func (_ Unimplemented) UpdateEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateAiAction Enqueue a streaming AI writing action at interactive priority
+// (POST /episodes/{id}/ai-actions)
+func (_ Unimplemented) CreateAiAction(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAiActionResult Poll an AI action step's status and, once done, its generated text
+// (GET /episodes/{id}/ai-actions/{stepId})
+func (_ Unimplemented) GetAiActionResult(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, stepId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetDraft The episode's draft for one language
+// (GET /episodes/{id}/drafts/{lang})
+func (_ Unimplemented) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
+// (PATCH /episodes/{id}/drafts/{lang})
+func (_ Unimplemented) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDraft Create an empty draft for this episode/language if one does not already exist
+// (PUT /episodes/{id}/drafts/{lang})
+func (_ Unimplemented) CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+// (POST /episodes/{id}/drafts/{lang}/apply-step)
+func (_ Unimplemented) ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 // The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 // Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -871,6 +1687,36 @@ func (_ Unimplemented) GetGpuStatus(w http.ResponseWriter, r *http.Request) {
 // GetHealthz Liveness probe
 // (GET /healthz)
 func (_ Unimplemented) GetHealthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListImports Cursor-paginated list of the active tenant's imports
+// (GET /imports)
+func (_ Unimplemented) ListImports(w http.ResponseWriter, r *http.Request, params ListImportsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateImport Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+// (POST /imports)
+func (_ Unimplemented) CreateImport(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetImport Import status and chapter preview
+// (GET /imports/{id})
+func (_ Unimplemented) GetImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CommitImport Turn previewed chapters into episodes, optionally translating each
+// (POST /imports/{id}/commit)
+func (_ Unimplemented) CommitImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PreviewImport Detect encoding and split into chapters using a regex preset, without committing episodes
+// (POST /imports/{id}/preview)
+func (_ Unimplemented) PreviewImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -940,6 +1786,48 @@ func (_ Unimplemented) ListRunSteps(w http.ResponseWriter, r *http.Request, id o
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListSeries Cursor-paginated list of the active tenant's series
+// (GET /series)
+func (_ Unimplemented) ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateSeries Create a new series (settings only; no bible or episodes yet)
+// (POST /series)
+func (_ Unimplemented) CreateSeries(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetSeries Series settings
+// (GET /series/{id})
+func (_ Unimplemented) GetSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateSeries Update series settings
+// (PATCH /series/{id})
+func (_ Unimplemented) UpdateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetBible The series' story bible sections
+// (GET /series/{id}/bible)
+func (_ Unimplemented) GetBible(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateBibleSection Update one bible section with an optimistic-concurrency check
+// (PATCH /series/{id}/bible)
+func (_ Unimplemented) UpdateBibleSection(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+// (POST /series/{id}/generate)
+func (_ Unimplemented) GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetLLMSettings The active tenant's LLM provider default and per-action overrides
 // (GET /settings/llm)
 func (_ Unimplemented) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
@@ -949,6 +1837,18 @@ func (_ Unimplemented) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
 // PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
 // (PUT /settings/llm)
 func (_ Unimplemented) PutLLMSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetClaudeCliStatus claude CLI version and auth state, as reported by the llm-cli sidecar
+// (GET /settings/llm/cli-status)
+func (_ Unimplemented) GetClaudeCliStatus(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutLLMApiKey Store (or replace) the active tenant's API key for a provider; write-only, audited
+// (PUT /settings/llm/keys/{provider})
+func (_ Unimplemented) PutLLMApiKey(w http.ResponseWriter, r *http.Request, provider string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1213,6 +2113,351 @@ func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListEpisodes operation middleware
+func (siw *ServerInterfaceWrapper) ListEpisodes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEpisodesParams
+
+	// ------------- Required query parameter "seriesId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "seriesId", r.URL.Query(), &params.SeriesId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "seriesId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "seriesId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEpisodes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEpisode operation middleware
+func (siw *ServerInterfaceWrapper) CreateEpisode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateEpisodeParams
+
+	// ------------- Required query parameter "seriesId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "seriesId", r.URL.Query(), &params.SeriesId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "seriesId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "seriesId", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEpisode(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEpisode operation middleware
+func (siw *ServerInterfaceWrapper) GetEpisode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEpisode(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateEpisode operation middleware
+func (siw *ServerInterfaceWrapper) UpdateEpisode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateEpisode(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAiAction operation middleware
+func (siw *ServerInterfaceWrapper) CreateAiAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAiAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAiActionResult operation middleware
+func (siw *ServerInterfaceWrapper) GetAiActionResult(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepId" -------------
+	var stepId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepId", chi.URLParam(r, "stepId"), &stepId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAiActionResult(w, r, id, stepId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDraft operation middleware
+func (siw *ServerInterfaceWrapper) GetDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDraft(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchDraft operation middleware
+func (siw *ServerInterfaceWrapper) PatchDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchDraft(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDraft operation middleware
+func (siw *ServerInterfaceWrapper) CreateDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDraft(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApplyDraftStep operation middleware
+func (siw *ServerInterfaceWrapper) ApplyDraftStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApplyDraftStep(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // StreamEvents operation middleware
 func (siw *ServerInterfaceWrapper) StreamEvents(w http.ResponseWriter, r *http.Request) {
 
@@ -1265,6 +2510,144 @@ func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealthz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListImports operation middleware
+func (siw *ServerInterfaceWrapper) ListImports(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListImportsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListImports(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateImport operation middleware
+func (siw *ServerInterfaceWrapper) CreateImport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateImport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetImport operation middleware
+func (siw *ServerInterfaceWrapper) GetImport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetImport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CommitImport operation middleware
+func (siw *ServerInterfaceWrapper) CommitImport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CommitImport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewImport operation middleware
+func (siw *ServerInterfaceWrapper) PreviewImport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewImport(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1587,6 +2970,196 @@ func (siw *ServerInterfaceWrapper) ListRunSteps(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListSeries operation middleware
+func (siw *ServerInterfaceWrapper) ListSeries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSeriesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSeries(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSeries operation middleware
+func (siw *ServerInterfaceWrapper) CreateSeries(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSeries(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSeries operation middleware
+func (siw *ServerInterfaceWrapper) GetSeries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSeries(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSeries operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSeries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSeries(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBible operation middleware
+func (siw *ServerInterfaceWrapper) GetBible(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBible(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateBibleSection operation middleware
+func (siw *ServerInterfaceWrapper) UpdateBibleSection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateBibleSection(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GenerateSeries operation middleware
+func (siw *ServerInterfaceWrapper) GenerateSeries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GenerateSeries(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLLMSettings operation middleware
 func (siw *ServerInterfaceWrapper) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
 
@@ -1606,6 +3179,46 @@ func (siw *ServerInterfaceWrapper) PutLLMSettings(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutLLMSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaudeCliStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetClaudeCliStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaudeCliStatus(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutLLMApiKey operation middleware
+func (siw *ServerInterfaceWrapper) PutLLMApiKey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutLLMApiKey(w, r, provider)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1891,6 +3504,78 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/settings/llm/test", wrapper.TestLLMSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/settings/llm/keys/{provider}", wrapper.PutLLMApiKey)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/settings/llm/cli-status", wrapper.GetClaudeCliStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/series", wrapper.ListSeries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/series", wrapper.CreateSeries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/series/{id}", wrapper.GetSeries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/series/{id}", wrapper.UpdateSeries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/series/{id}/generate", wrapper.GenerateSeries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/series/{id}/bible", wrapper.GetBible)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/series/{id}/bible", wrapper.UpdateBibleSection)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/episodes", wrapper.ListEpisodes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes", wrapper.CreateEpisode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/episodes/{id}", wrapper.GetEpisode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/episodes/{id}", wrapper.UpdateEpisode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes/{id}/ai-actions", wrapper.CreateAiAction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/episodes/{id}/ai-actions/{stepId}", wrapper.GetAiActionResult)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/episodes/{id}/drafts/{lang}", wrapper.GetDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/episodes/{id}/drafts/{lang}", wrapper.PatchDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/episodes/{id}/drafts/{lang}", wrapper.CreateDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes/{id}/drafts/{lang}/apply-step", wrapper.ApplyDraftStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/imports", wrapper.ListImports)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/imports", wrapper.CreateImport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/imports/{id}", wrapper.GetImport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/imports/{id}/preview", wrapper.PreviewImport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/imports/{id}/commit", wrapper.CommitImport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/models", wrapper.ListModels)
@@ -2223,6 +3908,403 @@ func (response SwitchTenant404ApplicationProblemPlusJSONResponse) VisitSwitchTen
 	return err
 }
 
+type ListEpisodesRequestObject struct {
+	Params ListEpisodesParams
+}
+
+type ListEpisodesResponseObject interface {
+	VisitListEpisodesResponse(w http.ResponseWriter) error
+}
+
+type ListEpisodes200JSONResponse EpisodeList
+
+func (response ListEpisodes200JSONResponse) VisitListEpisodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEpisodeRequestObject struct {
+	Params CreateEpisodeParams
+}
+
+type CreateEpisodeResponseObject interface {
+	VisitCreateEpisodeResponse(w http.ResponseWriter) error
+}
+
+type CreateEpisode201JSONResponse Episode
+
+func (response CreateEpisode201JSONResponse) VisitCreateEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEpisode404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEpisode404ApplicationProblemPlusJSONResponse) VisitCreateEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEpisodeRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetEpisodeResponseObject interface {
+	VisitGetEpisodeResponse(w http.ResponseWriter) error
+}
+
+type GetEpisode200JSONResponse Episode
+
+func (response GetEpisode200JSONResponse) VisitGetEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEpisode404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEpisode404ApplicationProblemPlusJSONResponse) VisitGetEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEpisodeRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateEpisodeJSONRequestBody
+}
+
+type UpdateEpisodeResponseObject interface {
+	VisitUpdateEpisodeResponse(w http.ResponseWriter) error
+}
+
+type UpdateEpisode200JSONResponse Episode
+
+func (response UpdateEpisode200JSONResponse) VisitUpdateEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEpisode404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEpisode404ApplicationProblemPlusJSONResponse) VisitUpdateEpisodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAiActionRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *CreateAiActionJSONRequestBody
+}
+
+type CreateAiActionResponseObject interface {
+	VisitCreateAiActionResponse(w http.ResponseWriter) error
+}
+
+type CreateAiAction202JSONResponse AiActionResponse
+
+func (response CreateAiAction202JSONResponse) VisitCreateAiActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAiAction404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAiAction404ApplicationProblemPlusJSONResponse) VisitCreateAiActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAiAction429ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAiAction429ApplicationProblemPlusJSONResponse) VisitCreateAiActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiActionResultRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	StepId openapi_types.UUID `json:"stepId"`
+}
+
+type GetAiActionResultResponseObject interface {
+	VisitGetAiActionResultResponse(w http.ResponseWriter) error
+}
+
+type GetAiActionResult200JSONResponse AiActionResult
+
+func (response GetAiActionResult200JSONResponse) VisitGetAiActionResultResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiActionResult404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAiActionResult404ApplicationProblemPlusJSONResponse) VisitGetAiActionResultResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDraftRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+}
+
+type GetDraftResponseObject interface {
+	VisitGetDraftResponse(w http.ResponseWriter) error
+}
+
+type GetDraft200JSONResponse EpisodeDraft
+
+func (response GetDraft200JSONResponse) VisitGetDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDraft404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetDraft404ApplicationProblemPlusJSONResponse) VisitGetDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchDraftRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+	Body *PatchDraftJSONRequestBody
+}
+
+type PatchDraftResponseObject interface {
+	VisitPatchDraftResponse(w http.ResponseWriter) error
+}
+
+type PatchDraft200JSONResponse EpisodeDraft
+
+func (response PatchDraft200JSONResponse) VisitPatchDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchDraft409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchDraft409ApplicationProblemPlusJSONResponse) VisitPatchDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraftRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+}
+
+type CreateDraftResponseObject interface {
+	VisitCreateDraftResponse(w http.ResponseWriter) error
+}
+
+type CreateDraft200JSONResponse EpisodeDraft
+
+func (response CreateDraft200JSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraft201JSONResponse EpisodeDraft
+
+func (response CreateDraft201JSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraft404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateDraft404ApplicationProblemPlusJSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStepRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+	Body *ApplyDraftStepJSONRequestBody
+}
+
+type ApplyDraftStepResponseObject interface {
+	VisitApplyDraftStepResponse(w http.ResponseWriter) error
+}
+
+type ApplyDraftStep200JSONResponse EpisodeDraft
+
+func (response ApplyDraftStep200JSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStep404ApplicationProblemPlusJSONResponse Problem
+
+func (response ApplyDraftStep404ApplicationProblemPlusJSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStep409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApplyDraftStep409ApplicationProblemPlusJSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type StreamEventsRequestObject struct {
 	Params StreamEventsParams
 }
@@ -2340,6 +4422,174 @@ func (response GetHealthz200JSONResponse) VisitGetHealthzResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListImportsRequestObject struct {
+	Params ListImportsParams
+}
+
+type ListImportsResponseObject interface {
+	VisitListImportsResponse(w http.ResponseWriter) error
+}
+
+type ListImports200JSONResponse ImportList
+
+func (response ListImports200JSONResponse) VisitListImportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateImportRequestObject struct {
+	Body *CreateImportJSONRequestBody
+}
+
+type CreateImportResponseObject interface {
+	VisitCreateImportResponse(w http.ResponseWriter) error
+}
+
+type CreateImport201JSONResponse Import
+
+func (response CreateImport201JSONResponse) VisitCreateImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateImport400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateImport400ApplicationProblemPlusJSONResponse) VisitCreateImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetImportRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetImportResponseObject interface {
+	VisitGetImportResponse(w http.ResponseWriter) error
+}
+
+type GetImport200JSONResponse Import
+
+func (response GetImport200JSONResponse) VisitGetImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetImport404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetImport404ApplicationProblemPlusJSONResponse) VisitGetImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommitImportRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *CommitImportJSONRequestBody
+}
+
+type CommitImportResponseObject interface {
+	VisitCommitImportResponse(w http.ResponseWriter) error
+}
+
+type CommitImport200JSONResponse ImportCommitResponse
+
+func (response CommitImport200JSONResponse) VisitCommitImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommitImport409ApplicationProblemPlusJSONResponse Problem
+
+func (response CommitImport409ApplicationProblemPlusJSONResponse) VisitCommitImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewImportRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *PreviewImportJSONRequestBody
+}
+
+type PreviewImportResponseObject interface {
+	VisitPreviewImportResponse(w http.ResponseWriter) error
+}
+
+type PreviewImport200JSONResponse Import
+
+func (response PreviewImport200JSONResponse) VisitPreviewImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewImport422ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewImport422ApplicationProblemPlusJSONResponse) VisitPreviewImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2802,6 +5052,261 @@ func (response ListRunSteps400ApplicationProblemPlusJSONResponse) VisitListRunSt
 	return err
 }
 
+type ListSeriesRequestObject struct {
+	Params ListSeriesParams
+}
+
+type ListSeriesResponseObject interface {
+	VisitListSeriesResponse(w http.ResponseWriter) error
+}
+
+type ListSeries200JSONResponse SeriesList
+
+func (response ListSeries200JSONResponse) VisitListSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSeriesRequestObject struct {
+	Body *CreateSeriesJSONRequestBody
+}
+
+type CreateSeriesResponseObject interface {
+	VisitCreateSeriesResponse(w http.ResponseWriter) error
+}
+
+type CreateSeries201JSONResponse Series
+
+func (response CreateSeries201JSONResponse) VisitCreateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSeries400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateSeries400ApplicationProblemPlusJSONResponse) VisitCreateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSeriesRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetSeriesResponseObject interface {
+	VisitGetSeriesResponse(w http.ResponseWriter) error
+}
+
+type GetSeries200JSONResponse Series
+
+func (response GetSeries200JSONResponse) VisitGetSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSeries404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetSeries404ApplicationProblemPlusJSONResponse) VisitGetSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSeriesRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateSeriesJSONRequestBody
+}
+
+type UpdateSeriesResponseObject interface {
+	VisitUpdateSeriesResponse(w http.ResponseWriter) error
+}
+
+type UpdateSeries200JSONResponse Series
+
+func (response UpdateSeries200JSONResponse) VisitUpdateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSeries404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateSeries404ApplicationProblemPlusJSONResponse) VisitUpdateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBibleRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetBibleResponseObject interface {
+	VisitGetBibleResponse(w http.ResponseWriter) error
+}
+
+type GetBible200JSONResponse StoryBible
+
+func (response GetBible200JSONResponse) VisitGetBibleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBible404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetBible404ApplicationProblemPlusJSONResponse) VisitGetBibleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateBibleSectionRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateBibleSectionJSONRequestBody
+}
+
+type UpdateBibleSectionResponseObject interface {
+	VisitUpdateBibleSectionResponse(w http.ResponseWriter) error
+}
+
+type UpdateBibleSection200JSONResponse StoryBible
+
+func (response UpdateBibleSection200JSONResponse) VisitUpdateBibleSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateBibleSection409ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateBibleSection409ApplicationProblemPlusJSONResponse) VisitUpdateBibleSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateSeriesRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *GenerateSeriesJSONRequestBody
+}
+
+type GenerateSeriesResponseObject interface {
+	VisitGenerateSeriesResponse(w http.ResponseWriter) error
+}
+
+type GenerateSeries202JSONResponse SeriesGenerateResponse
+
+func (response GenerateSeries202JSONResponse) VisitGenerateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateSeries404ApplicationProblemPlusJSONResponse Problem
+
+func (response GenerateSeries404ApplicationProblemPlusJSONResponse) VisitGenerateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateSeries429ApplicationProblemPlusJSONResponse Problem
+
+func (response GenerateSeries429ApplicationProblemPlusJSONResponse) VisitGenerateSeriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetLLMSettingsRequestObject struct {
 }
 
@@ -2848,6 +5353,58 @@ func (response PutLLMSettings200JSONResponse) VisitPutLLMSettingsResponse(w http
 type PutLLMSettings400ApplicationProblemPlusJSONResponse Problem
 
 func (response PutLLMSettings400ApplicationProblemPlusJSONResponse) VisitPutLLMSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaudeCliStatusRequestObject struct {
+}
+
+type GetClaudeCliStatusResponseObject interface {
+	VisitGetClaudeCliStatusResponse(w http.ResponseWriter) error
+}
+
+type GetClaudeCliStatus200JSONResponse ClaudeCliStatus
+
+func (response GetClaudeCliStatus200JSONResponse) VisitGetClaudeCliStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLLMApiKeyRequestObject struct {
+	Provider string `json:"provider"`
+	Body     *PutLLMApiKeyJSONRequestBody
+}
+
+type PutLLMApiKeyResponseObject interface {
+	VisitPutLLMApiKeyResponse(w http.ResponseWriter) error
+}
+
+type PutLLMApiKey204Response struct {
+}
+
+func (response PutLLMApiKey204Response) VisitPutLLMApiKeyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PutLLMApiKey400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutLLMApiKey400ApplicationProblemPlusJSONResponse) VisitPutLLMApiKeyResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3049,6 +5606,36 @@ type StrictServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(ctx context.Context, request SwitchTenantRequestObject) (SwitchTenantResponseObject, error)
+	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+	// (GET /episodes)
+	ListEpisodes(ctx context.Context, request ListEpisodesRequestObject) (ListEpisodesResponseObject, error)
+	// CreateEpisode Append a new, empty episode to a series
+	// (POST /episodes)
+	CreateEpisode(ctx context.Context, request CreateEpisodeRequestObject) (CreateEpisodeResponseObject, error)
+	// GetEpisode Episode outline and metadata
+	// (GET /episodes/{id})
+	GetEpisode(ctx context.Context, request GetEpisodeRequestObject) (GetEpisodeResponseObject, error)
+	// UpdateEpisode Update episode title/status
+	// (PATCH /episodes/{id})
+	UpdateEpisode(ctx context.Context, request UpdateEpisodeRequestObject) (UpdateEpisodeResponseObject, error)
+	// CreateAiAction Enqueue a streaming AI writing action at interactive priority
+	// (POST /episodes/{id}/ai-actions)
+	CreateAiAction(ctx context.Context, request CreateAiActionRequestObject) (CreateAiActionResponseObject, error)
+	// GetAiActionResult Poll an AI action step's status and, once done, its generated text
+	// (GET /episodes/{id}/ai-actions/{stepId})
+	GetAiActionResult(ctx context.Context, request GetAiActionResultRequestObject) (GetAiActionResultResponseObject, error)
+	// GetDraft The episode's draft for one language
+	// (GET /episodes/{id}/drafts/{lang})
+	GetDraft(ctx context.Context, request GetDraftRequestObject) (GetDraftResponseObject, error)
+	// PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
+	// (PATCH /episodes/{id}/drafts/{lang})
+	PatchDraft(ctx context.Context, request PatchDraftRequestObject) (PatchDraftResponseObject, error)
+	// CreateDraft Create an empty draft for this episode/language if one does not already exist
+	// (PUT /episodes/{id}/drafts/{lang})
+	CreateDraft(ctx context.Context, request CreateDraftRequestObject) (CreateDraftResponseObject, error)
+	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+	// (POST /episodes/{id}/drafts/{lang}/apply-step)
+	ApplyDraftStep(ctx context.Context, request ApplyDraftStepRequestObject) (ApplyDraftStepResponseObject, error)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -3060,6 +5647,21 @@ type StrictServerInterface interface {
 	// GetHealthz Liveness probe
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// ListImports Cursor-paginated list of the active tenant's imports
+	// (GET /imports)
+	ListImports(ctx context.Context, request ListImportsRequestObject) (ListImportsResponseObject, error)
+	// CreateImport Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+	// (POST /imports)
+	CreateImport(ctx context.Context, request CreateImportRequestObject) (CreateImportResponseObject, error)
+	// GetImport Import status and chapter preview
+	// (GET /imports/{id})
+	GetImport(ctx context.Context, request GetImportRequestObject) (GetImportResponseObject, error)
+	// CommitImport Turn previewed chapters into episodes, optionally translating each
+	// (POST /imports/{id}/commit)
+	CommitImport(ctx context.Context, request CommitImportRequestObject) (CommitImportResponseObject, error)
+	// PreviewImport Detect encoding and split into chapters using a regex preset, without committing episodes
+	// (POST /imports/{id}/preview)
+	PreviewImport(ctx context.Context, request PreviewImportRequestObject) (PreviewImportResponseObject, error)
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(ctx context.Context, request ListJobsRequestObject) (ListJobsResponseObject, error)
@@ -3093,12 +5695,39 @@ type StrictServerInterface interface {
 	// ListRunSteps Cursor-paginated list of a run's steps
 	// (GET /runs/{id}/steps)
 	ListRunSteps(ctx context.Context, request ListRunStepsRequestObject) (ListRunStepsResponseObject, error)
+	// ListSeries Cursor-paginated list of the active tenant's series
+	// (GET /series)
+	ListSeries(ctx context.Context, request ListSeriesRequestObject) (ListSeriesResponseObject, error)
+	// CreateSeries Create a new series (settings only; no bible or episodes yet)
+	// (POST /series)
+	CreateSeries(ctx context.Context, request CreateSeriesRequestObject) (CreateSeriesResponseObject, error)
+	// GetSeries Series settings
+	// (GET /series/{id})
+	GetSeries(ctx context.Context, request GetSeriesRequestObject) (GetSeriesResponseObject, error)
+	// UpdateSeries Update series settings
+	// (PATCH /series/{id})
+	UpdateSeries(ctx context.Context, request UpdateSeriesRequestObject) (UpdateSeriesResponseObject, error)
+	// GetBible The series' story bible sections
+	// (GET /series/{id}/bible)
+	GetBible(ctx context.Context, request GetBibleRequestObject) (GetBibleResponseObject, error)
+	// UpdateBibleSection Update one bible section with an optimistic-concurrency check
+	// (PATCH /series/{id}/bible)
+	UpdateBibleSection(ctx context.Context, request UpdateBibleSectionRequestObject) (UpdateBibleSectionResponseObject, error)
+	// GenerateSeries Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+	// (POST /series/{id}/generate)
+	GenerateSeries(ctx context.Context, request GenerateSeriesRequestObject) (GenerateSeriesResponseObject, error)
 	// GetLLMSettings The active tenant's LLM provider default and per-action overrides
 	// (GET /settings/llm)
 	GetLLMSettings(ctx context.Context, request GetLLMSettingsRequestObject) (GetLLMSettingsResponseObject, error)
 	// PutLLMSettings Switch the active tenant's default LLM provider or an action override (AC8)
 	// (PUT /settings/llm)
 	PutLLMSettings(ctx context.Context, request PutLLMSettingsRequestObject) (PutLLMSettingsResponseObject, error)
+	// GetClaudeCliStatus claude CLI version and auth state, as reported by the llm-cli sidecar
+	// (GET /settings/llm/cli-status)
+	GetClaudeCliStatus(ctx context.Context, request GetClaudeCliStatusRequestObject) (GetClaudeCliStatusResponseObject, error)
+	// PutLLMApiKey Store (or replace) the active tenant's API key for a provider; write-only, audited
+	// (PUT /settings/llm/keys/{provider})
+	PutLLMApiKey(ctx context.Context, request PutLLMApiKeyRequestObject) (PutLLMApiKeyResponseObject, error)
 	// TestLLMSettings Run a 1-token prompt against a provider to confirm it is reachable and configured
 	// (POST /settings/llm/test)
 	TestLLMSettings(ctx context.Context, request TestLLMSettingsRequestObject) (TestLLMSettingsResponseObject, error)
@@ -3421,6 +6050,299 @@ func (sh *strictHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ListEpisodes operation middleware
+func (sh *strictHandler) ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams) {
+	var request ListEpisodesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEpisodes(ctx, request.(ListEpisodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEpisodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEpisodesResponseObject); ok {
+		if err := validResponse.VisitListEpisodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEpisode operation middleware
+func (sh *strictHandler) CreateEpisode(w http.ResponseWriter, r *http.Request, params CreateEpisodeParams) {
+	var request CreateEpisodeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEpisode(ctx, request.(CreateEpisodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEpisode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEpisodeResponseObject); ok {
+		if err := validResponse.VisitCreateEpisodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEpisode operation middleware
+func (sh *strictHandler) GetEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetEpisodeRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEpisode(ctx, request.(GetEpisodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEpisode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEpisodeResponseObject); ok {
+		if err := validResponse.VisitGetEpisodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateEpisode operation middleware
+func (sh *strictHandler) UpdateEpisode(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateEpisodeRequestObject
+
+	request.Id = id
+
+	var body UpdateEpisodeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateEpisode(ctx, request.(UpdateEpisodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateEpisode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateEpisodeResponseObject); ok {
+		if err := validResponse.VisitUpdateEpisodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAiAction operation middleware
+func (sh *strictHandler) CreateAiAction(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request CreateAiActionRequestObject
+
+	request.Id = id
+
+	var body CreateAiActionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAiAction(ctx, request.(CreateAiActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAiAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAiActionResponseObject); ok {
+		if err := validResponse.VisitCreateAiActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAiActionResult operation middleware
+func (sh *strictHandler) GetAiActionResult(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, stepId openapi_types.UUID) {
+	var request GetAiActionResultRequestObject
+
+	request.Id = id
+	request.StepId = stepId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAiActionResult(ctx, request.(GetAiActionResultRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAiActionResult")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAiActionResultResponseObject); ok {
+		if err := validResponse.VisitGetAiActionResultResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDraft operation middleware
+func (sh *strictHandler) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request GetDraftRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDraft(ctx, request.(GetDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDraftResponseObject); ok {
+		if err := validResponse.VisitGetDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchDraft operation middleware
+func (sh *strictHandler) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request PatchDraftRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body PatchDraftJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchDraft(ctx, request.(PatchDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchDraftResponseObject); ok {
+		if err := validResponse.VisitPatchDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDraft operation middleware
+func (sh *strictHandler) CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request CreateDraftRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDraft(ctx, request.(CreateDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDraftResponseObject); ok {
+		if err := validResponse.VisitCreateDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApplyDraftStep operation middleware
+func (sh *strictHandler) ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request ApplyDraftStepRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body ApplyDraftStepJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApplyDraftStep(ctx, request.(ApplyDraftStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApplyDraftStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApplyDraftStepResponseObject); ok {
+		if err := validResponse.VisitApplyDraftStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // StreamEvents operation middleware
 func (sh *strictHandler) StreamEvents(w http.ResponseWriter, r *http.Request, params StreamEventsParams) {
 	var request StreamEventsRequestObject
@@ -3488,6 +6410,158 @@ func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
 		if err := validResponse.VisitGetHealthzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListImports operation middleware
+func (sh *strictHandler) ListImports(w http.ResponseWriter, r *http.Request, params ListImportsParams) {
+	var request ListImportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListImports(ctx, request.(ListImportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListImports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListImportsResponseObject); ok {
+		if err := validResponse.VisitListImportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateImport operation middleware
+func (sh *strictHandler) CreateImport(w http.ResponseWriter, r *http.Request) {
+	var request CreateImportRequestObject
+
+	var body CreateImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateImport(ctx, request.(CreateImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateImportResponseObject); ok {
+		if err := validResponse.VisitCreateImportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetImport operation middleware
+func (sh *strictHandler) GetImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetImportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetImport(ctx, request.(GetImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetImportResponseObject); ok {
+		if err := validResponse.VisitGetImportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CommitImport operation middleware
+func (sh *strictHandler) CommitImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request CommitImportRequestObject
+
+	request.Id = id
+
+	var body CommitImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CommitImport(ctx, request.(CommitImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CommitImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CommitImportResponseObject); ok {
+		if err := validResponse.VisitCommitImportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewImport operation middleware
+func (sh *strictHandler) PreviewImport(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request PreviewImportRequestObject
+
+	request.Id = id
+
+	var body PreviewImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewImport(ctx, request.(PreviewImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewImportResponseObject); ok {
+		if err := validResponse.VisitPreviewImportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -3781,6 +6855,217 @@ func (sh *strictHandler) ListRunSteps(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
+// ListSeries operation middleware
+func (sh *strictHandler) ListSeries(w http.ResponseWriter, r *http.Request, params ListSeriesParams) {
+	var request ListSeriesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSeries(ctx, request.(ListSeriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSeries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSeriesResponseObject); ok {
+		if err := validResponse.VisitListSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSeries operation middleware
+func (sh *strictHandler) CreateSeries(w http.ResponseWriter, r *http.Request) {
+	var request CreateSeriesRequestObject
+
+	var body CreateSeriesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSeries(ctx, request.(CreateSeriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSeries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSeriesResponseObject); ok {
+		if err := validResponse.VisitCreateSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSeries operation middleware
+func (sh *strictHandler) GetSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetSeriesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSeries(ctx, request.(GetSeriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSeries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSeriesResponseObject); ok {
+		if err := validResponse.VisitGetSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSeries operation middleware
+func (sh *strictHandler) UpdateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateSeriesRequestObject
+
+	request.Id = id
+
+	var body UpdateSeriesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSeries(ctx, request.(UpdateSeriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSeries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSeriesResponseObject); ok {
+		if err := validResponse.VisitUpdateSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBible operation middleware
+func (sh *strictHandler) GetBible(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetBibleRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBible(ctx, request.(GetBibleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBible")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBibleResponseObject); ok {
+		if err := validResponse.VisitGetBibleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateBibleSection operation middleware
+func (sh *strictHandler) UpdateBibleSection(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateBibleSectionRequestObject
+
+	request.Id = id
+
+	var body UpdateBibleSectionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateBibleSection(ctx, request.(UpdateBibleSectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateBibleSection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateBibleSectionResponseObject); ok {
+		if err := validResponse.VisitUpdateBibleSectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GenerateSeries operation middleware
+func (sh *strictHandler) GenerateSeries(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GenerateSeriesRequestObject
+
+	request.Id = id
+
+	var body GenerateSeriesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GenerateSeries(ctx, request.(GenerateSeriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GenerateSeries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GenerateSeriesResponseObject); ok {
+		if err := validResponse.VisitGenerateSeriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLLMSettings operation middleware
 func (sh *strictHandler) GetLLMSettings(w http.ResponseWriter, r *http.Request) {
 	var request GetLLMSettingsRequestObject
@@ -3829,6 +7114,63 @@ func (sh *strictHandler) PutLLMSettings(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutLLMSettingsResponseObject); ok {
 		if err := validResponse.VisitPutLLMSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaudeCliStatus operation middleware
+func (sh *strictHandler) GetClaudeCliStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetClaudeCliStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaudeCliStatus(ctx, request.(GetClaudeCliStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaudeCliStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaudeCliStatusResponseObject); ok {
+		if err := validResponse.VisitGetClaudeCliStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutLLMApiKey operation middleware
+func (sh *strictHandler) PutLLMApiKey(w http.ResponseWriter, r *http.Request, provider string) {
+	var request PutLLMApiKeyRequestObject
+
+	request.Provider = provider
+
+	var body PutLLMApiKeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutLLMApiKey(ctx, request.(PutLLMApiKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutLLMApiKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutLLMApiKeyResponseObject); ok {
+		if err := validResponse.VisitPutLLMApiKeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -3953,97 +7295,158 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"cYdU+nLPYMxKPp4/Htx+uP2/AAAA//8=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

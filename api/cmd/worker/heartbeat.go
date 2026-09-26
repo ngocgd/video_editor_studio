@@ -21,8 +21,9 @@ const heartbeatInterval = 5 * time.Second
 // so a residency change is reflected immediately rather than waiting up
 // to heartbeatInterval. workerID identifies this row; the hostname is
 // unique per container by default, which is all a single-worker
-// deployment needs.
-func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, probe pipeline.GpuProbe, manager *residency.Manager) {
+// deployment needs. llmStatus, when set, reports the LLM providers this
+// worker can call (claude-cli is probed on each beat).
+func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, probe pipeline.GpuProbe, manager *residency.Manager, llmStatus func(context.Context) map[string]workerstatus.ProviderInfo) {
 	workerID, err := os.Hostname()
 	if err != nil || workerID == "" {
 		workerID = "worker"
@@ -41,6 +42,9 @@ func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, pro
 		}
 		residentRef := ""
 		providers := map[string]workerstatus.ProviderInfo{}
+		if llmStatus != nil {
+			providers = llmStatus(ctx)
+		}
 		if manager != nil {
 			if current := manager.Current(); current != nil {
 				residentRef = current.Backend + ":" + current.Model

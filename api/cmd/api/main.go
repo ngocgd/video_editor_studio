@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -35,14 +36,18 @@ import (
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/providers/bootstrap"
+	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
 	"loomtale/api/internal/secheaders"
+	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
+	"loomtale/api/internal/story"
 	"loomtale/api/internal/validation"
 )
 
@@ -98,7 +103,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if _, err := envelope.NewSealer(keyID, kek); err != nil {
+	sealer, err := envelope.NewSealer(keyID, kek)
+	if err != nil {
 		return err
 	}
 	// The CSRF pepper reuses the KEK bytes with domain separation (see
@@ -151,11 +157,33 @@ func run() error {
 		return err
 	}
 	modelStore := &models.Store{Queries: queries}
+	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+	llmRegistry, llmStore, err := bootstrap.Build(bootstrap.Config{
+		AppMode:               cfg.AppMode,
+		AllowedProviderHosts:  cfg.AllowedProviderHosts,
+		OllamaURL:             cfg.OllamaURL,
+		OllamaModel:           cfg.OllamaModel,
+		LLMCLIURL:             cfg.LLMCLIURL,
+		LLMCLIBearerTokenPath: cfg.LLMCLIBearerTokenPath,
+		AnthropicAPIKeyPath:   cfg.AnthropicAPIKeyPath,
+		AnthropicModel:        cfg.AnthropicModel,
+		GeminiAPIKeyPath:      cfg.GeminiAPIKeyPath,
+		GeminiModel:           cfg.GeminiModel,
+	}, queries, secretsStore)
+	if err != nil {
+		return err
+	}
+	stepRegistry := pipeline.NewRegistry()
 	// The api process only enqueues models.* steps; their handlers are
 	// registered here so Enqueue can resolve queue and model, and they
 	// refuse to Run (only the worker has the models volume and the GPU).
-	stepRegistry := pipeline.NewRegistry()
 	models.RegisterSteps(stepRegistry, manifest, modelStore, nil, nil)
+	for _, handler := range story.Handlers(llmRegistry, queries) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range llmcheck.Handlers(llmRegistry) {
+		stepRegistry.Register(handler)
+	}
 	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
@@ -187,11 +215,6 @@ func run() error {
 		if o != "" {
 			allowedOrigins[o] = true
 		}
-	}
-
-	llmRegistry, llmStore, err := buildRegistry(cfg, queries)
-	if err != nil {
-		return err
 	}
 
 	srv := &server{
@@ -235,8 +258,18 @@ func run() error {
 			Registry:      llmRegistry,
 			Store:         llmStore,
 			Queries:       queries,
+			Secrets:       secretsStore,
 			WorkerStatus:  &workerstatus.Store{Queries: queries},
 			TestRateLimit: ratelimit.NewDBBucket(queries, 5, 5.0/60),
+			SecretsWrite:  secretsStore,
+			Probe:         &llmcheck.Runner{Engine: engine, Queries: queries},
+		},
+		StoryAPI: &story.StoryAPI{
+			Pool:     pool,
+			Queries:  queries,
+			Engine:   engine,
+			Registry: llmRegistry,
+			Internal: internalStore,
 		},
 		ModelsAPI: &modelsapi.ModelsAPI{
 			Manifest:     manifest,
@@ -252,7 +285,10 @@ func run() error {
 		ResponseErrorHandlerFunc: problemErrorHandler(http.StatusInternalServerError, "internal error"),
 	})
 
-	generalLimiter := ratelimit.NewMemory(100, 100.0/60)
+	if cfg.RateLimitPerMinute <= 0 {
+		return fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
+	}
+	generalLimiter := ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
 	headers := secheaders.Config{MediaOrigin: cfg.MediaOrigin, PublicURL: cfg.PublicURL}
 	sessionMW := authpkg.Middleware(authpkg.Store{}, queries)
 	csrfMW := csrf.Middleware(csrfPepper, authpkg.CSRFLookup, allowedOrigins, csrfRejected)

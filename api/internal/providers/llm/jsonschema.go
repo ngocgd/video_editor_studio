@@ -67,6 +67,7 @@ func ValidateJSON(schemaText, text string) error {
 // Provider.Generate; passed in so this helper has no direct Provider
 // dependency and is trivially testable with a stub.
 func GenerateStructured(ctx context.Context, req Request, gen func(context.Context, Request) (Response, error)) (Response, error) {
+	req.System = withSchema(req.System, req.JSONSchema)
 	resp, err := gen(ctx, req)
 	if err != nil {
 		return Response{}, err
@@ -95,4 +96,21 @@ func GenerateStructured(ctx context.Context, req Request, gen func(context.Conte
 		return Response{}, fmt.Errorf("%w: retry still failed schema validation: %v", pipeline.ErrValidation, verr)
 	}
 	return retryResp, nil
+}
+
+// withSchema appends the JSON Schema to the system instructions. No
+// adapter forwards Request.JSONSchema to its model, so without this the
+// model only sees "match the requested schema" and has to guess the
+// field names (a live outline came back with word_count instead of
+// targetWords, and failed validation twice). The schema is a fixed
+// server constant, never tenant content, so it belongs in System.
+func withSchema(system, schema string) string {
+	if schema == "" {
+		return system
+	}
+	block := "The reply must be a single JSON value that validates against this JSON Schema, using exactly these property names:\n" + schema
+	if system == "" {
+		return block
+	}
+	return system + "\n\n" + block
 }

@@ -124,38 +124,85 @@ type settingsStore interface {
 
 var _ settingsStore = (*Store)(nil)
 
+// byokReader is the subset of *secrets.Store Registry needs to resolve a
+// tenant's own bring-your-own-key credential. It returns
+// pgx.ErrNoRows (wrapped) when the tenant has not configured a key for
+// provider, which Resolve treats as "fall through to the process-wide
+// adapter", not as an error.
+type byokReader interface {
+	Get(ctx context.Context, tenantID uuid.UUID, provider string) (string, error)
+}
+
 // Registry resolves a tenant+action to a concrete llm.Provider, and
 // implements the queue/model-residency side of the phase 3 contract for
 // LLM steps.
 type Registry struct {
 	Store settingsStore
 	// Providers maps a provider name (as stored in llm_settings and
-	// secrets) to its constructed adapter. A provider absent from this
-	// map (e.g. claude-cli when its self-check failed) is treated as
-	// unavailable.
+	// secrets) to its constructed, process-wide adapter (an
+	// operator-provisioned key, local mode only). A provider absent from
+	// this map (e.g. claude-cli when its self-check failed) is only
+	// unavailable if BYOK/Factories also has nothing for it.
 	Providers map[string]llm.Provider
 	// OllamaModel is the model name Ollama is configured to serve; used
 	// to build the ModelRef phase 3 needs for GPU residency. Empty until
 	// phase 9c seeds a model.
 	OllamaModel string
+	// BYOK, when set, is consulted before Providers for any name present
+	// in Factories: a tenant's own key always takes priority over a
+	// process-wide operator key for the same provider name.
+	BYOK byokReader
+	// Factories builds a fresh adapter from a tenant's plaintext API key
+	// for a BYOK-eligible provider name (anthropic-api, gemini-api).
+	// Ollama and claude-cli are never BYOK: they are reached by URL/local
+	// auth, not a bearer key, so they are never keys in this map.
+	Factories map[string]func(apiKey string) llm.Provider
 }
 
 // ErrProviderNotConfigured is returned when the resolved provider name
 // has no constructed adapter (missing API key, self-check failure, etc).
 var ErrProviderNotConfigured = errors.New("registry: provider not configured")
 
-// Resolve returns the concrete provider for tenantID+action.
+// Resolve returns the concrete provider for tenantID+action. A tenant's
+// own BYOK key (if the provider supports one and the tenant configured
+// one) always wins over the process-wide Providers adapter for the same
+// name, so a SaaS tenant is never silently billed against, or limited
+// by, another tenant's or the operator's own credential.
 func (r *Registry) Resolve(ctx context.Context, tenantID uuid.UUID, action Action) (llm.Provider, string, error) {
 	settings, err := r.Store.Get(ctx, tenantID)
 	if err != nil {
 		return nil, "", err
 	}
 	name := settings.ProviderFor(action)
+	p, err := r.ResolveName(ctx, tenantID, name)
+	return p, name, err
+}
+
+// ResolveName returns the adapter for one named provider on behalf of
+// tenantID, with the same BYOK-first rule as Resolve. The Settings test
+// probe uses it to call exactly the provider the owner picked, whatever
+// the tenant's current default is.
+func (r *Registry) ResolveName(ctx context.Context, tenantID uuid.UUID, name string) (llm.Provider, error) {
+	if r.BYOK != nil && r.Factories != nil {
+		if factory, ok := r.Factories[name]; ok {
+			key, err := r.BYOK.Get(ctx, tenantID, name)
+			switch {
+			case err == nil && key != "":
+				return factory(key), nil
+			case err != nil && !errors.Is(err, pgx.ErrNoRows):
+				return nil, fmt.Errorf("registry: byok lookup for %q: %w", name, err)
+			}
+			// pgx.ErrNoRows (or an empty key): the tenant has not
+			// configured their own key for this provider; fall through
+			// to the process-wide adapter below.
+		}
+	}
+
 	p, ok := r.Providers[name]
 	if !ok {
-		return nil, name, fmt.Errorf("%w: %q", ErrProviderNotConfigured, name)
+		return nil, fmt.Errorf("%w: %q", ErrProviderNotConfigured, name)
 	}
-	return p, name, nil
+	return p, nil
 }
 
 // QueueFor implements the queue half of pipeline.StepHandler for an LLM

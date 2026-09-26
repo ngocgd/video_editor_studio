@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CreateRunData, CreateRunErrors, CreateRunResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetCsrfData, GetCsrfResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses } from './types.gen';
+import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -177,6 +177,210 @@ export const testLlmSettings = <ThrowOnError extends boolean = false>(options?: 
     headers: {
         'Content-Type': 'application/json',
         ...options?.headers
+    }
+});
+
+/**
+ * Store (or replace) the active tenant's API key for a provider; write-only, audited
+ */
+export const putLlmApiKey = <ThrowOnError extends boolean = false>(options: Options<PutLlmApiKeyData, ThrowOnError>): RequestResult<PutLlmApiKeyResponses, PutLlmApiKeyErrors, ThrowOnError> => (options.client ?? client).put<PutLlmApiKeyResponses, PutLlmApiKeyErrors, ThrowOnError>({
+    url: '/settings/llm/keys/{provider}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * claude CLI version and auth state, as reported by the llm-cli sidecar
+ */
+export const getClaudeCliStatus = <ThrowOnError extends boolean = false>(options?: Options<GetClaudeCliStatusData, ThrowOnError>): RequestResult<GetClaudeCliStatusResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetClaudeCliStatusResponses, unknown, ThrowOnError>({ url: '/settings/llm/cli-status', ...options });
+
+/**
+ * Cursor-paginated list of the active tenant's series
+ */
+export const listSeries = <ThrowOnError extends boolean = false>(options?: Options<ListSeriesData, ThrowOnError>): RequestResult<ListSeriesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSeriesResponses, unknown, ThrowOnError>({ url: '/series', ...options });
+
+/**
+ * Create a new series (settings only; no bible or episodes yet)
+ */
+export const createSeries = <ThrowOnError extends boolean = false>(options: Options<CreateSeriesData, ThrowOnError>): RequestResult<CreateSeriesResponses, CreateSeriesErrors, ThrowOnError> => (options.client ?? client).post<CreateSeriesResponses, CreateSeriesErrors, ThrowOnError>({
+    url: '/series',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Series settings
+ */
+export const getSeries = <ThrowOnError extends boolean = false>(options: Options<GetSeriesData, ThrowOnError>): RequestResult<GetSeriesResponses, GetSeriesErrors, ThrowOnError> => (options.client ?? client).get<GetSeriesResponses, GetSeriesErrors, ThrowOnError>({ url: '/series/{id}', ...options });
+
+/**
+ * Update series settings
+ */
+export const updateSeries = <ThrowOnError extends boolean = false>(options: Options<UpdateSeriesData, ThrowOnError>): RequestResult<UpdateSeriesResponses, UpdateSeriesErrors, ThrowOnError> => (options.client ?? client).patch<UpdateSeriesResponses, UpdateSeriesErrors, ThrowOnError>({
+    url: '/series/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+ */
+export const generateSeries = <ThrowOnError extends boolean = false>(options: Options<GenerateSeriesData, ThrowOnError>): RequestResult<GenerateSeriesResponses, GenerateSeriesErrors, ThrowOnError> => (options.client ?? client).post<GenerateSeriesResponses, GenerateSeriesErrors, ThrowOnError>({
+    url: '/series/{id}/generate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The series' story bible sections
+ */
+export const getBible = <ThrowOnError extends boolean = false>(options: Options<GetBibleData, ThrowOnError>): RequestResult<GetBibleResponses, GetBibleErrors, ThrowOnError> => (options.client ?? client).get<GetBibleResponses, GetBibleErrors, ThrowOnError>({ url: '/series/{id}/bible', ...options });
+
+/**
+ * Update one bible section with an optimistic-concurrency check
+ */
+export const updateBibleSection = <ThrowOnError extends boolean = false>(options: Options<UpdateBibleSectionData, ThrowOnError>): RequestResult<UpdateBibleSectionResponses, UpdateBibleSectionErrors, ThrowOnError> => (options.client ?? client).patch<UpdateBibleSectionResponses, UpdateBibleSectionErrors, ThrowOnError>({
+    url: '/series/{id}/bible',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+ */
+export const listEpisodes = <ThrowOnError extends boolean = false>(options: Options<ListEpisodesData, ThrowOnError>): RequestResult<ListEpisodesResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListEpisodesResponses, unknown, ThrowOnError>({ url: '/episodes', ...options });
+
+/**
+ * Append a new, empty episode to a series
+ */
+export const createEpisode = <ThrowOnError extends boolean = false>(options: Options<CreateEpisodeData, ThrowOnError>): RequestResult<CreateEpisodeResponses, CreateEpisodeErrors, ThrowOnError> => (options.client ?? client).post<CreateEpisodeResponses, CreateEpisodeErrors, ThrowOnError>({ url: '/episodes', ...options });
+
+/**
+ * Episode outline and metadata
+ */
+export const getEpisode = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeData, ThrowOnError>): RequestResult<GetEpisodeResponses, GetEpisodeErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeResponses, GetEpisodeErrors, ThrowOnError>({ url: '/episodes/{id}', ...options });
+
+/**
+ * Update episode title/status
+ */
+export const updateEpisode = <ThrowOnError extends boolean = false>(options: Options<UpdateEpisodeData, ThrowOnError>): RequestResult<UpdateEpisodeResponses, UpdateEpisodeErrors, ThrowOnError> => (options.client ?? client).patch<UpdateEpisodeResponses, UpdateEpisodeErrors, ThrowOnError>({
+    url: '/episodes/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Enqueue a streaming AI writing action at interactive priority
+ */
+export const createAiAction = <ThrowOnError extends boolean = false>(options: Options<CreateAiActionData, ThrowOnError>): RequestResult<CreateAiActionResponses, CreateAiActionErrors, ThrowOnError> => (options.client ?? client).post<CreateAiActionResponses, CreateAiActionErrors, ThrowOnError>({
+    url: '/episodes/{id}/ai-actions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Poll an AI action step's status and, once done, its generated text
+ */
+export const getAiActionResult = <ThrowOnError extends boolean = false>(options: Options<GetAiActionResultData, ThrowOnError>): RequestResult<GetAiActionResultResponses, GetAiActionResultErrors, ThrowOnError> => (options.client ?? client).get<GetAiActionResultResponses, GetAiActionResultErrors, ThrowOnError>({ url: '/episodes/{id}/ai-actions/{stepId}', ...options });
+
+/**
+ * The episode's draft for one language
+ */
+export const getDraft = <ThrowOnError extends boolean = false>(options: Options<GetDraftData, ThrowOnError>): RequestResult<GetDraftResponses, GetDraftErrors, ThrowOnError> => (options.client ?? client).get<GetDraftResponses, GetDraftErrors, ThrowOnError>({ url: '/episodes/{id}/drafts/{lang}', ...options });
+
+/**
+ * Autosave paragraph ops with an optimistic-concurrency version check
+ */
+export const patchDraft = <ThrowOnError extends boolean = false>(options: Options<PatchDraftData, ThrowOnError>): RequestResult<PatchDraftResponses, PatchDraftErrors, ThrowOnError> => (options.client ?? client).patch<PatchDraftResponses, PatchDraftErrors, ThrowOnError>({
+    url: '/episodes/{id}/drafts/{lang}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Create an empty draft for this episode/language if one does not already exist
+ */
+export const createDraft = <ThrowOnError extends boolean = false>(options: Options<CreateDraftData, ThrowOnError>): RequestResult<CreateDraftResponses, CreateDraftErrors, ThrowOnError> => (options.client ?? client).put<CreateDraftResponses, CreateDraftErrors, ThrowOnError>({ url: '/episodes/{id}/drafts/{lang}', ...options });
+
+/**
+ * Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+ */
+export const applyDraftStep = <ThrowOnError extends boolean = false>(options: Options<ApplyDraftStepData, ThrowOnError>): RequestResult<ApplyDraftStepResponses, ApplyDraftStepErrors, ThrowOnError> => (options.client ?? client).post<ApplyDraftStepResponses, ApplyDraftStepErrors, ThrowOnError>({
+    url: '/episodes/{id}/drafts/{lang}/apply-step',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Cursor-paginated list of the active tenant's imports
+ */
+export const listImports = <ThrowOnError extends boolean = false>(options?: Options<ListImportsData, ThrowOnError>): RequestResult<ListImportsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListImportsResponses, unknown, ThrowOnError>({ url: '/imports', ...options });
+
+/**
+ * Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+ */
+export const createImport = <ThrowOnError extends boolean = false>(options: Options<CreateImportData, ThrowOnError>): RequestResult<CreateImportResponses, CreateImportErrors, ThrowOnError> => (options.client ?? client).post<CreateImportResponses, CreateImportErrors, ThrowOnError>({
+    url: '/imports',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Import status and chapter preview
+ */
+export const getImport = <ThrowOnError extends boolean = false>(options: Options<GetImportData, ThrowOnError>): RequestResult<GetImportResponses, GetImportErrors, ThrowOnError> => (options.client ?? client).get<GetImportResponses, GetImportErrors, ThrowOnError>({ url: '/imports/{id}', ...options });
+
+/**
+ * Detect encoding and split into chapters using a regex preset, without committing episodes
+ */
+export const previewImport = <ThrowOnError extends boolean = false>(options: Options<PreviewImportData, ThrowOnError>): RequestResult<PreviewImportResponses, PreviewImportErrors, ThrowOnError> => (options.client ?? client).post<PreviewImportResponses, PreviewImportErrors, ThrowOnError>({
+    url: '/imports/{id}/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Turn previewed chapters into episodes, optionally translating each
+ */
+export const commitImport = <ThrowOnError extends boolean = false>(options: Options<CommitImportData, ThrowOnError>): RequestResult<CommitImportResponses, CommitImportErrors, ThrowOnError> => (options.client ?? client).post<CommitImportResponses, CommitImportErrors, ThrowOnError>({
+    url: '/imports/{id}/commit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
     }
 });
 

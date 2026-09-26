@@ -123,3 +123,66 @@ func TestHandleRunKillsProcessWhenToolsEnabled(t *testing.T) {
 		t.Fatalf("expected cli_tools_enabled result, got %+v", lastLine)
 	}
 }
+
+// A slow generation must not hold back the response headers: the CLI
+// prints nothing until its whole reply is done, and a caller with a
+// response-header timeout shorter than the generation would otherwise
+// give up before the result arrives.
+func TestHandleRunSendsHeadersBeforeSlowCLIFinishes(t *testing.T) {
+	script := "#!/bin/sh\ncat >/dev/null\nsleep 3\n" +
+		`echo '{"type":"system","subtype":"init","tools":[],"mcp_servers":[]}'` + "\n" +
+		`echo '{"type":"result","is_error":false,"result":"slow reply","usage":{"input_tokens":3,"output_tokens":2}}'` + "\n"
+	h := newTestHandler(t, script)
+	srv := httptest.NewServer(http.HandlerFunc(h.handleRun))
+	defer srv.Close()
+
+	client := &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: time.Second}}
+	req, err := http.NewRequest(http.MethodPost, srv.URL, strings.NewReader(`{"prompt":"hello"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer shared-secret")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("headers did not arrive before the CLI finished: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var last streamLine
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		if err := json.Unmarshal(scanner.Bytes(), &last); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if last.Type != "result" || last.IsError || last.Text != "slow reply" {
+		t.Fatalf("result line = %+v", last)
+	}
+}
+
+func TestHandleHealthzReportsVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		disabled string
+		want     int
+	}{
+		{"healthy", "", http.StatusOK},
+		{"disabled", "no token", http.StatusServiceUnavailable},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := &handler{version: "2.1.282 (Claude Code)", disabledReason: tc.disabled}
+			rec := httptest.NewRecorder()
+			h.handleHealthz(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+			if got := rec.Header().Get(versionHeader); got != "2.1.282 (Claude Code)" {
+				t.Fatalf("version header = %q", got)
+			}
+		})
+	}
+}

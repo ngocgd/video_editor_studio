@@ -33,11 +33,33 @@ type config struct {
 	// compose.gpu.yml); OllamaModel stays empty until phase 9b seeds a
 	// model, in which case Ensure is simply never called for an
 	// ollama-backed step (registry.ModelRefFor returns nil).
-	OllamaURL          string `env:"OLLAMA_URL" envDefault:"http://ollama:11434"`
-	OllamaModel        string `env:"OLLAMA_MODEL" envDefault:""`
-	ComfyUIURL         string `env:"COMFYUI_URL" envDefault:"http://comfyui:8188"`
-	PyworkerAddr       string `env:"PYWORKER_ADDR" envDefault:"pyworker:9090"`
-	PyworkerTokenPath  string `env:"PYWORKER_BEARER_TOKEN_PATH" envDefault:""`
+	OllamaURL         string `env:"OLLAMA_URL" envDefault:"http://ollama:11434"`
+	OllamaModel       string `env:"OLLAMA_MODEL" envDefault:""`
+	ComfyUIURL        string `env:"COMFYUI_URL" envDefault:"http://comfyui:8188"`
+	PyworkerAddr      string `env:"PYWORKER_ADDR" envDefault:"pyworker:9090"`
+	PyworkerTokenPath string `env:"PYWORKER_BEARER_TOKEN_PATH" envDefault:""`
+
+	// AllowedProviderHosts/LLMCLI*/Anthropic*/Gemini* mirror cmd/api's own
+	// env vars exactly (same names, same defaults) so bootstrap.Build
+	// constructs the identical set of LLM adapters in both processes:
+	// the API enqueues llm.* steps, this worker is what actually runs
+	// them, so it needs the same provider adapters, not an empty
+	// registry.
+	AppMode              string   `env:"APP_MODE" envDefault:"local"`
+	AllowedProviderHosts []string `env:"ALLOWED_PROVIDER_HOSTS" envSeparator:"," envDefault:"ollama"`
+
+	LLMCLIURL             string `env:"LLMCLI_URL" envDefault:"http://llm-cli:8090"`
+	LLMCLIBearerTokenPath string `env:"LLMCLI_BEARER_TOKEN_PATH" envDefault:""`
+
+	AnthropicAPIKeyPath string `env:"ANTHROPIC_API_KEY_PATH" envDefault:""`
+	AnthropicModel      string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-5"`
+	GeminiAPIKeyPath    string `env:"GEMINI_API_KEY_PATH" envDefault:""`
+	GeminiModel         string `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
+
+	// MasterKeyPath must match cmd/api's mounted envelope-encryption KEK
+	// so this worker can open the SAME tenants' BYOK secrets (the KEK is
+	// process-config, not per-process-generated).
+	MasterKeyPath string `env:"MASTER_KEY_PATH" envDefault:"/run/secrets/master_key"`
 
 	// ModelsDir is the models volume, mounted read-write only into this
 	// worker (compose.gpu.yml). Empty disables the models.pull step:

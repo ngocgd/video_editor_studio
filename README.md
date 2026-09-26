@@ -101,3 +101,7 @@ The `llm-cli` sidecar is opt-in because it needs a Claude subscription token:
 3. `docker compose -f deploy/compose.yml --env-file .env up -d --wait`
 
 Without these steps the stack runs normally and the LLM settings report `claude-cli` as unavailable.
+
+Only the worker can reach the sidecar, so Settings > LLM shows the CLI status (version, auth state)
+and provider availability from the worker's heartbeat, which refreshes every 5 seconds. The Test
+button runs a one-word `llm.check.<provider>` step in the worker and waits up to 30 seconds for it.

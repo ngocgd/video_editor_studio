@@ -12,9 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppImportRouteImport } from './routes/_app/import'
 import { Route as AppJobsRouteImport } from './routes/_app/jobs'
+import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
+import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
 import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/models'
+import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/projects/$seriesId/index'
+import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
+import { Route as AppProjectsSeriesIdEpisodesEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/episodes/$episodeId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -30,9 +36,19 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppImportRoute = AppImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppJobsRoute = AppJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
@@ -40,48 +56,117 @@ const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   path: '/settings/account',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsLlmRoute = AppSettingsLlmRouteImport.update({
+  id: '/settings/llm',
+  path: '/settings/llm',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsModelsRoute = AppSettingsModelsRouteImport.update({
   id: '/settings/models',
   path: '/settings/models',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsSeriesIdIndexRoute =
+  AppProjectsSeriesIdIndexRouteImport.update({
+    id: '/projects/$seriesId/',
+    path: '/projects/$seriesId/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProjectsSeriesIdBibleRoute =
+  AppProjectsSeriesIdBibleRouteImport.update({
+    id: '/projects/$seriesId/bible',
+    path: '/projects/$seriesId/bible',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProjectsSeriesIdEpisodesEpisodeIdRoute =
+  AppProjectsSeriesIdEpisodesEpisodeIdRouteImport.update({
+    id: '/projects/$seriesId/episodes/$episodeId',
+    path: '/projects/$seriesId/episodes/$episodeId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/projects/': typeof AppProjectsIndexRoute
+  '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
+  '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
+  '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
   '/': typeof AppIndexRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/projects': typeof AppProjectsIndexRoute
+  '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
+  '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
+  '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/import': typeof AppImportRoute
   '/_app/jobs': typeof AppJobsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/llm': typeof AppSettingsLlmRoute
   '/_app/settings/models': typeof AppSettingsModelsRoute
+  '/_app/projects/': typeof AppProjectsIndexRoute
+  '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
+  '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
+  '/_app/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/jobs' | '/settings/account' | '/settings/models'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/import'
+    | '/jobs'
+    | '/settings/account'
+    | '/settings/llm'
+    | '/settings/models'
+    | '/projects/'
+    | '/projects/$seriesId/bible'
+    | '/projects/$seriesId/'
+    | '/projects/$seriesId/episodes/$episodeId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/jobs' | '/' | '/settings/account' | '/settings/models'
+  to:
+    | '/login'
+    | '/import'
+    | '/jobs'
+    | '/'
+    | '/settings/account'
+    | '/settings/llm'
+    | '/settings/models'
+    | '/projects'
+    | '/projects/$seriesId/bible'
+    | '/projects/$seriesId'
+    | '/projects/$seriesId/episodes/$episodeId'
   id:
     | '__root__'
     | '/_app'
     | '/login'
+    | '/_app/import'
     | '/_app/jobs'
     | '/_app/'
     | '/_app/settings/account'
+    | '/_app/settings/llm'
     | '/_app/settings/models'
+    | '/_app/projects/'
+    | '/_app/projects/$seriesId/bible'
+    | '/_app/projects/$seriesId/'
+    | '/_app/projects/$seriesId/episodes/$episodeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -112,11 +197,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/import': {
+      id: '/_app/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof AppImportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/jobs': {
       id: '/_app/jobs'
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects/': {
+      id: '/_app/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AppProjectsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings/account': {
@@ -126,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/llm': {
+      id: '/_app/settings/llm'
+      path: '/settings/llm'
+      fullPath: '/settings/llm'
+      preLoaderRoute: typeof AppSettingsLlmRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/models': {
       id: '/_app/settings/models'
       path: '/settings/models'
@@ -133,21 +239,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsModelsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/projects/$seriesId/': {
+      id: '/_app/projects/$seriesId/'
+      path: '/projects/$seriesId'
+      fullPath: '/projects/$seriesId/'
+      preLoaderRoute: typeof AppProjectsSeriesIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects/$seriesId/bible': {
+      id: '/_app/projects/$seriesId/bible'
+      path: '/projects/$seriesId/bible'
+      fullPath: '/projects/$seriesId/bible'
+      preLoaderRoute: typeof AppProjectsSeriesIdBibleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects/$seriesId/episodes/$episodeId': {
+      id: '/_app/projects/$seriesId/episodes/$episodeId'
+      path: '/projects/$seriesId/episodes/$episodeId'
+      fullPath: '/projects/$seriesId/episodes/$episodeId'
+      preLoaderRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppImportRoute: typeof AppImportRoute
   AppJobsRoute: typeof AppJobsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsLlmRoute: typeof AppSettingsLlmRoute
   AppSettingsModelsRoute: typeof AppSettingsModelsRoute
+  AppProjectsIndexRoute: typeof AppProjectsIndexRoute
+  AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
+  AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
+  AppProjectsSeriesIdEpisodesEpisodeIdRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppImportRoute: AppImportRoute,
   AppJobsRoute: AppJobsRoute,
   AppIndexRoute: AppIndexRoute,
   AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsLlmRoute: AppSettingsLlmRoute,
   AppSettingsModelsRoute: AppSettingsModelsRoute,
+  AppProjectsIndexRoute: AppProjectsIndexRoute,
+  AppProjectsSeriesIdBibleRoute: AppProjectsSeriesIdBibleRoute,
+  AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
+  AppProjectsSeriesIdEpisodesEpisodeIdRoute:
+    AppProjectsSeriesIdEpisodesEpisodeIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
