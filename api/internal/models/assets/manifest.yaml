@@ -5,12 +5,19 @@
 #
 # Rules enforced by the linter:
 # - every file is pinned by repository revision (a 40-char commit sha),
-#   sha256 and exact size;
-# - only .safetensors and .gguf weights (plus .json/.txt/.yaml config
-#   files) are allowed, so no pickle (.bin, .pt, .ckpt, .pth) can ever be
-#   fetched or loaded;
+#   sha256 and exact size. Small non-LFS config files, for which the Hub
+#   publishes no sha256, are pinned by git_sha1 (their git blob id at the
+#   pinned revision) instead;
+# - only .safetensors, .gguf, ONNX (.onnx, .data) and .npz weights, plus
+#   .json/.txt/.yaml config files, are allowed, and a .bin only when it is
+#   declared `format: ctranslate2`; no pickle (.bin, .pt, .ckpt, .pth) can
+#   ever be fetched or loaded;
 # - every file a model's ComfyUI workflows load (unet, text encoder, VAE,
-#   LoRA) is listed under that model, so the file list is transitive.
+#   LoRA) is listed under that model, so the file list is transitive; an
+#   Ollama entry's Modelfile (models/ollama/<name>.Modelfile) must import
+#   one of the entry's pinned GGUF files;
+# - a file from a repository under another licence carries its own
+#   `licence`, which the licence gate checks too.
 #
 # The licence gate (api/internal/models/licence.go) allows only
 # Apache-2.0, MIT, BSD-2-Clause and BSD-3-Clause. Entries under another
@@ -137,3 +144,255 @@ models:
         remote: Illustrious-XL-v1.1.safetensors
         sha256: 536863e9f0c13b0ce834e2f8a19ada425ee4f722c0ad3d0051ec7e6adaa8156c
         size: 6938040728
+
+  # English narration (voice cloning from a preset's reference audio).
+  # Only the safetensors weights are pinned: the repo's .pt files (and the
+  # built-in conds.pt voice) are pickles and are never fetched.
+  - name: chatterbox
+    task: tts
+    title: English narration voice
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ResembleAI/chatterbox
+      verified: "2026-09-26"
+    source:
+      repo: ResembleAI/chatterbox
+      revision: 5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18
+    vram_mb: 5000
+    files:
+      - path: tts/chatterbox/ve.safetensors
+        remote: ve.safetensors
+        sha256: f0921cab452fa278bc25cd23ffd59d36f816d7dc5181dd1bef9751a7fb61f63c
+        size: 5695784
+      - path: tts/chatterbox/t3_cfg.safetensors
+        remote: t3_cfg.safetensors
+        sha256: 914cb1696f47527fe8852ca8f1fe1fa63cb34f76f9c715e84e067b744dd0da81
+        size: 2129653744
+      - path: tts/chatterbox/s3gen.safetensors
+        remote: s3gen.safetensors
+        sha256: 2b78103c654207393955e4900aac14a12de8ef25f4b09424f1ef91941f161d4e
+        size: 1056484620
+      - path: tts/chatterbox/tokenizer.json
+        remote: tokenizer.json
+        git_sha1: abd07c710243ba89bf1b21780e7c37ddde92334e
+        size: 25470
+
+  # Vietnamese narration. Runs on ONNX Runtime (CPU): the PyTorch/GPU path
+  # loads its audio codec with trust_remote_code, i.e. Python shipped in a
+  # model repository, which the no-code-from-weights rule refuses. The
+  # codec's ONNX export comes from its own repository (same licence).
+  - name: vieneu-v3-turbo
+    task: tts
+    title: Vietnamese narration voice
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo
+      verified: "2026-09-26"
+    source:
+      repo: pnnbao-ump/VieNeu-TTS-v3-Turbo
+      revision: 61b85e3d937fbbacb387714180e8182823512523
+    # A CPU engine: nothing loads into VRAM. The figure only bounds the
+    # residency manager's pre-load wait.
+    vram_mb: 256
+    files:
+      - path: tts/vieneu-v3-turbo/speaker_encoder.onnx
+        remote: speaker_encoder.onnx
+        sha256: a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73
+        size: 28303423
+      - path: tts/vieneu-v3-turbo/denoiser.onnx
+        remote: denoiser.onnx
+        sha256: b7621953291cfe05e695a9c0ff4255aa2f93239fc17c26627e18b7b6b8f72f0b
+        size: 42661414
+      - path: tts/vieneu-v3-turbo/onnx_update/config.json
+        remote: onnx_update/config.json
+        git_sha1: 9d6c81dbafafaf833371207f5efe35664cb917ba
+        size: 2152
+      - path: tts/vieneu-v3-turbo/onnx_update/tokenizer.json
+        remote: onnx_update/tokenizer.json
+        git_sha1: 5c9785c19639481f69f407f8b96859f0ea0d65af
+        size: 22320
+      - path: tts/vieneu-v3-turbo/onnx_update/vieneu_prefill.onnx
+        remote: onnx_update/vieneu_prefill.onnx
+        sha256: 27f8b064f6b57b5448e95d095f1959588c005d614678045c2b97ecccf3b7a0f7
+        size: 324499
+      - path: tts/vieneu-v3-turbo/onnx_update/vieneu_decode_step.onnx
+        remote: onnx_update/vieneu_decode_step.onnx
+        sha256: bedc379cea61ea5d616312750d95ad3924e055856662d19187a889a5edc24ceb
+        size: 306134
+      - path: tts/vieneu-v3-turbo/onnx_update/vieneu_acoustic_cached.onnx
+        remote: onnx_update/vieneu_acoustic_cached.onnx
+        sha256: f631e3387c788c3d8b9a5ac5df94952af5bc4c4d1049ff8a751e76a246fff2d4
+        size: 7207223
+      - path: tts/vieneu-v3-turbo/onnx_update/vieneu_backbone_shared.data
+        remote: onnx_update/vieneu_backbone_shared.data
+        sha256: c7c072193db33d0542457e2612c7272c44c4279d1cafaf0aa4c379964911db2f
+        size: 415319040
+      - path: tts/vieneu-v3-turbo/onnx_update/vieneu_v3_heads.npz
+        remote: onnx_update/vieneu_v3_heads.npz
+        sha256: fb22484baa424bbb775133a6e5f0d00d6299b2b256fbe3312a864b85b9aed01e
+        size: 52219622
+      - path: tts/moss-audio-tokenizer-nano-onnx/codec_browser_onnx_meta.json
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: codec_browser_onnx_meta.json
+        git_sha1: 886953a56489516b847b7c1c953bde063eb78faa
+        size: 17036
+      - path: tts/moss-audio-tokenizer-nano-onnx/moss_audio_tokenizer_decode_full.onnx
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: moss_audio_tokenizer_decode_full.onnx
+        sha256: 0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac
+        size: 681902
+      - path: tts/moss-audio-tokenizer-nano-onnx/moss_audio_tokenizer_decode_shared.data
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: moss_audio_tokenizer_decode_shared.data
+        sha256: e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad
+        size: 44198912
+      - path: tts/moss-audio-tokenizer-nano-onnx/moss_audio_tokenizer_decode_step.onnx
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: moss_audio_tokenizer_decode_step.onnx
+        sha256: 9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855
+        size: 351400
+      - path: tts/moss-audio-tokenizer-nano-onnx/moss_audio_tokenizer_encode.onnx
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: moss_audio_tokenizer_encode.onnx
+        sha256: eadea4a645abdcf98714c7aead122ee2ce7da6e080f9f80b977cd1ca8e19473a
+        size: 815775
+      - path: tts/moss-audio-tokenizer-nano-onnx/moss_audio_tokenizer_encode.data
+        repo: OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX
+        revision: ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae
+        remote: moss_audio_tokenizer_encode.data
+        sha256: aa751265b2bab2887eac224484546b194875aa7494b607115439b3dc6b228a2c
+        size: 44507136
+
+  # Subtitle alignment: faster-whisper large-v3 (CTranslate2) segments and
+  # transcribes; EN words are then force-aligned with wav2vec2 (MIT and
+  # Apache-2.0 respectively, recorded per file).
+  - name: whisper-align
+    task: align
+    title: Subtitle alignment (EN words, VI segments)
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/Systran/faster-whisper-large-v3
+      verified: "2026-09-26"
+    source:
+      repo: Systran/faster-whisper-large-v3
+      revision: edaa852ec7e145841d8ffdb056a99866b5f0a478
+      base: openai/whisper-large-v3
+    vram_mb: 4500
+    files:
+      - path: align/faster-whisper-large-v3/model.bin
+        remote: model.bin
+        sha256: 69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1
+        size: 3087284237
+        format: ctranslate2
+      - path: align/faster-whisper-large-v3/config.json
+        remote: config.json
+        git_sha1: 75336feae814999bae6ccccdecf177639ffc6f9d
+        size: 2394
+      - path: align/faster-whisper-large-v3/preprocessor_config.json
+        remote: preprocessor_config.json
+        git_sha1: 931c77a740890c46365c7ae0c9d350ba3cca908f
+        size: 340
+      - path: align/faster-whisper-large-v3/tokenizer.json
+        remote: tokenizer.json
+        git_sha1: 3a5e2ba63acdcac9a19ba56cf9bd27f185bfff61
+        size: 2480617
+      - path: align/faster-whisper-large-v3/vocabulary.json
+        remote: vocabulary.json
+        git_sha1: 0adcd01e7c237205d593b707e66dd5d7bc785d2d
+        size: 1068114
+      - path: align/wav2vec2-base-960h/model.safetensors
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: model.safetensors
+        sha256: 8aa76ab2243c81747a1f832954586bc566090c83a0ac167df6f31f0fa917d74a
+        size: 377607901
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+      - path: align/wav2vec2-base-960h/config.json
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: config.json
+        git_sha1: 8ca9cc7496e145e37d09cec17d0c3bf9b8523c8e
+        size: 1596
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+      - path: align/wav2vec2-base-960h/preprocessor_config.json
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: preprocessor_config.json
+        git_sha1: 3f24dc078fcba55ee1d417a413847ead40c093a3
+        size: 159
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+      - path: align/wav2vec2-base-960h/vocab.json
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: vocab.json
+        git_sha1: 88181b954aa14df68be9b444b3c36585f3078c0a
+        size: 291
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+      - path: align/wav2vec2-base-960h/tokenizer_config.json
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: tokenizer_config.json
+        git_sha1: 978a15a96dbb2d23e2afbc70137cae6c5ce38c8d
+        size: 163
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+      - path: align/wav2vec2-base-960h/special_tokens_map.json
+        repo: facebook/wav2vec2-base-960h
+        revision: 22aad52d435eb6dbaf354bdad9b0da84ce7d6156
+        remote: special_tokens_map.json
+        git_sha1: 25bc39604f72700b3b8e10bd69bb2f227157edd1
+        size: 85
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
+
+  # Local default LLM candidates (Ollama). The worker imports the GGUF
+  # offline with models/ollama/<name>.Modelfile; phase sign-off picks the
+  # default from the llm benchmark.
+  - name: qwen3.5-9b
+    task: llm
+    title: Local LLM (Qwen3.5 9B, Q8_0)
+    engine: ollama
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/Qwen/Qwen3.5-9B
+      verified: "2026-09-26"
+    source:
+      repo: unsloth/Qwen3.5-9B-GGUF
+      revision: 3885219b6810b007914f3a7950a8d1b469d598a5
+      base: Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a
+    vram_mb: 11000
+    files:
+      - path: llm/qwen3.5-9b-q8_0.gguf
+        remote: Qwen3.5-9B-Q8_0.gguf
+        sha256: 809626574d0cb43d4becfa56169980da2bb448f2299270f7be443cb89d0a6ae4
+        size: 9527502048
+
+  - name: gemma-4-12b
+    task: llm
+    title: Local LLM (Gemma 4 12B, Q6_K)
+    engine: ollama
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/google/gemma-4-12B-it
+      verified: "2026-09-26"
+    source:
+      repo: unsloth/gemma-4-12b-it-GGUF
+      revision: fc034cfff751157913579611efad8462ac1be606
+      base: google/gemma-4-12B-it@707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7
+    vram_mb: 11800
+    files:
+      - path: llm/gemma-4-12b-it-q6_k.gguf
+        remote: gemma-4-12b-it-Q6_K.gguf
+        sha256: 6f394336500bb5409bd68c31aa9d75097b5e6104f6cf30c82a09a7b64df41faf
+        size: 9786022720
