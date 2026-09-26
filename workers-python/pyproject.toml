@@ -52,7 +52,15 @@ dev = [
 
 [tool.uv]
 # chatterbox-tts pins torch/torchaudio 2.6.0, which has no sm_120 kernels.
-override-dependencies = ["torch==2.9.1", "torchaudio==2.9.1"]
+# It (and vieneu) also pull in gradio for their demo UIs, which no engine
+# imports; its pinned release and its starlette have published
+# vulnerabilities, so both are raised to fixed releases.
+override-dependencies = [
+  "torch==2.9.1",
+  "torchaudio==2.9.1",
+  "gradio>=6.16.0",
+  "starlette>=1.3.1",
+]
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu128" }]
