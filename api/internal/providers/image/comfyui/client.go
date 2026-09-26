@@ -95,6 +95,11 @@ func (c *Client) Submit(ctx context.Context, workflow map[string]any, clientID s
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if resp.StatusCode == http.StatusBadRequest {
+			// ComfyUI rejected the graph itself (a missing model file,
+			// a bad input value): resubmitting it can never succeed.
+			return "", fmt.Errorf("%w: comfyui refused the workflow: %s", ErrInvalidParams, b)
+		}
 		return "", fmt.Errorf("comfyui: submit unexpected status %d: %s", resp.StatusCode, b)
 	}
 	var out submitResponse

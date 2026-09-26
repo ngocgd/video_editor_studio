@@ -9,8 +9,16 @@ import (
 	"net/url"
 )
 
-// HistoryEntry is one prompt's recorded outputs, keyed by node id.
+// HistoryEntry is one prompt's recorded outputs, keyed by node id, and
+// its final execution status.
 type HistoryEntry struct {
+	Status struct {
+		StatusStr string `json:"status_str"`
+		Completed bool   `json:"completed"`
+		// Messages are [event, payload] pairs; an "execution_error"
+		// payload carries the node's exception message.
+		Messages [][]json.RawMessage `json:"messages"`
+	} `json:"status"`
 	Outputs map[string]struct {
 		Images []struct {
 			Filename  string `json:"filename"`
