@@ -116,7 +116,32 @@ Screens are in `reports/phase-07-screens/` (grid, timeline, inspector edit, in-q
 - The GPU steps have no admission check. On a stack without a GPU worker they stay "Queued for GPU" rather than failing.
 - The 10 unrecognised speakers from the live split point to prompt tuning. They are flagged, not guessed.
 
+## Review round 1: fixes
+
+The independent review (`plans/reports/code-reviewer-260926-1450-phase-07-characters-storyboard-review.md`) listed three blocking items. Their outcomes follow.
+
+| Item | Outcome | Commits |
+|---|---|---|
+| H1. Voice params could carry `reference_url` and `consent` | **Fixed.** A new `voiceparams` package holds the allowlist of tuning keys: `exaggeration`, `cfg_weight`, `temperature`, `seed` and `voice` (an engine's built-in voice name). Creating or updating a voice preset, and setting a character or narrator voice, answers 422 for a control key (`reference_url`, `consent`, `output_key`, `language`), an unknown key or a malformed value. `MergedParams` keeps only tuning keys, so rows stored before the check never reach the worker with control keys. The server still sets `reference_url` and `consent` only from a consented reference asset. Unit tests cover the allowlist and the stripping. The integration test `TestVoiceParamsCannotCarryServerControlKeys` covers the 422s and checks that no consent audit row is written. | `ef09e18` |
+| H2. The storyboard used up the per-IP API budget | **Fixed in code, verification pending (see below).** (1) The takes strip loads only after the selection rests on a scene for 250 ms, reuses a loaded strip for a minute, and refetches only when that scene's version changed. Holding an arrow key no longer costs one request per scene. (2) Variant redirects (`GET`/`HEAD /api/v1/assets/{id}/variants/{variant}`) draw from their own per-IP bucket, `API_MEDIA_RATE_LIMIT_PER_MINUTE` (default 1200). The general bucket keeps its default of 100, so login cannot be starved by media loads. (3) The 302 gets `Cache-Control: private, max-age=300`, half the presigned URL's 10-minute life. Part (3) is written but not committed: its generated server code needs `tb.sh gen`. | `f6bb60e`, `c916fc2` |
+| M1. Branch behind main, merge conflicts and TTS voice contract drift | **Merged and fixed; full re-verification pending.** Main was merged. `residency.go` keeps main's `OllamaPreparer` wiring and this branch's `gpuClients` return. `db/gen` was regenerated with `tb.sh gen`, not hand-merged. The TTS `voice` field now carries the built-in voice name from the assignment's or the preset's `voice` param, and nothing when a reference clip is cloned. The preset id is no longer sent. The name is part of the voice take's stale hash. A Chatterbox voice without a reference clip still fails with the engine's clear error, by main's design. | `076fb8f`, `1e5c159` |
+
+### Checks after the fixes
+
+- `go vet ./...` on the merged tree passed before the fixes.
+- `tb.sh gen` passed after H1. It regenerated the Go server, the bundled spec and the web client.
+- `golangci-lint` reported 0 issues after H1. The tenant-query lint, the manifest lint and `ruff` passed.
+- Web on the host: `npm run typecheck` and `npm run lint` passed, and `npm test` passed 89 tests.
+
+**Not yet run: Docker Desktop's engine stopped** at 08:00 UTC, during the `tb.sh lint test` run that followed H1. The VM is running, but dockerd never came back. The backend log shows "still waiting for the engine to respond to _ping" for over an hour. No toolbox, integration or e2e run was possible after that. Restarting the user's Docker Desktop was not done without the user's approval. These steps remain:
+
+1. `scripts/tb.sh gen`, then commit the Cache-Control change. The uncommitted files are `openapi/paths/media.yaml`, `api/internal/media/http.go` and the Cache-Control assertion in `api/internal/integration/scenes_test.go`, together with the regenerated code.
+2. `scripts/tb.sh lint test`. The new tests are `voiceparams`, `scenes` voice params and `ratelimit` split.
+3. The web `vite build` and `budget-check`.
+4. Under the heavy lock: the integration suite, and the standard Playwright command (compose.yml only, default limits, `--workers=1`) as the H2 acceptance check.
+
 ## Unresolved questions
 
+- Docker Desktop needs a restart before verification can finish. Should the user or the orchestrator do it?
 - Should the rollup's `pipeline_steps_scope_latest_idx` index stay in this phase's migration, since the pipeline tables are owned by phase 3? It is needed for the 60 ms budget.
 - Is 166.76 KB for the authenticated shell acceptable, or should the generated client be split per domain?
