@@ -285,7 +285,7 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 		TokenBudget:  defaultTokenBudget,
 	})
 
-	resp, err := h.stream(ctx, sc, provider, built)
+	resp, err := h.stream(ctx, sc, provider, built, episodeOutputTokenCap(targetText))
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (h *AIActionHandler) runTranslate(ctx context.Context, sc *pipeline.StepCon
 		TokenBudget:        defaultTokenBudget,
 	})
 
-	resp, err := h.stream(ctx, sc, provider, built)
+	resp, err := h.stream(ctx, sc, provider, built, episodeOutputTokenCap(targetText))
 	if err != nil {
 		return nil, err
 	}
@@ -421,8 +421,9 @@ func paragraphsFromText(text string, tainted bool) []Paragraph {
 
 // stream runs provider.Stream with the deltaFlushInterval progress
 // heuristic shared by every episode action (interactive rewrite/continue/
-// expand_beat and import-triggered translate alike).
-func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, provider llm.Provider, built storyctx.Context) (llm.Response, error) {
+// expand_beat and import-triggered translate alike). maxTokens caps the
+// reply; see episodeOutputTokenCap.
+func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, provider llm.Provider, built storyctx.Context, maxTokens int) (llm.Response, error) {
 	var mu sync.Mutex
 	var buffer strings.Builder
 	lastFlush := time.Now()
@@ -439,7 +440,7 @@ func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, 
 			sc.Progress(progressFromLength(n), 0)
 		}
 	}
-	return provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: 4000}, onDelta)
+	return provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: maxTokens}, onDelta)
 }
 
 // findBeat returns the beat with id beatID from outlineJSON (episodes.
