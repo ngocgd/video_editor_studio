@@ -55,7 +55,9 @@ After the fixes, the host run passes again: `go vet ./...` (also with `-tags=int
 - `scripts/lint-tenant-queries.sh` `TENANT_TABLES` is edited by lanes a, c and d. The merge takes the union.
 - `openapi/root.yaml`, `api/cmd/api/*`, `deploy/compose.yml`, `.env.example` and the web route tree were changed as announced on the board. Regenerate the generated code after merging; never hand-merge it.
 
+- Merged into main after main (with the review follow-up fixes and the scoring engines) was merged into the branch. Two conflicts: the generated `server.gen.go` was regenerated with the toolbox, and `TENANT_TABLES` took the union. The toolbox lint and test, the web checks and the integration suite were re-run green on the merged tree before the merge into main.
+
 ## Unresolved questions
 
-- When will Docker be restored? The toolbox, integration and e2e runs, and therefore the merge, wait on it.
+- The migration version 20260927300000 sorts before 20260927400000, which main already had. Fresh databases apply both in order, but a development database that already applied the later version needs goose's allow-missing mode (or a reset) to pick this one up. Is that acceptable for the MVP?
 - Which Google Cloud project and OAuth consent screen (testing or published) will the live check use? In testing mode refresh tokens expire after 7 days, and the UI then shows the reconnect state.
