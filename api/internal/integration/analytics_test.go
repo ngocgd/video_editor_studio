@@ -5,13 +5,16 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -49,6 +52,24 @@ type fakeGoogleAnalytics struct {
 	calls  map[string]int
 	reach  string // CSV served for report-1
 	reject map[string]bool
+	// failSide, when set, fails channels.list and reportTypes.list with
+	// 400 and this message: both become notes of an otherwise good sync.
+	failSide string
+}
+
+// sideFailure writes the failSide error and reports whether it did.
+func (f *fakeGoogleAnalytics) sideFailure(w http.ResponseWriter) bool {
+	f.mu.Lock()
+	msg := f.failSide
+	f.mu.Unlock()
+	if msg == "" {
+		return false
+	}
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{
+		"code": 400, "message": msg, "errors": []map[string]string{{"reason": "badRequest"}},
+	}})
+	return true
 }
 
 func newFakeGoogleAnalytics(t *testing.T) *fakeGoogleAnalytics {
@@ -56,6 +77,9 @@ func newFakeGoogleAnalytics(t *testing.T) *fakeGoogleAnalytics {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /youtube/v3/channels", func(w http.ResponseWriter, _ *http.Request) {
 		f.count("channels")
+		if f.sideFailure(w) {
+			return
+		}
 		_, _ = w.Write([]byte(`{"items":[{"id":"` + anaChannelYTID + `","statistics":{"viewCount":"9000","subscriberCount":"1500","hiddenSubscriberCount":false,"videoCount":"3"}}]}`))
 	})
 	mux.HandleFunc("GET /youtube/v3/videos", func(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +97,9 @@ func newFakeGoogleAnalytics(t *testing.T) *fakeGoogleAnalytics {
 	})
 	mux.HandleFunc("GET /v2/reports", f.reports)
 	mux.HandleFunc("GET /v1/reportTypes", func(w http.ResponseWriter, _ *http.Request) {
+		if f.sideFailure(w) {
+			return
+		}
 		_, _ = w.Write([]byte(`{"reportTypes":[{"id":"channel_basic_a2","name":"basic"},{"id":"` + analytics.ReachReportTypeID + `","name":"reach"}]}`))
 	})
 	mux.HandleFunc("GET /v1/jobs", func(w http.ResponseWriter, _ *http.Request) {
@@ -118,6 +145,8 @@ func (f *fakeGoogleAnalytics) callCount(key string) int {
 // reports answers reports.query: a retention curve for
 // elapsedVideoTimeRatio, else one row per day of the window with fixed
 // values per metric. Rejected metrics fail the whole query with 400.
+// Like the real API it honours startIndex (1-based) and maxResults, so
+// windows longer than one page are fetched page by page.
 func (f *fakeGoogleAnalytics) reports(w http.ResponseWriter, r *http.Request) {
 	f.count("reports.query")
 	q := r.URL.Query()
@@ -161,7 +190,26 @@ func (f *fakeGoogleAnalytics) reports(w http.ResponseWriter, r *http.Request) {
 			rows = append(rows, row)
 		}
 	}
+	rows = pageOf(rows, q.Get("startIndex"), q.Get("maxResults"))
 	_ = json.NewEncoder(w).Encode(map[string]any{"columnHeaders": headers, "rows": rows})
+}
+
+// pageOf slices rows to the page a reports.query asks for: startIndex is
+// 1-based and defaults to 1; a missing maxResults returns every row from
+// startIndex on.
+func pageOf(rows [][]any, startIndex, maxResults string) [][]any {
+	from := 0
+	if n, err := strconv.Atoi(startIndex); err == nil && n > 1 {
+		from = n - 1
+	}
+	if from >= len(rows) {
+		return [][]any{}
+	}
+	rows = rows[from:]
+	if n, err := strconv.Atoi(maxResults); err == nil && n > 0 && n < len(rows) {
+		rows = rows[:n]
+	}
+	return rows
 }
 
 // fakeAnalyticsClients hands out clients pointed at the fake; err
@@ -170,9 +218,15 @@ type fakeAnalyticsClients struct {
 	google *fakeGoogleAnalytics
 	ledger *youtube.Ledger
 	err    error
+	// before runs first on every ForChannel call (e.g. a disconnect that
+	// races an in-flight sync).
+	before func()
 }
 
 func (c *fakeAnalyticsClients) ForChannel(context.Context, uuid.UUID, uuid.UUID) (analytics.Clients, error) {
+	if c.before != nil {
+		c.before()
+	}
 	if c.err != nil {
 		return analytics.Clients{}, c.err
 	}
@@ -470,5 +524,80 @@ func TestAnalyticsDeadGrantMarksReconnectNeeded(t *testing.T) {
 	r, err := fx.api.SyncAnalyticsChannel(fx.ctx, httpgen.SyncAnalyticsChannelRequestObject{Id: fx.channel})
 	if err != nil || !strings.Contains(fmt.Sprintf("%T", r), "409") {
 		t.Errorf("sync now on a disconnected channel: %T %v", r, err)
+	}
+}
+
+func (fx *analyticsFixture) channelStatus(t *testing.T) string {
+	t.Helper()
+	var status string
+	if err := fx.owner.QueryRow(context.Background(), "SELECT status FROM youtube_channels WHERE id = $1", fx.channel).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	return status
+}
+
+// TestAnalyticsSyncSkipsADisconnectedChannel: a sync queued before the
+// user disconnected the channel does nothing and keeps the disconnect.
+func TestAnalyticsSyncSkipsADisconnectedChannel(t *testing.T) {
+	fx := newAnalyticsFixture(t)
+	if _, err := fx.owner.Exec(context.Background(), "UPDATE youtube_channels SET status = 'disconnected' WHERE id = $1", fx.channel); err != nil {
+		t.Fatal(err)
+	}
+	fx.clients.err = &youtube.APIError{Kind: youtube.KindAuth, Reason: youtube.ReasonReconnectNeeded, Message: "token deleted"}
+	if err := fx.syncer.SyncChannel(fx.ctx, fx.tenant, fx.channel); !errors.Is(err, analytics.ErrChannelNotConnected) {
+		t.Fatalf("sync of a disconnected channel: %v", err)
+	}
+	if s := fx.channelStatus(t); s != "disconnected" {
+		t.Errorf("channel status %q, want disconnected", s)
+	}
+	if n := fx.scalar(t, "SELECT count(*) FROM analytics_sync_state WHERE channel_id = $1"); n != 0 {
+		t.Errorf("sync state rows for a skipped sync: %d", n)
+	}
+	if n := fx.google.callCount("reports.query"); n != 0 {
+		t.Errorf("reports.query calls for a skipped sync: %d", n)
+	}
+}
+
+// TestAnalyticsDisconnectDuringSyncIsKept: a disconnect that lands while
+// a sync is running wins over the sync's dead-grant failure.
+func TestAnalyticsDisconnectDuringSyncIsKept(t *testing.T) {
+	fx := newAnalyticsFixture(t)
+	fx.clients.before = func() {
+		if _, err := fx.owner.Exec(context.Background(), "UPDATE youtube_channels SET status = 'disconnected' WHERE id = $1", fx.channel); err != nil {
+			t.Error(err)
+		}
+	}
+	fx.clients.err = &youtube.APIError{Kind: youtube.KindAuth, Reason: youtube.ReasonReconnectNeeded, Message: "token deleted"}
+	if err := fx.syncer.SyncChannel(fx.ctx, fx.tenant, fx.channel); !youtube.IsKind(err, youtube.KindAuth) {
+		t.Fatalf("sync with a grant deleted mid-run: %v", err)
+	}
+	if s := fx.channelStatus(t); s != "disconnected" {
+		t.Errorf("channel status %q, want disconnected", s)
+	}
+	if n := fx.scalar(t, "SELECT count(*) FROM analytics_sync_state WHERE channel_id = $1 AND status = 'failed'"); n != 1 {
+		t.Errorf("failed sync state rows: %d", n)
+	}
+}
+
+// TestAnalyticsLongNotesFitTheSyncState: two long side failures still
+// finish the sync (idle, through dates advanced) with a bounded note.
+func TestAnalyticsLongNotesFitTheSyncState(t *testing.T) {
+	fx := newAnalyticsFixture(t)
+	fx.google.failSide = strings.Repeat("ặ", 400)
+	if err := fx.syncer.SyncChannel(fx.ctx, fx.tenant, fx.channel); err != nil {
+		t.Fatalf("sync with failing side sources: %v", err)
+	}
+	var status, lastErr string
+	var through *time.Time
+	if err := fx.owner.QueryRow(context.Background(),
+		"SELECT status, last_error, analytics_through FROM analytics_sync_state WHERE channel_id = $1", fx.channel,
+	).Scan(&status, &lastErr, &through); err != nil {
+		t.Fatal(err)
+	}
+	if status != "idle" || through == nil || !utf8.ValidString(lastErr) {
+		t.Errorf("sync state: status %q, through %v, valid utf8 %v", status, through, utf8.ValidString(lastErr))
+	}
+	if n := utf8.RuneCountInString(lastErr); n != 500 || !strings.HasPrefix(lastErr, "channel statistics: ") || !strings.Contains(lastErr, "; reach report: ") {
+		t.Errorf("last_error has %d characters: %.80q", n, lastErr)
 	}
 }
