@@ -24,10 +24,20 @@ func unavailableReason(err error) (reason string, ok bool) {
 	if ae.Message != "" {
 		reason += ": " + ae.Message
 	}
-	if len(reason) > maxReasonLen {
-		reason = reason[:maxReasonLen]
+	return truncateText(reason, maxReasonLen), true
+}
+
+// truncateText cuts s to at most max characters without splitting a
+// UTF-8 sequence, matching Postgres length() on the stored text.
+func truncateText(s string, max int) string {
+	n := 0
+	for i := range s {
+		if n == max {
+			return s[:i]
+		}
+		n++
 	}
-	return reason, true
+	return s
 }
 
 // dayMetrics are one day's reported values and the reasons some metrics
