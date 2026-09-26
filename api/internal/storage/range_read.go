@@ -25,7 +25,7 @@ func (c *Internal) ReadRange(ctx context.Context, key string, offset int64, buf 
 	if err != nil {
 		return fmt.Errorf("storage: get %s range: %w", key, err)
 	}
-	defer obj.Close()
+	defer func() { _ = obj.Close() }()
 	if _, err := io.ReadFull(obj, buf); err != nil {
 		return fmt.Errorf("storage: read %s at %d: %w", key, offset, err)
 	}

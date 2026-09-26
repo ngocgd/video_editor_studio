@@ -180,7 +180,7 @@ func (c *Config) postToken(ctx context.Context, form url.Values) (Token, error) 
 	if err != nil {
 		return Token{}, fmt.Errorf("oauthgoogle: token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
 		return Token{}, fmt.Errorf("oauthgoogle: read token answer: %w", err)
@@ -254,7 +254,7 @@ func (c *Config) Revoke(ctx context.Context, token string) error {
 	if err != nil {
 		return fmt.Errorf("oauthgoogle: revoke request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if resp.StatusCode == http.StatusOK {
 		return nil

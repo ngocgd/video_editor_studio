@@ -235,7 +235,7 @@ func (c *Client) openSession(ctx context.Context, req UploadRequest) (string, er
 	if err != nil {
 		return "", transportError(OpVideosInsert, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", c.failure(ctx, OpVideosInsert, resp)
 	}
@@ -264,7 +264,7 @@ func (c *Client) sendRange(ctx context.Context, sessionURI, contentRange string,
 	if err != nil {
 		return 0, "", transportError(OpVideosInsert, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	switch resp.StatusCode {
 	case http.StatusPermanentRedirect:
 		m := rangeHeader.FindStringSubmatch(resp.Header.Get("Range"))
@@ -299,6 +299,6 @@ func (c *Client) cancelSession(ctx context.Context, sessionURI string) {
 		return
 	}
 	if resp, err := c.HTTP.Do(hr); err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }

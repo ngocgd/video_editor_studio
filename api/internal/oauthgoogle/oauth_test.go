@@ -179,7 +179,7 @@ func TestTokenSourceRefreshesRotatesAndDetectsDeadGrant(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	authMu.Lock()
 	if gotAuth != "Bearer access-r" {
@@ -212,7 +212,7 @@ func TestTokenSourceRefreshesRotatesAndDetectsDeadGrant(t *testing.T) {
 func TestStateHashIsStable(t *testing.T) {
 	s1, _ := NewState()
 	s2, _ := NewState()
-	if s1 == s2 || len(StateHash(s1)) != 32 || string(StateHash(s1)) != string(StateHash(s1)) {
+	if h1, h1Again := StateHash(s1), StateHash(s1); s1 == s2 || len(h1) != 32 || string(h1) != string(h1Again) {
 		t.Fatal("states must be unique and hash to 32 stable bytes")
 	}
 }

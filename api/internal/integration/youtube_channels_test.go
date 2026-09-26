@@ -348,7 +348,7 @@ func TestYouTubeChannelConnectListAuditDisconnect(t *testing.T) {
 		t.Fatal(err)
 	}
 	upd, ok := resp.(httpgen.UpdateYouTubeChannelAudit200JSONResponse)
-	if !ok || !upd.ApiProjectAudited || upd.AuditNote != note || upd.AuditFormDate == nil || !upd.AuditFormDate.Time.Equal(day) {
+	if !ok || !upd.ApiProjectAudited || upd.AuditNote != note || upd.AuditFormDate == nil || !upd.AuditFormDate.Equal(day) {
 		t.Fatalf("audit update: %#v", resp)
 	}
 	if resp, _ := fx.api.UpdateYouTubeChannelAudit(fx.ctx, httpgen.UpdateYouTubeChannelAuditRequestObject{

@@ -61,7 +61,7 @@ func TestMyChannelAndEligibility(t *testing.T) {
 // the stored refresh token.
 type deadGrant struct{}
 
-func (deadGrant) Error() string          { return "invalid_grant" }
+func (deadGrant) Error() string         { return "invalid_grant" }
 func (deadGrant) ReconnectNeeded() bool { return true }
 
 type failingTransport struct{ err error }

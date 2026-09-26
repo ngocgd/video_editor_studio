@@ -46,11 +46,11 @@ import (
 	"loomtale/api/internal/secheaders"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
-	"loomtale/api/internal/youtube"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/story"
 	"loomtale/api/internal/validation"
+	"loomtale/api/internal/youtube"
 )
 
 func main() {

@@ -67,9 +67,10 @@ func (c *Client) failure(ctx context.Context, op Op, resp *http.Response) error 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBody))
 	ae := classify(resp.StatusCode, body)
 	if ae.Kind == KindQuota && c.Ledger != nil {
-		// MarkExhausted answers with the local QuotaExceededError on
-		// success; only a failure to record it is worth joining.
-		if err := c.Ledger.MarkExhausted(ctx, op); err != nil && !IsKind(err, KindQuota) {
+		// MarkExhausted always answers with an error: the local
+		// QuotaExceededError on success, so only a failure to record the
+		// exhaustion is worth joining.
+		if err := c.Ledger.MarkExhausted(ctx, op); !IsKind(err, KindQuota) {
 			return errors.Join(ae, err)
 		}
 	}
@@ -91,7 +92,7 @@ func (c *Client) getJSON(ctx context.Context, op Op, path string, query url.Valu
 	if err != nil {
 		return transportError(op, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return c.failure(ctx, op, resp)
 	}
