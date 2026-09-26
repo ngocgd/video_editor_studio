@@ -28,8 +28,13 @@ type streamLine struct {
 	OutTokens int     `json:"out_tokens,omitempty"`
 }
 
+// versionHeader carries the claude CLI version banner on /healthz, so
+// the worker's status probe can report it alongside the health state.
+const versionHeader = "X-Claude-CLI-Version"
+
 type handler struct {
 	runner         *runner
+	version        string
 	model          string
 	systemPrompt   string
 	oauthToken     string
@@ -38,6 +43,9 @@ type handler struct {
 }
 
 func (h *handler) handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	if h.version != "" {
+		w.Header().Set(versionHeader, h.version)
+	}
 	if h.disabledReason != "" {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = w.Write([]byte(h.disabledReason))
@@ -73,8 +81,18 @@ func (h *handler) handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Commit the 200 status and flush the headers before the CLI runs.
+	// Without partial messages the CLI prints its first stream-json line
+	// only when the whole reply is done, so waiting for that line would
+	// hold the headers back for the full generation and trip the
+	// caller's response-header timeout. Every failure after this point
+	// travels in-band as the final "result" line.
 	w.Header().Set("Content-Type", "application/x-ndjson")
+	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
+	if flusher != nil {
+		flusher.Flush()
+	}
 
 	result, err := h.runner.Run(r.Context(), runRequest{
 		Model:        h.model,

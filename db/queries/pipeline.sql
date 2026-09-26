@@ -45,10 +45,10 @@ SELECT EXISTS (
 -- transaction stays within the enqueue latency budget.
 INSERT INTO pipeline_steps (
     id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref,
-    priority, status, remaining_deps, input_hash
+    priority, status, remaining_deps, input_hash, input
 ) VALUES (
     @id, @tenant_id, @run_id, @scope_kind, @scope_id, @kind, @queue, @provider_ref,
-    @priority, @status, @remaining_deps, @input_hash
+    @priority, @status, @remaining_deps, @input_hash, @input
 )
 RETURNING *;
 

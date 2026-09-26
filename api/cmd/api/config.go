@@ -32,6 +32,11 @@ type config struct {
 	// allocates up to 64MiB); see api/internal/auth.HashLimiter.
 	ArgonMaxConcurrency int `env:"ARGON2_MAX_CONCURRENCY" envDefault:"4"`
 
+	// RateLimitPerMinute is the general per-client-IP request budget
+	// (burst and refill per minute). Only the integration test stacks
+	// raise it, because the whole suite reaches the API from one IP.
+	RateLimitPerMinute int `env:"API_RATE_LIMIT_PER_MINUTE" envDefault:"100"`
+
 	// AppMode gates the claude-cli provider (local-only per the
 	// contract): "saas" disables it entirely, any other value (default
 	// "local") leaves it available.

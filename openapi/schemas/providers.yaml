@@ -64,3 +64,29 @@ LLMSettingsTestResult:
       type: boolean
     detail:
       type: string
+    latencyMs:
+      type: integer
+LLMApiKeyRequest:
+  type: object
+  required: [apiKey]
+  properties:
+    apiKey:
+      type: string
+      minLength: 1
+      maxLength: 4096
+      description: Write-only; never echoed back. Stored envelope-encrypted (kind=llm_api_key, owner_ref=provider).
+ClaudeCliStatus:
+  type: object
+  required: [installed, authenticated, toolsDisabled]
+  properties:
+    installed:
+      type: boolean
+    version:
+      type: string
+    authenticated:
+      type: boolean
+    toolsDisabled:
+      type: boolean
+      description: Always true; the llm-cli sidecar runs claude with tool use disabled.
+    detail:
+      type: string

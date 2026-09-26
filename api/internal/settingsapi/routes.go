@@ -5,20 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
+	authpkg "loomtale/api/internal/auth"
 	"loomtale/api/internal/httpapi/gen"
-	"loomtale/api/internal/providers/llm"
 	"loomtale/api/internal/providers/registry"
 	"loomtale/api/internal/tenant"
 )
 
-// testCallTimeout bounds a synchronous /settings/llm/test call: it can
-// otherwise hold the request open for as long as claude-cli's own
-// 10-minute runner timeout.
+// testCallTimeout bounds a synchronous /settings/llm/test call: how long
+// the api waits for the worker to pick up and finish the probe step.
 const testCallTimeout = 30 * time.Second
-
-// testMaxTokens hard-caps the probe prompt's response size regardless of
-// what a future caller passes in.
-const testMaxTokens = 8
 
 // GetLLMSettings implements gen.StrictServerInterface.
 func (h *SettingsAPI) GetLLMSettings(ctx context.Context, _ gen.GetLLMSettingsRequestObject) (gen.GetLLMSettingsResponseObject, error) {
@@ -77,13 +74,14 @@ func (h *SettingsAPI) PutLLMSettings(ctx context.Context, request gen.PutLLMSett
 	}), nil
 }
 
-// TestLLMSettings implements gen.StrictServerInterface: runs a minimal,
-// fixed 1-token prompt against the requested (or current default)
-// provider and reports whether it succeeded, with no tenant-authored
-// content ever sent (the test prompt is a fixed server string, exactly
-// like every other System value). Rate limited per tenant, bounded by
-// testCallTimeout regardless of what the underlying provider would
-// otherwise wait for, and audit-logged.
+// TestLLMSettings implements gen.StrictServerInterface: probes the
+// requested (or current default) provider with a fixed one-word prompt,
+// never tenant content. The probe runs as a pipeline step in the worker,
+// the process that runs every real LLM action, so the answer matches
+// what the writer will see. A provider the worker reports unavailable
+// fails fast with its reason instead of waiting on a step that cannot
+// run. Rate limited per tenant, bounded by testCallTimeout, and
+// audit-logged.
 func (h *SettingsAPI) TestLLMSettings(ctx context.Context, request gen.TestLLMSettingsRequestObject) (gen.TestLLMSettingsResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 
@@ -114,21 +112,33 @@ func (h *SettingsAPI) TestLLMSettings(ctx context.Context, request gen.TestLLMSe
 
 	h.recordSettingsAudit(ctx, "llm_settings.test")
 
-	provider, ok := h.Registry.Providers[providerName]
-	if !ok {
-		detail := "provider not configured"
+	fail := func(detail string) (gen.TestLLMSettingsResponseObject, error) {
 		return gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: false, Detail: &detail}, nil
+	}
+	if !registry.IsKnownProvider(providerName) {
+		return fail("unknown provider")
+	}
+	configured, _ := h.keyConfigured(ctx, info.ID.String(), providerName)
+	if available, reason := h.availability(providerName, h.workerView(ctx), configured); !available {
+		return fail(reason)
+	}
+	if h.Probe == nil {
+		return fail("provider probe not configured")
 	}
 
 	testCtx, cancel := context.WithTimeout(ctx, testCallTimeout)
 	defer cancel()
-	_, err := provider.Generate(testCtx, llm.Request{
-		Messages:  []llm.Message{{Role: "user", Text: "Reply with a single word: OK."}},
-		MaxTokens: testMaxTokens,
-	})
+	sess, _ := authpkg.FromCtx(ctx)
+	var createdBy *uuid.UUID
+	if sess.UserID != uuid.Nil {
+		createdBy = &sess.UserID
+	}
+	ok, detail, err := h.Probe.Check(testCtx, info.ID, createdBy, providerName)
 	if err != nil {
-		detail := err.Error()
-		return gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: false, Detail: &detail}, nil
+		return nil, err
+	}
+	if !ok {
+		return fail(detail)
 	}
 	return gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: true}, nil
 }

@@ -1,0 +1,137 @@
+importsCollection:
+  get:
+    operationId: listImports
+    summary: Cursor-paginated list of the active tenant's imports
+    tags: [imports]
+    x-min-role: viewer
+    parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+    responses:
+      "200":
+        description: page of imports
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/ImportList"
+  post:
+    operationId: createImport
+    summary: Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+    tags: [imports]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/ImportCreateRequest"
+    responses:
+      "201":
+        description: import registered
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Import"
+      "400":
+        description: asset not ready, wrong MIME, or over the 10MB text cap
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+importItem:
+  get:
+    operationId: getImport
+    summary: Import status and chapter preview
+    tags: [imports]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: import
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Import"
+      "404":
+        description: import not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+previewImport:
+  post:
+    operationId: previewImport
+    summary: Detect encoding and split into chapters using a regex preset, without committing episodes
+    tags: [imports]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/ImportPreviewRequest"
+    responses:
+      "200":
+        description: chapter preview
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/Import"
+      "422":
+        description: decoding failed or no chapters matched the preset (reported, not guessed)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+commitImport:
+  post:
+    operationId: commitImport
+    summary: Turn previewed chapters into episodes, optionally translating each
+    tags: [imports]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/ImportCommitRequest"
+    responses:
+      "200":
+        description: episodes created from the selected chapters
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/ImportCommitResponse"
+      "409":
+        description: import is not in preview status
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

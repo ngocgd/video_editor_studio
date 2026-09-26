@@ -59,3 +59,43 @@ testLLMSettings:
           application/problem+json:
             schema:
               $ref: "../schemas/problem.yaml#/Problem"
+putLLMApiKey:
+  put:
+    operationId: putLLMApiKey
+    summary: Store (or replace) the active tenant's API key for a provider; write-only, audited
+    tags: [settings]
+    x-min-role: owner
+    parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/providers.yaml#/LLMApiKeyRequest"
+    responses:
+      "204":
+        description: key stored
+      "400":
+        description: unknown provider or empty key
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+getClaudeCliStatus:
+  get:
+    operationId: getClaudeCliStatus
+    summary: claude CLI version and auth state, as reported by the llm-cli sidecar
+    tags: [settings]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: claude CLI status
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/providers.yaml#/ClaudeCliStatus"

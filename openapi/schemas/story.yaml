@@ -1,0 +1,447 @@
+# Series, story bible, episodes, drafts and imports (phase 6). Derived
+# text always carries origin/tainted so the client can render a taint
+# badge and route "Mark reviewed" through its own audited action.
+Origin:
+  type: string
+  enum: [user, import, model]
+TargetLanguage:
+  type: string
+  enum: [en, vi]
+DraftLanguage:
+  type: string
+  description: >-
+    Every language an episode_drafts row can be stored under. Includes `zh`
+    for an import's own source-language draft (see CommitImport); AI-action
+    targets and the writer's translate toggle still only offer en/vi
+    (TargetLanguage).
+  enum: [en, vi, zh]
+Series:
+  type: object
+  required: [id, title, targetLanguages, targetEpisodeMinutes, plannedEpisodeCount, status, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    title:
+      type: string
+    genre:
+      type: string
+    targetLanguages:
+      type: array
+      items:
+        $ref: "#/TargetLanguage"
+    targetEpisodeMinutes:
+      type: integer
+    plannedEpisodeCount:
+      type: integer
+    styleNotes:
+      type: string
+    status:
+      type: string
+      enum: [draft, active, archived]
+    createdAt:
+      type: string
+      format: date-time
+SeriesList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Series"
+    nextCursor:
+      type: string
+SeriesCreateRequest:
+  type: object
+  required: [title, targetLanguages, targetEpisodeMinutes, plannedEpisodeCount]
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+    genre:
+      type: string
+      maxLength: 100
+    targetLanguages:
+      type: array
+      items:
+        $ref: "#/TargetLanguage"
+      minItems: 1
+    targetEpisodeMinutes:
+      type: integer
+      minimum: 1
+      maximum: 120
+    plannedEpisodeCount:
+      type: integer
+      minimum: 1
+      maximum: 500
+    styleNotes:
+      type: string
+      maxLength: 4000
+SeriesUpdateRequest:
+  allOf:
+    - $ref: "#/SeriesCreateRequest"
+    - type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, active, archived]
+SeriesGenerateRequest:
+  type: object
+  description: Kicks off the settings -> bible seed -> episode outlines wizard.
+  properties:
+    episodeCount:
+      type: integer
+      minimum: 1
+      maximum: 500
+SeriesGenerateResponse:
+  type: object
+  required: [runId]
+  properties:
+    runId:
+      type: string
+      format: uuid
+
+BibleSection:
+  type: object
+  required: [content, origin, tainted, version]
+  properties:
+    content:
+      type: string
+      description: Plain text for prose sections; JSON-encoded array text for the glossary section.
+    origin:
+      $ref: "#/Origin"
+    tainted:
+      type: boolean
+    version:
+      type: integer
+StoryBible:
+  type: object
+  required: [seriesId, sections, updatedAt]
+  properties:
+    seriesId:
+      type: string
+      format: uuid
+    sections:
+      type: object
+      additionalProperties:
+        $ref: "#/BibleSection"
+    updatedAt:
+      type: string
+      format: date-time
+BibleSectionUpdateRequest:
+  type: object
+  required: [section, content, expectedVersion]
+  properties:
+    section:
+      type: string
+      enum: [world, cultivation_realms, arcs, style_guide, running_summary, glossary]
+    content:
+      type: string
+      maxLength: 20000
+    expectedVersion:
+      type: integer
+      description: Optimistic-concurrency check against the section's current version; a mismatch returns 409.
+
+OutlineBeat:
+  type: object
+  required: [id, summary, targetWords]
+  properties:
+    id:
+      type: string
+    summary:
+      type: string
+    targetWords:
+      type: integer
+    tainted:
+      type: boolean
+      description: True when the bible excerpt used to generate this episode's outline was itself tainted.
+DraftStatus:
+  type: object
+  properties:
+    wordCount:
+      type: integer
+    version:
+      type: integer
+Episode:
+  type: object
+  required: [id, seriesId, idx, title, outline, status, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    seriesId:
+      type: string
+      format: uuid
+    idx:
+      type: integer
+    title:
+      type: string
+    outline:
+      type: array
+      items:
+        $ref: "#/OutlineBeat"
+    status:
+      type: string
+      enum: [planned, outlined, drafting, draft, reviewed]
+    drafts:
+      type: object
+      additionalProperties:
+        $ref: "#/DraftStatus"
+    durationEstimateMinutes:
+      type: object
+      additionalProperties:
+        type: number
+    createdAt:
+      type: string
+      format: date-time
+EpisodeList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Episode"
+    nextCursor:
+      type: string
+EpisodeUpdateRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      maxLength: 200
+    status:
+      type: string
+      enum: [planned, outlined, drafting, draft, reviewed]
+
+DraftParagraph:
+  type: object
+  required: [id, text, origin, tainted]
+  properties:
+    id:
+      type: string
+    text:
+      type: string
+    origin:
+      $ref: "#/Origin"
+    tainted:
+      type: boolean
+EpisodeDraft:
+  type: object
+  required: [episodeId, lang, paragraphs, version, wordCount]
+  properties:
+    episodeId:
+      type: string
+      format: uuid
+    lang:
+      $ref: "#/DraftLanguage"
+    paragraphs:
+      type: array
+      items:
+        $ref: "#/DraftParagraph"
+    version:
+      type: integer
+    wordCount:
+      type: integer
+    durationEstimateMinutes:
+      type: number
+    summary:
+      type: string
+    summaryTainted:
+      type: boolean
+ParagraphOp:
+  type: object
+  required: [op, paragraphId]
+  properties:
+    op:
+      type: string
+      enum: [upsert, delete, move]
+    paragraphId:
+      type: string
+    text:
+      type: string
+    afterParagraphId:
+      type: string
+      description: For op=move, the paragraph id to place this one after (empty string means first).
+DraftPatchRequest:
+  type: object
+  required: [expectedVersion, ops]
+  properties:
+    expectedVersion:
+      type: integer
+    ops:
+      type: array
+      items:
+        $ref: "#/ParagraphOp"
+      minItems: 1
+      maxItems: 200
+
+ApplyDraftStepRequest:
+  type: object
+  required: [stepId]
+  description: >-
+    Applies a done AI action step's output to this draft. The server reads
+    the step's stored action, text and taint rather than trusting the
+    client's copy: rewrite/expand/shorten/tone/translate replace
+    paragraphIds; continue/expand_beat insert the step's text as new
+    paragraphs after afterParagraphId (or the last of paragraphIds, or the
+    end of the draft when neither is set), never deleting anything.
+  properties:
+    stepId:
+      type: string
+      format: uuid
+    paragraphIds:
+      type: array
+      items:
+        type: string
+      description: The paragraphs the action was run against (its selection).
+    afterParagraphId:
+      type: string
+      description: For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
+AiActionRequest:
+  type: object
+  required: [action, lang]
+  properties:
+    action:
+      type: string
+      enum: [outline, expand_beat, continue, rewrite, expand, shorten, tone, translate, summarise]
+    lang:
+      $ref: "#/TargetLanguage"
+    paragraphIds:
+      type: array
+      items:
+        type: string
+    beatId:
+      type: string
+    instruction:
+      type: string
+      maxLength: 500
+      description: The user's own free-text instruction; sent as a separate, length-capped, origin=user data block, never concatenated into the system template.
+AiActionResponse:
+  type: object
+  required: [stepId, runId]
+  properties:
+    stepId:
+      type: string
+      format: uuid
+    runId:
+      type: string
+      format: uuid
+AiActionResult:
+  type: object
+  description: >-
+    The step's current status and, once done, its full generated text.
+    There is no incremental token payload today: a client polls or
+    subscribes to the step's SSE transition and then fetches this once
+    the step reaches a terminal status.
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: [pending, queued, running, done, failed, canceled]
+    provider:
+      type: string
+    lang:
+      $ref: "#/TargetLanguage"
+    text:
+      type: string
+    tainted:
+      type: boolean
+    errorDetail:
+      type: string
+
+ChapterPreview:
+  type: object
+  required: [index, title, wordCount]
+  properties:
+    index:
+      type: integer
+    title:
+      type: string
+    wordCount:
+      type: integer
+Import:
+  type: object
+  required: [id, status, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    seriesId:
+      type: string
+      format: uuid
+    assetId:
+      type: string
+      format: uuid
+    encoding:
+      type: string
+    splitPreset:
+      type: string
+    status:
+      type: string
+      enum: [uploaded, preview, committed, failed]
+    chapters:
+      type: array
+      items:
+        $ref: "#/ChapterPreview"
+    errorMsg:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+ImportList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Import"
+    nextCursor:
+      type: string
+ImportCreateRequest:
+  type: object
+  required: [assetId]
+  properties:
+    assetId:
+      type: string
+      format: uuid
+    seriesId:
+      type: string
+      format: uuid
+ImportPreviewRequest:
+  type: object
+  properties:
+    splitPreset:
+      type: string
+      enum: [zh_chapter, en_chapter, vi_chuong, auto]
+      default: auto
+ImportCommitRequest:
+  type: object
+  required: [seriesId]
+  properties:
+    seriesId:
+      type: string
+      format: uuid
+    chapterIndexes:
+      type: array
+      items:
+        type: integer
+      description: Empty means every previewed chapter.
+    translateToLang:
+      $ref: "#/TargetLanguage"
+ImportCommitResponse:
+  type: object
+  required: [episodeIds]
+  properties:
+    episodeIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+    runId:
+      type: string
+      format: uuid
+      description: Set only when translateToLang triggered llm.translate steps.

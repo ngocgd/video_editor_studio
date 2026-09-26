@@ -117,6 +117,7 @@ func run() error {
 	rn := newRunner(cfg.Binary, cfg.WorkRoot, cfg.MaxConcurrent, cfg.Timeout)
 	h := &handler{
 		runner:         rn,
+		version:        version,
 		model:          cfg.Model,
 		systemPrompt:   cfg.SystemPrompt,
 		oauthToken:     oauthToken,

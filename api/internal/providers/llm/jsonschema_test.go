@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"loomtale/api/internal/pipeline"
@@ -107,5 +108,22 @@ func TestGenerateStructuredSkipsValidationWhenNoSchemaRequested(t *testing.T) {
 	}
 	if resp.Text != "plain text, not JSON" {
 		t.Fatalf("resp = %+v", resp)
+	}
+}
+
+// The model must see the schema itself: the templates only say "match
+// the requested schema", and no adapter forwards JSONSchema.
+func TestGenerateStructuredSendsTheSchemaToTheModel(t *testing.T) {
+	const schema = `{"type":"object","required":["targetWords"],"properties":{"targetWords":{"type":"integer"}}}`
+	var systems []string
+	gen := func(_ context.Context, req Request) (Response, error) {
+		systems = append(systems, req.System)
+		return Response{Text: `{"targetWords":900}`}, nil
+	}
+	if _, err := GenerateStructured(context.Background(), Request{System: "Outline the episode.", JSONSchema: schema}, gen); err != nil {
+		t.Fatal(err)
+	}
+	if len(systems) != 1 || !strings.HasPrefix(systems[0], "Outline the episode.") || !strings.Contains(systems[0], schema) {
+		t.Fatalf("system sent to the model = %q", systems)
 	}
 }

@@ -15,7 +15,7 @@ const cancelPendingDependents = `-- name: CancelPendingDependents :many
 UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'pending'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CancelPendingDependentsParams struct {
@@ -66,6 +66,7 @@ func (q *Queries) CancelPendingDependents(ctx context.Context, arg CancelPending
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -81,7 +82,7 @@ const cancelRunSteps = `-- name: CancelRunSteps :many
 UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND run_id = $2 AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CancelRunStepsParams struct {
@@ -127,6 +128,7 @@ func (q *Queries) CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) 
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -143,7 +145,7 @@ UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND scope_kind = $2 AND scope_id = $3
   AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CancelScopeStepsParams struct {
@@ -190,6 +192,7 @@ func (q *Queries) CancelScopeSteps(ctx context.Context, arg CancelScopeStepsPara
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -205,7 +208,7 @@ const cancelStep = `-- name: CancelStep :one
 UPDATE pipeline_steps
 SET status = 'canceled', version = version + 1, finished_at = now()
 WHERE tenant_id = $1 AND id = $2 AND status IN ('pending', 'queued', 'running')
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CancelStepParams struct {
@@ -245,6 +248,7 @@ func (q *Queries) CancelStep(ctx context.Context, arg CancelStepParams) (Pipelin
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -258,7 +262,7 @@ SET attempt = attempt + 1,
     started_at = COALESCE(started_at, now()),
     version = version + 1
 WHERE id = ANY($2::uuid[]) AND status = 'queued'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type ClaimStepsParams struct {
@@ -308,6 +312,7 @@ func (q *Queries) ClaimSteps(ctx context.Context, arg ClaimStepsParams) ([]Pipel
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -324,7 +329,7 @@ UPDATE pipeline_steps
 SET status = 'done', output = $1, progress = 100, log_asset_id = $2,
     finished_at = now(), version = version + 1
 WHERE id = $3 AND attempt = $4 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CommitStepDoneParams struct {
@@ -372,6 +377,7 @@ func (q *Queries) CommitStepDone(ctx context.Context, arg CommitStepDoneParams) 
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -381,7 +387,7 @@ UPDATE pipeline_steps
 SET status = $1, error_code = $2, error_msg = $3,
     log_asset_id = $4, finished_at = now(), version = version + 1
 WHERE id = $5 AND attempt = $6 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type CommitStepFailedParams struct {
@@ -433,6 +439,7 @@ func (q *Queries) CommitStepFailed(ctx context.Context, arg CommitStepFailedPara
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -531,7 +538,7 @@ const decrementRemainingDeps = `-- name: DecrementRemainingDeps :many
 UPDATE pipeline_steps
 SET remaining_deps = remaining_deps - 1, version = version + 1
 WHERE tenant_id = $1 AND id = ANY($2::uuid[])
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type DecrementRemainingDepsParams struct {
@@ -577,6 +584,7 @@ func (q *Queries) DecrementRemainingDeps(ctx context.Context, arg DecrementRemai
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -593,7 +601,7 @@ UPDATE pipeline_steps
 SET status = 'failed', error_code = $1, error_msg = $2,
     finished_at = now(), version = version + 1
 WHERE id = $3 AND status = 'queued'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type FailQueuedStepParams struct {
@@ -638,6 +646,7 @@ func (q *Queries) FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) 
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -771,7 +780,7 @@ func (q *Queries) GetRunIDsForTenant(ctx context.Context, arg GetRunIDsForTenant
 }
 
 const getRunningGpuStepForTenant = `-- name: GetRunningGpuStepForTenant :one
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND queue = 'gpu' AND status = 'running'
 ORDER BY started_at DESC NULLS LAST
 LIMIT 1
@@ -809,12 +818,13 @@ func (q *Queries) GetRunningGpuStepForTenant(ctx context.Context, tenantID pgtyp
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
 
 const getStepByID = `-- name: GetStepByID :one
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps WHERE tenant_id = $1 AND id = $2
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps WHERE tenant_id = $1 AND id = $2
 `
 
 type GetStepByIDParams struct {
@@ -854,6 +864,7 @@ func (q *Queries) GetStepByID(ctx context.Context, arg GetStepByIDParams) (Pipel
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -918,7 +929,7 @@ const incrementGpuOomCount = `-- name: IncrementGpuOomCount :one
 UPDATE pipeline_steps
 SET gpu_oom_count = gpu_oom_count + 1, version = version + 1
 WHERE id = $1 AND attempt = $2 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type IncrementGpuOomCountParams struct {
@@ -962,6 +973,7 @@ func (q *Queries) IncrementGpuOomCount(ctx context.Context, arg IncrementGpuOomC
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -970,7 +982,7 @@ const incrementStrandedRequeue = `-- name: IncrementStrandedRequeue :one
 UPDATE pipeline_steps
 SET stranded_requeues = stranded_requeues + 1, version = version + 1
 WHERE id = $1 AND status = 'queued'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 // lint-tenant-queries:allow: internal reconciler write, not caller input
@@ -1006,12 +1018,13 @@ func (q *Queries) IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) 
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
 
 const listGpuQueueForTenant = `-- name: ListGpuQueueForTenant :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND queue = 'gpu' AND status = 'queued'
 ORDER BY priority, id
 LIMIT $2
@@ -1060,6 +1073,7 @@ func (q *Queries) ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueFor
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1072,7 +1086,7 @@ func (q *Queries) ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueFor
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND id > $2
 ORDER BY id
 LIMIT $3
@@ -1123,6 +1137,7 @@ func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineS
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1135,7 +1150,7 @@ func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineS
 }
 
 const listJobsByQueue = `-- name: ListJobsByQueue :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND queue = $2 AND id > $3
 ORDER BY id
 LIMIT $4
@@ -1191,6 +1206,7 @@ func (q *Queries) ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1203,7 +1219,7 @@ func (q *Queries) ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams
 }
 
 const listJobsByStatus = `-- name: ListJobsByStatus :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND status = $2 AND id > $3
 ORDER BY id
 LIMIT $4
@@ -1259,6 +1275,7 @@ func (q *Queries) ListJobsByStatus(ctx context.Context, arg ListJobsByStatusPara
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1271,7 +1288,7 @@ func (q *Queries) ListJobsByStatus(ctx context.Context, arg ListJobsByStatusPara
 }
 
 const listJobsByStatusAndQueue = `-- name: ListJobsByStatusAndQueue :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND status = $2 AND queue = $3 AND id > $4
 ORDER BY id
 LIMIT $5
@@ -1329,6 +1346,7 @@ func (q *Queries) ListJobsByStatusAndQueue(ctx context.Context, arg ListJobsBySt
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1341,7 +1359,7 @@ func (q *Queries) ListJobsByStatusAndQueue(ctx context.Context, arg ListJobsBySt
 }
 
 const listRunSteps = `-- name: ListRunSteps :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE tenant_id = $1 AND run_id = $2 AND id > $3
 ORDER BY id
 LIMIT $4
@@ -1397,6 +1415,7 @@ func (q *Queries) ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]P
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1462,7 +1481,7 @@ const markStepsPending = `-- name: MarkStepsPending :many
 UPDATE pipeline_steps
 SET status = 'pending', version = version + 1
 WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'done'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type MarkStepsPendingParams struct {
@@ -1511,6 +1530,7 @@ func (q *Queries) MarkStepsPending(ctx context.Context, arg MarkStepsPendingPara
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1526,7 +1546,7 @@ const markStepsQueued = `-- name: MarkStepsQueued :many
 UPDATE pipeline_steps
 SET status = 'queued', version = version + 1
 WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'pending' AND remaining_deps <= 0
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type MarkStepsQueuedParams struct {
@@ -1572,6 +1592,7 @@ func (q *Queries) MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1584,7 +1605,7 @@ func (q *Queries) MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams
 }
 
 const orphanedQueuedStepsBatch = `-- name: OrphanedQueuedStepsBatch :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps
 WHERE status = 'queued' AND stranded_requeues < $1
 ORDER BY id
 LIMIT $2
@@ -1637,6 +1658,7 @@ func (q *Queries) OrphanedQueuedStepsBatch(ctx context.Context, arg OrphanedQueu
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1649,7 +1671,7 @@ func (q *Queries) OrphanedQueuedStepsBatch(ctx context.Context, arg OrphanedQueu
 }
 
 const peekSteps = `-- name: PeekSteps :many
-SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count FROM pipeline_steps WHERE id = ANY($1::uuid[])
+SELECT id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input FROM pipeline_steps WHERE id = ANY($1::uuid[])
 `
 
 // lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
@@ -1691,6 +1713,7 @@ func (q *Queries) PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineS
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1714,7 +1737,7 @@ UPDATE pipeline_steps s
 SET status = 'queued', version = version + 1
 FROM candidates c
 WHERE s.id = c.id
-RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count, s.input
 `
 
 // lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
@@ -1756,6 +1779,7 @@ func (q *Queries) ReadySweepBatch(ctx context.Context, pageLimit int32) ([]Pipel
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1775,7 +1799,7 @@ SET remaining_deps = (
     WHERE d.tenant_id = $1 AND d.step_id = s.id AND dep.status <> 'done'
 ), version = s.version + 1
 WHERE s.tenant_id = $1 AND s.id = $2
-RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count, s.input
 `
 
 type RecomputeRemainingDepsParams struct {
@@ -1815,6 +1839,7 @@ func (q *Queries) RecomputeRemainingDeps(ctx context.Context, arg RecomputeRemai
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -1823,7 +1848,7 @@ const requeueStep = `-- name: RequeueStep :one
 UPDATE pipeline_steps
 SET status = 'queued', version = version + 1
 WHERE id = $1 AND attempt = $2 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type RequeueStepParams struct {
@@ -1864,6 +1889,7 @@ func (q *Queries) RequeueStep(ctx context.Context, arg RequeueStepParams) (Pipel
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -1880,7 +1906,7 @@ UPDATE pipeline_steps s
 SET status = 'queued', version = version + 1
 FROM candidates c
 WHERE s.id = c.id
-RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count, s.input
 `
 
 type ResetStaleHeartbeatsBatchParams struct {
@@ -1930,6 +1956,7 @@ func (q *Queries) ResetStaleHeartbeatsBatch(ctx context.Context, arg ResetStaleH
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		); err != nil {
 			return nil, err
 		}
@@ -1950,7 +1977,7 @@ FROM pipeline_runs r
 WHERE s.tenant_id = $1 AND s.id = $2
   AND s.run_id = r.id AND r.tenant_id = $1 AND r.status = 'active'
   AND s.status IN ('failed', 'canceled') AND s.remaining_deps <= 0
-RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count
+RETURNING s.id, s.tenant_id, s.run_id, s.scope_kind, s.scope_id, s.kind, s.queue, s.provider_ref, s.priority, s.status, s.attempt, s.version, s.remaining_deps, s.claimed_job_id, s.input_hash, s.progress, s.eta_s, s.output, s.error_code, s.error_msg, s.log_asset_id, s.heartbeat_at, s.started_at, s.finished_at, s.created_at, s.updated_at, s.stranded_requeues, s.gpu_oom_count, s.input
 `
 
 type RetryStepParams struct {
@@ -1995,6 +2022,7 @@ func (q *Queries) RetryStep(ctx context.Context, arg RetryStepParams) (PipelineS
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }
@@ -2039,7 +2067,7 @@ const updateStepProgress = `-- name: UpdateStepProgress :one
 UPDATE pipeline_steps
 SET progress = $1, eta_s = $2, version = version + 1
 WHERE id = $3 AND attempt = $4 AND status = 'running'
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type UpdateStepProgressParams struct {
@@ -2087,6 +2115,7 @@ func (q *Queries) UpdateStepProgress(ctx context.Context, arg UpdateStepProgress
 		&i.UpdatedAt,
 		&i.StrandedRequeues,
 		&i.GpuOomCount,
+		&i.Input,
 	)
 	return i, err
 }

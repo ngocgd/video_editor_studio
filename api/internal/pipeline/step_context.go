@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -93,14 +94,39 @@ func (sc *StepContext) Tenant() uuid.UUID {
 	return idconv.FromPg(sc.step.TenantID)
 }
 
-// ScopeKind returns the step's scope kind (e.g. "episode", "model").
+// ScopeKind returns the step's scope kind (e.g. "series", "episode"), set
+// at enqueue time from StepSpec.ScopeKind. A StepHandler.Run
+// implementation uses this together with ScopeID to load whatever domain
+// row the step actually operates on.
 func (sc *StepContext) ScopeKind() string {
 	return sc.step.ScopeKind
 }
 
-// ScopeID returns the step's scope id.
+// ScopeID returns the step's scope id, set at enqueue time from
+// StepSpec.ScopeID.
 func (sc *StepContext) ScopeID() uuid.UUID {
 	return idconv.FromPg(sc.step.ScopeID)
+}
+
+// StepID returns this step's own id.
+func (sc *StepContext) StepID() uuid.UUID {
+	return idconv.FromPg(sc.step.ID)
+}
+
+// RunID returns the id of the pipeline run this step belongs to.
+func (sc *StepContext) RunID() uuid.UUID {
+	return idconv.FromPg(sc.step.RunID)
+}
+
+// Input returns the step's caller-supplied parameters set at enqueue
+// time (StepSpec.Input), decoded into v. Called with an empty/absent
+// input, this decodes "{}" into v (a no-op for a struct target).
+func (sc *StepContext) Input(v any) error {
+	data := sc.step.Input
+	if len(data) == 0 {
+		data = []byte("{}")
+	}
+	return json.Unmarshal(data, v)
 }
 
 // Attempt returns the current (1-based) attempt number for this step,

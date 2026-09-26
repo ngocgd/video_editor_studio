@@ -49,17 +49,29 @@ type Querier interface {
 	CountQueuedGpuStepsForModel(ctx context.Context, arg CountQueuedGpuStepsForModelParams) (int64, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
+	CreateDraft(ctx context.Context, arg CreateDraftParams) (EpisodeDraft, error)
+	// Used by the create-draft endpoint and by any AI action that needs a
+	// draft to write into (continue, expand_beat) but tolerates one already
+	// existing: zero rows back (no error) means a concurrent creator won and
+	// the caller should GetDraft instead of failing.
+	CreateDraftIfAbsent(ctx context.Context, arg CreateDraftIfAbsentParams) (EpisodeDraft, error)
+	CreateEpisode(ctx context.Context, arg CreateEpisodeParams) (Episode, error)
+	CreateImport(ctx context.Context, arg CreateImportParams) (Import, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
 	CreateRun(ctx context.Context, arg CreateRunParams) (PipelineRun, error)
+	CreateSeries(ctx context.Context, arg CreateSeriesParams) (Series, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateStoryBible(ctx context.Context, arg CreateStoryBibleParams) (StoryBible, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DecrementRemainingDeps(ctx context.Context, arg DecrementRemainingDepsParams) ([]PipelineStep, error)
+	DeleteEpisode(ctx context.Context, arg DeleteEpisodeParams) error
 	// Best-effort housekeeping, called opportunistically (not on a schedule)
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
+	DeleteSeries(ctx context.Context, arg DeleteSeriesParams) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
 	// Called on login so a fresh login revokes any session(s) left over from
 	// before (e.g. a device that was never logged out), not just the new one.
@@ -78,6 +90,10 @@ type Querier interface {
 	// tenant-scoped (unlike the version this replaces).
 	GetDependencies(ctx context.Context, arg GetDependenciesParams) ([]GetDependenciesRow, error)
 	GetDependents(ctx context.Context, arg GetDependentsParams) ([]pgtype.UUID, error)
+	GetDraft(ctx context.Context, arg GetDraftParams) (EpisodeDraft, error)
+	GetDraftByID(ctx context.Context, arg GetDraftByIDParams) (EpisodeDraft, error)
+	GetEpisodeByID(ctx context.Context, arg GetEpisodeByIDParams) (Episode, error)
+	GetImportByID(ctx context.Context, arg GetImportByIDParams) (Import, error)
 	GetLLMSettings(ctx context.Context, tenantID pgtype.UUID) (LlmSetting, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
 	GetLatestWorkerStatus(ctx context.Context) (WorkerStatus, error)
@@ -94,8 +110,10 @@ type Querier interface {
 	// version table. Later phases add domain queries here and in sibling files.
 	GetSchemaVersion(ctx context.Context) (GetSchemaVersionRow, error)
 	GetSecret(ctx context.Context, arg GetSecretParams) (Secret, error)
+	GetSeriesByID(ctx context.Context, arg GetSeriesByIDParams) (Series, error)
 	GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error)
 	GetStepByID(ctx context.Context, arg GetStepByIDParams) (PipelineStep, error)
+	GetStoryBible(ctx context.Context, arg GetStoryBibleParams) (StoryBible, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
 	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
@@ -111,6 +129,7 @@ type Querier interface {
 	// lint-tenant-queries:allow: internal reconciler write, not caller input
 	IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) (PipelineStep, error)
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertDraftRevision(ctx context.Context, arg InsertDraftRevisionParams) error
 	InsertModelBenchmark(ctx context.Context, arg InsertModelBenchmarkParams) error
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
 	// transaction stays within the enqueue latency budget.
@@ -118,7 +137,13 @@ type Querier interface {
 	InsertStepDepBatch(ctx context.Context, arg []InsertStepDepBatchParams) *InsertStepDepBatchBatchResults
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	ListDraftRevisions(ctx context.Context, arg ListDraftRevisionsParams) ([]EpisodeDraftRevision, error)
+	ListEpisodesBySeries(ctx context.Context, arg ListEpisodesBySeriesParams) ([]Episode, error)
+	// One query for the episode list: word count and draft presence per
+	// language are aggregated here instead of a per-row N+1 lookup.
+	ListEpisodesWithDraftStatus(ctx context.Context, arg ListEpisodesWithDraftStatusParams) ([]ListEpisodesWithDraftStatusRow, error)
 	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
+	ListImports(ctx context.Context, arg ListImportsParams) ([]Import, error)
 	// No filter: the (tenant_id, id) index.
 	ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error)
 	ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams) ([]PipelineStep, error)
@@ -132,6 +157,7 @@ type Querier interface {
 	ListModelFiles(ctx context.Context) ([]ModelFile, error)
 	ListModelInstalls(ctx context.Context) ([]ModelInstall, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
+	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
 	// Serializes concurrent Enqueue calls for the same tenant so the
 	// quota check-then-insert in Engine.Enqueue cannot race: every caller
 	// must hold this lock (acquired inside the same transaction as the
@@ -142,6 +168,10 @@ type Querier interface {
 	LockTenantForAdmission(ctx context.Context, tenantID string) error
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	// Only a previewed import can be committed, and only once: a concurrent or
+	// repeated commit finds no row and is refused.
+	MarkImportCommitted(ctx context.Context, arg MarkImportCommittedParams) (Import, error)
+	MarkImportFailed(ctx context.Context, arg MarkImportFailedParams) error
 	MarkModelInstallFailed(ctx context.Context, arg MarkModelInstallFailedParams) error
 	// Unconditional on purpose: the files are verified on disk, which is the
 	// fact this row reports, whatever state a concurrent pause left it in.
@@ -155,6 +185,7 @@ type Querier interface {
 	// done step's dependents permanently skipped.
 	MarkStepsPending(ctx context.Context, arg MarkStepsPendingParams) ([]PipelineStep, error)
 	MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams) ([]PipelineStep, error)
+	NextEpisodeIdx(ctx context.Context, arg NextEpisodeIdxParams) (int32, error)
 	// Candidate "queued" steps under their stranded-requeue budget, for the
 	// reconciler to check against River's own job table (not visible to
 	// sqlc/goose, so that check is a hand-written query in Go, not here).
@@ -196,6 +227,9 @@ type Querier interface {
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	// Writes a generated section unless a person has written that section:
+	// regenerating the bible never overwrites user edits.
+	SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
@@ -204,9 +238,26 @@ type Querier interface {
 	// (insert it before calling this, never after).
 	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	// Keeps only the newest 50 revisions per draft; called after each insert.
+	TrimDraftRevisions(ctx context.Context, draftID pgtype.UUID) error
+	// version = current_version + 1 is computed by the caller (story.Store)
+	// after loading and CAS-checking the row inside the same transaction, so
+	// the WHERE clause below is the actual optimistic-concurrency fence: a
+	// concurrent writer's UPDATE affects zero rows and the caller reports 409.
+	UpdateDraftParagraphs(ctx context.Context, arg UpdateDraftParagraphsParams) (EpisodeDraft, error)
+	UpdateDraftSummary(ctx context.Context, arg UpdateDraftSummaryParams) (EpisodeDraft, error)
+	UpdateEpisodeMeta(ctx context.Context, arg UpdateEpisodeMetaParams) (Episode, error)
+	UpdateEpisodeOutline(ctx context.Context, arg UpdateEpisodeOutlineParams) (Episode, error)
+	UpdateImportPreview(ctx context.Context, arg UpdateImportPreviewParams) (Import, error)
 	UpdateModelInstallProgress(ctx context.Context, arg UpdateModelInstallProgressParams) error
+	UpdateSeries(ctx context.Context, arg UpdateSeriesParams) (Series, error)
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
+	// Replaces one section only if it is still at @expected_version (0 for a
+	// section that does not exist yet). Other sections are left untouched, so
+	// concurrent edits of different sections both land, and a second edit of
+	// the same section finds no row and is reported as a conflict.
+	UpdateStoryBibleSection(ctx context.Context, arg UpdateStoryBibleSectionParams) (StoryBible, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error

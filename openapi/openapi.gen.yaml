@@ -601,6 +601,734 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /settings/llm/keys/{provider}:
+    put:
+      operationId: putLLMApiKey
+      summary: Store (or replace) the active tenant's API key for a provider; write-only, audited
+      tags:
+        - settings
+      x-min-role: owner
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMApiKeyRequest'
+      responses:
+        '204':
+          description: key stored
+        '400':
+          description: unknown provider or empty key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /settings/llm/cli-status:
+    get:
+      operationId: getClaudeCliStatus
+      summary: claude CLI version and auth state, as reported by the llm-cli sidecar
+      tags:
+        - settings
+      x-min-role: viewer
+      responses:
+        '200':
+          description: claude CLI status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaudeCliStatus'
+  /series:
+    get:
+      operationId: listSeries
+      summary: Cursor-paginated list of the active tenant's series
+      tags:
+        - series
+      x-min-role: viewer
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: page of series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesList'
+    post:
+      operationId: createSeries
+      summary: Create a new series (settings only; no bible or episodes yet)
+      tags:
+        - series
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeriesCreateRequest'
+      responses:
+        '201':
+          description: series created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Series'
+        '400':
+          description: invalid series settings
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}:
+    get:
+      operationId: getSeries
+      summary: Series settings
+      tags:
+        - series
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: series settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Series'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      operationId: updateSeries
+      summary: Update series settings
+      tags:
+        - series
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeriesUpdateRequest'
+      responses:
+        '200':
+          description: series updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Series'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}/generate:
+    post:
+      operationId: generateSeries
+      summary: Run the settings -> bible seed -> episode outlines wizard as pipeline steps
+      tags:
+        - series
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeriesGenerateRequest'
+      responses:
+        '202':
+          description: generation run created; progress streams over SSE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesGenerateResponse'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: no LLM provider available for this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /series/{id}/bible:
+    get:
+      operationId: getBible
+      summary: The series' story bible sections
+      tags:
+        - series
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: story bible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryBible'
+        '404':
+          description: series or bible not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      operationId: updateBibleSection
+      summary: Update one bible section with an optimistic-concurrency check
+      tags:
+        - series
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BibleSectionUpdateRequest'
+      responses:
+        '200':
+          description: bible section updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryBible'
+        '409':
+          description: expectedVersion did not match the section's current version
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes:
+    get:
+      operationId: listEpisodes
+      summary: Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
+      tags:
+        - episodes
+      x-min-role: viewer
+      parameters:
+        - name: seriesId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: page of episodes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeList'
+    post:
+      operationId: createEpisode
+      summary: Append a new, empty episode to a series
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: seriesId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: episode created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Episode'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}:
+    get:
+      operationId: getEpisode
+      summary: Episode outline and metadata
+      tags:
+        - episodes
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: episode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Episode'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      operationId: updateEpisode
+      summary: Update episode title/status
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EpisodeUpdateRequest'
+      responses:
+        '200':
+          description: episode updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Episode'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/ai-actions:
+    post:
+      operationId: createAiAction
+      summary: Enqueue a streaming AI writing action at interactive priority
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiActionRequest'
+      responses:
+        '202':
+          description: AI action step created; poll getAiActionResult with the returned stepId for the result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiActionResponse'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: no LLM provider available for this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/ai-actions/{stepId}:
+    get:
+      operationId: getAiActionResult
+      summary: Poll an AI action step's status and, once done, its generated text
+      tags:
+        - episodes
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: current step status, with text once done
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiActionResult'
+        '404':
+          description: episode or step not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/drafts/{lang}:
+    get:
+      operationId: getDraft
+      summary: The episode's draft for one language
+      tags:
+        - episodes
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/DraftLanguage'
+      responses:
+        '200':
+          description: draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDraft'
+        '404':
+          description: episode or draft not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      operationId: createDraft
+      summary: Create an empty draft for this episode/language if one does not already exist
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/DraftLanguage'
+      responses:
+        '200':
+          description: a draft already existed; it is returned unchanged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDraft'
+        '201':
+          description: an empty draft was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDraft'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      operationId: patchDraft
+      summary: Autosave paragraph ops with an optimistic-concurrency version check
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/DraftLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftPatchRequest'
+      responses:
+        '200':
+          description: draft updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDraft'
+        '409':
+          description: expectedVersion is stale; client should refetch and merge
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/drafts/{lang}/apply-step:
+    post:
+      operationId: applyDraftStep
+      summary: Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+      tags:
+        - episodes
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/DraftLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyDraftStepRequest'
+      responses:
+        '200':
+          description: draft updated with the step's output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDraft'
+        '404':
+          description: episode or draft not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: the step is not a done AI action step scoped to this episode
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /imports:
+    get:
+      operationId: listImports
+      summary: Cursor-paginated list of the active tenant's imports
+      tags:
+        - imports
+      x-min-role: viewer
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: page of imports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportList'
+    post:
+      operationId: createImport
+      summary: Register an already-uploaded (presigned + finalized) manuscript asset as a pending import
+      tags:
+        - imports
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCreateRequest'
+      responses:
+        '201':
+          description: import registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Import'
+        '400':
+          description: asset not ready, wrong MIME, or over the 10MB text cap
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /imports/{id}:
+    get:
+      operationId: getImport
+      summary: Import status and chapter preview
+      tags:
+        - imports
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Import'
+        '404':
+          description: import not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /imports/{id}/preview:
+    post:
+      operationId: previewImport
+      summary: Detect encoding and split into chapters using a regex preset, without committing episodes
+      tags:
+        - imports
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportPreviewRequest'
+      responses:
+        '200':
+          description: chapter preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Import'
+        '422':
+          description: decoding failed or no chapters matched the preset (reported, not guessed)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /imports/{id}/commit:
+    post:
+      operationId: commitImport
+      summary: Turn previewed chapters into episodes, optionally translating each
+      tags:
+        - imports
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCommitRequest'
+      responses:
+        '200':
+          description: episodes created from the selected chapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportCommitResponse'
+        '409':
+          description: import is not in preview status
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /models:
     get:
       operationId: listModels
@@ -1413,6 +2141,580 @@ components:
           type: boolean
         detail:
           type: string
+        latencyMs:
+          type: integer
+    LLMApiKeyRequest:
+      type: object
+      required:
+        - apiKey
+      properties:
+        apiKey:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          description: Write-only; never echoed back. Stored envelope-encrypted (kind=llm_api_key, owner_ref=provider).
+    ClaudeCliStatus:
+      type: object
+      required:
+        - installed
+        - authenticated
+        - toolsDisabled
+      properties:
+        installed:
+          type: boolean
+        version:
+          type: string
+        authenticated:
+          type: boolean
+        toolsDisabled:
+          type: boolean
+          description: Always true; the llm-cli sidecar runs claude with tool use disabled.
+        detail:
+          type: string
+    TargetLanguage:
+      type: string
+      enum:
+        - en
+        - vi
+    Series:
+      type: object
+      required:
+        - id
+        - title
+        - targetLanguages
+        - targetEpisodeMinutes
+        - plannedEpisodeCount
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        genre:
+          type: string
+        targetLanguages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TargetLanguage'
+        targetEpisodeMinutes:
+          type: integer
+        plannedEpisodeCount:
+          type: integer
+        styleNotes:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - active
+            - archived
+        createdAt:
+          type: string
+          format: date-time
+    SeriesList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Series'
+        nextCursor:
+          type: string
+    SeriesCreateRequest:
+      type: object
+      required:
+        - title
+        - targetLanguages
+        - targetEpisodeMinutes
+        - plannedEpisodeCount
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        genre:
+          type: string
+          maxLength: 100
+        targetLanguages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TargetLanguage'
+          minItems: 1
+        targetEpisodeMinutes:
+          type: integer
+          minimum: 1
+          maximum: 120
+        plannedEpisodeCount:
+          type: integer
+          minimum: 1
+          maximum: 500
+        styleNotes:
+          type: string
+          maxLength: 4000
+    SeriesUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/SeriesCreateRequest'
+        - type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - draft
+                - active
+                - archived
+    SeriesGenerateRequest:
+      type: object
+      description: Kicks off the settings -> bible seed -> episode outlines wizard.
+      properties:
+        episodeCount:
+          type: integer
+          minimum: 1
+          maximum: 500
+    SeriesGenerateResponse:
+      type: object
+      required:
+        - runId
+      properties:
+        runId:
+          type: string
+          format: uuid
+    Origin:
+      type: string
+      enum:
+        - user
+        - import
+        - model
+    BibleSection:
+      type: object
+      required:
+        - content
+        - origin
+        - tainted
+        - version
+      properties:
+        content:
+          type: string
+          description: Plain text for prose sections; JSON-encoded array text for the glossary section.
+        origin:
+          $ref: '#/components/schemas/Origin'
+        tainted:
+          type: boolean
+        version:
+          type: integer
+    StoryBible:
+      type: object
+      required:
+        - seriesId
+        - sections
+        - updatedAt
+      properties:
+        seriesId:
+          type: string
+          format: uuid
+        sections:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BibleSection'
+        updatedAt:
+          type: string
+          format: date-time
+    BibleSectionUpdateRequest:
+      type: object
+      required:
+        - section
+        - content
+        - expectedVersion
+      properties:
+        section:
+          type: string
+          enum:
+            - world
+            - cultivation_realms
+            - arcs
+            - style_guide
+            - running_summary
+            - glossary
+        content:
+          type: string
+          maxLength: 20000
+        expectedVersion:
+          type: integer
+          description: Optimistic-concurrency check against the section's current version; a mismatch returns 409.
+    OutlineBeat:
+      type: object
+      required:
+        - id
+        - summary
+        - targetWords
+      properties:
+        id:
+          type: string
+        summary:
+          type: string
+        targetWords:
+          type: integer
+        tainted:
+          type: boolean
+          description: True when the bible excerpt used to generate this episode's outline was itself tainted.
+    DraftStatus:
+      type: object
+      properties:
+        wordCount:
+          type: integer
+        version:
+          type: integer
+    Episode:
+      type: object
+      required:
+        - id
+        - seriesId
+        - idx
+        - title
+        - outline
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        seriesId:
+          type: string
+          format: uuid
+        idx:
+          type: integer
+        title:
+          type: string
+        outline:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutlineBeat'
+        status:
+          type: string
+          enum:
+            - planned
+            - outlined
+            - drafting
+            - draft
+            - reviewed
+        drafts:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DraftStatus'
+        durationEstimateMinutes:
+          type: object
+          additionalProperties:
+            type: number
+        createdAt:
+          type: string
+          format: date-time
+    EpisodeList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Episode'
+        nextCursor:
+          type: string
+    EpisodeUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: string
+          enum:
+            - planned
+            - outlined
+            - drafting
+            - draft
+            - reviewed
+    AiActionRequest:
+      type: object
+      required:
+        - action
+        - lang
+      properties:
+        action:
+          type: string
+          enum:
+            - outline
+            - expand_beat
+            - continue
+            - rewrite
+            - expand
+            - shorten
+            - tone
+            - translate
+            - summarise
+        lang:
+          $ref: '#/components/schemas/TargetLanguage'
+        paragraphIds:
+          type: array
+          items:
+            type: string
+        beatId:
+          type: string
+        instruction:
+          type: string
+          maxLength: 500
+          description: The user's own free-text instruction; sent as a separate, length-capped, origin=user data block, never concatenated into the system template.
+    AiActionResponse:
+      type: object
+      required:
+        - stepId
+        - runId
+      properties:
+        stepId:
+          type: string
+          format: uuid
+        runId:
+          type: string
+          format: uuid
+    AiActionResult:
+      type: object
+      description: 'The step''s current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step''s SSE transition and then fetches this once the step reaches a terminal status.'
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+            - queued
+            - running
+            - done
+            - failed
+            - canceled
+        provider:
+          type: string
+        lang:
+          $ref: '#/components/schemas/TargetLanguage'
+        text:
+          type: string
+        tainted:
+          type: boolean
+        errorDetail:
+          type: string
+    DraftLanguage:
+      type: string
+      description: Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+      enum:
+        - en
+        - vi
+        - zh
+    DraftParagraph:
+      type: object
+      required:
+        - id
+        - text
+        - origin
+        - tainted
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        origin:
+          $ref: '#/components/schemas/Origin'
+        tainted:
+          type: boolean
+    EpisodeDraft:
+      type: object
+      required:
+        - episodeId
+        - lang
+        - paragraphs
+        - version
+        - wordCount
+      properties:
+        episodeId:
+          type: string
+          format: uuid
+        lang:
+          $ref: '#/components/schemas/DraftLanguage'
+        paragraphs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftParagraph'
+        version:
+          type: integer
+        wordCount:
+          type: integer
+        durationEstimateMinutes:
+          type: number
+        summary:
+          type: string
+        summaryTainted:
+          type: boolean
+    ParagraphOp:
+      type: object
+      required:
+        - op
+        - paragraphId
+      properties:
+        op:
+          type: string
+          enum:
+            - upsert
+            - delete
+            - move
+        paragraphId:
+          type: string
+        text:
+          type: string
+        afterParagraphId:
+          type: string
+          description: For op=move, the paragraph id to place this one after (empty string means first).
+    DraftPatchRequest:
+      type: object
+      required:
+        - expectedVersion
+        - ops
+      properties:
+        expectedVersion:
+          type: integer
+        ops:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParagraphOp'
+          minItems: 1
+          maxItems: 200
+    ApplyDraftStepRequest:
+      type: object
+      required:
+        - stepId
+      description: 'Applies a done AI action step''s output to this draft. The server reads the step''s stored action, text and taint rather than trusting the client''s copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step''s text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.'
+      properties:
+        stepId:
+          type: string
+          format: uuid
+        paragraphIds:
+          type: array
+          items:
+            type: string
+          description: The paragraphs the action was run against (its selection).
+        afterParagraphId:
+          type: string
+          description: For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
+    ChapterPreview:
+      type: object
+      required:
+        - index
+        - title
+        - wordCount
+      properties:
+        index:
+          type: integer
+        title:
+          type: string
+        wordCount:
+          type: integer
+    Import:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        seriesId:
+          type: string
+          format: uuid
+        assetId:
+          type: string
+          format: uuid
+        encoding:
+          type: string
+        splitPreset:
+          type: string
+        status:
+          type: string
+          enum:
+            - uploaded
+            - preview
+            - committed
+            - failed
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChapterPreview'
+        errorMsg:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ImportList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Import'
+        nextCursor:
+          type: string
+    ImportCreateRequest:
+      type: object
+      required:
+        - assetId
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        seriesId:
+          type: string
+          format: uuid
+    ImportPreviewRequest:
+      type: object
+      properties:
+        splitPreset:
+          type: string
+          enum:
+            - zh_chapter
+            - en_chapter
+            - vi_chuong
+            - auto
+          default: auto
+    ImportCommitRequest:
+      type: object
+      required:
+        - seriesId
+      properties:
+        seriesId:
+          type: string
+          format: uuid
+        chapterIndexes:
+          type: array
+          items:
+            type: integer
+          description: Empty means every previewed chapter.
+        translateToLang:
+          $ref: '#/components/schemas/TargetLanguage'
+    ImportCommitResponse:
+      type: object
+      required:
+        - episodeIds
+      properties:
+        episodeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        runId:
+          type: string
+          format: uuid
+          description: Set only when translateToLang triggered llm.translate steps.
     ModelLicence:
       type: object
       required:

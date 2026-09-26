@@ -205,12 +205,17 @@ services:
       MASTER_KEY_PATH: /run/secrets/master_key
       ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://127.0.0.1:8080}
       PUBLIC_URL: ${PUBLIC_URL:-}
-      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
+      # Browsers upload to and fetch from MinIO's published port via
+      # presigned URLs, so the CSP must allow that origin by default.
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-http://127.0.0.1:9000}
       # Caddy's own fixed address (see the web service below), not the
       # whole RFC1918 default: only Caddy is a legitimate X-Forwarded-For
       # source for the api container.
       TRUSTED_PROXY_CIDRS: 172.28.0.10/32
       ARGON2_MAX_CONCURRENCY: "4"
+      APP_MODE: ${APP_MODE:-local}
+      ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
+      GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
       # Go's runtime honors this automatically (no code needed): leaves
       # headroom under the container's 512m cgroup limit so a burst of
       # concurrent argon2 work triggers more aggressive GC instead of an
@@ -239,7 +244,7 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    secrets: [llmcli_bearer_token]
+    secrets: [llmcli_bearer_token, master_key]
     environment:
       API_LOG_LEVEL: info
       DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
@@ -256,6 +261,11 @@ services:
       LLMCLI_URL: http://llm-cli:8090
       LLMCLI_BEARER_TOKEN_PATH: /run/secrets/llmcli_bearer_token
       APP_MODE: ${APP_MODE:-local}
+      # Must be the SAME key api mounts: this worker opens the tenant BYOK
+      # LLM API keys written through Settings > LLM, sealed with this KEK.
+      MASTER_KEY_PATH: /run/secrets/master_key
+      ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
+      GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
@@ -350,7 +360,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-http://127.0.0.1:9000}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
       interval: 5s

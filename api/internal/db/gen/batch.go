@@ -20,12 +20,12 @@ var (
 const insertStepBatch = `-- name: InsertStepBatch :batchone
 INSERT INTO pipeline_steps (
     id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref,
-    priority, status, remaining_deps, input_hash
+    priority, status, remaining_deps, input_hash, input
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8,
-    $9, $10, $11, $12
+    $9, $10, $11, $12, $13
 )
-RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count
+RETURNING id, tenant_id, run_id, scope_kind, scope_id, kind, queue, provider_ref, priority, status, attempt, version, remaining_deps, claimed_job_id, input_hash, progress, eta_s, output, error_code, error_msg, log_asset_id, heartbeat_at, started_at, finished_at, created_at, updated_at, stranded_requeues, gpu_oom_count, input
 `
 
 type InsertStepBatchBatchResults struct {
@@ -47,6 +47,7 @@ type InsertStepBatchParams struct {
 	Status        string      `json:"status"`
 	RemainingDeps int32       `json:"remaining_deps"`
 	InputHash     string      `json:"input_hash"`
+	Input         []byte      `json:"input"`
 }
 
 // Batched (pgx pipelining) so enqueueing hundreds of steps in one
@@ -67,6 +68,7 @@ func (q *Queries) InsertStepBatch(ctx context.Context, arg []InsertStepBatchPara
 			a.Status,
 			a.RemainingDeps,
 			a.InputHash,
+			a.Input,
 		}
 		batch.Queue(insertStepBatch, vals...)
 	}
@@ -114,6 +116,7 @@ func (b *InsertStepBatchBatchResults) QueryRow(f func(int, PipelineStep, error))
 			&i.UpdatedAt,
 			&i.StrandedRequeues,
 			&i.GpuOomCount,
+			&i.Input,
 		)
 		if f != nil {
 			f(t, i, err)
