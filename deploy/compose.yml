@@ -205,7 +205,9 @@ services:
       MASTER_KEY_PATH: /run/secrets/master_key
       ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://127.0.0.1:8080}
       PUBLIC_URL: ${PUBLIC_URL:-}
-      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
+      # Browsers upload to and fetch from MinIO's published port via
+      # presigned URLs, so the CSP must allow that origin by default.
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-http://127.0.0.1:9000}
       # Caddy's own fixed address (see the web service below), not the
       # whole RFC1918 default: only Caddy is a legitimate X-Forwarded-For
       # source for the api container.
@@ -358,7 +360,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-}
+      MEDIA_ORIGIN: ${MEDIA_ORIGIN:-http://127.0.0.1:9000}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
       interval: 5s
