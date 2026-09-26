@@ -65,7 +65,9 @@ test("render page explains why it cannot start, library previews a cleanup", asy
   await expect(page.getByText(/Scene \d+ has no selected image\./).first()).toBeVisible();
   await expect(page.getByText(/Scene \d+ has no ready voice take\./).first()).toBeVisible();
   await expect(page.getByText("No background music: narration only, by project decision.")).toBeVisible();
-  await expect(page.getByRole("option", { name: "Parallax (depth model not installed)" })).toBeDisabled();
+  // Playwright reports an option inside a label-wrapped select as enabled
+  // even when the option itself is disabled, so assert the attribute.
+  await expect(page.getByRole("option", { name: "Parallax (depth model not installed)" })).toHaveAttribute("disabled", "");
   await expect(page.getByRole("region", { name: "Estimate" })).toBeVisible();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/01-render-blocked.png` });
 
