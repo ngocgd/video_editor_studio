@@ -1,6 +1,6 @@
 # Cook report: phase 6, story writer, import and LLM settings
 
-Branch `feat/story-writer-import`, finished 2026-09-26. The code is complete and verified against a live stack, but none of the live-LLM success criteria could be run: `secrets/claude_oauth_token.txt` is empty (the user has not run `claude setup-token` yet) and Ollama has no model until phase 9b. The code review's 2 Critical and 5 of its 8 High findings are fixed and re-verified (see "Code review"). H1, H2 and H5 stay open pending scope decisions, so the branch is **not merged yet**.
+Branch `feat/story-writer-import`, finished 2026-09-26. The code is complete and verified against a live stack, but none of the live-LLM success criteria could be run: `secrets/claude_oauth_token.txt` is empty (the user has not run `claude setup-token` yet) and Ollama has no model until phase 9b. The code review's 2 Critical and 5 of its 8 High findings are fixed and re-verified (see "Code review"). H1, H2 and H5 were fixed afterwards (see "Review follow-up fixes"); the live-LLM success criteria are still to be run.
 
 ## What shipped
 
@@ -39,7 +39,7 @@ Screens are in `phase-06-screens/`: 01 series list, 02 wizard progress, 03 impor
 ## Deviations from the phase spec
 
 - There is no token streaming: results are polled, as described above. The "Waiting for GPU slot (#n)" hint is not shown in the writer; the proposal shows "Generating…" until the step finishes.
-- The proposal is docked below the editor rather than shown as inline ProseMirror decorations. Accepting a multi-paragraph proposal replaces the paragraphs with one joined paragraph.
+- The proposal is docked below the editor rather than shown as inline ProseMirror decorations. Accepted text is split into paragraphs on blank lines by the server, not mapped back onto the original paragraph boundaries.
 - "Outline" at episode scope returns 404; outlines are generated only by the series flow.
 - "Mark reviewed" (the only way to clear taint) is not built. Taint therefore never clears, which is the safe default.
 - There is no `claudecli`-tagged story integration test (outline a 5-beat episode, translate EN→VI). The provider-level live test with its canary exists.
@@ -69,10 +69,18 @@ Review: `plans/reports/code-reviewer-260926-0703-phase-06-story-writer-review.md
 | H6 import commit not atomic, repeatable, uncapped | **Fixed**: conditional claim plus one transaction, preview refuses committed imports, 500-chapter cap, over-size read is 422 (part of M2) |
 | H7 bible section saves lose writes | **Fixed**: per-section `jsonb_set` update guarded by version; generation never overwrites a user-written section |
 | "Keep editing mine" looped on 409 | **Fixed**: it now re-applies local changes on top of the latest version |
-| H1 taint and provenance lost when AI output enters a draft | **Open**: needs a server-side apply-step op and a taint policy decision (see questions) |
-| H2 Continue replaces text; Expand/Shorten/Tone run as plain rewrite; expand-beat does nothing | **Open**: same server-side apply-step op as H1 |
-| H5 no way to create drafts for outlined or manual episodes; translate output never saved; Chinese imports stored as `en` | **Open**: scope decision (see questions) |
+| H1 taint and provenance lost when AI output enters a draft | **Fixed**: `POST /episodes/{id}/drafts/{lang}/apply-step` stores the step's own text as `origin=model`, tainted when the step or the paragraphs it replaces or follows were; new paragraphs typed into a draft with tainted content inherit the taint; outline beats carry a taint flag; canary integration test |
+| H2 Continue replaces text; Expand/Shorten/Tone run as plain rewrite; expand-beat does nothing | **Fixed**: the action is stored with the step; Continue and expand-beat insert after the anchor, Continue works from the caret, Expand/Shorten/Tone send a default intent, expand-beat works from the beat summary, Tone and Translate are in the toolbar |
+| H5 no way to create drafts for outlined or manual episodes; translate output never saved; Chinese imports stored as `en` | **Fixed**: `PUT /episodes/{id}/drafts/{lang}` plus a Create draft button; translations go to the other language's draft (import-triggered ones fill an empty target draft); Chinese chapters are stored as a `zh` draft with per-character word counts |
 | M2 (GB18030 guess, preface dropped), M3–M7, Lows | **Open**: follow-ups |
+
+## Review follow-up fixes
+
+Decisions taken (2026-09-26): draft creation and saved translations are in scope; an import keeps its source language as its own draft (`zh` added to the draft language check); new paragraphs in a draft with tainted content inherit the taint until "Mark reviewed" exists. The AI accept path is now server-side, so the client never writes model text through the generic PATCH.
+
+Verification after these fixes (2026-09-26): `scripts/tb.sh gen lint test` green; web typecheck, lint, 69 vitest tests, build and bundle budget green; integration suite on a fresh stack 62 top-level tests pass, 0 fail, 0 skip (new: imported canary stays tainted through an accepted rewrite, a continuation and a split); both Playwright specs pass, including creating a draft on a manually created episode and a paragraph split that survives reload. Two earlier attempts failed before any test ran (a Docker build-cache snapshot error and a `minio-init` start-up flake); a third identical run passed.
+
+Known limits: accepting the same finished step twice applies it twice (the client clears the proposal after one Accept); an interactive Translate appends to the target draft rather than aligning paragraph by paragraph.
 
 ## Follow-ups
 
@@ -82,7 +90,4 @@ Review: `plans/reports/code-reviewer-260926-0703-phase-06-story-writer-review.md
 
 ## Unresolved questions
 
-- H5: are draft creation for outlined/manual episodes and saving translation output in phase 6 scope? Success criteria 1 and 2 cannot be met without them.
-- H5: should an import keep its source language as its own draft (add `zh`, which changes the lang constraint) or keep only the translation?
-- H1: taint policy for paragraphs a person adds to a draft that has tainted content: inherit the taint, or accept the gap until "Mark reviewed" ships?
 - Can the user run `claude setup-token` (and set `COMPOSE_PROFILES=claude-cli`) so the live success criteria can be verified before phase 7, or should they be carried to phase 9c together with the Ollama variant?
