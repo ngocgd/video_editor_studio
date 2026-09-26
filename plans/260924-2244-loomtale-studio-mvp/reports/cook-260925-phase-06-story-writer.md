@@ -1,6 +1,6 @@
 # Cook report: phase 6, story writer, import and LLM settings
 
-Branch `feat/story-writer-import`, finished 2026-09-26. The code is complete and verified against a live stack, but none of the live-LLM success criteria could be run: `secrets/claude_oauth_token.txt` is empty (the user has not run `claude setup-token` yet) and Ollama has no model until phase 9b. The code review's 2 Critical and 5 of its 8 High findings are fixed and re-verified (see "Code review"). H1, H2 and H5 were fixed afterwards (see "Review follow-up fixes"); the live-LLM success criteria are still to be run.
+Branch `feat/story-writer-import`, finished 2026-09-26. The code is complete and verified against a live stack, but none of the live-LLM success criteria could be run: `secrets/claude_oauth_token.txt` is empty (the user has not run `claude setup-token` yet) and Ollama has no model until phase 9b. The code review's 2 Critical and 5 of its 8 High findings are fixed and re-verified (see "Code review"). H1, H2 and H5 were fixed afterwards (see "Review follow-up fixes"). The independent verification then found two blockers with the real claude CLI; both are fixed and the live success criteria now pass with `COMPOSE_PROFILES=claude-cli` (see "Verification blockers").
 
 ## What shipped
 
@@ -48,10 +48,10 @@ Screens are in `phase-06-screens/`: 01 series list, 02 wizard progress, 03 impor
 
 | Criterion | Status |
 |---|---|
-| Series → bible → outlined episode → ≥4,500-word EN draft with the real claude CLI | **Not run**: needs `claude setup-token` |
-| VI draft through Translate with glossary names | **Not run**: needs a live LLM |
-| GB18030 chapter → episodes → translated EN draft | Import half verified (encoding unit tests, UTF-8 e2e and integration); translation not run |
-| Switching the provider in Settings changes the next action's provider | **Not run**: needs two available providers |
+| Series → bible → outlined episode → ≥4,500-word EN draft with the real claude CLI | **Met** (see "Verification blockers" for step ids) |
+| VI draft through Translate with glossary names | **Met** |
+| GB18030 chapter → episodes → translated EN draft | **Met** |
+| Switching the provider in Settings changes the next action's provider | **Pending**: only claude-cli can complete an action. The switch itself is shown: the next action is routed to Ollama, and Settings explains why it cannot run |
 | Ollama variant | Deferred to phase 9c by design |
 
 ## Code review
@@ -82,6 +82,29 @@ Verification after these fixes (2026-09-26): `scripts/tb.sh gen lint test` green
 
 Known limits: accepting the same finished step twice applies it twice (the client clears the proposal after one Accept); an interactive Translate appends to the target draft rather than aligning paragraph by paragraph.
 
+## Verification blockers
+
+Verifier report: `plans/reports/code-reviewer-260926-0950-phase-06-story-writer-verification-review.md` (do not merge: H1, H2, live criteria not met). Outcome of each blocking item:
+
+| Item | Outcome |
+|---|---|
+| H1 claude-cli fails any generation over 15s | **Fixed.** The sidecar now commits `200` and flushes the headers as soon as it accepts a run; errors still travel in the final `result` line. The worker's claude-cli adapter uses its own client with a dial timeout but no response-header timeout, bounded by the step context and `LLMCLI_TIMEOUT`. Tests: a fake CLI that stays silent for 3s behind a 1s header timeout, and a check that `Build` gives claude-cli that client. `--include-partial-messages` was not added (optional; results are polled, not streamed) |
+| H2 Settings always shows claude-cli unavailable | **Fixed.** The sidecar's `/healthz` now reports the CLI version in `X-Claude-CLI-Version`. The worker probes it on every 5s heartbeat and publishes installed, authenticated, version and reason in `worker_status.providers` (no migration: it is jsonb). `GET /settings/llm` and `/settings/llm/cli-status` read the worker's view for every provider; a key-based provider is also available when the tenant stored a key. Test now runs as an `llm.check.<provider>` pipeline step in the worker (permanent on failure, 30s wait, canceled on timeout), and an unavailable provider fails fast with the worker's reason. The api no longer dials `llm-cli`. Unit tests cover the worker probe, the settings availability rules, CLI status and Test; the integration test `TestClaudeCLIStatusComesFromTheWorker` checks that the CLI status and claude-cli availability agree, and with `LLMCLI_EXPECTED=1` that the sidecar reports its version and Test succeeds |
+| Live criteria re-run | **Met.** Two more defects surfaced and were fixed first. (1) No adapter sent `JSONSchema` to the model, so `llm.outline` came back with `word_count` instead of `targetWords` and failed validation twice; `GenerateStructured` now appends the schema to `System` (a fixed server constant). (2) The API never filled `durationEstimateMinutes`; drafts and the episode list now return `duration.Estimate` for en/vi (not for character-counted zh) |
+| Browser e2e | A Trusted Types race surfaced: the default policy was installed at idle time, and Radix ScrollArea's injected `<style>` crashed the writer on a hard reload ("Something went wrong", `TrustedHTML` error in the trace). `main.tsx` now awaits the policy before the first render; DOMPurify stays in its own chunk |
+
+Live evidence (claude CLI 2.1.282, run under `COMPOSE_PROFILES=claude-cli` on `-p loomtale-a`, driven through the public API by the verifier's harness, which was never committed):
+
+- Settings: `cli-status` returned installed, authenticated, tools disabled, version `2.1.282 (Claude Code)`. Test on claude-cli returned `ok:true` through the worker. Ollama showed `available:false` with "ollama has no model configured (see OLLAMA_MODEL) or the GPU worker is off", and anthropic-api and gemini-api showed "no API key configured for this provider".
+- Criterion 1: series `01a0dbd2-36db-7a4d-91c6-1138bbb4dd26`, run `01a0dbd2-36e0-7e42-893c-98f7711715d2`. `llm.bible_seed` step `01a0dbd2-36e0-7e44-87aa-7c55ebe38f4f` finished (6 sections), and `llm.outline` step `01a0dbd2-36e0-7e47-bf7f-b00e5ea843e9` produced episode `01a0dbd3-2b65-7269-b5e6-046eeb45d79c` with 9 beats. Nine expand_beat steps (`01a0dbd3-2d40-…` to `01a0dbd9-338f-…`), each 34–58s on claude-cli, produced an EN draft of 15,428 words. The API estimate is 102.85 min, on both the draft and the episode list. Continue was not needed in this run; an earlier run on the same build appended text through 13 expand_beat steps (8,227 words), and the verifier's probe showed Continue working (311 words).
+- Criterion 2: 21 translate steps of about 700 words each (`01a0dbd9-ff26-…` to `01a0dbe8-7acd-…`, 26–54s each), applied through apply-step, produced a VI draft of 20,681 words (125.34 min). With the glossary set to Lin Feng→Lâm Phong, Azure Cloud Sect→Thanh Vân Tông and Zhao Yun→Triệu Vân, the VI text contains Lâm Phong 158 times, Thanh Vân Tông once and Triệu Vân 62 times, matching the EN counts, with no English name left untranslated.
+- Criterion 3: a 2-chapter GB18030 upload (923 characters), import `01a0dbe8-e0c1-7df4-86e5-a5d937740e00`, was detected as `gb18030` with preset `zh`. Commit run `01a0dbe8-e0cf-7b5a-94dd-a9f0241356fa` translated both chapters on claude-cli (steps `01a0dbe8-e0ce-72ad-…` and `01a0dbe8-e0ce-7e9d-…`). Episodes `01a0dbe8-e0cc-…` and `01a0dbe8-e0ce-72bb-…` each have a `zh` draft (435 and 488 characters) and an EN draft (314 and 336 words, all paragraphs `origin=model` and tainted), for example "The morning mist had not yet cleared when the gates of the Azure Cloud Sect emerged…".
+- Criterion 4 (pending): before the switch, shorten ran on claude-cli. After `PUT /settings/llm {default: ollama}`, the next shorten step `01a0dbe9-13be-7983-91c1-cb4624a45083` was queued on the `gpu` queue, which is Ollama's route, and was canceled through `/steps/{id}/cancel`. Test on ollama returned `ok:false` with the reason. After switching back, shorten step `01a0dbe9-61f4-730f-b323-e32a1fef9f71` ran on claude-cli. A second working provider (an Anthropic or Gemini key, or Ollama in phase 9b/9c) is needed to see an action complete on the switched provider.
+
+Checks after these fixes: `scripts/tb.sh gen lint test` green with no generated-code drift; web typecheck, lint, 69 vitest tests, build and bundle budget green; integration suite with `CI=1` on a fresh stack: 63 top-level tests pass, 0 fail, 0 skip; `TestClaudeCLIStatusComesFromTheWorker` also passes with the sidecar running and `LLMCLI_EXPECTED=1`; the live harness passes; both Playwright specs pass. Screen 05 was re-captured and shows the worker's reasons.
+
+Still open from the verifier report (not blocking): M1 in part (an action on an unavailable provider still waits in its queue; Settings now shows the reason and Test fails fast, but `CreateAiAction` does not refuse it), M2 to M10, and the Lows. LLM steps still store an empty `provider_ref`; the provider appears in the step output.
+
 ## Follow-ups
 
 - The writer shows the raw step `error_msg`, which exposes internal hostnames (for example, `lookup llm-cli on 127.0.0.11:53`). Map it to a user-safe message and keep the detail in logs.
@@ -90,4 +113,6 @@ Known limits: accepting the same finished step twice applies it twice (the clien
 
 ## Unresolved questions
 
-- Can the user run `claude setup-token` (and set `COMPOSE_PROFILES=claude-cli`) so the live success criteria can be verified before phase 7, or should they be carried to phase 9c together with the Ollama variant?
+- Will an Anthropic or Gemini key be provided so the provider-switch criterion can complete, or does it move to phase 9c together with the Ollama variant?
+- Should `CreateAiAction` refuse an action whose resolved provider the worker reports unavailable (the rest of M1)? That needs a new response code in the OpenAPI contract.
+- Does the lead accept polling in place of token streaming (M10)?
