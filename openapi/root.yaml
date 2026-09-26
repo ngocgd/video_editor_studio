@@ -64,6 +64,24 @@ paths:
     $ref: paths/channels.yaml#/oauthCallback
   /channels/{id}:
     $ref: paths/channels.yaml#/channelItem
+  /analytics/channels/{id}/overview:
+    $ref: paths/analytics.yaml#/channelOverview
+  /analytics/channels/{id}/sync:
+    $ref: paths/analytics.yaml#/channelSync
+  /analytics/channels/{id}/suggestions:
+    $ref: paths/analytics.yaml#/suggestions
+  /analytics/channels/{id}/explain:
+    $ref: paths/analytics.yaml#/explain
+  /analytics/explanations/{id}:
+    $ref: paths/analytics.yaml#/explanationItem
+  /analytics/videos:
+    $ref: paths/analytics.yaml#/videosCollection
+  /analytics/videos/{videoId}:
+    $ref: paths/analytics.yaml#/videoItem
+  /analytics/tracked-videos:
+    $ref: paths/analytics.yaml#/trackedVideos
+  /analytics/tracked-videos/{videoId}:
+    $ref: paths/analytics.yaml#/trackedVideoItem
   /series:
     $ref: paths/series.yaml#/seriesCollection
   /series/{id}:

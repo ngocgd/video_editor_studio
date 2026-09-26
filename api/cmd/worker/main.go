@@ -23,6 +23,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/analytics"
 	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
@@ -127,6 +128,7 @@ func run() error {
 	for _, h := range llmcheck.Handlers(llmRegistry) {
 		registry.Register(h)
 	}
+	registry.Register(&analytics.ExplainHandler{Registry: llmRegistry})
 
 	manifest, err := models.Embedded()
 	if err != nil {
@@ -215,7 +217,24 @@ func run() error {
 	sceneService.Engine = engine
 	gpuExecutor := pipeline.NewGPUExecutor(engine, residency, cfg.RenderReserveMB)
 
+	// Channel analytics sync runs as plain River jobs on its own queue
+	// (not pipeline steps), enabled only when a Google OAuth client is
+	// configured; the leader also schedules the daily sync of every
+	// channel.
+	var periodicJobs []*river.PeriodicJob
 	workers := river.NewWorkers()
+	syncer, err := analyticsSyncer(cfg, pool.Pool, queries, secretsStore)
+	if err != nil {
+		return err
+	}
+	if syncer != nil {
+		if queueConfig == nil {
+			queueConfig = map[string]river.QueueConfig{}
+		}
+		queueConfig[analytics.QueueAnalytics] = river.QueueConfig{MaxWorkers: cfg.AnalyticsWorkers}
+		analytics.AddWorkers(workers, syncer)
+		periodicJobs = analytics.PeriodicJobs()
+	}
 	river.AddWorker(workers, &pipeline.StepWorker{
 		Engine:          engine,
 		GPU:             gpuExecutor,
@@ -226,6 +245,7 @@ func run() error {
 	riverClient, err := river.NewClient(riverpgxv5.New(pool.Pool), &river.Config{
 		Queues:               queueConfig,
 		Workers:              workers,
+		PeriodicJobs:         periodicJobs,
 		RescueStuckJobsAfter: pipeline.RescueStuckJobsAfter,
 	})
 	if err != nil {

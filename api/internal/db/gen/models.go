@@ -10,6 +10,63 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AnalyticsReportingJob struct {
+	TenantID            pgtype.UUID        `json:"tenant_id"`
+	ChannelID           pgtype.UUID        `json:"channel_id"`
+	ReportTypeID        string             `json:"report_type_id"`
+	JobID               string             `json:"job_id"`
+	LastReportCreatedAt pgtype.Timestamptz `json:"last_report_created_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type AnalyticsReportingReport struct {
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ChannelID    pgtype.UUID        `json:"channel_id"`
+	JobID        string             `json:"job_id"`
+	ReportID     string             `json:"report_id"`
+	StartTime    pgtype.Timestamptz `json:"start_time"`
+	EndTime      pgtype.Timestamptz `json:"end_time"`
+	RowsIngested int32              `json:"rows_ingested"`
+	IngestedAt   pgtype.Timestamptz `json:"ingested_at"`
+}
+
+type AnalyticsSuggestion struct {
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	ChannelID      pgtype.UUID        `json:"channel_id"`
+	YoutubeVideoID string             `json:"youtube_video_id"`
+	Rule           string             `json:"rule"`
+	Version        int32              `json:"version"`
+	Evidence       []byte             `json:"evidence"`
+	Dismissed      bool               `json:"dismissed"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AnalyticsSyncState struct {
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	ChannelID        pgtype.UUID        `json:"channel_id"`
+	AnalyticsThrough pgtype.Date        `json:"analytics_through"`
+	ReachThrough     pgtype.Date        `json:"reach_through"`
+	SubscriberCount  pgtype.Int8        `json:"subscriber_count"`
+	Status           string             `json:"status"`
+	LastStartedAt    pgtype.Timestamptz `json:"last_started_at"`
+	LastFinishedAt   pgtype.Timestamptz `json:"last_finished_at"`
+	LastError        string             `json:"last_error"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AnalyticsTrackedVideo struct {
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	ChannelID       pgtype.UUID        `json:"channel_id"`
+	YoutubeVideoID  string             `json:"youtube_video_id"`
+	Source          string             `json:"source"`
+	Title           string             `json:"title"`
+	DurationSeconds pgtype.Int4        `json:"duration_seconds"`
+	PublishedAt     pgtype.Timestamptz `json:"published_at"`
+	AddedBy         pgtype.UUID        `json:"added_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
 type Asset struct {
 	ID               pgtype.UUID        `json:"id"`
 	TenantID         pgtype.UUID        `json:"tenant_id"`
@@ -50,6 +107,18 @@ type BackupRun struct {
 	Status     string             `json:"status"`
 	Detail     pgtype.Text        `json:"detail"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type ChannelMetricsDaily struct {
+	TenantID                pgtype.UUID        `json:"tenant_id"`
+	ChannelID               pgtype.UUID        `json:"channel_id"`
+	Date                    pgtype.Date        `json:"date"`
+	Views                   pgtype.Int8        `json:"views"`
+	EstimatedMinutesWatched pgtype.Float8      `json:"estimated_minutes_watched"`
+	SubscribersGained       pgtype.Int8        `json:"subscribers_gained"`
+	SubscribersLost         pgtype.Int8        `json:"subscribers_lost"`
+	Unavailable             []byte             `json:"unavailable"`
+	SyncedAt                pgtype.Timestamptz `json:"synced_at"`
 }
 
 type Character struct {
@@ -446,6 +515,33 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VideoMetricsDaily struct {
+	TenantID                pgtype.UUID        `json:"tenant_id"`
+	ChannelID               pgtype.UUID        `json:"channel_id"`
+	YoutubeVideoID          string             `json:"youtube_video_id"`
+	Date                    pgtype.Date        `json:"date"`
+	Views                   pgtype.Int8        `json:"views"`
+	EstimatedMinutesWatched pgtype.Float8      `json:"estimated_minutes_watched"`
+	AverageViewDuration     pgtype.Float8      `json:"average_view_duration"`
+	AverageViewPercentage   pgtype.Float8      `json:"average_view_percentage"`
+	SubscribersGained       pgtype.Int8        `json:"subscribers_gained"`
+	Impressions             pgtype.Int8        `json:"impressions"`
+	Ctr                     pgtype.Float8      `json:"ctr"`
+	Unavailable             []byte             `json:"unavailable"`
+	AnalyticsSyncedAt       pgtype.Timestamptz `json:"analytics_synced_at"`
+	ReachSyncedAt           pgtype.Timestamptz `json:"reach_synced_at"`
+}
+
+type VideoRetention struct {
+	TenantID                     pgtype.UUID        `json:"tenant_id"`
+	ChannelID                    pgtype.UUID        `json:"channel_id"`
+	YoutubeVideoID               string             `json:"youtube_video_id"`
+	ElapsedRatio                 float64            `json:"elapsed_ratio"`
+	AudienceWatchRatio           pgtype.Float8      `json:"audience_watch_ratio"`
+	RelativeRetentionPerformance pgtype.Float8      `json:"relative_retention_performance"`
+	SyncedAt                     pgtype.Timestamptz `json:"synced_at"`
 }
 
 type VoicePreset struct {

@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppImportRouteImport } from './routes/_app/import'
 import { Route as AppJobsRouteImport } from './routes/_app/jobs'
+import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
@@ -21,6 +22,7 @@ import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/mo
 import { Route as AppSettingsStylesRouteImport } from './routes/_app/settings/styles'
 import { Route as AppSettingsVoicesRouteImport } from './routes/_app/settings/voices'
 import { Route as AppSettingsYoutubeRouteImport } from './routes/_app/settings/youtube'
+import { Route as AppAnalyticsVideosVideoIdRouteImport } from './routes/_app/analytics/videos/$videoId'
 import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/projects/$seriesId/index'
 import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
 import { Route as AppProjectsSeriesIdCharactersIndexRouteImport } from './routes/_app/projects/$seriesId/characters/index'
@@ -49,6 +51,11 @@ const AppImportRoute = AppImportRouteImport.update({
 const AppJobsRoute = AppJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
@@ -86,6 +93,12 @@ const AppSettingsYoutubeRoute = AppSettingsYoutubeRouteImport.update({
   path: '/settings/youtube',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnalyticsVideosVideoIdRoute =
+  AppAnalyticsVideosVideoIdRouteImport.update({
+    id: '/analytics/videos/$videoId',
+    path: '/analytics/videos/$videoId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProjectsSeriesIdIndexRoute =
   AppProjectsSeriesIdIndexRouteImport.update({
     id: '/projects/$seriesId/',
@@ -128,7 +141,9 @@ export interface FileRoutesByFullPath {
   '/settings/styles': typeof AppSettingsStylesRoute
   '/settings/voices': typeof AppSettingsVoicesRoute
   '/settings/youtube': typeof AppSettingsYoutubeRoute
+  '/analytics/': typeof AppAnalyticsIndexRoute
   '/projects/': typeof AppProjectsIndexRoute
+  '/analytics/videos/$videoId': typeof AppAnalyticsVideosVideoIdRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
@@ -146,7 +161,9 @@ export interface FileRoutesByTo {
   '/settings/styles': typeof AppSettingsStylesRoute
   '/settings/voices': typeof AppSettingsVoicesRoute
   '/settings/youtube': typeof AppSettingsYoutubeRoute
+  '/analytics': typeof AppAnalyticsIndexRoute
   '/projects': typeof AppProjectsIndexRoute
+  '/analytics/videos/$videoId': typeof AppAnalyticsVideosVideoIdRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
@@ -166,7 +183,9 @@ export interface FileRoutesById {
   '/_app/settings/styles': typeof AppSettingsStylesRoute
   '/_app/settings/voices': typeof AppSettingsVoicesRoute
   '/_app/settings/youtube': typeof AppSettingsYoutubeRoute
+  '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
+  '/_app/analytics/videos/$videoId': typeof AppAnalyticsVideosVideoIdRoute
   '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/_app/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
@@ -186,7 +205,9 @@ export interface FileRouteTypes {
     | '/settings/styles'
     | '/settings/voices'
     | '/settings/youtube'
+    | '/analytics/'
     | '/projects/'
+    | '/analytics/videos/$videoId'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId/'
     | '/projects/$seriesId/episodes/$episodeId'
@@ -204,7 +225,9 @@ export interface FileRouteTypes {
     | '/settings/styles'
     | '/settings/voices'
     | '/settings/youtube'
+    | '/analytics'
     | '/projects'
+    | '/analytics/videos/$videoId'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId'
     | '/projects/$seriesId/episodes/$episodeId'
@@ -223,7 +246,9 @@ export interface FileRouteTypes {
     | '/_app/settings/styles'
     | '/_app/settings/voices'
     | '/_app/settings/youtube'
+    | '/_app/analytics/'
     | '/_app/projects/'
+    | '/_app/analytics/videos/$videoId'
     | '/_app/projects/$seriesId/bible'
     | '/_app/projects/$seriesId/'
     | '/_app/projects/$seriesId/episodes/$episodeId'
@@ -271,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics/': {
+      id: '/_app/analytics/'
+      path: '/analytics'
+      fullPath: '/analytics/'
+      preLoaderRoute: typeof AppAnalyticsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/projects/': {
@@ -322,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsYoutubeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/analytics/videos/$videoId': {
+      id: '/_app/analytics/videos/$videoId'
+      path: '/analytics/videos/$videoId'
+      fullPath: '/analytics/videos/$videoId'
+      preLoaderRoute: typeof AppAnalyticsVideosVideoIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/': {
       id: '/_app/projects/$seriesId/'
       path: '/projects/$seriesId'
@@ -370,7 +409,9 @@ interface AppRouteChildren {
   AppSettingsStylesRoute: typeof AppSettingsStylesRoute
   AppSettingsVoicesRoute: typeof AppSettingsVoicesRoute
   AppSettingsYoutubeRoute: typeof AppSettingsYoutubeRoute
+  AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
+  AppAnalyticsVideosVideoIdRoute: typeof AppAnalyticsVideosVideoIdRoute
   AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
   AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
   AppProjectsSeriesIdEpisodesEpisodeIdRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
@@ -388,7 +429,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsStylesRoute: AppSettingsStylesRoute,
   AppSettingsVoicesRoute: AppSettingsVoicesRoute,
   AppSettingsYoutubeRoute: AppSettingsYoutubeRoute,
+  AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
+  AppAnalyticsVideosVideoIdRoute: AppAnalyticsVideosVideoIdRoute,
   AppProjectsSeriesIdBibleRoute: AppProjectsSeriesIdBibleRoute,
   AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
   AppProjectsSeriesIdEpisodesEpisodeIdRoute:

@@ -764,6 +764,307 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /analytics/channels/{id}/overview:
+    get:
+      operationId: getAnalyticsOverview
+      summary: A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+      description: Reads only the pre-aggregated daily tables. The window defaults to the 28 days ending at the newest synced day. A metric YouTube did not provide is absent with its reason in `unavailable`, never 0.
+      tags:
+        - analytics
+      x-min-role: viewer
+      parameters:
+        - $ref: '#/components/parameters/analyticsChannelId'
+        - $ref: '#/components/parameters/analyticsFrom'
+        - $ref: '#/components/parameters/analyticsTo'
+      responses:
+        '200':
+          description: overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+        '400':
+          $ref: '#/components/responses/analyticsBadRequest'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+  /analytics/channels/{id}/sync:
+    post:
+      operationId: syncAnalyticsChannel
+      summary: Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+      tags:
+        - analytics
+      x-min-role: editor
+      parameters:
+        - $ref: '#/components/parameters/analyticsChannelId'
+      responses:
+        '202':
+          description: sync queued, or already queued or running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSyncQueued'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+        '409':
+          description: the channel is not connected (reconnect it in Settings > YouTube)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /analytics/channels/{id}/suggestions:
+    get:
+      operationId: listAnalyticsSuggestions
+      summary: The channel's suggestions, each with its rule version and evidence
+      tags:
+        - analytics
+      x-min-role: viewer
+      parameters:
+        - $ref: '#/components/parameters/analyticsChannelId'
+        - name: videoId
+          in: query
+          description: Only this video's suggestions.
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{11}$
+        - name: includeDismissed
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSuggestionList'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+    patch:
+      operationId: updateAnalyticsSuggestion
+      summary: Dismiss or restore one suggestion
+      tags:
+        - analytics
+      x-min-role: editor
+      parameters:
+        - $ref: '#/components/parameters/analyticsChannelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsSuggestionUpdate'
+      responses:
+        '204':
+          description: updated
+        '404':
+          description: no such channel or suggestion
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /analytics/channels/{id}/explain:
+    post:
+      operationId: explainAnalyticsChannel
+      summary: Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+      description: Sends only aggregated numbers and the rule findings (no titles or other text from YouTube) to the provider configured for summaries. Poll GET /analytics/explanations/{id} for the answer, which is plain text.
+      tags:
+        - analytics
+      x-min-role: editor
+      parameters:
+        - $ref: '#/components/parameters/analyticsChannelId'
+      responses:
+        '202':
+          description: explanation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsExplanation'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+        '409':
+          description: nothing to explain yet (the channel has no synced data)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: pipeline quota exceeded
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /analytics/explanations/{id}:
+    get:
+      operationId: getAnalyticsExplanation
+      summary: The state of an explanation and, once done, its text, provider and cost
+      tags:
+        - analytics
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsExplanation'
+        '404':
+          description: no such explanation in this workspace
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /analytics/videos:
+    get:
+      operationId: listAnalyticsVideos
+      summary: The channel's tracked videos with totals over a window, sorted and paginated
+      description: Lists videos published by this app plus videos added for tracking. Videos whose sort metric is not available sort last.
+      tags:
+        - analytics
+      x-min-role: viewer
+      parameters:
+        - name: channelId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - views
+              - watchTime
+              - ctr
+              - averageViewPercentage
+              - published
+            default: views
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 64
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - $ref: '#/components/parameters/analyticsFrom'
+        - $ref: '#/components/parameters/analyticsTo'
+      responses:
+        '200':
+          description: one page of videos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsVideoPage'
+        '400':
+          $ref: '#/components/responses/analyticsBadRequest'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+  /analytics/videos/{videoId}:
+    get:
+      operationId: getAnalyticsVideo
+      summary: A tracked video's daily series over a window and its retention curve
+      tags:
+        - analytics
+      x-min-role: viewer
+      parameters:
+        - $ref: '#/components/parameters/analyticsVideoId'
+        - $ref: '#/components/parameters/analyticsFrom'
+        - $ref: '#/components/parameters/analyticsTo'
+      responses:
+        '200':
+          description: video detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsVideoDetail'
+        '400':
+          $ref: '#/components/responses/analyticsBadRequest'
+        '404':
+          $ref: '#/components/responses/analyticsVideoNotFound'
+  /analytics/tracked-videos:
+    post:
+      operationId: trackAnalyticsVideo
+      summary: Track an existing public video of a connected channel (by URL or id)
+      description: Looks the video up with the Data API (1 quota unit) and checks it belongs to the channel. Its metrics arrive with the next sync.
+      tags:
+        - analytics
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackVideoRequest'
+      responses:
+        '201':
+          description: video tracked (or already tracked on this channel)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackedVideo'
+        '400':
+          $ref: '#/components/responses/analyticsBadRequest'
+        '404':
+          $ref: '#/components/responses/analyticsChannelNotFound'
+        '409':
+          description: the channel is not connected, or the video is already tracked on another channel
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: no such video, or it belongs to another channel
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '502':
+          description: YouTube did not answer the lookup (quota or API error)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /analytics/tracked-videos/{videoId}:
+    delete:
+      operationId: untrackAnalyticsVideo
+      summary: Stop tracking a manually added video (its suggestions go at the next sync)
+      tags:
+        - analytics
+      x-min-role: editor
+      parameters:
+        - $ref: '#/components/parameters/analyticsVideoId'
+      responses:
+        '204':
+          description: no longer tracked
+        '404':
+          $ref: '#/components/responses/analyticsVideoNotFound'
+        '409':
+          description: the video was published by this app and is always tracked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /series:
     get:
       operationId: listSeries
@@ -3514,6 +3815,405 @@ components:
         auditNote:
           type: string
           maxLength: 2000
+    AnalyticsSyncState:
+      type: object
+      description: Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+      required:
+        - status
+        - lastError
+      properties:
+        status:
+          type: string
+          enum:
+            - idle
+            - running
+            - failed
+        analyticsThrough:
+          type: string
+          format: date
+        reachThrough:
+          type: string
+          format: date
+        lastStartedAt:
+          type: string
+          format: date-time
+        lastFinishedAt:
+          type: string
+          format: date-time
+        lastError:
+          type: string
+          description: Last failure or partial-sync note; empty when the last sync was clean.
+        subscriberCount:
+          type: integer
+          format: int64
+          description: Channel subscriber count at the last sync (absent when hidden or not synced).
+    AnalyticsWindow:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+    Unavailable:
+      type: object
+      description: Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+      additionalProperties:
+        type: string
+    AnalyticsChannelDay:
+      type: object
+      required:
+        - date
+        - unavailable
+      properties:
+        date:
+          type: string
+          format: date
+        views:
+          type: integer
+          format: int64
+        watchHours:
+          type: number
+          format: double
+        subscribersGained:
+          type: integer
+          format: int64
+        subscribersLost:
+          type: integer
+          format: int64
+        unavailable:
+          $ref: '#/components/schemas/Unavailable'
+    YPPProgress:
+      type: object
+      description: Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+      required:
+        - watchHours
+        - watchHoursTarget
+        - windowFrom
+        - windowTo
+        - daysMissing
+        - subscribersTarget
+      properties:
+        watchHours:
+          type: number
+          format: double
+          description: Public watch hours over the window (Shorts views excluded by YouTube's own rule are not separated here).
+        watchHoursTarget:
+          type: integer
+        windowFrom:
+          type: string
+          format: date
+        windowTo:
+          type: string
+          format: date
+        daysMissing:
+          type: integer
+          description: Days of the window with no synced watch time; the total is a lower bound while this is above 0.
+        subscribers:
+          type: integer
+          format: int64
+        subscribersTarget:
+          type: integer
+    AnalyticsOverview:
+      type: object
+      required:
+        - sync
+        - window
+        - days
+        - ypp
+      properties:
+        sync:
+          $ref: '#/components/schemas/AnalyticsSyncState'
+        window:
+          $ref: '#/components/schemas/AnalyticsWindow'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsChannelDay'
+        ypp:
+          $ref: '#/components/schemas/YPPProgress'
+    AnalyticsSyncQueued:
+      type: object
+      required:
+        - queued
+      properties:
+        queued:
+          type: boolean
+          description: False when a sync of the channel was already queued or running.
+    AnalyticsSuggestion:
+      type: object
+      required:
+        - videoId
+        - rule
+        - version
+        - title
+        - evidence
+        - dismissed
+        - updatedAt
+      properties:
+        videoId:
+          type: string
+          description: The video the suggestion is about; empty for a channel-level suggestion.
+        rule:
+          type: string
+          description: Rule name, e.g. low_ctr, weak_hook, split_long_video, upload_cadence_gap.
+        version:
+          type: integer
+          description: Version of the rule that produced the suggestion.
+        title:
+          type: string
+          description: What to try, from the rule (fixed server text).
+        evidence:
+          type: object
+          additionalProperties: true
+          description: The numbers the rule compared.
+        dismissed:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    AnalyticsSuggestionList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsSuggestion'
+    AnalyticsSuggestionUpdate:
+      type: object
+      required:
+        - videoId
+        - rule
+        - dismissed
+      properties:
+        videoId:
+          type: string
+          maxLength: 11
+          description: Empty for a channel-level suggestion.
+        rule:
+          type: string
+          maxLength: 64
+        dismissed:
+          type: boolean
+    AnalyticsExplanation:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - queued
+            - running
+            - done
+            - failed
+            - canceled
+        text:
+          type: string
+          description: The explanation as plain text (render it as text, never as HTML or Markdown).
+        provider:
+          type: string
+        model:
+          type: string
+        costUsd:
+          type: number
+          format: double
+        error:
+          type: string
+    AnalyticsVideoRow:
+      type: object
+      description: A tracked video's totals over the window; an absent metric was not available from the API on any day.
+      required:
+        - videoId
+        - title
+        - source
+      properties:
+        videoId:
+          type: string
+        title:
+          type: string
+        source:
+          type: string
+          enum:
+            - publication
+            - manual
+        durationSeconds:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        views:
+          type: integer
+          format: int64
+        watchHours:
+          type: number
+          format: double
+        averageViewPercentage:
+          type: number
+          format: double
+        averageViewDuration:
+          type: number
+          format: double
+          description: Seconds.
+        subscribersGained:
+          type: integer
+          format: int64
+        impressions:
+          type: integer
+          format: int64
+          description: Thumbnail impressions from the reach report.
+        ctr:
+          type: number
+          format: double
+          description: Impressions click-through rate as a fraction (0.05 = 5%), weighted by impressions.
+    AnalyticsVideoPage:
+      type: object
+      required:
+        - items
+        - total
+        - window
+        - sync
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsVideoRow'
+        total:
+          type: integer
+        nextCursor:
+          type: string
+        window:
+          $ref: '#/components/schemas/AnalyticsWindow'
+        sync:
+          $ref: '#/components/schemas/AnalyticsSyncState'
+    TrackedVideo:
+      type: object
+      required:
+        - videoId
+        - channelId
+        - title
+        - source
+        - createdAt
+      properties:
+        videoId:
+          type: string
+        channelId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        source:
+          type: string
+          enum:
+            - publication
+            - manual
+        durationSeconds:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    AnalyticsVideoDay:
+      type: object
+      required:
+        - date
+        - unavailable
+      properties:
+        date:
+          type: string
+          format: date
+        views:
+          type: integer
+          format: int64
+        watchHours:
+          type: number
+          format: double
+        averageViewDuration:
+          type: number
+          format: double
+        averageViewPercentage:
+          type: number
+          format: double
+        subscribersGained:
+          type: integer
+          format: int64
+        impressions:
+          type: integer
+          format: int64
+        ctr:
+          type: number
+          format: double
+        unavailable:
+          $ref: '#/components/schemas/Unavailable'
+    RetentionPoint:
+      type: object
+      required:
+        - elapsedRatio
+      properties:
+        elapsedRatio:
+          type: number
+          format: double
+          description: Position in the video, 0 to 1.
+        audienceWatchRatio:
+          type: number
+          format: double
+        relativeRetentionPerformance:
+          type: number
+          format: double
+    AnalyticsVideoDetail:
+      type: object
+      required:
+        - video
+        - window
+        - sync
+        - days
+        - retention
+      properties:
+        video:
+          $ref: '#/components/schemas/TrackedVideo'
+        window:
+          $ref: '#/components/schemas/AnalyticsWindow'
+        sync:
+          $ref: '#/components/schemas/AnalyticsSyncState'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsVideoDay'
+        retention:
+          type: array
+          description: Lifetime audience retention curve; empty until the first sync that covers the video.
+          items:
+            $ref: '#/components/schemas/RetentionPoint'
+        retentionSyncedAt:
+          type: string
+          format: date-time
+    TrackVideoRequest:
+      type: object
+      required:
+        - channelId
+        - video
+      properties:
+        channelId:
+          type: string
+          format: uuid
+        video:
+          type: string
+          minLength: 11
+          maxLength: 512
+          description: A YouTube video URL (watch, youtu.be, shorts, embed or live) or an 11-character video id.
     TargetLanguage:
       type: string
       enum:
@@ -5134,3 +5834,53 @@ components:
           type: integer
         peaks:
           type: integer
+  parameters:
+    analyticsChannelId:
+      name: id
+      in: path
+      required: true
+      description: Loomtale id of a connected YouTube channel.
+      schema:
+        type: string
+        format: uuid
+    analyticsFrom:
+      name: from
+      in: query
+      description: First day of the window (inclusive). Windows span at most 366 days.
+      schema:
+        type: string
+        format: date
+    analyticsTo:
+      name: to
+      in: query
+      description: Last day of the window (inclusive).
+      schema:
+        type: string
+        format: date
+    analyticsVideoId:
+      name: videoId
+      in: path
+      required: true
+      description: YouTube video id.
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{11}$
+  responses:
+    analyticsBadRequest:
+      description: invalid window, sort or cursor
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    analyticsChannelNotFound:
+      description: channel not found in this workspace
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    analyticsVideoNotFound:
+      description: the video is not tracked in this workspace
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

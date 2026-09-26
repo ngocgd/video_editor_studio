@@ -20,6 +20,8 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/analytics"
+	"loomtale/api/internal/analyticsapi"
 	"loomtale/api/internal/assetsapi"
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
@@ -210,6 +212,7 @@ func run() error {
 	for _, handler := range media.Handlers(media.Deps{Queries: queries}) {
 		stepRegistry.Register(handler)
 	}
+	stepRegistry.Register(&analytics.ExplainHandler{Registry: llmRegistry})
 	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, scenes.Estimate)
 	sceneService.Engine = engine
 	hub := sse.NewHub(pool.Pool)
@@ -314,6 +317,17 @@ func run() error {
 			Secrets: secretsStore,
 			OAuth:   googleOAuth,
 			Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
+		},
+		AnalyticsAPI: &analyticsapi.AnalyticsAPI{
+			Queries:    queries,
+			Aggregator: &analytics.Aggregator{Pool: pool.Pool, Queries: queries},
+			Clients: &analytics.OAuthClients{
+				OAuth:   googleOAuth,
+				Secrets: secretsStore,
+				Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
+			},
+			Jobs:   riverClient,
+			Engine: engine,
 		},
 	}
 
