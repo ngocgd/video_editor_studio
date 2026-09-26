@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -21,6 +22,7 @@ import (
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/media"
 	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/storyctx"
 	"loomtale/api/internal/tenant"
 	"loomtale/api/internal/voiceparams"
@@ -410,6 +412,9 @@ func (h *CharactersAPI) TrainCharacterLora(ctx context.Context, req gen.TrainCha
 			if err != nil || a.Kind != "image" || a.Status != "ready" {
 				return gen.TrainCharacterLora422ApplicationProblemPlusJSONResponse(problem(http.StatusUnprocessableEntity, "every dataset item must be a ready image of this workspace")), nil
 			}
+			if _, ok := train.DatasetExt(a.Mime); !ok {
+				return gen.TrainCharacterLora422ApplicationProblemPlusJSONResponse(problem(http.StatusUnprocessableEntity, "the trainer reads PNG, JPEG and WebP images only")), nil
+			}
 			dataset = append(dataset, a.ID)
 		}
 	} else {
@@ -418,15 +423,25 @@ func (h *CharactersAPI) TrainCharacterLora(ctx context.Context, req gen.TrainCha
 			return nil, err
 		}
 		for _, r := range refs {
-			if r.CharacterID == c.ID && r.Approved {
+			if r.CharacterID != c.ID || !r.Approved || len(dataset) == train.MaxDatasetImages {
+				continue
+			}
+			a, err := h.Queries.GetAssetByID(ctx, dbgen.GetAssetByIDParams{TenantID: tid, ID: r.AssetID})
+			if err != nil {
+				return nil, err
+			}
+			// A reference in a format the trainer cannot read is left out
+			// rather than failing the whole run.
+			if _, ok := train.DatasetExt(a.Mime); ok && a.Status == "ready" {
 				dataset = append(dataset, r.AssetID)
 			}
 		}
 	}
-	if len(dataset) == 0 {
-		return gen.TrainCharacterLora422ApplicationProblemPlusJSONResponse(problem(http.StatusUnprocessableEntity, "approve at least one reference image to train on")), nil
+	if len(dataset) < train.MinDatasetImages {
+		return gen.TrainCharacterLora422ApplicationProblemPlusJSONResponse(problem(http.StatusUnprocessableEntity,
+			fmt.Sprintf("a LoRA needs at least %d approved PNG, JPEG or WebP reference images (20 to 24 give the best likeness)", train.MinDatasetImages))), nil
 	}
-	params := map[string]string{"steps": "2000", "rank": "16"}
+	params := map[string]string{"steps": "1500", "rank": "16"}
 	if req.Body.Steps != nil {
 		params["steps"] = itoa(*req.Body.Steps)
 	}

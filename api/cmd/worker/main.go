@@ -38,6 +38,7 @@ import (
 	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/providers/tts"
+	"loomtale/api/internal/providers/vision"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secrets"
@@ -148,10 +149,12 @@ func run() error {
 	sceneService := &scenes.Service{Pool: pool.Pool, Queries: queries, Hooks: &scenes.Hooks{}}
 	sceneDeps := scenes.StepDeps{Service: sceneService, Storage: internalStore, Comfy: clients.Comfy, Runner: ffmpegRunner, LLM: llmRegistry, SceneWorkflow: scenes.SceneWorkflows(manifest)}
 	sheetModel, sheetWorkflow := scenes.SheetModel(manifest)
-	charDeps := characters.StepDeps{Queries: queries, Storage: internalStore, Scenes: sceneService, Comfy: clients.Comfy, SheetModel: sheetModel, SheetWorkflow: sheetWorkflow}
+	charDeps := characters.StepDeps{Queries: queries, Storage: internalStore, Scenes: sceneService, Comfy: clients.Comfy, SheetModel: sheetModel, SheetWorkflow: sheetWorkflow, ModelsDir: cfg.ModelsDir}
 	if clients.Pyworker != nil {
 		sceneDeps.TTS = tts.New(workerv1.NewTTSClient(clients.Pyworker))
 		sceneDeps.Align = align.New(workerv1.NewAlignClient(clients.Pyworker))
+		sceneDeps.Vision = vision.New(workerv1.NewVisionClient(clients.Pyworker))
+		sceneDeps.VisionInstalled = loadGate.Check
 		charDeps.TTS = sceneDeps.TTS
 		charDeps.Train = train.New(workerv1.NewTrainClient(clients.Pyworker))
 	}

@@ -296,6 +296,10 @@ type Querier interface {
 	MarkStepsPending(ctx context.Context, arg MarkStepsPendingParams) ([]PipelineStep, error)
 	MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams) ([]PipelineStep, error)
 	MarkTakeSelected(ctx context.Context, arg MarkTakeSelectedParams) (SceneTake, error)
+	// Adds analysis results (score, depth asset) to a take's params; a merge
+	// in one statement, so the score and depth steps never overwrite each
+	// other's keys.
+	MergeTakeParams(ctx context.Context, arg MergeTakeParamsParams) (int64, error)
 	NextCharacterLoraVersion(ctx context.Context, arg NextCharacterLoraVersionParams) (int32, error)
 	NextEpisodeIdx(ctx context.Context, arg NextEpisodeIdxParams) (int32, error)
 	// Candidate "queued" steps under their stranded-requeue budget, for the

@@ -23,3 +23,10 @@ WHERE tenant_id = @tenant_id AND scene_id = @scene_id AND kind = @kind AND selec
 UPDATE scene_takes SET selected = true
 WHERE tenant_id = @tenant_id AND id = @id
 RETURNING *;
+
+-- name: MergeTakeParams :execrows
+-- Adds analysis results (score, depth asset) to a take's params; a merge
+-- in one statement, so the score and depth steps never overwrite each
+-- other's keys.
+UPDATE scene_takes SET params = params || @patch::jsonb
+WHERE tenant_id = @tenant_id AND id = @id;

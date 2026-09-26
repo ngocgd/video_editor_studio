@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
@@ -28,9 +31,16 @@ const (
 	KindPreview    = "voice.preview"
 	ScopeCharacter = "character"
 
-	// TrainerEngine is the LoRA trainer the Python worker runs.
-	TrainerEngine = "ai-toolkit"
+	// TrainerEngine is the LoRA trainer engine the Python worker runs
+	// (its manifest entry holds the trainer's base weights), and
+	// TrainerBaseModel is the scene model the LoRA is trained for.
+	TrainerEngine    = "z-image-turbo-trainer"
+	TrainerBaseModel = "z-image-turbo"
 )
+
+// trainerParamKeys are the stored trainer params passed through to the
+// worker; the worker validates their ranges.
+var trainerParamKeys = []string{"steps", "rank", "learning_rate", "max_minutes"}
 
 const presignTTL = 3 * time.Hour
 
@@ -63,6 +73,10 @@ type StepDeps struct {
 	// SheetModel is the manifest model whose SheetWorkflow makes sheets.
 	SheetModel    string
 	SheetWorkflow string
+	// ModelsDir is the models volume ComfyUI reads LoRAs from (its
+	// loras/ folder); empty on a worker without it, where trained
+	// weights stay an asset only and scenes render without the LoRA.
+	ModelsDir string
 }
 
 // Handlers returns the character step handlers.
@@ -185,10 +199,10 @@ func (h *TrainHandler) InputHash(_ context.Context, s pipeline.StepRef) (string,
 	return hashStep(s)
 }
 
-// ModelRef is nil: the trainer is not a residency-managed model (the
-// trainer engine and its VRAM handling arrive with the LoRA phase).
+// ModelRef makes the trainer the resident model of the Python worker,
+// so training takes the single GPU slot like any other model.
 func (h *TrainHandler) ModelRef(context.Context, pipeline.StepRef) (*pipeline.ModelRef, error) {
-	return nil, nil
+	return &pipeline.ModelRef{Backend: "pyworker", Model: TrainerEngine}, nil
 }
 
 func (h *TrainHandler) Run(ctx context.Context, sc *pipeline.StepContext) (out pipeline.Output, err error) {
@@ -222,30 +236,40 @@ func (h *TrainHandler) Run(ctx context.Context, sc *pipeline.StepContext) (out p
 	if h.Train == nil || h.Storage == nil {
 		return nil, fmt.Errorf("%w: the LoRA trainer is not available on this worker", pipeline.ErrEngineNotInstalled)
 	}
+	if n := len(lora.DatasetAssetIds); n < train.MinDatasetImages || n > train.MaxDatasetImages {
+		return nil, fmt.Errorf("%w: a LoRA dataset needs %d to %d images, got %d", pipeline.ErrValidation,
+			train.MinDatasetImages, train.MaxDatasetImages, n)
+	}
 	setStatus("training", nil, "")
 
-	type item struct {
-		URL     string `json:"url"`
-		Caption string `json:"caption"`
-	}
-	var dataset []item
+	trigger := TrainerTriggerWord(c)
+	caption := strings.TrimSpace(trigger + ", " + c.AppearancePrompt)
+	caption = strings.TrimSuffix(caption, ",")
+	images := make([]train.DatasetImage, 0, len(lora.DatasetAssetIds))
 	for _, id := range lora.DatasetAssetIds {
 		a, err := h.Queries.GetAssetByID(ctx, dbgen.GetAssetByIDParams{TenantID: tid, ID: id})
 		if err != nil {
 			return nil, fmt.Errorf("%w: dataset asset: %v", pipeline.ErrValidation, err)
 		}
-		u, err := h.Storage.PresignGet(ctx, a.StorageKey, a.StorageVersionID.String, presignTTL)
+		ext, ok := train.DatasetExt(a.Mime)
+		if a.Kind != "image" || !ok {
+			return nil, fmt.Errorf("%w: dataset asset %s is not a PNG, JPEG or WebP image", pipeline.ErrValidation, idconv.FromPg(a.ID))
+		}
+		data, err := h.Storage.ReadAll(ctx, a.StorageKey, a.StorageVersionID.String, storage.MaxBytesByKind["image"])
 		if err != nil {
 			return nil, err
 		}
-		dataset = append(dataset, item{URL: u, Caption: strings.TrimSpace(c.TriggerToken + " " + c.AppearancePrompt)})
+		images = append(images, train.DatasetImage{Ext: ext, Data: data, Caption: caption})
 	}
-	manifest, _ := json.Marshal(map[string]any{"images": dataset})
-	manifestKey := storage.DerivedKey(sc.Tenant().String(), idconv.FromPg(lora.ID), "dataset.json")
-	if _, err := h.Storage.PutBytes(ctx, manifestKey, manifest, "application/json"); err != nil {
+	archive, err := train.DatasetZip(images)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", pipeline.ErrValidation, err)
+	}
+	datasetKey := storage.DerivedKey(sc.Tenant().String(), idconv.FromPg(lora.ID), "dataset.zip")
+	if _, err := h.Storage.PutBytes(ctx, datasetKey, archive, "application/zip"); err != nil {
 		return nil, err
 	}
-	manifestURL, err := h.Storage.PresignGet(ctx, manifestKey, "", presignTTL)
+	datasetURL, err := h.Storage.PresignGet(ctx, datasetKey, "", presignTTL)
 	if err != nil {
 		return nil, err
 	}
@@ -255,14 +279,8 @@ func (h *TrainHandler) Run(ctx context.Context, sc *pipeline.StepContext) (out p
 	if err != nil {
 		return nil, err
 	}
-	var params map[string]string
-	_ = json.Unmarshal(lora.TrainerParams, &params)
-	if params == nil {
-		params = map[string]string{}
-	}
-	params["trigger"] = c.TriggerToken
-	params["output_key"] = weightsKey
-	res, err := h.Train.Train(ctx, train.Request{Engine: TrainerEngine, DatasetGetURL: manifestURL, OutputPutURL: putURL, Params: params},
+	res, err := h.Train.Train(ctx, train.Request{Engine: TrainerEngine, BaseModel: TrainerBaseModel, DatasetGetURL: datasetURL,
+		OutputPutURL: putURL, Params: TrainerParams(lora.TrainerParams, trigger, weightsKey)},
 		func(p train.Progress) { sc.Progress(p.Pct, p.EtaS) }, sc.Log)
 	if err != nil {
 		return nil, err
@@ -271,6 +289,9 @@ func (h *TrainHandler) Run(ctx context.Context, sc *pipeline.StepContext) (out p
 	if err != nil {
 		return nil, fmt.Errorf("characters: the trainer did not upload weights: %w", err)
 	}
+	if stored.Size <= 0 {
+		return nil, fmt.Errorf("characters: the trainer uploaded empty weights")
+	}
 	weights, err := h.Queries.CreateDerivedAsset(ctx, dbgen.CreateDerivedAssetParams{
 		ID: idconv.ToPg(weightsID), TenantID: tid, Kind: "document", StorageKey: weightsKey, Mime: "application/octet-stream",
 		Bytes: idconv.ToPgInt8(stored.Size), StorageVersionID: idconv.ToPgText(stored.VersionID),
@@ -278,9 +299,72 @@ func (h *TrainHandler) Run(ctx context.Context, sc *pipeline.StepContext) (out p
 	if err != nil {
 		return nil, err
 	}
-	file := "loomtale-" + idconv.FromPg(c.ID).String() + "-v" + strconv.Itoa(int(lora.Version)) + ".safetensors"
+	file, err := h.installLora(ctx, weightsKey, stored.VersionID, LoraWeightsFile(c.ID, lora.Version))
+	if err != nil {
+		return nil, err
+	}
+	if file == "" {
+		sc.Log("no models volume on this worker: the LoRA is kept as an asset and scenes render without it")
+	}
 	setStatus("ready", &weights, file)
-	return pipeline.Output{"loraId": in.LoraID.String(), "weightsAssetId": weightsID.String(), "metadata": res.Metadata}, nil
+	return pipeline.Output{"loraId": in.LoraID.String(), "weightsAssetId": weightsID.String(), "triggerWord": trigger,
+		"images": len(images), "metadata": res.Metadata}, nil
+}
+
+// installLora copies trained weights into the models volume's loras/
+// folder, where ComfyUI loads them by file name. It returns the file
+// name, or "" when this worker has no models volume.
+func (h *TrainHandler) installLora(ctx context.Context, key, versionID, file string) (string, error) {
+	if h.ModelsDir == "" {
+		return "", nil
+	}
+	dir := filepath.Join(h.ModelsDir, "loras")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("characters: loras folder: %w", err)
+	}
+	if err := h.Storage.DownloadTo(ctx, key, versionID, filepath.Join(dir, file)); err != nil {
+		return "", fmt.Errorf("characters: installing the LoRA: %w", err)
+	}
+	return file, nil
+}
+
+// TrainerTriggerWord is the trigger word a character's LoRA is trained
+// with, in the form the trainer accepts: the character's trigger token,
+// else its English name, else a word derived from its id so two
+// characters never share one.
+func TrainerTriggerWord(c dbgen.Character) string {
+	for _, candidate := range []string{c.TriggerToken, c.NameEn} {
+		if w := train.TriggerWord(candidate); w != train.DefaultTriggerWord {
+			return w
+		}
+	}
+	return "char_" + strings.ReplaceAll(idconv.FromPg(c.ID).String(), "-", "")[:12]
+}
+
+// TrainerParams builds the worker params from a LoRA version's stored
+// trainer params: only the known keys pass through, and the trigger
+// word and output key always come from the caller.
+func TrainerParams(stored []byte, trigger, outputKey string) map[string]string {
+	var raw map[string]any
+	_ = json.Unmarshal(stored, &raw)
+	params := map[string]string{"trigger_word": trigger, "output_key": outputKey}
+	for _, k := range trainerParamKeys {
+		switch v := raw[k].(type) {
+		case string:
+			if v != "" {
+				params[k] = v
+			}
+		case float64:
+			params[k] = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+	}
+	return params
+}
+
+// LoraWeightsFile is the file name a LoRA version is installed under on
+// the models volume.
+func LoraWeightsFile(characterID pgtype.UUID, version int32) string {
+	return "loomtale-" + idconv.FromPg(characterID).String() + "-v" + strconv.Itoa(int(version)) + ".safetensors"
 }
 
 // PreviewHandler synthesizes one line with a character's voice.
