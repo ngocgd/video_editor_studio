@@ -490,6 +490,38 @@ func (q *Queries) ListSuggestions(ctx context.Context, arg ListSuggestionsParams
 	return items, nil
 }
 
+const listSyncedVideoIDs = `-- name: ListSyncedVideoIDs :many
+SELECT DISTINCT youtube_video_id FROM video_metrics_daily
+WHERE tenant_id = $1 AND channel_id = $2 AND analytics_synced_at IS NOT NULL
+`
+
+type ListSyncedVideoIDsParams struct {
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	ChannelID pgtype.UUID `json:"channel_id"`
+}
+
+// Videos of the channel that already have Analytics API rows; a tracked
+// video missing here is backfilled from its publication day.
+func (q *Queries) ListSyncedVideoIDs(ctx context.Context, arg ListSyncedVideoIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listSyncedVideoIDs, arg.TenantID, arg.ChannelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var youtube_video_id string
+		if err := rows.Scan(&youtube_video_id); err != nil {
+			return nil, err
+		}
+		items = append(items, youtube_video_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTrackedVideos = `-- name: ListTrackedVideos :many
 SELECT tenant_id, channel_id, youtube_video_id, source, title, duration_seconds, published_at, added_by, created_at FROM analytics_tracked_videos
 WHERE tenant_id = $1 AND channel_id = $2

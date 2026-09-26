@@ -196,6 +196,9 @@ type Querier interface {
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
 	ListSuggestions(ctx context.Context, arg ListSuggestionsParams) ([]AnalyticsSuggestion, error)
+	// Videos of the channel that already have Analytics API rows; a tracked
+	// video missing here is backfilled from its publication day.
+	ListSyncedVideoIDs(ctx context.Context, arg ListSyncedVideoIDsParams) ([]string, error)
 	ListTrackedVideos(ctx context.Context, arg ListTrackedVideosParams) ([]AnalyticsTrackedVideo, error)
 	// Tracked videos of a channel with totals over [from_date, to_date].
 	// Averages are view-weighted and CTR is impression-weighted. Each *_days

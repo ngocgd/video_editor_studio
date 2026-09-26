@@ -183,6 +183,12 @@ RETURNING report_id;
 SELECT max(date)::date AS through FROM video_metrics_daily
 WHERE tenant_id = @tenant_id AND channel_id = @channel_id AND impressions IS NOT NULL;
 
+-- name: ListSyncedVideoIDs :many
+-- Videos of the channel that already have Analytics API rows; a tracked
+-- video missing here is backfilled from its publication day.
+SELECT DISTINCT youtube_video_id FROM video_metrics_daily
+WHERE tenant_id = @tenant_id AND channel_id = @channel_id AND analytics_synced_at IS NOT NULL;
+
 -- name: ChannelDailySeries :many
 SELECT date, views, estimated_minutes_watched, subscribers_gained, subscribers_lost, unavailable
 FROM channel_metrics_daily
