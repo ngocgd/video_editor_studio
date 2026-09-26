@@ -74,6 +74,17 @@ test("series -> writer -> import -> settings/llm", async ({ page }) => {
   await page.reload();
   await expect(importedLine).toBeVisible();
 
+  // Splitting a paragraph with Enter and typing in the new one is saved.
+  await importedLine.click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("A new paragraph after the split.");
+  await expect(page.getByText("Unsaved changes")).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible({ timeout: 10_000 });
+  await page.reload();
+  await expect(page.getByText("A new paragraph after the split.")).toBeVisible();
+  await expect(importedLine).toBeVisible();
+
   await page.goto("/settings/llm");
   await expect(page.getByRole("heading", { name: "LLM providers" })).toBeVisible();
   await expect(page.getByText(/no api key configured|unavailable/i).first()).toBeVisible();

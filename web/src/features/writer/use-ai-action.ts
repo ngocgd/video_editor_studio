@@ -6,8 +6,23 @@ import type { AiActionRequest, AiActionResult } from "../../api/gen/types.gen";
 import type { DiffSegment } from "../../components/shared/diff-proposal";
 import { diffText } from "./text-diff";
 
-/** How often a pending/queued/running AI action step is re-polled. */
+/**
+ * How often a pending AI action step is re-polled: quickly at first, then
+ * backing off, so a long generation doesn't spend the per-IP request budget
+ * that autosave also draws on.
+ */
 export const AI_ACTION_POLL_MS = 400;
+export const AI_ACTION_POLL_MAX_MS = 2_000;
+
+export function aiActionPollDelay(pollsSoFar: number): number {
+  return Math.min(AI_ACTION_POLL_MS * 1.5 ** pollsSoFar, AI_ACTION_POLL_MAX_MS);
+}
+
+/** A rate-limited poll is retried after a pause instead of failing the proposal. */
+function retryPoll(failureCount: number, error: unknown): boolean {
+  if ((error as { status?: unknown } | null)?.status === 429) return failureCount < 5;
+  return failureCount < 1;
+}
 
 const TERMINAL: ReadonlySet<AiActionResult["status"]> = new Set(["done", "failed", "canceled"]);
 
@@ -49,8 +64,10 @@ export function useAiAction(episodeId: string) {
     enabled: pending !== null,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status && TERMINAL.has(status) ? false : AI_ACTION_POLL_MS;
+      return status && TERMINAL.has(status) ? false : aiActionPollDelay(query.state.dataUpdateCount);
     },
+    retry: retryPoll,
+    retryDelay: AI_ACTION_POLL_MAX_MS,
     // Each run has a fresh step id, so a cached result is never reused.
     gcTime: 0,
   });

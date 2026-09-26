@@ -8,7 +8,6 @@ import { useMe } from "../auth/use-auth";
 import { pushShortcutScope, popShortcutScope, useShortcut } from "../../lib/shortcuts";
 import { AiToolbar, type ToolbarAction } from "./ai-toolbar";
 import type { DiffParagraph } from "./paragraph-diff";
-import { diffParagraphs } from "./paragraph-diff";
 import { useAiAction } from "./use-ai-action";
 import { useDraft } from "./use-draft";
 import { WriterBeatsPanel } from "./writer-beats-panel";
@@ -26,38 +25,29 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
   const draft = useDraft(episodeId, lang);
   const ai = useAiAction(episodeId);
 
+  // Live paragraphs for the footer's word count: the draft's seed, then
+  // every editor change. The editor owns its document once mounted; the
+  // draft hook remounts it (a new seed key) when the document is replaced.
   const [paragraphs, setParagraphs] = useState<DiffParagraph[]>([]);
   const [selection, setSelection] = useState<WriterSelection>({ paragraphIds: [], text: "" });
   const proposalContainerRef = useRef<HTMLDivElement | null>(null);
-  // The editor owns its document once mounted, so replacing that document
-  // means remounting it: `editorGeneration` is part of its key, and
-  // `seedOverride` (an accepted AI proposal) takes precedence over the
-  // loaded draft as its initial content.
-  const [editorGeneration, setEditorGeneration] = useState(0);
-  const [seedOverride, setSeedOverride] = useState<DiffParagraph[] | null>(null);
 
   const toggleLang = useCallback(() => {
-    setSeedOverride(null);
     setSelection({ paragraphIds: [], text: "" });
     setLang((l) => (l === "en" ? "vi" : "en"));
   }, []);
 
-  const reloadAfterConflict = useCallback(async () => {
-    setSeedOverride(null);
-    await draft.reloadAfterConflict();
-    setEditorGeneration((g) => g + 1);
-  }, [draft]);
-
   useEffect(() => {
-    if (draft.draft) setParagraphs(draft.draft.paragraphs.map((p) => ({ id: p.id, text: p.text })));
-  }, [draft.draft]);
+    if (draft.seed) setParagraphs(draft.seed.paragraphs);
+  }, [draft.seed]);
 
+  const { edit } = draft;
   const handleParagraphsChange = useCallback(
     (current: DiffParagraph[]) => {
       setParagraphs(current);
-      if (!isViewer) draft.scheduleSave(current);
+      if (!isViewer) edit(current);
     },
-    [draft, isViewer],
+    [edit, isViewer],
   );
 
   const runAction = useCallback(
@@ -76,14 +66,15 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
     // Simplification (see phase report): a multi-paragraph selection is
     // replaced as one joined paragraph rather than re-split per original
     // paragraph boundary; single-paragraph actions (the common case) are exact.
-    const next = paragraphs.map((p) => (p.id === paragraphIds[0] ? { ...p, text } : p)).filter((p) => !paragraphIds.slice(1).includes(p.id));
-    setParagraphs(next);
-    setSeedOverride(next);
-    setEditorGeneration((g) => g + 1);
+    // Built from the editor's latest paragraphs, unsaved typing included.
+    const next = draft
+      .current()
+      .map((p) => (p.id === paragraphIds[0] ? { ...p, text } : p))
+      .filter((p) => !paragraphIds.slice(1).includes(p.id));
     setSelection({ paragraphIds: [], text: "" });
-    draft.applyOpsNow(diffParagraphs(paragraphs, next));
+    draft.replace(next);
     ai.clear();
-  }, [ai, draft, paragraphs]);
+  }, [ai, draft]);
 
   // Tab/Esc must work while the selection toolbar's contenteditable region
   // has focus, where the global shortcut registry deliberately ignores
@@ -127,10 +118,10 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
           {isViewer && <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">Read-only (viewer role)</span>}
         </div>
 
-        {draft.draft ? (
+        {draft.seed ? (
           <WriterEditor
-            key={`${lang}:${editorGeneration}`}
-            initialParagraphs={seedOverride ?? draft.draft.paragraphs.map((p) => ({ id: p.id, text: p.text }))}
+            key={`${lang}:${draft.seed.key}`}
+            initialParagraphs={draft.seed.paragraphs}
             lang={lang}
             readOnly={isViewer}
             onParagraphsChange={handleParagraphsChange}
@@ -156,12 +147,12 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
           </div>
         )}
 
-        <WriterFooter paragraphs={paragraphs} lang={lang} saving={draft.saving} onToggleLang={toggleLang} />
+        <WriterFooter paragraphs={paragraphs} lang={lang} saveStatus={draft.status} onToggleLang={toggleLang} />
       </div>
 
       <WriterBeatsPanel outline={episode.outline} onExpandBeat={(beatId) => ai.run({ action: "expand_beat", lang, beatId }, "")} />
 
-      <VersionConflictDialog open={draft.conflict} onReload={() => void reloadAfterConflict()} onDiscard={draft.dismissConflict} />
+      <VersionConflictDialog open={draft.conflict} onReload={() => void draft.reloadLatest()} onDiscard={() => void draft.keepMine()} />
     </div>
   );
 }
