@@ -123,7 +123,7 @@ The independent review (`plans/reports/code-reviewer-260926-1450-phase-07-charac
 | Item | Outcome | Commits |
 |---|---|---|
 | H1. Voice params could carry `reference_url` and `consent` | **Fixed.** A new `voiceparams` package holds the allowlist of tuning keys: `exaggeration`, `cfg_weight`, `temperature`, `seed` and `voice` (an engine's built-in voice name). Creating or updating a voice preset, and setting a character or narrator voice, answers 422 for a control key (`reference_url`, `consent`, `output_key`, `language`), an unknown key or a malformed value. `MergedParams` keeps only tuning keys, so rows stored before the check never reach the worker with control keys. The server still sets `reference_url` and `consent` only from a consented reference asset. Unit tests cover the allowlist and the stripping. The integration test `TestVoiceParamsCannotCarryServerControlKeys` covers the 422s and checks that no consent audit row is written. | `ef09e18` |
-| H2. The storyboard used up the per-IP API budget | **Fixed in code, verification pending (see below).** (1) The takes strip loads only after the selection rests on a scene for 250 ms, reuses a loaded strip for a minute, and refetches only when that scene's version changed. Holding an arrow key no longer costs one request per scene. (2) Variant redirects (`GET`/`HEAD /api/v1/assets/{id}/variants/{variant}`) draw from their own per-IP bucket, `API_MEDIA_RATE_LIMIT_PER_MINUTE` (default 1200). The general bucket keeps its default of 100, so login cannot be starved by media loads. (3) The 302 gets `Cache-Control: private, max-age=300`, half the presigned URL's 10-minute life. Part (3) is written but not committed: its generated server code needs `tb.sh gen`. | `f6bb60e`, `c916fc2` |
+| H2. The storyboard used up the per-IP API budget | **Fixed in code, verification pending (see below).** (1) The takes strip loads only after the selection rests on a scene for 250 ms, reuses a loaded strip for a minute, and refetches only when that scene's version changed. Holding an arrow key no longer costs one request per scene. (2) Variant redirects (`GET`/`HEAD /api/v1/assets/{id}/variants/{variant}`) draw from their own per-IP bucket, `API_MEDIA_RATE_LIMIT_PER_MINUTE` (default 1200). The general bucket keeps its default of 100, so login cannot be starved by media loads. (3) The 302 gets `Cache-Control: private, max-age=300`, half the presigned URL's 10-minute life. Part (3) was committed in round 2 with its regenerated code. | `f6bb60e`, `c916fc2`, `b88e468` |
 | M1. Branch behind main, merge conflicts and TTS voice contract drift | **Merged and fixed; full re-verification pending.** Main was merged. `residency.go` keeps main's `OllamaPreparer` wiring and this branch's `gpuClients` return. `db/gen` was regenerated with `tb.sh gen`, not hand-merged. The TTS `voice` field now carries the built-in voice name from the assignment's or the preset's `voice` param, and nothing when a reference clip is cloned. The preset id is no longer sent. The name is part of the voice take's stale hash. A Chatterbox voice without a reference clip still fails with the engine's clear error, by main's design. | `076fb8f`, `1e5c159` |
 
 ### Checks after the fixes
@@ -140,8 +140,31 @@ The independent review (`plans/reports/code-reviewer-260926-1450-phase-07-charac
 3. The web `vite build` and `budget-check`.
 4. Under the heavy lock: the integration suite, and the standard Playwright command (compose.yml only, default limits, `--workers=1`) as the H2 acceptance check.
 
+## Review round 2: fixes
+
+The second review (`plans/reports/code-reviewer-260926-1623-phase-07-characters-storyboard-review.md`) listed three blocking items. Their outcomes follow.
+
+| Item | Outcome | Commits |
+|---|---|---|
+| 1. Docker engine down, so the toolbox, drift, integration, e2e and live checks were not run | **Still blocked.** The engine still answers 500 on `dockerDesktopLinuxEngine`, and the backend reports `docker: starting`. It was polled every 30 s from 16:36 local without recovery. Docker Desktop was not restarted, because that needs the user's approval. The host checks that do not need Docker were run instead (see below). The heavy script `heavy-verify.sh` in the session scratchpad is unchanged and ready: the integration suite, Playwright with the default `API_RATE_LIMIT_PER_MINUTE`, and the live split with `-timeout 45m`, each followed by `down -v`. | none |
+| 2. A re-split silently deleted every edited scene with its manual work and takes | **Fixed.** A new column `scenes.edited_at` is set by every scene edit (narration, speakers, prompt, characters, motion, style). `ApplySplit` locks the episode's scenes, plans the re-split, and counts the scenes it would drop, how many of those are edited, and their takes. If an edited scene or any take would be dropped and the request does not set `discardWork`, the split answers **409** with `droppedCount`, `editedCount`, `takeCount` and a sentence, and changes nothing. Scenes without edits or takes (a fresh split) need no confirmation. An LLM split checks up front, counting every current scene as at risk because its scenes are not known yet. If edits or takes appear while the model runs, the step fails with a validation error instead of deleting them. The paragraph split reports `droppedCount`, and the LLM step output includes it. The storyboard shows the server's counts in a dialog and re-sends with `discardWork` only on "Split and delete". Tests: unit tests of the risk count and the error, a web test of the dialog, the extended `TestStoryboardSplitStepsStaleAndTakes`, and a new integration test `TestResplitAfterANarrationEditNeedsConfirmation` (409 for both modes, nothing changed, then a confirmed split drops exactly the edited scene). | `4f4c8b4`, `9c07911` |
+| 3. The uncommitted Cache-Control change did not compile | **Committed** with the regenerated Go server and bundled spec. The web client did not change, because response headers are not part of its types. The assertion in `TestMediaVariantsAndPeaksOnLavfiFixtures` still needs the integration run. | `b88e468` |
+
+### Checks in round 2 (host only, Docker down)
+
+- Code generation ran on the host with the same pinned tools as the toolbox: Redocly CLI 1.25.11, and `go tool oapi-codegen` and `go tool sqlc` from `api/go.mod`, with Go 1.26.8. The bundled spec diff held only the intended changes. This is not the toolbox `gen-check`, so the drift check must be repeated in the toolbox.
+- `go vet ./...`, `go vet -tags integration,live ./internal/integration/` and `go test ./...` in `api/` passed on the host (Windows).
+- `golangci-lint` was not run, because it is installed only in the toolbox image.
+- Web: `npm run typecheck`, `npm run lint`, `npm test` (91 tests), `npx vite build` and `npm run budget-check` passed.
+
+Still to run once Docker is back:
+
+1. `scripts/tb.sh gen lint test` and a host `git diff --exit-code` on the generated paths.
+2. Under the heavy lock, `heavy-verify.sh`: the integration suite (it includes the two re-split tests and the Cache-Control assertion), Playwright with the default rate limit (the H2 acceptance test), and the live claude-cli split with `-timeout 45m`.
+
 ## Unresolved questions
 
-- Docker Desktop needs a restart before verification can finish. Should the user or the orchestrator do it?
+- Docker Desktop needs a restart before verification can finish. Three rounds are now blocked on it. Should the user or the orchestrator do it?
+- The re-split guard asks for confirmation instead of keeping edited scenes. Is a confirmation enough, or should edited scenes be kept and flagged?
 - Should the rollup's `pipeline_steps_scope_latest_idx` index stay in this phase's migration, since the pipeline tables are owned by phase 3? It is needed for the 60 ms budget.
 - Is 166.76 KB for the authenticated shell acceptable, or should the generated client be split per domain?
