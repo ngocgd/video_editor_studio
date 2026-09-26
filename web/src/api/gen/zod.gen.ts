@@ -302,6 +302,61 @@ export const zClaudeCliStatus = z.object({
     detail: z.string().optional()
 });
 
+/**
+ * A YouTube channel connected through Google OAuth. Tokens never appear here.
+ */
+export const zYouTubeChannel = z.object({
+    id: z.string().uuid(),
+    youtubeChannelId: z.string(),
+    title: z.string(),
+    thumbnailUrl: z.string(),
+    scopes: z.array(z.string()),
+    canUpload: z.boolean(),
+    apiProjectAudited: z.boolean(),
+    auditFormDate: z.string().date().optional(),
+    auditNote: z.string(),
+    longUploadsStatus: z.enum([
+        'allowed',
+        'eligible',
+        'disallowed',
+        'unknown'
+    ]),
+    eligibilityCheckedAt: z.string().datetime().optional(),
+    customThumbnailsOk: z.boolean(),
+    status: z.enum([
+        'connected',
+        'reconnect_needed',
+        'disconnected'
+    ]),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime()
+});
+
+/**
+ * Today's Data API units spent from the Google project's daily pool.
+ */
+export const zYouTubeQuota = z.object({
+    used: z.number().int(),
+    limit: z.number().int(),
+    resetsAt: z.string().datetime()
+});
+
+export const zYouTubeChannelList = z.object({
+    items: z.array(zYouTubeChannel),
+    oauthConfigured: z.boolean(),
+    quota: zYouTubeQuota
+});
+
+export const zYouTubeConnectStart = z.object({
+    authorizationUrl: z.string()
+});
+
+export const zYouTubeChannelAuditUpdate = z.object({
+    apiProjectAudited: z.boolean(),
+    auditFormDate: z.string().date().optional(),
+    auditNote: z.string().max(2000).optional()
+});
+
 export const zTargetLanguage = z.enum(['en', 'vi']);
 
 export const zSeries = z.object({
@@ -1210,6 +1265,42 @@ export const zPutLlmApiKeyResponse = z.void();
  * claude CLI status
  */
 export const zGetClaudeCliStatusResponse = zClaudeCliStatus;
+
+/**
+ * channels, connected ones first
+ */
+export const zListYouTubeChannelsResponse = zYouTubeChannelList;
+
+/**
+ * consent URL to navigate to
+ */
+export const zStartYouTubeConnectResponse = zYouTubeConnectStart;
+
+export const zYouTubeOAuthCallbackQuery = z.object({
+    code: z.string().max(2048).optional(),
+    state: z.string().max(256).optional(),
+    error: z.string().max(256).optional()
+});
+
+export const zDisconnectYouTubeChannelPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * disconnected
+ */
+export const zDisconnectYouTubeChannelResponse = z.void();
+
+export const zUpdateYouTubeChannelAuditBody = zYouTubeChannelAuditUpdate;
+
+export const zUpdateYouTubeChannelAuditPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * channel updated
+ */
+export const zUpdateYouTubeChannelAuditResponse = zYouTubeChannel;
 
 export const zListSeriesQuery = z.object({
     cursor: z.string().optional(),

@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import { Button } from "../../components/ui/button";
 import { InspectorSection } from "../../components/shared/inspector-panel";
 import { useLogout, useMe, useSwitchTenant } from "./use-auth";
@@ -37,6 +39,12 @@ export function AccountSettingsView() {
             </li>
           ))}
         </ul>
+      </InspectorSection>
+
+      <InspectorSection title="Integrations">
+        <Link to="/settings/youtube" className="text-sm text-primary-text hover:underline">
+          YouTube channels
+        </Link>
       </InspectorSection>
 
       <Button variant="destructive" size="sm" className="w-fit" onClick={() => logout.mutate()}>
