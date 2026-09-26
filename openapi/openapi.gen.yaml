@@ -2537,6 +2537,11 @@ paths:
               required: true
               schema:
                 type: string
+            Cache-Control:
+              required: true
+              description: The redirect is cached privately for less than the target URL's lifetime.
+              schema:
+                type: string
         '404':
           description: asset or variant not found in this tenant
           content:

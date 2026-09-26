@@ -523,6 +523,10 @@ func TestMediaVariantsAndPeaksOnLavfiFixtures(t *testing.T) {
 		if resp.StatusCode != http.StatusFound {
 			t.Fatalf("%s: status %d", variant, resp.StatusCode)
 		}
+		// The browser reuses the redirect for less than the presigned URL lives.
+		if cc := resp.Header.Get("Cache-Control"); cc != "private, max-age=300" {
+			t.Fatalf("%s: Cache-Control %q", variant, cc)
+		}
 		obj, err := http.Get(resp.Header.Get("Location"))
 		if err != nil {
 			t.Fatal(err)

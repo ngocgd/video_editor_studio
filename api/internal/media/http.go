@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -18,6 +19,12 @@ import (
 // backfillPage bounds how many assets one backfill call queues; calling
 // it again picks up the rest.
 const backfillPage = 500
+
+// variantRedirectCache lets the browser reuse a variant redirect instead
+// of asking the API again for every tile remount and audio replay. It is
+// well under the presigned URL's lifetime (storage.MaxUploadTTL), so a
+// cached redirect never points at an expired URL.
+var variantRedirectCache = fmt.Sprintf("private, max-age=%d", int((storage.MaxUploadTTL / 2).Seconds()))
 
 // MediaAPI implements the media slice of gen.StrictServerInterface.
 type MediaAPI struct {
@@ -47,7 +54,7 @@ func (h *MediaAPI) GetAssetVariant(ctx context.Context, req gen.GetAssetVariantR
 	if err != nil {
 		return nil, err
 	}
-	return gen.GetAssetVariant302Response{Headers: gen.GetAssetVariant302ResponseHeaders{Location: url}}, nil
+	return gen.GetAssetVariant302Response{Headers: gen.GetAssetVariant302ResponseHeaders{Location: url, CacheControl: variantRedirectCache}}, nil
 }
 
 // BackfillMedia queues variants and peaks for ready assets that predate
