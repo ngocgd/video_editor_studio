@@ -370,6 +370,8 @@ models:
       repo: unsloth/Qwen3.5-9B-GGUF
       revision: 3885219b6810b007914f3a7950a8d1b469d598a5
       base: Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a
+    # 8.9 GiB of Q8_0 weights plus a 16k context and the CUDA context; to
+    # be replaced by the measured peak.
     vram_mb: 11000
     files:
       - path: llm/qwen3.5-9b-q8_0.gguf
@@ -390,7 +392,9 @@ models:
       repo: unsloth/gemma-4-12b-it-GGUF
       revision: fc034cfff751157913579611efad8462ac1be606
       base: google/gemma-4-12B-it@707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7
-    vram_mb: 11800
+    # 9.1 GiB of Q6_K weights plus a 16k context (mostly sliding-window
+    # attention) and the CUDA context; to be replaced by the measured peak.
+    vram_mb: 11300
     files:
       - path: llm/gemma-4-12b-it-q6_k.gguf
         remote: gemma-4-12b-it-Q6_K.gguf
