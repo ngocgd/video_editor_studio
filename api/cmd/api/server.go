@@ -1,6 +1,7 @@
 package main
 
 import (
+	"loomtale/api/internal/analyticsapi"
 	"loomtale/api/internal/assetsapi"
 	"loomtale/api/internal/auditapi"
 	"loomtale/api/internal/authapi"
@@ -27,6 +28,7 @@ type server struct {
 	*story.StoryAPI
 	*modelsapi.ModelsAPI
 	*channelsapi.ChannelsAPI
+	*analyticsapi.AnalyticsAPI
 }
 
 var _ gen.StrictServerInterface = (*server)(nil)
