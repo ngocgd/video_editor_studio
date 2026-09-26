@@ -8,10 +8,10 @@
  * through DOMPurify with `RETURN_TRUSTED_TYPE` instead of throwing under the
  * CSP `require-trusted-types-for 'script'` directive.
  *
- * Nothing in this phase calls an HTML sink, so the policy only needs to
- * exist before the first one does, not before first paint; DOMPurify
- * (~15KB gzip) is dynamically imported here instead of sitting in every
- * route's eager bundle (review "bundle easy wins").
+ * Third-party components do write HTML sinks while rendering (Radix
+ * ScrollArea's injected <style>), so main.tsx awaits this before the first
+ * render. DOMPurify (~15KB gzip) is still dynamically imported here, in its
+ * own chunk, instead of sitting in every route's eager bundle.
  */
 export async function installTrustedTypesPolicy(): Promise<void> {
   const tt = window.trustedTypes;
