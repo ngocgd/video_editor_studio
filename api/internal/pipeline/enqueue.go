@@ -116,7 +116,7 @@ func (e *Engine) insertSteps(ctx context.Context, qtx *dbgen.Queries, tenantID u
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownStepKind, s.Kind)
 		}
-		ref := StepRef{ID: s.ID, TenantID: tenantID, RunID: spec.ID, ScopeKind: s.ScopeKind, ScopeID: s.ScopeID, Kind: s.Kind}
+		ref := StepRef{ID: s.ID, TenantID: tenantID, RunID: spec.ID, ScopeKind: s.ScopeKind, ScopeID: s.ScopeID, Kind: s.Kind, Input: s.Input}
 		queue, err := h.Queue(ctx, ref)
 		if err != nil {
 			return nil, fmt.Errorf("pipeline: resolve queue for step %s: %w", s.ID, err)

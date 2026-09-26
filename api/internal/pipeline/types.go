@@ -7,6 +7,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	dbgen "loomtale/api/internal/db/gen"
@@ -52,6 +53,10 @@ type StepRef struct {
 	ScopeKind string
 	ScopeID   uuid.UUID
 	Kind      string
+	// Input is the step's enqueue-time input (StepSpec.Input), for a
+	// handler whose hash depends on per-step parameters rather than on
+	// its scope row alone. It is empty outside Enqueue.
+	Input json.RawMessage
 }
 
 // ModelRef identifies a model a step needs resident on the GPU. Backend is
