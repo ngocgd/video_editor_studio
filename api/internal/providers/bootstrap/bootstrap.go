@@ -72,6 +72,20 @@ func TimeoutHTTPClient() *http.Client {
 	}
 }
 
+// SidecarHTTPClient builds the client the claude-cli adapter uses to
+// call the llm-cli sidecar. It keeps the dial timeout but has no
+// response-header timeout: a generation can legitimately run for
+// minutes, and the sidecar's own LLMCLI_TIMEOUT plus the step's context
+// deadline bound the call instead. The sidecar also commits its headers
+// as soon as it accepts a run, so a stuck sidecar is still visible as a
+// context deadline rather than a hang.
+func SidecarHTTPClient() *http.Client {
+	dialer := &net.Dialer{Timeout: providerDialTimeout}
+	return &http.Client{
+		Transport: &http.Transport{DialContext: dialer.DialContext},
+	}
+}
+
 // Build constructs every LLM adapter this process can build from static
 // config/secrets, plus per-tenant BYOK factories for the two key-based
 // providers (anthropic-api, gemini-api). A provider whose prerequisite
@@ -103,7 +117,7 @@ func Build(cfg Config, queries *dbgen.Queries, secretsStore *secrets.Store) (*re
 	// "available" in settings either.
 	if !saasMode {
 		if token := readSecretOrEmpty(cfg.LLMCLIBearerTokenPath); token != "" {
-			providers["claude-cli"] = claudecli.New(cfg.LLMCLIURL, secretstr.String(token), TimeoutHTTPClient(), saasMode)
+			providers["claude-cli"] = claudecli.New(cfg.LLMCLIURL, secretstr.String(token), SidecarHTTPClient(), saasMode)
 		}
 	}
 
