@@ -115,7 +115,8 @@ services:
     cap_drop: [ALL]
 
   # Required service (no profile): the local-default LLM backend per the
-  # contract, with no model pulled until phase 9b's models.pull step.
+  # contract. It has no egress: the worker imports a manifest LLM's pinned
+  # GGUF through the blob API on first load (models/ollama/*.Modelfile).
   # registry.QueueFor routes an ollama-backed step to the gpu queue.
   ollama:
     image: ollama/ollama@sha256:8262851b2846b87c649eddf3e76beb270c52f4d1bc94559f47efde16b0841551
@@ -136,23 +137,29 @@ services:
       # store), unlike the HF-based engines.
     volumes:
       # Ollama's own volume, never the shared read-only loomtale_models
-      # tree: Ollama needs to write into its model store (`ollama pull`,
-      # phase 9b), and a writable mount into the same tree ComfyUI loads
-      # .safetensors/.gguf from would let it place arbitrary files
-      # (including pickle-capable .ckpt) somewhere ComfyUI might load.
+      # tree: Ollama writes imported blobs into its model store, and a
+      # writable mount into the same tree ComfyUI loads .safetensors/.gguf
+      # from would let it place arbitrary files (including pickle-capable
+      # .ckpt) somewhere ComfyUI might load.
       - ollama_models:/root/.ollama/models
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
-  # The Python gRPC worker (worker/tts/align/train/vision.proto). No
-  # engine is registered before phases 9a-9c: every media RPC honestly
-  # fails engine_not_installed, matching ListEngines() == [].
+  # The Python gRPC worker (worker/tts/align/train/vision.proto): the
+  # Chatterbox, VieNeu-TTS and whisper-align engines. Each is listed and
+  # answers engine_not_installed until its pinned weights are installed
+  # and the image is built with its runtime (PYWORKER_EXTRAS in .env, e.g.
+  # "tts-en tts-vi align"; empty builds the small image without them).
   pyworker:
     build:
       context: ..
       dockerfile: deploy/docker/pyworker.Dockerfile
+      args:
+        PYWORKER_EXTRAS: ${PYWORKER_EXTRAS:-}
     image: loomtale/pyworker:local
-    mem_limit: 6g
+    # Chatterbox, whisper large-v3 and the VieNeu ONNX engine load one at
+    # a time; 8g covers the largest with its CPU-side buffers.
+    mem_limit: 8g
     restart: unless-stopped
     networks: [loomtale_gpu]
     secrets: [pyworker_bearer_token]
@@ -167,6 +174,8 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
+      HF_HUB_CACHE: /tmp/hf-cache
+      MODELS_DIR: /models
       PYWORKER_BEARER_TOKEN_PATH: /run/secrets/pyworker_bearer_token
     volumes:
       - loomtale_models:/models:ro
@@ -187,14 +196,16 @@ services:
   # Operator CLI (`loomtale models pull|remove|list`, `loomtale bench`):
   # run on demand with `docker compose ... --profile cli run --rm cli
   # <subcommand>`. Same image and user as the api; it joins the GPU
-  # network to reach ComfyUI for benchmarks and mounts the models volume
-  # writable for pulls, like the worker.
+  # network to reach ComfyUI, pyworker and Ollama for benchmarks, the LLM
+  # network to compare against the claude CLI sidecar, and mounts the
+  # models volume writable for pulls, like the worker.
   cli:
     profiles: ["cli"]
     image: loomtale/api:local
     entrypoint: ["/usr/local/bin/loomtale"]
     mem_limit: 512m
-    networks: [loomtale_core, loomtale_gpu]
+    networks: [loomtale_core, loomtale_gpu, loomtale_llm]
+    secrets: [pyworker_bearer_token, llmcli_bearer_token]
     depends_on:
       models-init:
         condition: service_completed_successfully
@@ -203,6 +214,12 @@ services:
       MODELS_DIR: /models
       MODELS_HOST_DISK_DIR: /host-disk
       COMFYUI_URL: http://comfyui:8188
+      PYWORKER_ADDR: pyworker:9090
+      PYWORKER_BEARER_TOKEN_PATH: /run/secrets/pyworker_bearer_token
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      LLMCLI_URL: http://llm-cli:8090
+      LLMCLI_BEARER_TOKEN_PATH: /run/secrets/llmcli_bearer_token
       RENDER_RESERVE_MB: "1024"
     volumes:
       - loomtale_models:/models

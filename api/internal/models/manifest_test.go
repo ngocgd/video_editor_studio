@@ -17,10 +17,14 @@ func TestEmbeddedManifestParsesAndLints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if problems := Lint(m, templates); len(problems) > 0 {
+	modelfiles, err := EmbeddedModelfiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if problems := Lint(m, templates, modelfiles); len(problems) > 0 {
 		t.Fatalf("embedded manifest has lint problems: %v", problems)
 	}
-	for _, name := range []string{"z-image-turbo", "qwen-image", "qwen-image-edit-2511"} {
+	for _, name := range []string{"z-image-turbo", "qwen-image", "qwen-image-edit-2511", "chatterbox", "vieneu-v3-turbo", "whisper-align", "qwen3.5-9b", "gemma-4-12b"} {
 		e, ok := m.Get(name)
 		if !ok {
 			t.Fatalf("manifest is missing %s", name)
@@ -100,5 +104,29 @@ func TestGateRefusesMissingLicenceURL(t *testing.T) {
 	e := Entry{Name: "x", Licence: Licence{SPDX: "MIT"}}
 	if err := Gate(e); err == nil || !strings.Contains(err.Error(), "no licence URL") {
 		t.Fatalf("expected a missing-URL refusal, got %v", err)
+	}
+}
+
+func TestEmbeddedModelfilesMatchTheOllamaEntries(t *testing.T) {
+	m, err := Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modelfiles, err := EmbeddedModelfiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	llms := 0
+	for _, e := range m.Models {
+		if e.Engine != "ollama" {
+			continue
+		}
+		llms++
+		if _, ok := modelfiles[e.Name]; !ok {
+			t.Fatalf("%s has no embedded Modelfile", e.Name)
+		}
+	}
+	if llms < 1 {
+		t.Fatal("the manifest must list at least one local LLM for Ollama")
 	}
 }

@@ -34,7 +34,7 @@ func tinyTemplates() map[string]*comfyui.Template {
 }
 
 func lint(e Entry) []error {
-	return Lint(&Manifest{Version: 1, Models: []Entry{e}}, tinyTemplates())
+	return Lint(&Manifest{Version: 1, Models: []Entry{e}}, tinyTemplates(), nil)
 }
 
 func expectProblem(t *testing.T, problems []error, want string) {
@@ -90,6 +90,6 @@ func TestLintRefusesConflictingPins(t *testing.T) {
 	b := validEntry()
 	b.Name = "other-model"
 	b.Files[1].SHA256 = strings.Repeat("f", 64)
-	problems := Lint(&Manifest{Version: 1, Models: []Entry{a, b}}, tinyTemplates())
+	problems := Lint(&Manifest{Version: 1, Models: []Entry{a, b}}, tinyTemplates(), nil)
 	expectProblem(t, problems, "pinned to two different checksums")
 }

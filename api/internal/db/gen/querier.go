@@ -151,6 +151,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetVoicePreset(ctx context.Context, arg GetVoicePresetParams) (VoicePreset, error)
 	GetVoicePresetsByIDs(ctx context.Context, arg GetVoicePresetsByIDsParams) ([]VoicePreset, error)
+	GetVoiceRateCalibration(ctx context.Context, voiceKey string) (VoiceRateCalibration, error)
 	HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error)
 	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
 	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
@@ -341,6 +342,9 @@ type Querier interface {
 	UpsertNarratorVoice(ctx context.Context, arg UpsertNarratorVoiceParams) (NarratorVoice, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 	UpsertStoryboardSettings(ctx context.Context, arg UpsertStoryboardSettingsParams) (SeriesStoryboardSetting, error)
+	// Measured narration speed per voice (see the voice_rate_calibrations
+	// migration). Not tenant-scoped.
+	UpsertVoiceRateCalibration(ctx context.Context, arg UpsertVoiceRateCalibrationParams) error
 	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
 

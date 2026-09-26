@@ -49,6 +49,10 @@ class ModelManager:
     def registry(self) -> EngineRegistry:
         return self._registry
 
+    @property
+    def resident_vram_mb(self) -> int:
+        return self._resident_vram_mb
+
     async def load(self, name: str) -> int:
         """Loads engine `name`, unloading whatever was resident first.
         Raises EngineNotInstalledError for an unknown/uninstalled engine,
@@ -66,6 +70,12 @@ class ModelManager:
             await self._unload_locked()
         try:
             held_mb = await engine.load()
+        except ImportError as exc:
+            # The weights are on disk but this worker image was built
+            # without the engine's extra (tts-en, tts-vi or align).
+            raise EngineNotInstalledError(
+                f"{name}: this worker image lacks the engine's runtime ({exc.name or exc})"
+            ) from exc
         except Exception as exc:  # noqa: BLE001 - narrowed by is_cuda_oom below
             if _is_cuda_oom(exc):
                 raise GpuOomError(str(exc)) from exc

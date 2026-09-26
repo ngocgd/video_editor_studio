@@ -198,7 +198,7 @@ func (q *Queries) ListModelBenchmarksByRun(ctx context.Context, runID pgtype.UUI
 }
 
 const listModelFiles = `-- name: ListModelFiles :many
-SELECT path, sha256, size_bytes, verified_at FROM model_files ORDER BY path
+SELECT path, digest, size_bytes, verified_at FROM model_files ORDER BY path
 `
 
 func (q *Queries) ListModelFiles(ctx context.Context) ([]ModelFile, error) {
@@ -212,7 +212,7 @@ func (q *Queries) ListModelFiles(ctx context.Context) ([]ModelFile, error) {
 		var i ModelFile
 		if err := rows.Scan(
 			&i.Path,
-			&i.Sha256,
+			&i.Digest,
 			&i.SizeBytes,
 			&i.VerifiedAt,
 		); err != nil {
@@ -377,21 +377,21 @@ func (q *Queries) UpdateModelInstallProgress(ctx context.Context, arg UpdateMode
 }
 
 const upsertModelFile = `-- name: UpsertModelFile :exec
-INSERT INTO model_files (path, sha256, size_bytes, verified_at)
+INSERT INTO model_files (path, digest, size_bytes, verified_at)
 VALUES ($1, $2, $3, now())
 ON CONFLICT (path) DO UPDATE SET
-    sha256 = EXCLUDED.sha256,
+    digest = EXCLUDED.digest,
     size_bytes = EXCLUDED.size_bytes,
     verified_at = now()
 `
 
 type UpsertModelFileParams struct {
 	Path      string `json:"path"`
-	Sha256    string `json:"sha256"`
+	Digest    string `json:"digest"`
 	SizeBytes int64  `json:"size_bytes"`
 }
 
 func (q *Queries) UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error {
-	_, err := q.db.Exec(ctx, upsertModelFile, arg.Path, arg.Sha256, arg.SizeBytes)
+	_, err := q.db.Exec(ctx, upsertModelFile, arg.Path, arg.Digest, arg.SizeBytes)
 	return err
 }

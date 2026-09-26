@@ -4,31 +4,54 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
+	"loomtale/api/internal/providers/llm"
 	"loomtale/api/internal/providers/residency"
 )
 
 // Backend adapts Provider to residency.Backend for the residency
-// manager. Load and Resident/Unload are real against any Ollama server;
-// no model exists to load until phase 9b seeds one, at which point Load
-// simply targets that model.
+// manager. Residency is proven through /api/ps, never nvidia-smi.
 type Backend struct {
 	Provider *Provider
+	// Prepare, if set, runs before every load: the worker wires it to the
+	// licence and verified-files gate plus the offline import, so a model
+	// that is not yet in Ollama's store is created from its pinned GGUF on
+	// first use. Nil loads whatever Ollama already has.
+	Prepare func(ctx context.Context, model string) error
 }
 
 var _ residency.Backend = (*Backend)(nil)
 
 func (b *Backend) Name() string { return "ollama" }
 
+// Unload releases every model /api/ps reports, not only the configured
+// one: a benchmark or an earlier configuration may have loaded another.
 func (b *Backend) Unload(ctx context.Context) error {
-	return b.Provider.Unload(ctx)
+	running, err := b.Provider.Running(ctx)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, name := range running {
+		if err := b.Provider.unloadModel(ctx, name); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
-// Load pulls model into VRAM without generating text, via /api/generate
+// Load makes model resident without generating text, via /api/generate
 // with an empty prompt (Ollama's documented "just load" pattern).
 func (b *Backend) Load(ctx context.Context, model string) (int64, error) {
+	if b.Prepare != nil {
+		if err := b.Prepare(ctx, model); err != nil {
+			return 0, err
+		}
+	}
 	payload, err := json.Marshal(map[string]any{"model": model, "prompt": ""})
 	if err != nil {
 		return 0, err
@@ -44,27 +67,31 @@ func (b *Backend) Load(ctx context.Context, model string) (int64, error) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("ollama: load unexpected status %d", resp.StatusCode)
+		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return 0, llm.ClassifyOllamaError(resp.StatusCode, string(msg))
 	}
 	return 0, nil
 }
 
 // Probe implements residency.Prober via /api/ps.
 func (b *Backend) Probe(ctx context.Context) (bool, []string) {
-	loaded, err := b.Provider.Loaded(ctx)
+	running, err := b.Provider.Running(ctx)
 	if err != nil {
 		return false, nil
 	}
-	if loaded && b.Provider.Model != "" {
-		return true, []string{b.Provider.Model}
-	}
-	return true, []string{}
+	return true, running
 }
 
+// Resident reports whether /api/ps lists model.
 func (b *Backend) Resident(ctx context.Context, model string) (bool, error) {
-	loaded, err := b.Provider.Loaded(ctx)
-	if err != nil || !loaded {
+	running, err := b.Provider.Running(ctx)
+	if err != nil {
 		return false, err
 	}
-	return normalizeModelTag(b.Provider.Model) == normalizeModelTag(model), nil
+	for _, name := range running {
+		if normalizeModelTag(name) == normalizeModelTag(model) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
