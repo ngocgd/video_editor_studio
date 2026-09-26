@@ -129,7 +129,7 @@ func (q *Queries) ListImports(ctx context.Context, arg ListImportsParams) ([]Imp
 const markImportCommitted = `-- name: MarkImportCommitted :one
 UPDATE imports
 SET status = 'committed', series_id = $1, updated_at = now()
-WHERE tenant_id = $2 AND id = $3
+WHERE tenant_id = $2 AND id = $3 AND status = 'preview'
 RETURNING id, tenant_id, series_id, asset_id, encoding, split_preset, status, chapters, error_msg, created_by, created_at, updated_at
 `
 
@@ -139,6 +139,8 @@ type MarkImportCommittedParams struct {
 	ID       pgtype.UUID `json:"id"`
 }
 
+// Only a previewed import can be committed, and only once: a concurrent or
+// repeated commit finds no row and is refused.
 func (q *Queries) MarkImportCommitted(ctx context.Context, arg MarkImportCommittedParams) (Import, error) {
 	row := q.db.QueryRow(ctx, markImportCommitted, arg.SeriesID, arg.TenantID, arg.ID)
 	var i Import
@@ -183,7 +185,7 @@ SET encoding = $1,
     status = 'preview',
     error_msg = NULL,
     updated_at = now()
-WHERE tenant_id = $4 AND id = $5
+WHERE tenant_id = $4 AND id = $5 AND status IN ('uploaded', 'preview', 'failed')
 RETURNING id, tenant_id, series_id, asset_id, encoding, split_preset, status, chapters, error_msg, created_by, created_at, updated_at
 `
 

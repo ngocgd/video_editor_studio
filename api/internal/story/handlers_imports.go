@@ -27,6 +27,10 @@ import (
 // presign/finalize time.
 const importMaxBytes = 10 << 20
 
+// importMaxChapters bounds one import: a commit creates an episode and a
+// draft per chapter in a single transaction.
+const importMaxChapters = 500
+
 // allowedImportMimes restricts a registered asset to plain text/markdown,
 // matching the "Upload .txt or .md" requirement.
 var allowedImportMimes = map[string]bool{"text/plain": true, "text/markdown": true}
@@ -169,6 +173,10 @@ func (h *StoryAPI) PreviewImport(ctx context.Context, req gen.PreviewImportReque
 	if err != nil {
 		return nil, err
 	}
+	if len(raw) > importMaxBytes {
+		detail := "the manuscript exceeds the 10MB import size limit"
+		return gen.PreviewImport422ApplicationProblemPlusJSONResponse{Title: "too large", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+	}
 
 	text, encodingName, err := importer.DecodeText(raw)
 	if err != nil {
@@ -181,6 +189,10 @@ func (h *StoryAPI) PreviewImport(ctx context.Context, req gen.PreviewImportReque
 		preset = presetFromDTO(*req.Body.SplitPreset)
 	}
 	chapters, usedPreset := importer.Split(text, preset)
+	if len(chapters) > importMaxChapters {
+		detail := fmt.Sprintf("the split found %d chapters; one import can hold at most %d, so split the manuscript into several files or pick another preset", len(chapters), importMaxChapters)
+		return gen.PreviewImport422ApplicationProblemPlusJSONResponse{Title: "too many chapters", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+	}
 
 	chapterDocs := make([]chapterDoc, 0, len(chapters))
 	for _, c := range chapters {
@@ -196,6 +208,10 @@ func (h *StoryAPI) PreviewImport(ctx context.Context, req gen.PreviewImportReque
 		TenantID: idconv.ToPg(info.ID), ID: idconv.ToPg(req.Id),
 	})
 	if err != nil {
+		if isNoRows(err) {
+			detail := "this import was already committed"
+			return gen.PreviewImport422ApplicationProblemPlusJSONResponse{Title: "already committed", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+		}
 		return nil, err
 	}
 	dto, err := importToDTO(updated)
@@ -257,7 +273,27 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 
 	selected := selectChapters(chapters, req.Body.ChapterIndexes)
 
-	idx, err := h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Body.SeriesId)})
+	// Claiming the import, creating every episode and draft, and marking it
+	// committed happen in one transaction: a failure leaves nothing behind,
+	// and a second commit of the same import waits on the row and is refused.
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := h.Queries.WithTx(tx)
+
+	if _, err := qtx.MarkImportCommitted(ctx, dbgen.MarkImportCommittedParams{
+		SeriesID: idconv.ToPg(req.Body.SeriesId), TenantID: idconv.ToPg(info.ID), ID: idconv.ToPg(req.Id),
+	}); err != nil {
+		if isNoRows(err) {
+			detail := "this import was already committed"
+			return gen.CommitImport409ApplicationProblemPlusJSONResponse{Title: "not ready to commit", Status: http.StatusConflict, Detail: &detail}, nil
+		}
+		return nil, err
+	}
+
+	idx, err := qtx.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Body.SeriesId)})
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +312,7 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 
 		episodeID := idconv.NewV7()
 		outline, _ := json.Marshal([]outlineBeatDoc{})
-		episode, err := h.Queries.CreateEpisode(ctx, dbgen.CreateEpisodeParams{
+		episode, err := qtx.CreateEpisode(ctx, dbgen.CreateEpisodeParams{
 			ID: idconv.ToPg(episodeID), TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Body.SeriesId),
 			Idx: idx, Title: title, Outline: outline, Status: "draft",
 			SourceImportChapterIndex: idconv.ToPgInt4(int32(c.Index)),
@@ -291,7 +327,7 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 		if err != nil {
 			return nil, err
 		}
-		if _, err := h.Queries.CreateDraft(ctx, dbgen.CreateDraftParams{
+		if _, err := qtx.CreateDraft(ctx, dbgen.CreateDraftParams{
 			ID: idconv.ToPg(idconv.NewV7()), TenantID: idconv.ToPg(info.ID), EpisodeID: episode.ID,
 			Lang: "en", Paragraphs: paragraphsJSON, WordCount: int32(WordCount(paragraphs)),
 		}); err != nil {
@@ -307,9 +343,7 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 		}
 	}
 
-	if _, err := h.Queries.MarkImportCommitted(ctx, dbgen.MarkImportCommittedParams{
-		SeriesID: idconv.ToPg(req.Body.SeriesId), TenantID: idconv.ToPg(info.ID), ID: idconv.ToPg(req.Id),
-	}); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 

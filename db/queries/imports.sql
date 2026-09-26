@@ -20,13 +20,15 @@ SET encoding = @encoding,
     status = 'preview',
     error_msg = NULL,
     updated_at = now()
-WHERE tenant_id = @tenant_id AND id = @id
+WHERE tenant_id = @tenant_id AND id = @id AND status IN ('uploaded', 'preview', 'failed')
 RETURNING *;
 
 -- name: MarkImportCommitted :one
+-- Only a previewed import can be committed, and only once: a concurrent or
+-- repeated commit finds no row and is refused.
 UPDATE imports
 SET status = 'committed', series_id = @series_id, updated_at = now()
-WHERE tenant_id = @tenant_id AND id = @id
+WHERE tenant_id = @tenant_id AND id = @id AND status = 'preview'
 RETURNING *;
 
 -- name: MarkImportFailed :exec
