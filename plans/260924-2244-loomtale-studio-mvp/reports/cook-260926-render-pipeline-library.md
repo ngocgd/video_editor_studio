@@ -105,7 +105,16 @@ Status: DONE_WITH_CONCERNS. Every requirement of the phase file is implemented, 
 - `PutFileChecksummed` is a single PUT, so objects are limited to 5 GiB.
 - The library tests could flake if the api's hourly TTL scheduler fires for the test tenant between a preview and its confirm (the token would then be refused). This is rare, and noted here.
 
+## Review
+
+The first independent review (plans/reports/code-reviewer-260927-0148-phase-08-render-pipeline-library-review.md) found two blocking test defects. Both are fixed on the branch and were re-run live under the heavy lock on compose project `loomtale-a`.
+
+- The integration engine tests put their fake kinds on the render queue, which the live worker now serves, so the worker claimed them and `TestInteractiveStepWaitsAtMostOneChunkBehindBatch` never saw its interactive step start. Fixed: `testQueue` in `api/internal/integration/pipeline_helper_test.go` is now the io queue, which the integration stack's worker never enables (only a GPU worker with a models directory does), and the comment explains why the queue cannot be a made-up name (the `pipeline_steps.queue` CHECK constraint). Outcome: integration 91 passed, 0 failed, including that test and the render tests.
+- `web/e2e/render-library.spec.ts` asserted `toBeDisabled()` on the parallax option, which Playwright reports as enabled inside a label-wrapped select. Fixed: the spec asserts `toHaveAttribute("disabled", "")`. Outcome: the render and library spec passes, including its Library half. Playwright ran 5 passed and 1 failed; the failure is `youtube-settings.spec.ts` (two headings named "YouTube channels"), which comes from main and which lane h has already raised on the board for lane c.
+
+The review's Medium items (no `h264_nvenc` in the static ffmpeg, the StartRender check-then-freeze race, no sweep of orphaned /scratch temp dirs, and migration ordering) were outside this fix round and stay open. The review confirmed that MinIO returns the checksum on read-back, which answers the first unresolved question below.
+
 ## Unresolved questions
 
-- Does MinIO return the header-supplied `x-amz-checksum-sha256` from `StatObject(Checksum: true)` for a single PUT? The cache check and the tampered-segment test depend on it. The integration run will tell.
-- Will the static ffmpeg in the worker image expose `h264_nvenc` on the GPU host, or does the GPU override need a different build?
+- (Answered by the review: yes.) Does MinIO return the header-supplied `x-amz-checksum-sha256` from `StatObject(Checksum: true)` for a single PUT? The cache check and the tampered-segment test depend on it. The integration run will tell.
+- The review found that the static ffmpeg has no `h264_nvenc`. Does the GPU override need a dynamic ffmpeg build, or should the NVENC criterion be dropped?
