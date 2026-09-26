@@ -26,7 +26,7 @@ func segmentHashes(t *testing.T, m Manifest) []string {
 	}
 	out := make([]string, len(tl.Segments))
 	for i, s := range tl.Segments {
-		out[i] = m.SegmentHash(s, nil)
+		out[i] = m.SegmentHash(s)
 	}
 	return out
 }
@@ -72,23 +72,30 @@ func TestEditingOneSceneChangesOnlyItsSegments(t *testing.T) {
 	}
 }
 
-func TestSegmentHashCoversBurnedCuesAndEncoder(t *testing.T) {
+func TestSegmentHashCoversBurnedAlignmentAndEncoder(t *testing.T) {
 	m := testManifest(2)
 	tl, _ := m.Timeline()
 	seg := tl.Segments[0]
-	plain := m.SegmentHash(seg, nil)
-	if m.SegmentHash(seg, []Cue{{StartMs: 0, EndMs: 500, Text: "hi"}}) == plain {
-		t.Fatal("burned cues must be part of the segment hash")
+	plain := m.SegmentHash(seg)
+	realigned := testManifest(2)
+	realigned.Scenes[0].AlignAssetID = "align-new"
+	if realigned.SegmentHash(seg) == plain {
+		t.Fatal("the burned alignment take must be part of the segment hash")
 	}
 	nv := m
 	nv.Settings.Encoder = EncoderNVENC
-	if nv.SegmentHash(seg, nil) == plain {
+	if nv.SegmentHash(seg) == plain {
 		t.Fatal("segments of different encoders must never share a cache entry")
 	}
 	srtOnly := m
 	srtOnly.Settings.Subtitles = SubtitlesSRT
-	if srtOnly.SegmentHash(seg, nil) == plain {
+	if srtOnly.SegmentHash(seg) == plain {
 		t.Fatal("the burn style is part of the video key only when burning")
+	}
+	srtRealigned := srtOnly
+	srtRealigned.Scenes = realigned.Scenes
+	if srtRealigned.SegmentHash(seg) != srtOnly.SegmentHash(seg) {
+		t.Fatal("without burning, a new alignment must not re-encode the picture")
 	}
 }
 

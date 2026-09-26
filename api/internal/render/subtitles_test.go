@@ -114,3 +114,24 @@ func TestParseAlignDoc(t *testing.T) {
 		t.Fatal("garbage must not parse")
 	}
 }
+
+func TestSegmentCuesUseEachScenesOwnClock(t *testing.T) {
+	tl, err := PlanTimeline(30, []int{90, 90}, 18)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cues := map[int][]Cue{
+		0: {{StartMs: 0, EndMs: 2900, Text: "one"}},
+		1: {{StartMs: 0, EndMs: 1000, Text: "two"}},
+	}
+	get := func(i int) []Cue { return cues[i] }
+	// Scene 0 lends 9 tail frames, scene 1 lends 9 head frames.
+	body1 := SegmentCues(tl, tl.Segments[2], get)
+	if len(body1) != 1 || body1[0].Text != "two" || body1[0].StartMs != 0 || body1[0].EndMs != 700 {
+		t.Fatalf("body of scene 2 cues = %+v", body1)
+	}
+	tr := SegmentCues(tl, tl.Segments[1], get)
+	if len(tr) != 2 || tr[0].Text != "one" || tr[0].EndMs != 200 || tr[1].Text != "two" || tr[1].StartMs != 300 || tr[1].EndMs != 600 {
+		t.Fatalf("transition cues = %+v", tr)
+	}
+}

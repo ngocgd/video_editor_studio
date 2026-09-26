@@ -218,3 +218,21 @@ func cleanText(text string) []string {
 	}
 	return lines
 }
+
+// SegmentCues returns the cues burned into seg, on the segment's own
+// clock. sceneCues(i) must return scene i's cues on the scene's own clock
+// (SceneCues with a start of 0), so the result does not depend on where
+// the scene sits in the episode, just as SegmentHash does not.
+func SegmentCues(t Timeline, seg Segment, sceneCues func(scene int) []Cue) []Cue {
+	fps := t.FPS
+	if seg.Kind == SegmentBody {
+		return CuesInRange(sceneCues(seg.Scene), FrameMs(seg.LocalStart, fps), FrameMs(seg.LocalStart+seg.Frames, fps))
+	}
+	from := t.Scenes[seg.Scene]
+	out := CuesInRange(sceneCues(seg.Scene), FrameMs(seg.LocalStart, fps), FrameMs(from.Frames, fps))
+	offset := FrameMs(from.Frames-seg.LocalStart, fps)
+	for _, c := range CuesInRange(sceneCues(seg.Scene+1), 0, FrameMs(-seg.NextLocalStart, fps)) {
+		out = append(out, Cue{StartMs: c.StartMs + offset, EndMs: c.EndMs + offset, Text: c.Text})
+	}
+	return out
+}

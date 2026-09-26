@@ -28,6 +28,9 @@ type ManifestScene struct {
 	// Placeholder marks a scene rendered without its own image; QC
 	// reports any as a failure.
 	Placeholder bool `json:"placeholder,omitempty"`
+	// ImageScore is the selected image take's score when the scoring
+	// step set one; QC reports it and no segment depends on it.
+	ImageScore *float64 `json:"imageScore,omitempty"`
 }
 
 // imageKey identifies the image content: its sha256 when known, else
@@ -122,20 +125,29 @@ func (m Manifest) videoKey() videoKey {
 type sceneKey struct {
 	Image  string      `json:"image"`
 	Motion SceneMotion `json:"motion"`
+	// Align is the alignment take whose cues are burned in; empty when
+	// subtitles are not burned.
+	Align string `json:"align,omitempty"`
 }
 
-func sceneKeyOf(s ManifestScene) sceneKey {
-	return sceneKey{Image: s.imageKey(), Motion: s.SceneMotion()}
+func (m Manifest) sceneKeyOf(s ManifestScene) sceneKey {
+	k := sceneKey{Image: s.imageKey(), Motion: s.SceneMotion()}
+	if m.Settings.Burn() {
+		k.Align = contentKey("", s.AlignAssetID)
+	}
+	return k
 }
 
 // SegmentHash is the cache key of timeline segment seg. It covers the
 // video settings, the image and motion clock of every scene the segment
-// shows, the window of those clocks it shows, and the cues burned into
-// it (burn is nil when subtitles are not burned).
-func (m Manifest) SegmentHash(seg Segment, burn []Cue) string {
-	scenes := []sceneKey{sceneKeyOf(m.Scenes[seg.Scene])}
+// shows, the window of those clocks it shows and, when subtitles are
+// burned, the alignment takes whose cues it carries. Burned cues are
+// computed on each scene's own clock (SegmentCues), so the key does not
+// depend on where the scene sits in the episode.
+func (m Manifest) SegmentHash(seg Segment) string {
+	scenes := []sceneKey{m.sceneKeyOf(m.Scenes[seg.Scene])}
 	if seg.Kind == SegmentTransition {
-		scenes = append(scenes, sceneKeyOf(m.Scenes[seg.Scene+1]))
+		scenes = append(scenes, m.sceneKeyOf(m.Scenes[seg.Scene+1]))
 	}
 	return hashOf(struct {
 		Kind   SegmentKind `json:"kind"`
@@ -143,8 +155,7 @@ func (m Manifest) SegmentHash(seg Segment, burn []Cue) string {
 		Scenes []sceneKey  `json:"scenes"`
 		Local  [2]int      `json:"local"`
 		Frames int         `json:"frames"`
-		Burn   []Cue       `json:"burn,omitempty"`
-	}{seg.Kind, m.videoKey(), scenes, [2]int{seg.LocalStart, seg.NextLocalStart}, seg.Frames, burn})
+	}{seg.Kind, m.videoKey(), scenes, [2]int{seg.LocalStart, seg.NextLocalStart}, seg.Frames})
 }
 
 // AudioHash is the cache key of the narration master: the voice takes,
