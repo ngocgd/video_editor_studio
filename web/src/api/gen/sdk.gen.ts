@@ -299,7 +299,7 @@ export const trackAnalyticsVideo = <ThrowOnError extends boolean = false>(option
 });
 
 /**
- * Stop tracking a manually added video and drop its synced metrics
+ * Stop tracking a manually added video (its suggestions go at the next sync)
  */
 export const untrackAnalyticsVideo = <ThrowOnError extends boolean = false>(options: Options<UntrackAnalyticsVideoData, ThrowOnError>): RequestResult<UntrackAnalyticsVideoResponses, UntrackAnalyticsVideoErrors, ThrowOnError> => (options.client ?? client).delete<UntrackAnalyticsVideoResponses, UntrackAnalyticsVideoErrors, ThrowOnError>({ url: '/analytics/tracked-videos/{videoId}', ...options });
 

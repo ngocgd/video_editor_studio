@@ -1048,7 +1048,7 @@ paths:
   /analytics/tracked-videos/{videoId}:
     delete:
       operationId: untrackAnalyticsVideo
-      summary: Stop tracking a manually added video and drop its synced metrics
+      summary: Stop tracking a manually added video (its suggestions go at the next sync)
       tags:
         - analytics
       x-min-role: editor

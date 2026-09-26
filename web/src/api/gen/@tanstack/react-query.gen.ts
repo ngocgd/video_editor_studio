@@ -932,7 +932,7 @@ export const trackAnalyticsVideoMutation = (options?: Partial<Options<TrackAnaly
 };
 
 /**
- * Stop tracking a manually added video and drop its synced metrics
+ * Stop tracking a manually added video (its suggestions go at the next sync)
  */
 export const untrackAnalyticsVideoMutation = (options?: Partial<Options<UntrackAnalyticsVideoData>>): UseMutationOptions<UntrackAnalyticsVideoResponse, UntrackAnalyticsVideoError, Options<UntrackAnalyticsVideoData>> => {
     const mutationOptions: UseMutationOptions<UntrackAnalyticsVideoResponse, UntrackAnalyticsVideoError, Options<UntrackAnalyticsVideoData>> = {
