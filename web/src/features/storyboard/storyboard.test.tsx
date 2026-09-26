@@ -5,6 +5,7 @@ import { axe } from "vitest-axe";
 
 import type { SceneTake } from "../../api/gen/types.gen";
 import { VirtualGrid } from "../../components/shared/virtual-grid";
+import { ResplitConfirmDialog } from "./resplit-confirm-dialog";
 import { SceneFilterChips } from "./scene-filter-chips";
 import { columnsForWidth, nextMotion, rangeSelection, tileHeight, toPipelinePips } from "./storyboard-model";
 import { TakesStrip } from "./takes-strip";
@@ -131,5 +132,25 @@ describe("storyboard model", () => {
   it("cycles the motion presets", () => {
     expect(nextMotion("ken_burns")).toBe("parallax");
     expect(nextMotion("static")).toBe("ken_burns");
+  });
+});
+
+describe("re-split confirmation", () => {
+  it("shows the server's counts and only confirms on the destructive button", () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    const message = "Splitting again will delete 3 scenes, including 1 edited scenes and 4 takes. This cannot be undone.";
+    render(<ResplitConfirmDialog message={message} pending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole("dialog")).toHaveTextContent("1 edited scenes and 4 takes");
+    fireEvent.click(screen.getByRole("button", { name: "Keep my scenes" }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Split and delete" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays closed without a refused split", () => {
+    render(<ResplitConfirmDialog message={undefined} pending={false} onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

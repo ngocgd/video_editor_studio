@@ -10,7 +10,8 @@ import {
   listCharactersOptions,
   listImageStylesOptions,
 } from "../../api/gen/@tanstack/react-query.gen";
-import type { Scene, SceneFilter, SceneLanguage } from "../../api/gen/types.gen";
+import type { Scene, SceneFilter, SceneLanguage, SceneSplitRequest } from "../../api/gen/types.gen";
+import { ApiError } from "../../api/client";
 import { useSseTopics } from "../../api/use-sse-topics";
 import { EmptyState } from "../../components/shared/empty-state";
 import type { Speaker } from "../../components/shared/speaker-monogram";
@@ -19,6 +20,7 @@ import { Timeline, type TimelineClip } from "../timeline/timeline";
 import { SceneGrid } from "./scene-grid";
 import { SceneInspector } from "./scene-inspector";
 import { SceneFilterChips } from "./scene-filter-chips";
+import { ResplitConfirmDialog } from "./resplit-confirm-dialog";
 import { StoryboardSettingsPanel } from "./storyboard-settings";
 import { nextMotion, PIP_LABELS, rangeSelection } from "./storyboard-model";
 import { assetUrl, useGenerateMissing, useRegenerate, useScenes, useSplitScenes, useUpdateScene } from "./use-scenes";
@@ -57,6 +59,7 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
   const [anchor, setAnchor] = useState(0);
   const [editingNarration, setEditingNarration] = useState(false);
   const [splitRunId, setSplitRunId] = useState<string | undefined>();
+  const [confirmSplit, setConfirmSplit] = useState<{ body: SceneSplitRequest; message: string } | undefined>();
   const [playing, setPlaying] = useState(false);
   const [playheadMs, setPlayheadMs] = useState<number | undefined>();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -65,6 +68,19 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
   const generate = useGenerateMissing(episodeId);
   const regenerate = useRegenerate(episodeId);
   const update = useUpdateScene(episodeId);
+  // A re-split that would delete edited scenes or takes answers 409 with
+  // the counts; ask before re-sending it with discardWork.
+  const runSplit = (body: SceneSplitRequest) =>
+    split.mutate(body, {
+      onSuccess: (r) => {
+        setConfirmSplit(undefined);
+        if (r?.runId) setSplitRunId(r.runId);
+      },
+      onError: (e) => {
+        if (e instanceof ApiError && e.status === 409) setConfirmSplit({ body, message: e.detail ?? e.message });
+      },
+    });
+  const splitConflict = split.error instanceof ApiError && split.error.status === 409;
 
   useEffect(() => {
     const t = setTimeout(() => setQ(search), 200);
@@ -230,14 +246,14 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
             ))}
           </div>
           <StoryboardSettingsPanel seriesId={seriesId} styles={styles.data?.items ?? []} />
-          <button type="button" className={buttonClass} disabled={split.isPending} onClick={() => split.mutate({ lang, mode: "paragraphs" })}>
+          <button type="button" className={buttonClass} disabled={split.isPending} onClick={() => runSplit({ lang, mode: "paragraphs" })}>
             <Scissors size={14} aria-hidden="true" /> Split by paragraphs
           </button>
           <button
             type="button"
             className={buttonClass}
             disabled={split.isPending || Boolean(splitRunId)}
-            onClick={() => split.mutate({ lang, mode: "llm" }, { onSuccess: (r) => r?.runId && setSplitRunId(r.runId) })}
+            onClick={() => runSplit({ lang, mode: "llm" })}
           >
             <Sparkles size={14} aria-hidden="true" /> {splitRunId ? "Splitting with AI…" : "Re-split with AI"}
           </button>
@@ -250,14 +266,14 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
             Generate missing <span className="font-mono">({data?.missingCount ?? 0})</span>
           </button>
         </header>
-        {(split.error || generate.error) && (
+        {((split.error && !splitConflict) || generate.error) && (
           <p role="alert" className="text-sm text-destructive">
-            {(split.error ?? generate.error)?.message}
+            {(splitConflict ? generate.error : (split.error ?? generate.error))?.message}
           </p>
         )}
         {split.data && split.data.mode === "paragraphs" && (
           <p role="status" className="text-xs text-text-2">
-            Split into {split.data.sceneCount} scenes; kept {split.data.keptCount} unchanged with their takes.
+            Split into {split.data.sceneCount} scenes; kept {split.data.keptCount} unchanged with their takes; deleted {split.data.droppedCount ?? 0}.
           </p>
         )}
 
@@ -327,6 +343,15 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
         styles={styles.data?.items ?? []}
         editingNarration={editingNarration}
         onEditingNarrationChange={setEditingNarration}
+      />
+      <ResplitConfirmDialog
+        message={confirmSplit?.message}
+        pending={split.isPending}
+        onConfirm={() => confirmSplit && runSplit({ ...confirmSplit.body, discardWork: true })}
+        onCancel={() => {
+          setConfirmSplit(undefined);
+          split.reset();
+        }}
       />
     </div>
   );
