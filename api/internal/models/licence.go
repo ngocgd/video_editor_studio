@@ -23,14 +23,30 @@ func LicenceAllowed(spdx string) bool {
 // the gate fails permanently instead of retrying.
 var ErrLicenceRefused = fmt.Errorf("models: %w", pipeline.ErrLicenceRefused)
 
-// Gate refuses e unless its licence is allowlisted and recorded with a
-// URL. It runs at install time (API and worker) and again at engine load.
+// Gate refuses e unless its licence, and the licence of every file that
+// overrides it, is allowlisted and recorded with a URL. It runs at
+// install time (API and worker) and again at engine load.
 func Gate(e Entry) error {
-	if !LicenceAllowed(e.Licence.SPDX) {
-		return fmt.Errorf("%w: %s is licensed %q, which is not in the allowlist %v", ErrLicenceRefused, e.Name, e.Licence.SPDX, LicenceAllowlist)
+	if err := gateLicence(e.Name, e.Licence); err != nil {
+		return err
 	}
-	if e.Licence.URL == "" {
-		return fmt.Errorf("%w: %s has no licence URL recorded", ErrLicenceRefused, e.Name)
+	for _, f := range e.Files {
+		if f.Licence == nil {
+			continue
+		}
+		if err := gateLicence(e.Name+" file "+f.Path, *f.Licence); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func gateLicence(what string, l Licence) error {
+	if !LicenceAllowed(l.SPDX) {
+		return fmt.Errorf("%w: %s is licensed %q, which is not in the allowlist %v", ErrLicenceRefused, what, l.SPDX, LicenceAllowlist)
+	}
+	if l.URL == "" {
+		return fmt.Errorf("%w: %s has no licence URL recorded", ErrLicenceRefused, what)
 	}
 	return nil
 }

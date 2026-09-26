@@ -93,7 +93,7 @@ type ModelBenchmark struct {
 
 type ModelFile struct {
 	Path       string             `json:"path"`
-	Sha256     string             `json:"sha256"`
+	Digest     string             `json:"digest"`
 	SizeBytes  int64              `json:"size_bytes"`
 	VerifiedAt pgtype.Timestamptz `json:"verified_at"`
 }

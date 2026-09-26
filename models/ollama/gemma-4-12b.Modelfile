@@ -1,0 +1,5 @@
+# Gemma 4 12B instruct, Q6_K GGUF. Imported offline by the worker from the
+# pinned, verified file on the models volume (see models/manifest.yaml);
+# the chat template comes from the GGUF metadata.
+FROM /models/llm/gemma-4-12b-it-q6_k.gguf
+PARAMETER num_ctx 16384

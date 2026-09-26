@@ -66,10 +66,10 @@ SELECT * FROM model_installs ORDER BY name;
 DELETE FROM model_installs WHERE name = @name;
 
 -- name: UpsertModelFile :exec
-INSERT INTO model_files (path, sha256, size_bytes, verified_at)
-VALUES (@path, @sha256, @size_bytes, now())
+INSERT INTO model_files (path, digest, size_bytes, verified_at)
+VALUES (@path, @digest, @size_bytes, now())
 ON CONFLICT (path) DO UPDATE SET
-    sha256 = EXCLUDED.sha256,
+    digest = EXCLUDED.digest,
     size_bytes = EXCLUDED.size_bytes,
     verified_at = now();
 

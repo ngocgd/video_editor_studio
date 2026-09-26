@@ -64,7 +64,7 @@ func (p *PullStep) InputHash(_ context.Context, s pipeline.StepRef) (string, err
 	h := sha256.New()
 	h.Write([]byte(e.Name))
 	for _, f := range e.Files {
-		h.Write([]byte(f.Path + ":" + f.SHA256))
+		h.Write([]byte(f.Path + ":" + f.Digest()))
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"crypto/sha1" //nolint:gosec // git blob ids are sha1 by definition
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -136,7 +137,7 @@ func (d *Downloader) Install(ctx context.Context, e Entry, progress Progress) er
 			return err
 		}
 		done = base + st.file.Size
-		if err := d.Files.MarkFileVerified(ctx, st.file.Path, st.file.SHA256, st.file.Size); err != nil {
+		if err := d.Files.MarkFileVerified(ctx, st.file.Path, st.file.Digest(), st.file.Size); err != nil {
 			return err
 		}
 	}
@@ -162,18 +163,18 @@ func (d *Downloader) inspect(ctx context.Context, f File) (fileState, error) {
 		if err != nil {
 			return st, err
 		}
-		if ok && sha == f.SHA256 && size == f.Size {
+		if ok && sha == f.Digest() && size == f.Size {
 			st.verified = true
 			return st, nil
 		}
 		// Present but never verified by this app (e.g. placed by the
 		// phase 1b download spike): adopt it only if it hashes right.
-		got, err := hashFile(final)
+		got, err := hashFile(f, final)
 		if err != nil {
 			return st, err
 		}
-		if got == f.SHA256 {
-			if err := d.Files.MarkFileVerified(ctx, f.Path, f.SHA256, f.Size); err != nil {
+		if got == f.Digest() {
+			if err := d.Files.MarkFileVerified(ctx, f.Path, f.Digest(), f.Size); err != nil {
 				return st, err
 			}
 			st.verified = true
@@ -247,13 +248,13 @@ func (d *Downloader) downloadFile(ctx context.Context, f File, src Source, progr
 
 	// Re-hash what is already on disk so the final checksum covers the
 	// whole file, not only the resumed tail.
-	hasher := sha256.New()
+	hasher := newHasher(f)
 	offset, err := io.Copy(hasher, out)
 	if err != nil {
 		return err
 	}
 	if offset > f.Size {
-		if offset, err = restart(out, &hasher); err != nil {
+		if offset, err = restart(out, &hasher, f); err != nil {
 			return err
 		}
 	}
@@ -268,11 +269,11 @@ func (d *Downloader) downloadFile(ctx context.Context, f File, src Source, progr
 	if err != nil {
 		return err
 	}
-	got := hex.EncodeToString(hasher.Sum(nil))
-	if info.Size() != f.Size || got != f.SHA256 {
+	got := digestOf(f, hasher)
+	if info.Size() != f.Size || got != f.Digest() {
 		_ = out.Close()
 		_ = os.Remove(part)
-		return fmt.Errorf("%w: %s got %d bytes sha256 %s, want %d bytes %s", ErrChecksumMismatch, f.Path, info.Size(), got, f.Size, f.SHA256)
+		return fmt.Errorf("%w: %s got %d bytes digest %s, want %d bytes %s", ErrChecksumMismatch, f.Path, info.Size(), got, f.Size, f.Digest())
 	}
 	if err := out.Sync(); err != nil {
 		return err
@@ -309,7 +310,7 @@ func (d *Downloader) fetch(ctx context.Context, f File, src Source, out *os.File
 		}
 	case resp.StatusCode == http.StatusOK:
 		// The server ignored the range: start over from byte zero.
-		if offset, err = restart(out, hasher); err != nil {
+		if offset, err = restart(out, hasher, f); err != nil {
 			return err
 		}
 	case resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
@@ -348,15 +349,37 @@ func (d *Downloader) fetch(ctx context.Context, f File, src Source, out *os.File
 	return nil
 }
 
-func restart(out *os.File, hasher *hash.Hash) (int64, error) {
+func restart(out *os.File, hasher *hash.Hash, f File) (int64, error) {
 	if err := out.Truncate(0); err != nil {
 		return 0, err
 	}
 	if _, err := out.Seek(0, io.SeekStart); err != nil {
 		return 0, err
 	}
-	*hasher = sha256.New()
+	*hasher = newHasher(f)
 	return 0, nil
+}
+
+// newHasher returns the hash f's pin is computed with. A git blob id is
+// sha1 over "blob <size>\x00" followed by the content; the pinned size is
+// known up front, so the header goes in first and the content streams
+// through unchanged, exactly as for a sha256 pin.
+func newHasher(f File) hash.Hash {
+	if f.GitSHA1 == "" {
+		return sha256.New()
+	}
+	h := sha1.New() //nolint:gosec // git blob ids are sha1 by definition; the pinned revision is itself a sha1 commit id
+	_, _ = fmt.Fprintf(h, "blob %d\x00", f.Size)
+	return h
+}
+
+// digestOf formats h's sum the way f.Digest() spells its pin.
+func digestOf(f File, h hash.Hash) string {
+	sum := hex.EncodeToString(h.Sum(nil))
+	if f.GitSHA1 != "" {
+		return gitSHA1Prefix + sum
+	}
+	return sum
 }
 
 func (d *Downloader) client() *http.Client {
@@ -421,18 +444,19 @@ func (d *Downloader) finalPath(f File) string {
 // file resume the same partial and a changed pin never resumes a stale
 // one.
 func (d *Downloader) partPath(f File) string {
-	return filepath.Join(d.Dir, stagingDir, f.SHA256+".part")
+	return filepath.Join(d.Dir, stagingDir, strings.ReplaceAll(f.Digest(), ":", "-")+".part")
 }
 
-func hashFile(path string) (string, error) {
+// hashFile computes the digest of the file at path the way f is pinned.
+func hashFile(f File, path string) (string, error) {
 	fh, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
 	defer func() { _ = fh.Close() }()
-	h := sha256.New()
+	h := newHasher(f)
 	if _, err := io.Copy(h, fh); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return digestOf(f, h), nil
 }

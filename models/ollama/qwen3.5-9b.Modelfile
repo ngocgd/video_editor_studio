@@ -1,0 +1,5 @@
+# Qwen3.5 9B instruct, Q8_0 GGUF. Imported offline by the worker from the
+# pinned, verified file on the models volume (see models/manifest.yaml);
+# the chat template comes from the GGUF metadata.
+FROM /models/llm/qwen3.5-9b-q8_0.gguf
+PARAMETER num_ctx 16384

@@ -44,7 +44,7 @@ func (s *Store) VerifiedFile(ctx context.Context, path string) (string, int64, b
 	}
 	for _, f := range files {
 		if f.Path == path {
-			return f.Sha256, f.SizeBytes, true, nil
+			return f.Digest, f.SizeBytes, true, nil
 		}
 	}
 	return "", 0, false, nil
@@ -52,7 +52,7 @@ func (s *Store) VerifiedFile(ctx context.Context, path string) (string, int64, b
 
 // MarkFileVerified implements FileStore.
 func (s *Store) MarkFileVerified(ctx context.Context, path, sha string, size int64) error {
-	return s.Queries.UpsertModelFile(ctx, dbgen.UpsertModelFileParams{Path: path, Sha256: sha, SizeBytes: size})
+	return s.Queries.UpsertModelFile(ctx, dbgen.UpsertModelFileParams{Path: path, Digest: sha, SizeBytes: size})
 }
 
 // Claim moves e to "downloading" for tenantID, or returns
@@ -102,7 +102,7 @@ func (s *Store) VerifiedBytes(ctx context.Context, e Entry) (int64, error) {
 	}
 	var total int64
 	for _, f := range e.Files {
-		if v, ok := verified[f.Path]; ok && v.Sha256 == f.SHA256 && v.SizeBytes == f.Size {
+		if v, ok := verified[f.Path]; ok && v.Digest == f.Digest() && v.SizeBytes == f.Size {
 			total += f.Size
 		}
 	}
@@ -139,7 +139,7 @@ func (g *LoadGate) Check(ctx context.Context, name string) error {
 	}
 	for _, f := range e.Files {
 		v, ok := verified[f.Path]
-		if !ok || v.Sha256 != f.SHA256 || v.SizeBytes != f.Size {
+		if !ok || v.Digest != f.Digest() || v.SizeBytes != f.Size {
 			return fmt.Errorf("%w: %s is not verified (install the model first)", ErrNotInstalled, f.Path)
 		}
 		info, err := os.Stat(filepath.Join(g.Dir, filepath.FromSlash(f.Path)))
