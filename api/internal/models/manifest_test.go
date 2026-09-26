@@ -58,7 +58,8 @@ func TestScopeIDRoundTrips(t *testing.T) {
 	if ScopeID("a") == ScopeID("b") {
 		t.Fatal("different names must get different scope ids")
 	}
-	if ScopeID("a") != ScopeID("a") {
+	first, second := ScopeID("a"), ScopeID("a")
+	if first != second {
 		t.Fatal("scope ids must be deterministic")
 	}
 }
