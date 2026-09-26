@@ -7,11 +7,15 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"loomtale/api/internal/db/gen"
 )
@@ -295,5 +299,96 @@ func TestBYOKKeyConfiguredNeverLeaksTheKey(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected anthropic-api to appear in the providers list")
+	}
+}
+
+// TestAiActionResultPollingIsScopedToItsEpisode covers the writer's AI
+// action round trip: create returns a step id, polling it returns the step
+// status and, once done, the generated text. The step must only be
+// readable through its own episode and tenant.
+func TestAiActionResultPollingIsScopedToItsEpisode(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fxA := createFixtureUser(t, q, "story-ai-action-a", uniqueEmail("ai-action-a"), "editor")
+	fxB := createFixtureUser(t, q, "story-ai-action-b", uniqueEmail("ai-action-b"), "editor")
+	sessA := login(t, fxA.Email, fxA.Password)
+
+	seriesID := createSeries(t, sessA)
+	newEpisode := func() string {
+		resp := sessA.do(http.MethodPost, "/episodes?seriesId="+seriesID, nil)
+		requireStatus(t, resp, http.StatusCreated)
+		var episode struct {
+			Id string `json:"id"`
+		}
+		decodeJSON(t, resp, &episode)
+		return episode.Id
+	}
+	episodeID := newEpisode()
+	otherEpisodeID := newEpisode()
+
+	createResp := sessA.do(http.MethodPost, "/episodes/"+episodeID+"/ai-actions", map[string]any{
+		"action":       "rewrite",
+		"lang":         "en",
+		"paragraphIds": []string{"p1"},
+	})
+	requireStatus(t, createResp, http.StatusAccepted)
+	var created struct {
+		RunId  string `json:"runId"`
+		StepId string `json:"stepId"`
+	}
+	decodeJSON(t, createResp, &created)
+	resultPath := "/episodes/" + episodeID + "/ai-actions/" + created.StepId
+
+	pollResp := sessA.do(http.MethodGet, resultPath, nil)
+	requireStatus(t, pollResp, http.StatusOK)
+	var polled struct {
+		Status string `json:"status"`
+	}
+	decodeJSON(t, pollResp, &polled)
+	switch polled.Status {
+	case "pending", "queued", "running", "done", "failed", "canceled":
+	default:
+		t.Fatalf("unexpected step status %q", polled.Status)
+	}
+
+	// Another episode's URL, an unknown step and another tenant all get 404.
+	requireStatus(t, sessA.do(http.MethodGet, "/episodes/"+otherEpisodeID+"/ai-actions/"+created.StepId, nil), http.StatusNotFound)
+	requireStatus(t, sessA.do(http.MethodGet, "/episodes/"+episodeID+"/ai-actions/"+uuid.NewString(), nil), http.StatusNotFound)
+	sessB := login(t, fxB.Email, fxB.Password)
+	requireStatus(t, sessB.do(http.MethodGet, resultPath, nil), http.StatusNotFound)
+
+	// Finish the step as a provider would (no LLM is guaranteed in the test
+	// stack). Only a step that is not mid-run is overwritten, so a worker
+	// that already claimed it cannot race this update.
+	output := `{"provider":"ollama","lang":"en","text":"The rewritten paragraph.","tainted":false}`
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		tag, err := pool.Exec(context.Background(),
+			`UPDATE pipeline_steps SET status = 'done', output = $1::jsonb, error_msg = NULL, finished_at = now()
+			 WHERE id = $2 AND status <> 'running'`, output, created.StepId)
+		if err != nil {
+			t.Fatalf("finish step: %v", err)
+		}
+		if tag.RowsAffected() == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("step stayed running for 30s")
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	doneResp := sessA.do(http.MethodGet, resultPath, nil)
+	requireStatus(t, doneResp, http.StatusOK)
+	var done struct {
+		Status   string `json:"status"`
+		Text     string `json:"text"`
+		Provider string `json:"provider"`
+		Tainted  *bool  `json:"tainted"`
+	}
+	decodeJSON(t, doneResp, &done)
+	if done.Status != "done" || done.Text != "The rewritten paragraph." || done.Provider != "ollama" || done.Tainted == nil || *done.Tainted {
+		t.Fatalf("unexpected done result %+v", done)
 	}
 }

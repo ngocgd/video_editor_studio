@@ -41,6 +41,16 @@ var actionToKind = map[gen.AiActionRequestAction]string{
 	gen.Summarise:  KindSummarise,
 }
 
+// isAiActionKind reports whether kind is one CreateAiAction can enqueue.
+func isAiActionKind(kind string) bool {
+	for _, k := range actionToKind {
+		if k == kind {
+			return true
+		}
+	}
+	return false
+}
+
 // CreateAiAction implements gen.StrictServerInterface: enqueues one
 // pipeline step for the requested action, scoped to this episode. Editor
 // role is enforced by x-min-role; ownership is re-checked here via a
@@ -131,6 +141,12 @@ func (h *StoryAPI) GetAiActionResult(ctx context.Context, req gen.GetAiActionRes
 			return gen.GetAiActionResult404ApplicationProblemPlusJSONResponse{Title: "step not found", Status: http.StatusNotFound}, nil
 		}
 		return nil, err
+	}
+	// The step must be an AI action on this very episode: a tenant-scoped
+	// lookup alone would let any step id (another episode's, or a non-AI
+	// step's output) be read through this episode's URL.
+	if step.ScopeKind != ScopeEpisode || idconv.FromPg(step.ScopeID) != req.Id || !isAiActionKind(step.Kind) {
+		return gen.GetAiActionResult404ApplicationProblemPlusJSONResponse{Title: "step not found", Status: http.StatusNotFound}, nil
 	}
 
 	result := gen.AiActionResult{Status: gen.AiActionResultStatus(step.Status)}
