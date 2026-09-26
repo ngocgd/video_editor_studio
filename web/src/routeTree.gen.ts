@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppJobsRouteImport } from './routes/_app/jobs'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
+import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/models'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -39,18 +40,25 @@ const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   path: '/settings/account',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsModelsRoute = AppSettingsModelsRouteImport.update({
+  id: '/settings/models',
+  path: '/settings/models',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/jobs': typeof AppJobsRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/models': typeof AppSettingsModelsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/jobs': typeof AppJobsRoute
   '/': typeof AppIndexRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/models': typeof AppSettingsModelsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +67,13 @@ export interface FileRoutesById {
   '/_app/jobs': typeof AppJobsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/models': typeof AppSettingsModelsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/jobs' | '/settings/account'
+  fullPaths: '/' | '/login' | '/jobs' | '/settings/account' | '/settings/models'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/jobs' | '/' | '/settings/account'
+  to: '/login' | '/jobs' | '/' | '/settings/account' | '/settings/models'
   id:
     | '__root__'
     | '/_app'
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/_app/jobs'
     | '/_app/'
     | '/_app/settings/account'
+    | '/_app/settings/models'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -116,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/models': {
+      id: '/_app/settings/models'
+      path: '/settings/models'
+      fullPath: '/settings/models'
+      preLoaderRoute: typeof AppSettingsModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -123,12 +140,14 @@ interface AppRouteChildren {
   AppJobsRoute: typeof AppJobsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsModelsRoute: typeof AppSettingsModelsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppJobsRoute: AppJobsRoute,
   AppIndexRoute: AppIndexRoute,
   AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsModelsRoute: AppSettingsModelsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
