@@ -1,6 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import type { TargetLanguage } from "../../api/gen/types.gen";
 import { backfillParagraphIds, extractParagraphs } from "./extract-paragraphs";
@@ -16,26 +16,29 @@ export interface WriterSelection {
  * The TipTap editor pane (phase 6: Literata `read-lg`, max 68ch, `lang="vi"`
  * on VI drafts). Paragraph nodes carry an `id` attribute (see
  * ./paragraph-with-id-extension) so the autosave diff can address them.
+ *
+ * `initialParagraphs` seeds the document on mount only; the editor owns its
+ * doc afterwards. The parent remounts it (via `key`) whenever the document
+ * must be replaced: a language switch, a reload after a version conflict,
+ * or an accepted AI proposal.
  */
 export function WriterEditor({
-  paragraphs,
+  initialParagraphs,
   lang,
   readOnly,
   onParagraphsChange,
   onSelectionChange,
 }: {
-  paragraphs: DiffParagraph[];
+  initialParagraphs: DiffParagraph[];
   lang: TargetLanguage;
   readOnly: boolean;
   onParagraphsChange: (current: DiffParagraph[]) => void;
   onSelectionChange: (selection: WriterSelection) => void;
 }) {
-  const loadedForLang = useRef<TargetLanguage | null>(null);
-
   const editor = useEditor({
     extensions: [StarterKit.configure({ paragraph: false }), ParagraphWithId],
     editable: !readOnly,
-    content: toDocJson(paragraphs),
+    content: toDocJson(initialParagraphs),
     onUpdate: ({ editor: ed }) => {
       backfillParagraphIds(ed);
       onParagraphsChange(extractParagraphs(ed));
@@ -53,16 +56,6 @@ export function WriterEditor({
       onSelectionChange({ paragraphIds: [...ids], text: ed.state.doc.textBetween(from, to, "\n") });
     },
   });
-
-  // Reload the doc when the lang toggle swaps drafts (a fresh paragraph array from a different query).
-  useEffect(() => {
-    if (!editor) return;
-    if (loadedForLang.current === lang) return;
-    loadedForLang.current = lang;
-    editor.commands.setContent(toDocJson(paragraphs), { emitUpdate: false });
-    // Only re-syncs on an explicit lang switch; the editor otherwise owns its own doc between saves.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, lang]);
 
   useEffect(() => {
     editor?.setEditable(!readOnly);

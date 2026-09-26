@@ -29,6 +29,24 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
   const [paragraphs, setParagraphs] = useState<DiffParagraph[]>([]);
   const [selection, setSelection] = useState<WriterSelection>({ paragraphIds: [], text: "" });
   const proposalContainerRef = useRef<HTMLDivElement | null>(null);
+  // The editor owns its document once mounted, so replacing that document
+  // means remounting it: `editorGeneration` is part of its key, and
+  // `seedOverride` (an accepted AI proposal) takes precedence over the
+  // loaded draft as its initial content.
+  const [editorGeneration, setEditorGeneration] = useState(0);
+  const [seedOverride, setSeedOverride] = useState<DiffParagraph[] | null>(null);
+
+  const toggleLang = useCallback(() => {
+    setSeedOverride(null);
+    setSelection({ paragraphIds: [], text: "" });
+    setLang((l) => (l === "en" ? "vi" : "en"));
+  }, []);
+
+  const reloadAfterConflict = useCallback(async () => {
+    setSeedOverride(null);
+    await draft.reloadAfterConflict();
+    setEditorGeneration((g) => g + 1);
+  }, [draft]);
 
   useEffect(() => {
     if (draft.draft) setParagraphs(draft.draft.paragraphs.map((p) => ({ id: p.id, text: p.text })));
@@ -60,6 +78,9 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
     // paragraph boundary; single-paragraph actions (the common case) are exact.
     const next = paragraphs.map((p) => (p.id === paragraphIds[0] ? { ...p, text } : p)).filter((p) => !paragraphIds.slice(1).includes(p.id));
     setParagraphs(next);
+    setSeedOverride(next);
+    setEditorGeneration((g) => g + 1);
+    setSelection({ paragraphIds: [], text: "" });
     draft.applyOpsNow(diffParagraphs(paragraphs, next));
     ai.clear();
   }, [ai, draft, paragraphs]);
@@ -91,7 +112,7 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
   useShortcut("writer", "ctrl+enter", () => !isViewer && runAction("continue"));
   useShortcut("writer", "ctrl+shift+r", () => !isViewer && runAction("rewrite"));
   useShortcut("writer", "ctrl+shift+e", () => !isViewer && selection.paragraphIds.length > 0 && runAction("expand"));
-  useShortcut("writer", "ctrl+alt+l", () => setLang((l) => (l === "en" ? "vi" : "en")));
+  useShortcut("writer", "ctrl+alt+l", toggleLang);
 
   const episode = episodeQuery.data;
   if (!episode) return <p className="p-4 text-sm text-text-2">Loading…</p>;
@@ -106,13 +127,20 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
           {isViewer && <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">Read-only (viewer role)</span>}
         </div>
 
-        <WriterEditor
-          paragraphs={paragraphs}
-          lang={lang}
-          readOnly={isViewer}
-          onParagraphsChange={handleParagraphsChange}
-          onSelectionChange={setSelection}
-        />
+        {draft.draft ? (
+          <WriterEditor
+            key={`${lang}:${editorGeneration}`}
+            initialParagraphs={seedOverride ?? draft.draft.paragraphs.map((p) => ({ id: p.id, text: p.text }))}
+            lang={lang}
+            readOnly={isViewer}
+            onParagraphsChange={handleParagraphsChange}
+            onSelectionChange={setSelection}
+          />
+        ) : (
+          // Never mount the editor before its draft has loaded: an empty
+          // editor's first update would autosave over the stored paragraphs.
+          <p className="flex-1 p-6 text-sm text-text-2">{draft.isLoading ? "Loading draft…" : `No ${lang.toUpperCase()} draft for this episode yet.`}</p>
+        )}
 
         {!isViewer && (selection.paragraphIds.length > 0 || ai.proposal) && (
           <div ref={proposalContainerRef} className="border-t border-border p-3">
@@ -128,12 +156,12 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
           </div>
         )}
 
-        <WriterFooter paragraphs={paragraphs} lang={lang} saving={draft.saving} onToggleLang={() => setLang((l) => (l === "en" ? "vi" : "en"))} />
+        <WriterFooter paragraphs={paragraphs} lang={lang} saving={draft.saving} onToggleLang={toggleLang} />
       </div>
 
       <WriterBeatsPanel outline={episode.outline} onExpandBeat={(beatId) => ai.run({ action: "expand_beat", lang, beatId }, "")} />
 
-      <VersionConflictDialog open={draft.conflict} onReload={draft.reloadAfterConflict} onDiscard={draft.dismissConflict} />
+      <VersionConflictDialog open={draft.conflict} onReload={() => void reloadAfterConflict()} onDiscard={draft.dismissConflict} />
     </div>
   );
 }

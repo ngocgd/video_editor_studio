@@ -80,9 +80,10 @@ export function useDraft(episodeId: string, lang: TargetLanguage) {
     [applyOps],
   );
 
-  const reloadAfterConflict = useCallback(() => {
+  /** Refetches the server's current draft; resolves once it has arrived. */
+  const reloadAfterConflict = useCallback(async () => {
     setConflict(false);
-    void draftQuery.refetch();
+    await draftQuery.refetch();
   }, [draftQuery]);
 
   return {
