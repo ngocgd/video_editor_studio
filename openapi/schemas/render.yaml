@@ -1,0 +1,317 @@
+# Render settings, readiness, manifests and finished renders of an
+# episode language.
+RenderSubtitleStyle:
+  type: object
+  required: [font, sizePx, position, shadowPx]
+  properties:
+    font:
+      type: string
+      pattern: "^[A-Za-z0-9 ]{1,64}$"
+    sizePx:
+      type: integer
+      minimum: 12
+      maximum: 160
+    position:
+      type: string
+      enum: [bottom, top, middle]
+    shadowPx:
+      type: integer
+      minimum: 0
+      maximum: 10
+RenderSettings:
+  type: object
+  required: [width, height, fps, encoder, subtitles, subtitleStyle, defaultMotion, crossfadeMs, loudnessLufs, truePeakDbtp]
+  properties:
+    width:
+      type: integer
+      minimum: 320
+      maximum: 3840
+    height:
+      type: integer
+      minimum: 180
+      maximum: 2160
+    fps:
+      type: integer
+      enum: [24, 25, 30, 60]
+    encoder:
+      description: auto, h264_nvenc or libx264 (a pattern, not an enum, so the generated constants of other enums sharing "auto" keep their names).
+      type: string
+      pattern: "^(auto|h264_nvenc|libx264)$"
+    subtitles:
+      type: string
+      enum: [burn, srt, both]
+    subtitleStyle:
+      $ref: "#/RenderSubtitleStyle"
+    defaultMotion:
+      $ref: "./scenes.yaml#/MotionPreset"
+    crossfadeMs:
+      type: integer
+      minimum: 0
+      maximum: 3000
+    loudnessLufs:
+      description: Integrated loudness target in LUFS, one decimal.
+      type: number
+      minimum: -30
+      maximum: -5
+    truePeakDbtp:
+      description: True-peak ceiling in dBTP, one decimal.
+      type: number
+      minimum: -9
+      maximum: 0
+RenderStage:
+  type: object
+  required: [key, label, done, total, state]
+  properties:
+    key:
+      type: string
+      enum: [script, scenes, images, voice, subtitles, compose, encode]
+    label:
+      type: string
+    done:
+      type: integer
+    total:
+      type: integer
+    state:
+      type: string
+      enum: [done, partial, missing, running, idle]
+DiskStatus:
+  type: object
+  required: [level, freeBytes, minFreeBytes, warnFreeBytes, message]
+  properties:
+    level:
+      type: string
+      enum: [ok, warning, blocked, unknown]
+    freeBytes:
+      type: integer
+      format: int64
+    minFreeBytes:
+      type: integer
+      format: int64
+    warnFreeBytes:
+      type: integer
+      format: int64
+    message:
+      type: string
+RenderEstimate:
+  type: object
+  required: [durationMs, scenes, segments, cachedSegments, encodeSeconds, encoder]
+  properties:
+    durationMs:
+      description: Length of the finished video.
+      type: integer
+      format: int64
+    scenes:
+      type: integer
+    segments:
+      description: Body and transition segments on the timeline.
+      type: integer
+    cachedSegments:
+      description: Cache entries (segments, audio, subtitles) already encoded and reused.
+      type: integer
+    encodeSeconds:
+      description: Rough wall time of the render on the render queue.
+      type: integer
+    encoder:
+      description: The concrete encoder a render would use now.
+      type: string
+RenderRestart:
+  type: object
+  required: [manifestId, restartedAfterEdit, reusedSegments, createdAt]
+  properties:
+    manifestId:
+      type: string
+      format: uuid
+    runId:
+      type: string
+      format: uuid
+    restartedAfterEdit:
+      type: boolean
+    reusedSegments:
+      type: integer
+    createdAt:
+      type: string
+      format: date-time
+RenderStatus:
+  type: object
+  required: [lang, ready, reasons, stages, disk, settings]
+  properties:
+    lang:
+      $ref: "./scenes.yaml#/SceneLanguage"
+    ready:
+      description: True when "Render episode" can be pressed.
+      type: boolean
+    reasons:
+      description: Why the render button is disabled, one sentence each.
+      type: array
+      items:
+        type: string
+    stages:
+      type: array
+      items:
+        $ref: "#/RenderStage"
+    disk:
+      $ref: "#/DiskStatus"
+    settings:
+      $ref: "#/RenderSettings"
+    estimate:
+      $ref: "#/RenderEstimate"
+    activeRunId:
+      type: string
+      format: uuid
+    latest:
+      $ref: "#/RenderRestart"
+StartRenderRequest:
+  type: object
+  required: [lang]
+  properties:
+    lang:
+      $ref: "./scenes.yaml#/SceneLanguage"
+RenderStarted:
+  type: object
+  required: [runId, manifestId, hash, steps, reused]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    manifestId:
+      type: string
+      format: uuid
+    hash:
+      type: string
+    steps:
+      description: Cacheable steps enqueued (segments, audio, subtitles).
+      type: integer
+    reused:
+      description: Cache entries reused without a step.
+      type: integer
+RenderNotReady:
+  type: object
+  required: [title, status, reasons]
+  properties:
+    title:
+      type: string
+    status:
+      type: integer
+    detail:
+      type: string
+    reasons:
+      type: array
+      items:
+        type: string
+QCSceneScore:
+  type: object
+  required: [sceneId, idx]
+  properties:
+    sceneId:
+      type: string
+    idx:
+      type: integer
+    score:
+      type: number
+QCReport:
+  type: object
+  required: [passed, failures, integratedLufs, truePeakDbtp, durationMs, expectedDurationMs, avDriftMs, maxSubtitleDriftMs, missingScenes, placeholderScenes, streams, missingKeyframes, sceneScores, encoder, sha256]
+  properties:
+    passed:
+      type: boolean
+    failures:
+      type: array
+      items:
+        type: string
+    integratedLufs:
+      type: number
+    truePeakDbtp:
+      type: number
+    targetLufs:
+      type: number
+    targetTruePeakDbtp:
+      type: number
+    durationMs:
+      type: integer
+      format: int64
+    expectedDurationMs:
+      type: integer
+      format: int64
+    avDriftMs:
+      type: integer
+      format: int64
+    maxSubtitleDriftMs:
+      type: integer
+      format: int64
+    missingScenes:
+      type: array
+      items:
+        type: integer
+    placeholderScenes:
+      type: array
+      items:
+        type: integer
+    streams:
+      type: object
+      required: [video, audio, subtitle]
+      properties:
+        video:
+          type: integer
+        audio:
+          type: integer
+        subtitle:
+          type: integer
+    missingKeyframes:
+      type: array
+      items:
+        type: integer
+    sceneScores:
+      type: array
+      items:
+        $ref: "#/QCSceneScore"
+    encoder:
+      type: string
+    sha256:
+      type: string
+    scenePreviews:
+      description: Scene id to its 540p preview asset id.
+      type: object
+      additionalProperties:
+        type: string
+Render:
+  type: object
+  required: [id, episodeId, lang, manifestId, assetId, durationMs, encoder, report, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    episodeId:
+      type: string
+      format: uuid
+    lang:
+      $ref: "./scenes.yaml#/SceneLanguage"
+    manifestId:
+      type: string
+      format: uuid
+    assetId:
+      type: string
+      format: uuid
+    srtAssetId:
+      type: string
+      format: uuid
+    previewAssetId:
+      type: string
+      format: uuid
+    durationMs:
+      type: integer
+      format: int64
+    encoder:
+      type: string
+    report:
+      $ref: "#/QCReport"
+    createdAt:
+      type: string
+      format: date-time
+RenderList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Render"
