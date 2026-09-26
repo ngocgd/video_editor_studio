@@ -20,3 +20,18 @@ func TestMergedParamsDropsControlKeys(t *testing.T) {
 		t.Errorf("MergedParams lost tuning keys: %v", got)
 	}
 }
+
+func TestBuiltinVoicePrefersTheAssignment(t *testing.T) {
+	v := Voice{PresetParams: map[string]string{"voice": "Preset Voice"}, Params: map[string]string{"voice": "Ly"}}
+	if got := v.BuiltinVoice(); got != "Ly" {
+		t.Fatalf("BuiltinVoice = %q, want Ly", got)
+	}
+	v.Params = nil
+	if got := v.BuiltinVoice(); got != "Preset Voice" {
+		t.Fatalf("BuiltinVoice = %q, want the preset's", got)
+	}
+	v.PresetParams = map[string]string{"voice": "../x"}
+	if got := v.BuiltinVoice(); got != "" {
+		t.Fatalf("BuiltinVoice = %q, want empty for an invalid name", got)
+	}
+}

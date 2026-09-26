@@ -362,7 +362,11 @@ func (h *PreviewHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pip
 			params["consent"] = "granted"
 		}
 	}
-	res, err := h.TTS.Synthesize(ctx, tts.Request{Engine: v.Engine, Text: in.Text, OutputPutURL: putURL, Params: params}, func(p, e int) { sc.Progress(p, e) })
+	voiceName := ""
+	if v.RefAssetID == nil {
+		voiceName = v.BuiltinVoice()
+	}
+	res, err := h.TTS.Synthesize(ctx, tts.Request{Engine: v.Engine, Voice: voiceName, Text: in.Text, OutputPutURL: putURL, Params: params}, func(p, e int) { sc.Progress(p, e) })
 	if err != nil {
 		return nil, err
 	}

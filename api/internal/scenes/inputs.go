@@ -79,6 +79,18 @@ func (v Voice) MergedParams() map[string]string {
 	return out
 }
 
+// BuiltinVoice is the engine's own voice to speak with when no reference
+// clip is cloned: the assignment's "voice" param, else the preset's, else
+// empty (the engine default).
+func (v Voice) BuiltinVoice() string {
+	for _, p := range []map[string]string{v.Params, v.PresetParams} {
+		if name := p[voiceparams.VoiceKey]; name != "" && voiceparams.Validate(map[string]string{voiceparams.VoiceKey: name}) == nil {
+			return name
+		}
+	}
+	return ""
+}
+
 // EpisodeInputs is everything an episode's scene hashes depend on besides
 // the scene rows themselves, loaded once per episode (no per-scene query).
 type EpisodeInputs struct {
@@ -175,7 +187,7 @@ func VoiceComponents(in EpisodeInputs, s SceneInputs) Components {
 	for _, seg := range s.Segments {
 		text = append(text, seg.SpeakerCharacterID, seg.Text)
 		if v := in.VoiceFor(seg.SpeakerCharacterID); v != nil {
-			voices = append(voices, seg.SpeakerCharacterID, v.Engine, v.PresetID, v.RefAssetID, v.Consented, v.MergedParams())
+			voices = append(voices, seg.SpeakerCharacterID, v.Engine, v.PresetID, v.RefAssetID, v.Consented, v.MergedParams(), v.BuiltinVoice())
 		} else {
 			voices = append(voices, seg.SpeakerCharacterID, "unassigned")
 		}

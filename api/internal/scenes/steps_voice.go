@@ -146,9 +146,11 @@ func (h *VoiceHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pipel
 				params["consent"] = "granted"
 			}
 		}
+		// The worker's voice field names an engine's built-in voice; a
+		// cloned reference clip takes precedence over it.
 		voiceName := ""
-		if plan.Voice.PresetID != nil {
-			voiceName = plan.Voice.PresetID.String()
+		if plan.Voice.RefAssetID == nil {
+			voiceName = plan.Voice.BuiltinVoice()
 		}
 		base, span := i*90/len(plans), 90/len(plans)
 		if _, err := h.TTS.Synthesize(ctx, tts.Request{Engine: engine, Voice: voiceName, Text: plan.Text, OutputPutURL: putURL, Params: params},
