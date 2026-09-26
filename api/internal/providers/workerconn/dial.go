@@ -68,6 +68,10 @@ func TranslateErr(err error) error {
 		return fmt.Errorf("%w: %s", pipeline.ErrEngineNotInstalled, st.Message())
 	case codes.ResourceExhausted:
 		return fmt.Errorf("%w: %s", pipeline.ErrGPUOOM, st.Message())
+	case codes.InvalidArgument, codes.PermissionDenied:
+		// A request the engine can never run as given (bad parameters,
+		// or a voice clone without the preset's consent): permanent.
+		return fmt.Errorf("%w: %s", pipeline.ErrValidation, st.Message())
 	default:
 		return err
 	}
