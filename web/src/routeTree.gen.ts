@@ -18,9 +18,13 @@ import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/ind
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
 import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/models'
+import { Route as AppSettingsStylesRouteImport } from './routes/_app/settings/styles'
+import { Route as AppSettingsVoicesRouteImport } from './routes/_app/settings/voices'
 import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/projects/$seriesId/index'
 import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
+import { Route as AppProjectsSeriesIdCharactersIndexRouteImport } from './routes/_app/projects/$seriesId/characters/index'
 import { Route as AppProjectsSeriesIdEpisodesEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/episodes/$episodeId'
+import { Route as AppProjectsSeriesIdStoryboardEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/storyboard/$episodeId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -66,6 +70,16 @@ const AppSettingsModelsRoute = AppSettingsModelsRouteImport.update({
   path: '/settings/models',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsStylesRoute = AppSettingsStylesRouteImport.update({
+  id: '/settings/styles',
+  path: '/settings/styles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsVoicesRoute = AppSettingsVoicesRouteImport.update({
+  id: '/settings/voices',
+  path: '/settings/voices',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsSeriesIdIndexRoute =
   AppProjectsSeriesIdIndexRouteImport.update({
     id: '/projects/$seriesId/',
@@ -78,10 +92,22 @@ const AppProjectsSeriesIdBibleRoute =
     path: '/projects/$seriesId/bible',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProjectsSeriesIdCharactersIndexRoute =
+  AppProjectsSeriesIdCharactersIndexRouteImport.update({
+    id: '/projects/$seriesId/characters/',
+    path: '/projects/$seriesId/characters/',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProjectsSeriesIdEpisodesEpisodeIdRoute =
   AppProjectsSeriesIdEpisodesEpisodeIdRouteImport.update({
     id: '/projects/$seriesId/episodes/$episodeId',
     path: '/projects/$seriesId/episodes/$episodeId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProjectsSeriesIdStoryboardEpisodeIdRoute =
+  AppProjectsSeriesIdStoryboardEpisodeIdRouteImport.update({
+    id: '/projects/$seriesId/storyboard/$episodeId',
+    path: '/projects/$seriesId/storyboard/$episodeId',
     getParentRoute: () => AppRoute,
   } as any)
 
@@ -93,10 +119,14 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/settings/styles': typeof AppSettingsStylesRoute
+  '/settings/voices': typeof AppSettingsVoicesRoute
   '/projects/': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
+  '/projects/$seriesId/characters/': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -106,10 +136,14 @@ export interface FileRoutesByTo {
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/settings/styles': typeof AppSettingsStylesRoute
+  '/settings/voices': typeof AppSettingsVoicesRoute
   '/projects': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
+  '/projects/$seriesId/characters': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -121,10 +155,14 @@ export interface FileRoutesById {
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/llm': typeof AppSettingsLlmRoute
   '/_app/settings/models': typeof AppSettingsModelsRoute
+  '/_app/settings/styles': typeof AppSettingsStylesRoute
+  '/_app/settings/voices': typeof AppSettingsVoicesRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
   '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/_app/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/_app/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
+  '/_app/projects/$seriesId/characters/': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -136,10 +174,14 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/llm'
     | '/settings/models'
+    | '/settings/styles'
+    | '/settings/voices'
     | '/projects/'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId/'
     | '/projects/$seriesId/episodes/$episodeId'
+    | '/projects/$seriesId/storyboard/$episodeId'
+    | '/projects/$seriesId/characters/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -149,10 +191,14 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/llm'
     | '/settings/models'
+    | '/settings/styles'
+    | '/settings/voices'
     | '/projects'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId'
     | '/projects/$seriesId/episodes/$episodeId'
+    | '/projects/$seriesId/storyboard/$episodeId'
+    | '/projects/$seriesId/characters'
   id:
     | '__root__'
     | '/_app'
@@ -163,10 +209,14 @@ export interface FileRouteTypes {
     | '/_app/settings/account'
     | '/_app/settings/llm'
     | '/_app/settings/models'
+    | '/_app/settings/styles'
+    | '/_app/settings/voices'
     | '/_app/projects/'
     | '/_app/projects/$seriesId/bible'
     | '/_app/projects/$seriesId/'
     | '/_app/projects/$seriesId/episodes/$episodeId'
+    | '/_app/projects/$seriesId/storyboard/$episodeId'
+    | '/_app/projects/$seriesId/characters/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -239,6 +289,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsModelsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/styles': {
+      id: '/_app/settings/styles'
+      path: '/settings/styles'
+      fullPath: '/settings/styles'
+      preLoaderRoute: typeof AppSettingsStylesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/voices': {
+      id: '/_app/settings/voices'
+      path: '/settings/voices'
+      fullPath: '/settings/voices'
+      preLoaderRoute: typeof AppSettingsVoicesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/': {
       id: '/_app/projects/$seriesId/'
       path: '/projects/$seriesId'
@@ -253,11 +317,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsSeriesIdBibleRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/projects/$seriesId/characters/': {
+      id: '/_app/projects/$seriesId/characters/'
+      path: '/projects/$seriesId/characters'
+      fullPath: '/projects/$seriesId/characters/'
+      preLoaderRoute: typeof AppProjectsSeriesIdCharactersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/episodes/$episodeId': {
       id: '/_app/projects/$seriesId/episodes/$episodeId'
       path: '/projects/$seriesId/episodes/$episodeId'
       fullPath: '/projects/$seriesId/episodes/$episodeId'
       preLoaderRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects/$seriesId/storyboard/$episodeId': {
+      id: '/_app/projects/$seriesId/storyboard/$episodeId'
+      path: '/projects/$seriesId/storyboard/$episodeId'
+      fullPath: '/projects/$seriesId/storyboard/$episodeId'
+      preLoaderRoute: typeof AppProjectsSeriesIdStoryboardEpisodeIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -270,10 +348,14 @@ interface AppRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
   AppSettingsLlmRoute: typeof AppSettingsLlmRoute
   AppSettingsModelsRoute: typeof AppSettingsModelsRoute
+  AppSettingsStylesRoute: typeof AppSettingsStylesRoute
+  AppSettingsVoicesRoute: typeof AppSettingsVoicesRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
   AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
   AppProjectsSeriesIdEpisodesEpisodeIdRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  AppProjectsSeriesIdStoryboardEpisodeIdRoute: typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
+  AppProjectsSeriesIdCharactersIndexRoute: typeof AppProjectsSeriesIdCharactersIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -283,11 +365,17 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsAccountRoute: AppSettingsAccountRoute,
   AppSettingsLlmRoute: AppSettingsLlmRoute,
   AppSettingsModelsRoute: AppSettingsModelsRoute,
+  AppSettingsStylesRoute: AppSettingsStylesRoute,
+  AppSettingsVoicesRoute: AppSettingsVoicesRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppProjectsSeriesIdBibleRoute: AppProjectsSeriesIdBibleRoute,
   AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
   AppProjectsSeriesIdEpisodesEpisodeIdRoute:
     AppProjectsSeriesIdEpisodesEpisodeIdRoute,
+  AppProjectsSeriesIdStoryboardEpisodeIdRoute:
+    AppProjectsSeriesIdStoryboardEpisodeIdRoute,
+  AppProjectsSeriesIdCharactersIndexRoute:
+    AppProjectsSeriesIdCharactersIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

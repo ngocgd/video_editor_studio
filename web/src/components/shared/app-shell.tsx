@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Cpu, FolderKanban, LayoutDashboard, ListChecks, PanelLeft, Search, Settings, Upload } from "lucide-react";
+import { Cpu, FolderKanban, LayoutDashboard, ListChecks, Mic, Palette, PanelLeft, Search, Settings, Upload } from "lucide-react";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import { useShortcut } from "../../lib/shortcuts";
@@ -19,6 +19,8 @@ const NAV_ITEMS = [
   { to: "/import", label: "Import", icon: Upload },
   { to: "/jobs", label: "Render Queue", icon: ListChecks },
   { to: "/settings/models", label: "Models", icon: Cpu },
+  { to: "/settings/voices", label: "Voices", icon: Mic },
+  { to: "/settings/styles", label: "Styles", icon: Palette },
   { to: "/settings/account", label: "Settings", icon: Settings },
 ] as const;
 
