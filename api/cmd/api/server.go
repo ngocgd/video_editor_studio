@@ -4,6 +4,7 @@ import (
 	"loomtale/api/internal/assetsapi"
 	"loomtale/api/internal/auditapi"
 	"loomtale/api/internal/authapi"
+	"loomtale/api/internal/channelsapi"
 	"loomtale/api/internal/characters"
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
@@ -35,6 +36,7 @@ type server struct {
 	*characters.CharactersAPI
 	*scenes.ScenesAPI
 	*media.MediaAPI
+	*channelsapi.ChannelsAPI
 	*render.RenderAPI
 	*library.LibraryAPI
 }

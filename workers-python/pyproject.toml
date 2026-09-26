@@ -39,6 +39,14 @@ align = [
   "transformers==5.2.0",
   "torch==2.9.1",
 ]
+# Consistency scoring (DINOv2) and monocular depth (Depth-Anything-V2
+# Small) through transformers, on the same PyTorch and transformers pins
+# as the align extra so both install into one image.
+vision = [
+  "torch==2.9.1",
+  "transformers==5.2.0",
+  "pillow>=12.3.0",
+]
 
 [dependency-groups]
 dev = [

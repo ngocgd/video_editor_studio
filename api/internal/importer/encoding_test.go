@@ -3,6 +3,7 @@ package importer
 import (
 	"testing"
 
+	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
@@ -72,5 +73,18 @@ func TestDecodeTextRejectsGarbage(t *testing.T) {
 	raw := []byte{0x80, 0x81, 0x82, 0xFF, 0xFF, 0xFF, 0x00, 0x00}
 	if _, _, err := DecodeText(raw); err != ErrUndetectedEncoding {
 		t.Fatalf("expected ErrUndetectedEncoding, got %v", err)
+	}
+}
+
+func TestDecodeTextRejectsWindows1252ProseInsteadOfReadingItAsGB18030(t *testing.T) {
+	// Every accented letter here pairs with its neighbour into a valid
+	// GBK ideograph, so the bytes decode as GB18030 without a single
+	// replacement character; only the letter mix gives it away.
+	raw, err := charmap.Windows1252.NewEncoder().String("Le château était célèbre pour ses fêtes élégantes et ses légendes.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, enc, err := DecodeText([]byte(raw)); err != ErrUndetectedEncoding {
+		t.Fatalf("expected ErrUndetectedEncoding, got encoding %q err %v", enc, err)
 	}
 }

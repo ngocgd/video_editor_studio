@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addCharacterRef, applyDraftStep, backfillMedia, cancelRun, cancelStep, commitImport, confirmLibraryCleanup, createAiAction, createCharacter, createDraft, createEpisode, createImageStyle, createImport, createRun, createSeries, createVoicePreset, deleteCharacter, deleteCharacterRef, deleteImageStyle, deleteVoicePreset, finalizeAsset, generateMissing, generateSeries, getAiActionResult, getAsset, getAssetVariant, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLibrarySettings, getLibraryUsage, getLlmSettings, getMe, getReadyz, getRender, getRenderSettings, getRenderStatus, getRun, getScenePeaks, getSeries, getStepLog, getStoryboardSettings, installModel, listAssets, listAudit, listCharacters, listEpisodes, listImageStyles, listImports, listJobs, listLibraryAssets, listModels, listRenders, listRunSteps, listScenes, listSceneTakes, listSeries, listVoicePresets, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewCharacterVoice, previewImport, previewLibraryCleanup, putLibrarySettings, putLlmApiKey, putLlmSettings, putRenderSettings, putStoryboardSettings, regenerateCharacterSheet, regenerateScene, retryStep, selectSceneTake, setCharacterVoice, setNarratorVoice, splitScenes, startRender, switchTenant, testLlmSettings, trainCharacterLora, unloadModels, updateBibleSection, updateCharacter, updateCharacterRef, updateEpisode, updateImageStyle, updateScene, updateSeries, updateVoicePreset } from '../sdk.gen';
-import type { AddCharacterRefData, AddCharacterRefError, AddCharacterRefResponse, ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, BackfillMediaData, BackfillMediaResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, ConfirmLibraryCleanupData, ConfirmLibraryCleanupError, ConfirmLibraryCleanupResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateCharacterData, CreateCharacterError, CreateCharacterResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImageStyleData, CreateImageStyleError, CreateImageStyleResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, CreateVoicePresetData, CreateVoicePresetError, CreateVoicePresetResponse, DeleteCharacterData, DeleteCharacterError, DeleteCharacterRefData, DeleteCharacterRefError, DeleteCharacterRefResponse, DeleteCharacterResponse, DeleteImageStyleData, DeleteImageStyleError, DeleteImageStyleResponse, DeleteVoicePresetData, DeleteVoicePresetError, DeleteVoicePresetResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateMissingData, GenerateMissingError, GenerateMissingResponse2, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetAssetVariantData, GetAssetVariantError, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLibrarySettingsData, GetLibrarySettingsResponse, GetLibraryUsageData, GetLibraryUsageResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRenderData, GetRenderError, GetRenderResponse, GetRenderSettingsData, GetRenderSettingsError, GetRenderSettingsResponse, GetRenderStatusData, GetRenderStatusError, GetRenderStatusResponse, GetRunData, GetRunError, GetRunResponse, GetScenePeaksData, GetScenePeaksError, GetScenePeaksResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, GetStoryboardSettingsData, GetStoryboardSettingsError, GetStoryboardSettingsResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListCharactersData, ListCharactersError, ListCharactersResponse, ListEpisodesData, ListEpisodesResponse, ListImageStylesData, ListImageStylesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListLibraryAssetsData, ListLibraryAssetsResponse, ListModelsData, ListModelsResponse, ListRendersData, ListRendersError, ListRendersResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListScenesData, ListScenesError, ListScenesResponse, ListSceneTakesData, ListSceneTakesError, ListSceneTakesResponse, ListSeriesData, ListSeriesResponse, ListVoicePresetsData, ListVoicePresetsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewCharacterVoiceData, PreviewCharacterVoiceError, PreviewCharacterVoiceResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PreviewLibraryCleanupData, PreviewLibraryCleanupResponse, PutLibrarySettingsData, PutLibrarySettingsError, PutLibrarySettingsResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, PutRenderSettingsData, PutRenderSettingsError, PutRenderSettingsResponse, PutStoryboardSettingsData, PutStoryboardSettingsError, PutStoryboardSettingsResponse, RegenerateCharacterSheetData, RegenerateCharacterSheetError, RegenerateCharacterSheetResponse, RegenerateSceneData, RegenerateSceneError, RegenerateSceneResponse, RetryStepData, RetryStepError, RetryStepResponse, SelectSceneTakeData, SelectSceneTakeError, SelectSceneTakeResponse, SetCharacterVoiceData, SetCharacterVoiceError, SetCharacterVoiceResponse, SetNarratorVoiceData, SetNarratorVoiceError, SetNarratorVoiceResponse, SplitScenesData, SplitScenesError, SplitScenesResponse, StartRenderData, StartRenderError, StartRenderResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrainCharacterLoraData, TrainCharacterLoraError, TrainCharacterLoraResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateCharacterData, UpdateCharacterError, UpdateCharacterRefData, UpdateCharacterRefError, UpdateCharacterRefResponse, UpdateCharacterResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateImageStyleData, UpdateImageStyleError, UpdateImageStyleResponse, UpdateSceneData, UpdateSceneError, UpdateSceneResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateVoicePresetData, UpdateVoicePresetError, UpdateVoicePresetResponse } from '../types.gen';
+import { addCharacterRef, applyDraftStep, backfillMedia, cancelRun, cancelStep, commitImport, confirmLibraryCleanup, createAiAction, createCharacter, createDraft, createEpisode, createImageStyle, createImport, createRun, createSeries, createVoicePreset, deleteCharacter, deleteCharacterRef, deleteImageStyle, deleteVoicePreset, disconnectYouTubeChannel, finalizeAsset, generateMissing, generateSeries, getAiActionResult, getAsset, getAssetVariant, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLibrarySettings, getLibraryUsage, getLlmSettings, getMe, getReadyz, getRender, getRenderSettings, getRenderStatus, getRun, getScenePeaks, getSeries, getStepLog, getStoryboardSettings, installModel, listAssets, listAudit, listCharacters, listEpisodes, listImageStyles, listImports, listJobs, listLibraryAssets, listModels, listRenders, listRunSteps, listScenes, listSceneTakes, listSeries, listVoicePresets, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewCharacterVoice, previewImport, previewLibraryCleanup, putLibrarySettings, putLlmApiKey, putLlmSettings, putRenderSettings, putStoryboardSettings, regenerateCharacterSheet, regenerateScene, retryStep, selectSceneTake, setCharacterVoice, setNarratorVoice, splitScenes, startRender, startYouTubeConnect, switchTenant, testLlmSettings, trainCharacterLora, unloadModels, updateBibleSection, updateCharacter, updateCharacterRef, updateEpisode, updateImageStyle, updateScene, updateSeries, updateVoicePreset, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
+import type { AddCharacterRefData, AddCharacterRefError, AddCharacterRefResponse, ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, BackfillMediaData, BackfillMediaResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, ConfirmLibraryCleanupData, ConfirmLibraryCleanupError, ConfirmLibraryCleanupResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateCharacterData, CreateCharacterError, CreateCharacterResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImageStyleData, CreateImageStyleError, CreateImageStyleResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, CreateVoicePresetData, CreateVoicePresetError, CreateVoicePresetResponse, DeleteCharacterData, DeleteCharacterError, DeleteCharacterRefData, DeleteCharacterRefError, DeleteCharacterRefResponse, DeleteCharacterResponse, DeleteImageStyleData, DeleteImageStyleError, DeleteImageStyleResponse, DeleteVoicePresetData, DeleteVoicePresetError, DeleteVoicePresetResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateMissingData, GenerateMissingError, GenerateMissingResponse2, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetAssetVariantData, GetAssetVariantError, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLibrarySettingsData, GetLibrarySettingsResponse, GetLibraryUsageData, GetLibraryUsageResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRenderData, GetRenderError, GetRenderResponse, GetRenderSettingsData, GetRenderSettingsError, GetRenderSettingsResponse, GetRenderStatusData, GetRenderStatusError, GetRenderStatusResponse, GetRunData, GetRunError, GetRunResponse, GetScenePeaksData, GetScenePeaksError, GetScenePeaksResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, GetStoryboardSettingsData, GetStoryboardSettingsError, GetStoryboardSettingsResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListCharactersData, ListCharactersError, ListCharactersResponse, ListEpisodesData, ListEpisodesResponse, ListImageStylesData, ListImageStylesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListLibraryAssetsData, ListLibraryAssetsResponse, ListModelsData, ListModelsResponse, ListRendersData, ListRendersError, ListRendersResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListScenesData, ListScenesError, ListScenesResponse, ListSceneTakesData, ListSceneTakesError, ListSceneTakesResponse, ListSeriesData, ListSeriesResponse, ListVoicePresetsData, ListVoicePresetsResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewCharacterVoiceData, PreviewCharacterVoiceError, PreviewCharacterVoiceResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PreviewLibraryCleanupData, PreviewLibraryCleanupResponse, PutLibrarySettingsData, PutLibrarySettingsError, PutLibrarySettingsResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, PutRenderSettingsData, PutRenderSettingsError, PutRenderSettingsResponse, PutStoryboardSettingsData, PutStoryboardSettingsError, PutStoryboardSettingsResponse, RegenerateCharacterSheetData, RegenerateCharacterSheetError, RegenerateCharacterSheetResponse, RegenerateSceneData, RegenerateSceneError, RegenerateSceneResponse, RetryStepData, RetryStepError, RetryStepResponse, SelectSceneTakeData, SelectSceneTakeError, SelectSceneTakeResponse, SetCharacterVoiceData, SetCharacterVoiceError, SetCharacterVoiceResponse, SetNarratorVoiceData, SetNarratorVoiceError, SetNarratorVoiceResponse, SplitScenesData, SplitScenesError, SplitScenesResponse, StartRenderData, StartRenderError, StartRenderResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrainCharacterLoraData, TrainCharacterLoraError, TrainCharacterLoraResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateCharacterData, UpdateCharacterError, UpdateCharacterRefData, UpdateCharacterRefError, UpdateCharacterRefResponse, UpdateCharacterResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateImageStyleData, UpdateImageStyleError, UpdateImageStyleResponse, UpdateSceneData, UpdateSceneError, UpdateSceneResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateVoicePresetData, UpdateVoicePresetError, UpdateVoicePresetResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -643,6 +643,95 @@ export const getClaudeCliStatusOptions = (options?: Options<GetClaudeCliStatusDa
     },
     queryKey: getClaudeCliStatusQueryKey(options)
 });
+
+export const listYouTubeChannelsQueryKey = (options?: Options<ListYouTubeChannelsData>) => createQueryKey('listYouTubeChannels', options);
+
+/**
+ * The tenant's connected YouTube channels and today's quota usage
+ */
+export const listYouTubeChannelsOptions = (options?: Options<ListYouTubeChannelsData>) => queryOptions<ListYouTubeChannelsResponse, DefaultError, ListYouTubeChannelsResponse, ReturnType<typeof listYouTubeChannelsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listYouTubeChannels({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listYouTubeChannelsQueryKey(options)
+});
+
+/**
+ * Start the Google OAuth flow (PKCE, single-use state bound to this session)
+ */
+export const startYouTubeConnectMutation = (options?: Partial<Options<StartYouTubeConnectData>>): UseMutationOptions<StartYouTubeConnectResponse, StartYouTubeConnectError, Options<StartYouTubeConnectData>> => {
+    const mutationOptions: UseMutationOptions<StartYouTubeConnectResponse, StartYouTubeConnectError, Options<StartYouTubeConnectData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startYouTubeConnect({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const youTubeOAuthCallbackQueryKey = (options?: Options<YouTubeOAuthCallbackData>) => createQueryKey('youTubeOAuthCallback', options);
+
+/**
+ * Google redirects here after consent; stores the channel and redirects back to Settings
+ *
+ * Always answers with a redirect to /settings/youtube carrying connect=ok or connect=error plus a short reason code. Tokens are exchanged server side and never reach the browser.
+ */
+export const youTubeOAuthCallbackOptions = (options?: Options<YouTubeOAuthCallbackData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof youTubeOAuthCallbackQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await youTubeOAuthCallback({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: youTubeOAuthCallbackQueryKey(options)
+});
+
+/**
+ * Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+ */
+export const disconnectYouTubeChannelMutation = (options?: Partial<Options<DisconnectYouTubeChannelData>>): UseMutationOptions<DisconnectYouTubeChannelResponse, DisconnectYouTubeChannelError, Options<DisconnectYouTubeChannelData>> => {
+    const mutationOptions: UseMutationOptions<DisconnectYouTubeChannelResponse, DisconnectYouTubeChannelError, Options<DisconnectYouTubeChannelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await disconnectYouTubeChannel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Record whether the Google API project passed YouTube's audit (audited)
+ */
+export const updateYouTubeChannelAuditMutation = (options?: Partial<Options<UpdateYouTubeChannelAuditData>>): UseMutationOptions<UpdateYouTubeChannelAuditResponse, UpdateYouTubeChannelAuditError, Options<UpdateYouTubeChannelAuditData>> => {
+    const mutationOptions: UseMutationOptions<UpdateYouTubeChannelAuditResponse, UpdateYouTubeChannelAuditError, Options<UpdateYouTubeChannelAuditData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateYouTubeChannelAudit({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const listSeriesQueryKey = (options?: Options<ListSeriesData>) => createQueryKey('listSeries', options);
 

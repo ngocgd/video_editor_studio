@@ -10,3 +10,6 @@ ON CONFLICT (tenant_id, kind, owner_ref) DO UPDATE SET
 
 -- name: GetSecret :one
 SELECT * FROM secrets WHERE tenant_id = @tenant_id AND kind = @kind AND owner_ref = @owner_ref;
+
+-- name: DeleteSecret :exec
+DELETE FROM secrets WHERE tenant_id = @tenant_id AND kind = @kind AND owner_ref = @owner_ref;

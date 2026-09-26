@@ -20,7 +20,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # is deliberately excluded: it has no tenant_id column (only
 # active_tenant_id, which is not a row-ownership/scoping column — sessions
 # are scoped by session id, looked up by token hash).
-TENANT_TABLES="assets secrets audit_log memberships tenant_quotas pipeline_runs pipeline_steps pipeline_step_deps voice_presets image_styles characters character_refs character_loras character_voices narrator_voices series_storyboard_settings scenes scene_takes render_settings render_manifests render_manifest_segments render_segments renders library_settings"
+TENANT_TABLES="assets secrets audit_log memberships tenant_quotas pipeline_runs pipeline_steps pipeline_step_deps voice_presets image_styles characters character_refs character_loras character_voices narrator_voices series_storyboard_settings scenes scene_takes series story_bibles episodes episode_drafts episode_draft_revisions imports llm_settings draft_step_applications youtube_channels youtube_oauth_states render_settings render_manifests render_manifest_segments render_segments renders library_settings"
 
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT

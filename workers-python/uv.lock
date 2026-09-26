@@ -796,6 +796,11 @@ tts-en = [
 tts-vi = [
     { name = "vieneu" },
 ]
+vision = [
+    { name = "pillow" },
+    { name = "torch" },
+    { name = "transformers" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -815,14 +820,17 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "numpy", specifier = ">=1.26,<2.0" },
     { name = "nvidia-ml-py", specifier = ">=12.560.0" },
+    { name = "pillow", marker = "extra == 'vision'", specifier = ">=12.3.0" },
     { name = "protobuf", specifier = ">=5.29.0" },
     { name = "torch", marker = "extra == 'align'", specifier = "==2.9.1", index = "https://download.pytorch.org/whl/cu128" },
     { name = "torch", marker = "extra == 'tts-en'", specifier = "==2.9.1", index = "https://download.pytorch.org/whl/cu128" },
+    { name = "torch", marker = "extra == 'vision'", specifier = "==2.9.1", index = "https://download.pytorch.org/whl/cu128" },
     { name = "torchaudio", marker = "extra == 'tts-en'", specifier = "==2.9.1", index = "https://download.pytorch.org/whl/cu128" },
     { name = "transformers", marker = "extra == 'align'", specifier = "==5.2.0" },
+    { name = "transformers", marker = "extra == 'vision'", specifier = "==5.2.0" },
     { name = "vieneu", marker = "extra == 'tts-vi'", specifier = "==3.8.3" },
 ]
-provides-extras = ["tts-en", "tts-vi", "align"]
+provides-extras = ["tts-en", "tts-vi", "align", "vision"]
 
 [package.metadata.requires-dev]
 dev = [

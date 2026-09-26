@@ -42,7 +42,7 @@ func (f *fakeResidency) Ensure(_ context.Context, m pipeline.ModelRef) error {
 	return nil
 }
 func (f *fakeResidency) UnloadAll(context.Context) error { f.current = nil; return nil }
-func (f *fakeResidency) Current() *pipeline.ModelRef      { return f.current }
+func (f *fakeResidency) Current() *pipeline.ModelRef     { return f.current }
 
 // fakeComfy answers every prompt with one image named after the prompt's
 // output prefix, or fails prompts whose prefix is in failPrefixes.

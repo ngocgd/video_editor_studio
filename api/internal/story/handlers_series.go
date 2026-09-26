@@ -190,16 +190,15 @@ func (h *StoryAPI) GenerateSeries(ctx context.Context, req gen.GenerateSeriesReq
 		ScopeID:   seriesID,
 		Priority:  pipeline.PriorityInteractive,
 	}}
-	for i := 0; i < episodeCount; i++ {
-		steps = append(steps, pipeline.StepSpec{
-			ID:        idconv.NewV7(),
-			Kind:      KindOutline,
-			ScopeKind: ScopeSeries,
-			ScopeID:   seriesID,
-			Priority:  pipeline.PriorityInteractive,
-			DependsOn: []uuid.UUID{bibleSeedStepID},
-		})
+	firstIdx, err := h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(info.ID), SeriesID: series.ID})
+	if err != nil {
+		return nil, err
 	}
+	outlines, err := outlineStepSpecs(seriesID, bibleSeedStepID, firstIdx, episodeCount)
+	if err != nil {
+		return nil, err
+	}
+	steps = append(steps, outlines...)
 
 	if _, err := h.Engine.Enqueue(ctx, info.ID, pipeline.RunSpec{
 		ID:        runID,

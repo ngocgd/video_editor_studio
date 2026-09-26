@@ -24,6 +24,7 @@ import (
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
 	"loomtale/api/internal/authapi"
+	"loomtale/api/internal/channelsapi"
 	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	"loomtale/api/internal/csrf"
@@ -57,6 +58,7 @@ import (
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/story"
 	"loomtale/api/internal/validation"
+	"loomtale/api/internal/youtube"
 )
 
 func main() {
@@ -166,6 +168,10 @@ func run() error {
 	}
 	modelStore := &models.Store{Queries: queries}
 	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+	googleOAuth, err := googleOAuthConfig(cfg)
+	if err != nil {
+		return err
+	}
 	llmRegistry, llmStore, err := bootstrap.Build(bootstrap.Config{
 		AppMode:               cfg.AppMode,
 		AllowedProviderHosts:  cfg.AllowedProviderHosts,
@@ -331,6 +337,12 @@ func run() error {
 			Engine:       engine,
 			WorkerStatus: &workerstatus.Store{Queries: queries},
 		},
+		ChannelsAPI: &channelsapi.ChannelsAPI{
+			Queries: queries,
+			Secrets: secretsStore,
+			OAuth:   googleOAuth,
+			Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
+		},
 	}
 
 	strict := gen.NewStrictHandlerWithOptions(srv, []gen.StrictMiddlewareFunc{rbac.Middleware(minRoles)}, gen.StrictHTTPServerOptions{
@@ -338,14 +350,10 @@ func run() error {
 		ResponseErrorHandlerFunc: problemErrorHandler(http.StatusInternalServerError, "internal error"),
 	})
 
-	if cfg.RateLimitPerMinute <= 0 {
-		return fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
+	generalLimiter, mediaLimiter, err := newRequestLimiters(cfg)
+	if err != nil {
+		return err
 	}
-	if cfg.MediaRateLimitPerMinute <= 0 {
-		return fmt.Errorf("API_MEDIA_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.MediaRateLimitPerMinute)
-	}
-	generalLimiter := ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
-	mediaLimiter := ratelimit.NewMemory(float64(cfg.MediaRateLimitPerMinute), float64(cfg.MediaRateLimitPerMinute)/60)
 	headers := secheaders.Config{MediaOrigin: cfg.MediaOrigin, PublicURL: cfg.PublicURL}
 	sessionMW := authpkg.Middleware(authpkg.Store{}, queries)
 	csrfMW := csrf.Middleware(csrfPepper, authpkg.CSRFLookup, allowedOrigins, csrfRejected)
@@ -396,6 +404,20 @@ func run() error {
 		}
 	}
 	return nil
+}
+
+// newRequestLimiters builds the general and media per-client-IP buckets;
+// each refills its whole per-minute budget over one minute.
+func newRequestLimiters(cfg config) (general, media *ratelimit.Memory, err error) {
+	if cfg.RateLimitPerMinute <= 0 {
+		return nil, nil, fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
+	}
+	if cfg.MediaRateLimitPerMinute <= 0 {
+		return nil, nil, fmt.Errorf("API_MEDIA_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.MediaRateLimitPerMinute)
+	}
+	general = ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
+	media = ratelimit.NewMemory(float64(cfg.MediaRateLimitPerMinute), float64(cfg.MediaRateLimitPerMinute)/60)
+	return general, media, nil
 }
 
 // assetVariantPath is GET /api/v1/assets/{id}/variants/{variant}.

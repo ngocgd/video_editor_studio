@@ -124,9 +124,48 @@ func NewNameIndex(chars []CharacterNames) NameIndex {
 // Resolve maps a name to a character id. The LLM's output is treated as
 // a name only: a string that happens to be a UUID is looked up as a name
 // like any other and never trusted as an id.
+//
+// Besides an exact name it accepts the forms a model produces when it
+// copies a roster line: several names joined by " / ", a trailing
+// parenthesised role, or a list marker. Every part that is a known name
+// must point at the same character; parts that disagree resolve to
+// nobody.
 func (idx NameIndex) Resolve(name string) (uuid.UUID, bool) {
-	id, ok := idx.byName[foldName(name)]
-	return id, ok
+	if id, ok := idx.byName[foldName(name)]; ok {
+		return id, true
+	}
+	var found uuid.UUID
+	hit := false
+	for _, part := range nameParts(name) {
+		id, ok := idx.byName[foldName(part)]
+		if !ok {
+			continue
+		}
+		if hit && id != found {
+			return uuid.Nil, false
+		}
+		found, hit = id, true
+	}
+	return found, hit
+}
+
+// nameParts splits a roster-style name such as
+// "- Lin Mo / 林默 / Lâm Mặc (disciple)" into the single names in it:
+// the whole line without its role, the names around each slash, and the
+// text inside a trailing parenthesis (so "林默 (Lin Mo)" yields "Lin Mo").
+func nameParts(name string) []string {
+	s := strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(name), "-*•·"))
+	var parts []string
+	if strings.HasSuffix(s, ")") || strings.HasSuffix(s, "）") {
+		if i := strings.LastIndexAny(s, "(（"); i > 0 {
+			inner := strings.TrimLeft(strings.TrimRight(s[i:], ")）"), "(（")
+			parts = append(parts, inner)
+			s = strings.TrimSpace(s[:i])
+		}
+	}
+	parts = append(parts, s)
+	parts = append(parts, strings.FieldsFunc(s, func(r rune) bool { return r == '/' || r == '／' })...)
+	return parts
 }
 
 // IsNarrator reports whether a speaker name means the narrator.

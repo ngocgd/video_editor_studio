@@ -643,6 +643,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClaudeCliStatus'
+  /channels:
+    get:
+      operationId: listYouTubeChannels
+      summary: The tenant's connected YouTube channels and today's quota usage
+      tags:
+        - channels
+      x-min-role: viewer
+      responses:
+        '200':
+          description: channels, connected ones first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YouTubeChannelList'
+  /channels/connect:
+    post:
+      operationId: startYouTubeConnect
+      summary: Start the Google OAuth flow (PKCE, single-use state bound to this session)
+      tags:
+        - channels
+      x-min-role: owner
+      responses:
+        '200':
+          description: consent URL to navigate to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YouTubeConnectStart'
+        '503':
+          description: no Google OAuth client is configured on this server
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /channels/oauth/callback:
+    get:
+      operationId: youTubeOAuthCallback
+      summary: Google redirects here after consent; stores the channel and redirects back to Settings
+      description: Always answers with a redirect to /settings/youtube carrying connect=ok or connect=error plus a short reason code. Tokens are exchanged server side and never reach the browser.
+      tags:
+        - channels
+      x-min-role: owner
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+            maxLength: 2048
+        - name: state
+          in: query
+          schema:
+            type: string
+            maxLength: 256
+        - name: error
+          in: query
+          schema:
+            type: string
+            maxLength: 256
+      responses:
+        '302':
+          description: back to the Settings page
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+  /channels/{id}:
+    patch:
+      operationId: updateYouTubeChannelAudit
+      summary: Record whether the Google API project passed YouTube's audit (audited)
+      tags:
+        - channels
+      x-min-role: owner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YouTubeChannelAuditUpdate'
+      responses:
+        '200':
+          description: channel updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YouTubeChannel'
+        '404':
+          description: channel not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      operationId: disconnectYouTubeChannel
+      summary: Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+      tags:
+        - channels
+      x-min-role: owner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: disconnected
+        '404':
+          description: channel not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /series:
     get:
       operationId: listSeries
@@ -3639,6 +3760,128 @@ components:
           description: Always true; the llm-cli sidecar runs claude with tool use disabled.
         detail:
           type: string
+    YouTubeChannel:
+      type: object
+      description: A YouTube channel connected through Google OAuth. Tokens never appear here.
+      required:
+        - id
+        - youtubeChannelId
+        - title
+        - thumbnailUrl
+        - scopes
+        - canUpload
+        - apiProjectAudited
+        - auditNote
+        - longUploadsStatus
+        - customThumbnailsOk
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        youtubeChannelId:
+          type: string
+        title:
+          type: string
+        thumbnailUrl:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+          description: OAuth scopes Google actually granted.
+        canUpload:
+          type: boolean
+          description: True when the channel is connected and the upload scope was granted.
+        apiProjectAudited:
+          type: boolean
+          description: Manual toggle, set once the Google API project passed YouTube's audit. Until then every upload stays private.
+        auditFormDate:
+          type: string
+          format: date
+          description: Date the audit form was submitted, if recorded.
+        auditNote:
+          type: string
+        longUploadsStatus:
+          type: string
+          enum:
+            - allowed
+            - eligible
+            - disallowed
+            - unknown
+          description: Whether the channel may upload videos longer than 15 minutes (channel verification).
+        eligibilityCheckedAt:
+          type: string
+          format: date-time
+        customThumbnailsOk:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - connected
+            - reconnect_needed
+            - disconnected
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    YouTubeQuota:
+      type: object
+      description: Today's Data API units spent from the Google project's daily pool.
+      required:
+        - used
+        - limit
+        - resetsAt
+      properties:
+        used:
+          type: integer
+        limit:
+          type: integer
+        resetsAt:
+          type: string
+          format: date-time
+          description: Next reset, midnight America/Los_Angeles.
+    YouTubeChannelList:
+      type: object
+      required:
+        - items
+        - oauthConfigured
+        - quota
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/YouTubeChannel'
+        oauthConfigured:
+          type: boolean
+          description: False when the server has no Google OAuth client configured, so connecting is unavailable.
+        quota:
+          $ref: '#/components/schemas/YouTubeQuota'
+    YouTubeConnectStart:
+      type: object
+      required:
+        - authorizationUrl
+      properties:
+        authorizationUrl:
+          type: string
+          description: Google consent page to navigate the browser to. Valid for 10 minutes, once.
+    YouTubeChannelAuditUpdate:
+      type: object
+      required:
+        - apiProjectAudited
+      properties:
+        apiProjectAudited:
+          type: boolean
+        auditFormDate:
+          type: string
+          format: date
+        auditNote:
+          type: string
+          maxLength: 2000
     TargetLanguage:
       type: string
       enum:
@@ -3928,6 +4171,8 @@ components:
           type: array
           items:
             type: string
+            maxLength: 64
+          maxItems: 5000
         beatId:
           type: string
         instruction:
@@ -4036,10 +4281,14 @@ components:
             - move
         paragraphId:
           type: string
+          minLength: 1
+          maxLength: 64
         text:
           type: string
+          maxLength: 20000
         afterParagraphId:
           type: string
+          maxLength: 64
           description: For op=move, the paragraph id to place this one after (empty string means first).
     DraftPatchRequest:
       type: object
@@ -4068,9 +4317,12 @@ components:
           type: array
           items:
             type: string
+            maxLength: 64
+          maxItems: 5000
           description: The paragraphs the action was run against (its selection).
         afterParagraphId:
           type: string
+          maxLength: 64
           description: For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
     ChapterPreview:
       type: object

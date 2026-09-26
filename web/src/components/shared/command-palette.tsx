@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Cpu, LayoutDashboard, Library, ListChecks, Settings } from "lucide-react";
+import { Cpu, LayoutDashboard, Library, ListChecks, Settings, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { popShortcutScope, pushShortcutScope, useShortcut } from "../../lib/shortcuts";
@@ -20,6 +20,7 @@ const ITEMS: CommandItem[] = [
   { id: "library", label: "Go to Library", icon: Library, to: "/library" },
   { id: "models", label: "Go to Model manager", icon: Cpu, to: "/settings/models" },
   { id: "settings", label: "Go to Account settings", icon: Settings, to: "/settings/account" },
+  { id: "youtube", label: "Go to YouTube channels", icon: Video, to: "/settings/youtube" },
 ];
 
 /** `Ctrl K` global command palette (guidelines §8). */
