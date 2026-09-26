@@ -8,6 +8,7 @@ import { CommandPaletteTrigger } from "./app-shell";
 const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/jobs": "Render Queue",
+  "/settings/models": "Models & providers",
   "/settings/account": "Account settings",
 };
 

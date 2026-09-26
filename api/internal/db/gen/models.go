@@ -128,6 +128,46 @@ type Membership struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ModelBenchmark struct {
+	ID            pgtype.UUID        `json:"id"`
+	RunID         pgtype.UUID        `json:"run_id"`
+	Suite         string             `json:"suite"`
+	CaseName      string             `json:"case_name"`
+	Model         string             `json:"model"`
+	Ok            bool               `json:"ok"`
+	Seconds       pgtype.Float8      `json:"seconds"`
+	VramPeakMb    pgtype.Int8        `json:"vram_peak_mb"`
+	RssPeakMb     pgtype.Int8        `json:"rss_peak_mb"`
+	SwitchSeconds pgtype.Float8      `json:"switch_seconds"`
+	Error         pgtype.Text        `json:"error"`
+	Meta          []byte             `json:"meta"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ModelFile struct {
+	Path       string             `json:"path"`
+	Sha256     string             `json:"sha256"`
+	SizeBytes  int64              `json:"size_bytes"`
+	VerifiedAt pgtype.Timestamptz `json:"verified_at"`
+}
+
+type ModelInstall struct {
+	Name              string             `json:"name"`
+	Status            string             `json:"status"`
+	BytesDone         int64              `json:"bytes_done"`
+	BytesTotal        int64              `json:"bytes_total"`
+	RunID             pgtype.UUID        `json:"run_id"`
+	StepID            pgtype.UUID        `json:"step_id"`
+	StartedByTenantID pgtype.UUID        `json:"started_by_tenant_id"`
+	Error             pgtype.Text        `json:"error"`
+	LicenceSpdx       string             `json:"licence_spdx"`
+	LicenceUrl        string             `json:"licence_url"`
+	LicenceCheckedAt  pgtype.Timestamptz `json:"licence_checked_at"`
+	Revision          string             `json:"revision"`
+	InstalledAt       pgtype.Timestamptz `json:"installed_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PipelineRun struct {
 	ID           pgtype.UUID        `json:"id"`
 	TenantID     pgtype.UUID        `json:"tenant_id"`

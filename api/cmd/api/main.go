@@ -30,6 +30,8 @@ import (
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
+	"loomtale/api/internal/models"
+	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
@@ -150,6 +152,11 @@ func run() error {
 		return err
 	}
 	quotaChecker := &quota.Checker{}
+	manifest, err := models.Embedded()
+	if err != nil {
+		return err
+	}
+	modelStore := &models.Store{Queries: queries}
 	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
 	llmRegistry, llmStore, err := bootstrap.Build(bootstrap.Config{
 		AppMode:               cfg.AppMode,
@@ -167,6 +174,10 @@ func run() error {
 		return err
 	}
 	stepRegistry := pipeline.NewRegistry()
+	// The api process only enqueues models.* steps; their handlers are
+	// registered here so Enqueue can resolve queue and model, and they
+	// refuse to Run (only the worker has the models volume and the GPU).
+	models.RegisterSteps(stepRegistry, manifest, modelStore, nil, nil)
 	for _, handler := range story.Handlers(llmRegistry, queries) {
 		stepRegistry.Register(handler)
 	}
@@ -259,6 +270,13 @@ func run() error {
 			Engine:   engine,
 			Registry: llmRegistry,
 			Internal: internalStore,
+		},
+		ModelsAPI: &modelsapi.ModelsAPI{
+			Manifest:     manifest,
+			Store:        modelStore,
+			Queries:      queries,
+			Engine:       engine,
+			WorkerStatus: &workerstatus.Store{Queries: queries},
 		},
 	}
 

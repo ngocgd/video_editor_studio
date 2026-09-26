@@ -43,6 +43,9 @@ type GPU struct {
 type ProviderInfo struct {
 	Available      bool   `json:"available"`
 	DisabledReason string `json:"disabled_reason,omitempty"`
+	// Loaded lists the models the backend itself reports as resident
+	// (ComfyUI /system_stats, Ollama /api/ps, pyworker ListEngines).
+	Loaded []string `json:"loaded,omitempty"`
 	// CLI is set only for claude-cli: the llm-cli sidecar sits on
 	// llm_net, which only the worker joins, so the worker probes it and
 	// the api reads the result here.

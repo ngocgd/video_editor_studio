@@ -210,3 +210,24 @@ func TestNewManagerWithBudgetSubtractsRenderReserve(t *testing.T) {
 		t.Fatalf("BudgetMB = %d, want %d", mgr.BudgetMB, 10900-1024)
 	}
 }
+
+func TestEnsureCapsTheVRAMWaitAtTheBudget(t *testing.T) {
+	// Free VRAM at boot is the budget plus the render reserve; a model
+	// planned above the budget must still load (it offloads the rest)
+	// instead of waiting for VRAM that can never be free.
+	probe := newFakeProbe(10900)
+	backend := &fakeBackend{name: "comfyui"}
+	mgr, err := NewManagerWithBudget(context.Background(), probe, map[string]Backend{"comfyui": backend},
+		map[string]int64{"comfyui:qwen-image": 11500}, 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := mgr.Ensure(ctx, pipeline.ModelRef{Backend: "comfyui", Model: "qwen-image"}); err != nil {
+		t.Fatalf("Ensure: %v", err)
+	}
+	if !backend.loadCalled.Load() {
+		t.Fatal("expected the over-budget model to load")
+	}
+}

@@ -1,0 +1,45 @@
+{
+  "description": "Scene txt2img with Z-Image Turbo int8 (8 steps, res_multistep, shift 3, from the official ComfyUI template). An optional LoRA is applied to the model only; without lora_name the LoRA node is bypassed.",
+  "output_node": "10",
+  "params": {
+    "prompt": {
+      "node": "4",
+      "input": "text",
+      "required": true
+    },
+    "seed": {
+      "node": "8",
+      "input": "seed"
+    },
+    "steps": {
+      "node": "8",
+      "input": "steps"
+    },
+    "width": {
+      "node": "6",
+      "input": "width"
+    },
+    "height": {
+      "node": "6",
+      "input": "height"
+    },
+    "filename_prefix": {
+      "node": "10",
+      "input": "filename_prefix"
+    },
+    "lora_name": {
+      "node": "11",
+      "input": "lora_name",
+      "bypass_input": "model"
+    },
+    "lora_strength": {
+      "node": "11",
+      "input": "strength_model"
+    }
+  },
+  "warmup": {
+    "width": 256,
+    "height": 256,
+    "steps": 1
+  }
+}

@@ -1,4 +1,4 @@
-// Command loomtale is the operator CLI: migrate, create-owner, bench.
+// Command loomtale is the operator CLI: migrate, create-owner, models, bench.
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: loomtale <migrate|create-owner|bench> [args]")
+		fmt.Fprintln(os.Stderr, "usage: loomtale <migrate|create-owner|models|bench> [args]")
 		os.Exit(2)
 	}
 
@@ -20,6 +20,8 @@ func main() {
 		err = runMigrate(ctx, os.Args[2:])
 	case "create-owner":
 		err = runCreateOwner(ctx, os.Args[2:])
+	case "models":
+		err = runModels(ctx, os.Args[2:])
 	case "bench":
 		err = runBench(ctx, os.Args[2:])
 	default:

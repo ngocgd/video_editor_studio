@@ -524,6 +524,56 @@ export type ImportCommitResponse = {
     runId?: string;
 };
 
+export type ModelLicence = {
+    spdx: string;
+    url: string;
+    /**
+     * Date (YYYY-MM-DD) the licence was last checked by hand.
+     */
+    verified: string;
+    /**
+     * Whether the licence is on the commercial-use allowlist.
+     */
+    allowed: boolean;
+};
+
+export type ModelInfo = {
+    name: string;
+    task: string;
+    title: string;
+    engine: string;
+    licence: ModelLicence;
+    sizeBytes: number;
+    vramMb: number;
+    status: 'not_installed' | 'downloading' | 'paused' | 'installed' | 'failed' | 'blocked';
+    bytesDone: number;
+    bytesTotal: number;
+    /**
+     * True when the worker reports this model as the resident GPU model.
+     */
+    loaded: boolean;
+    /**
+     * True when the model's planned VRAM exceeds the measured budget.
+     */
+    overBudget: boolean;
+    error?: string;
+    installedAt?: string;
+};
+
+export type ModelList = {
+    items: Array<ModelInfo>;
+    /**
+     * Measured VRAM budget (free at worker boot minus the render reserve), when the worker has reported one.
+     */
+    budgetMb?: number;
+    workerOnline?: boolean;
+};
+
+export type ModelActionResult = {
+    runId: string;
+    stepId: string;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -1732,6 +1782,139 @@ export type CommitImportResponses = {
 };
 
 export type CommitImportResponse = CommitImportResponses[keyof CommitImportResponses];
+
+export type ListModelsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/models';
+};
+
+export type ListModelsResponses = {
+    /**
+     * model list
+     */
+    200: ModelList;
+};
+
+export type ListModelsResponse = ListModelsResponses[keyof ListModelsResponses];
+
+export type UnloadModelsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/models/unload';
+};
+
+export type UnloadModelsResponses = {
+    /**
+     * unload queued
+     */
+    202: ModelActionResult;
+};
+
+export type UnloadModelsResponse = UnloadModelsResponses[keyof UnloadModelsResponses];
+
+export type InstallModelData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/models/{name}/install';
+};
+
+export type InstallModelErrors = {
+    /**
+     * no such model in the manifest
+     */
+    404: Problem;
+    /**
+     * already installed or already downloading
+     */
+    409: Problem;
+    /**
+     * licence not in the allowlist
+     */
+    422: Problem;
+};
+
+export type InstallModelError = InstallModelErrors[keyof InstallModelErrors];
+
+export type InstallModelResponses = {
+    /**
+     * install queued
+     */
+    202: ModelInfo;
+};
+
+export type InstallModelResponse = InstallModelResponses[keyof InstallModelResponses];
+
+export type PauseModelInstallData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/models/{name}/pause';
+};
+
+export type PauseModelInstallErrors = {
+    /**
+     * no such model in the manifest
+     */
+    404: Problem;
+    /**
+     * no download is running for this model
+     */
+    409: Problem;
+};
+
+export type PauseModelInstallError = PauseModelInstallErrors[keyof PauseModelInstallErrors];
+
+export type PauseModelInstallResponses = {
+    /**
+     * download paused
+     */
+    200: ModelInfo;
+};
+
+export type PauseModelInstallResponse = PauseModelInstallResponses[keyof PauseModelInstallResponses];
+
+export type LoadModelData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/models/{name}/load';
+};
+
+export type LoadModelErrors = {
+    /**
+     * no such model in the manifest
+     */
+    404: Problem;
+    /**
+     * model is not installed
+     */
+    409: Problem;
+    /**
+     * licence not in the allowlist
+     */
+    422: Problem;
+};
+
+export type LoadModelError = LoadModelErrors[keyof LoadModelErrors];
+
+export type LoadModelResponses = {
+    /**
+     * load queued
+     */
+    202: ModelActionResult;
+};
+
+export type LoadModelResponse = LoadModelResponses[keyof LoadModelResponses];
 
 export type StreamEventsData = {
     body?: never;

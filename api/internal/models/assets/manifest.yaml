@@ -1,0 +1,139 @@
+# Local model manifest: the single source of truth for every model the
+# studio may download or load. `loomtale models lint` (run by `make lint`)
+# checks this file; the worker's pull step and the engine loaders read the
+# copy embedded into the Go binaries by `make gen`.
+#
+# Rules enforced by the linter:
+# - every file is pinned by repository revision (a 40-char commit sha),
+#   sha256 and exact size;
+# - only .safetensors and .gguf weights (plus .json/.txt/.yaml config
+#   files) are allowed, so no pickle (.bin, .pt, .ckpt, .pth) can ever be
+#   fetched or loaded;
+# - every file a model's ComfyUI workflows load (unet, text encoder, VAE,
+#   LoRA) is listed under that model, so the file list is transitive.
+#
+# The licence gate (api/internal/models/licence.go) allows only
+# Apache-2.0, MIT, BSD-2-Clause and BSD-3-Clause. Entries under another
+# licence stay listed so the Model manager can show them as blocked, but
+# they are refused at install and at load.
+#
+# vram_mb is the VRAM ceiling planned for the model's workflows on the
+# measured budget (free VRAM at boot minus the render reserve). ComfyUI
+# runs with --reserve-vram, so a workflow that needs more offloads the
+# rest to CPU RAM inside the container's mem_limit instead of taking the
+# render reserve.
+version: 1
+models:
+  - name: z-image-turbo
+    task: scene
+    title: Scene images
+    engine: comfyui
+    workflows: [scene_txt2img_zimage]
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/Tongyi-MAI/Z-Image-Turbo
+      verified: "2026-09-24"
+    source:
+      repo: Comfy-Org/z_image_turbo
+      revision: 6fc90a3b1b653e935a0d175e260736de25b84df5
+      base: Tongyi-MAI/Z-Image-Turbo@f332072aa78be7aecdf3ee76d5c247082da564a6
+    vram_mb: 10500
+    files:
+      - path: diffusion_models/z_image_turbo_int8_convrot.safetensors
+        remote: split_files/diffusion_models/z_image_turbo_int8_convrot.safetensors
+        sha256: be517ebd47c912a5626a588e1aeea43e6be4a43c0cdcd2b48a2a780d9f358635
+        size: 6201001296
+      - path: text_encoders/qwen_3_4b_fp8_mixed.safetensors
+        remote: split_files/text_encoders/qwen_3_4b_fp8_mixed.safetensors
+        sha256: 72450b19758172c5a7273cf7de729d1c17e7f434a104a00167624cba94f68f15
+        size: 5631994051
+      - path: vae/ae.safetensors
+        remote: split_files/vae/ae.safetensors
+        sha256: afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38
+        size: 335304388
+
+  - name: qwen-image
+    task: thumbnail
+    title: Thumbnails, text in image
+    engine: comfyui
+    workflows: [thumbnail_qwenimage]
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/Qwen/Qwen-Image
+      verified: "2026-09-26"
+    source:
+      repo: city96/Qwen-Image-gguf
+      revision: e77babc55af111419e1714a7a0a848b9cac25db7
+      base: Qwen/Qwen-Image@75e0b4be04f60ec59a75f475837eced720f823b6
+    vram_mb: 11500
+    files:
+      - path: diffusion_models/qwen-image-Q4_K_M.gguf
+        remote: qwen-image-Q4_K_M.gguf
+        sha256: c6f49103603b9a4927502549fb615c910386cfc675b1466325930ba10d2a11f4
+        size: 13065746976
+      - path: text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+        repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        remote: split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+        sha256: cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4
+        size: 9384670680
+      - path: vae/qwen_image_vae.safetensors
+        repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        remote: split_files/vae/qwen_image_vae.safetensors
+        sha256: a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f
+        size: 253806246
+
+  - name: qwen-image-edit-2511
+    task: charsheet
+    title: Character sheets, reference edits
+    engine: comfyui
+    workflows: [charsheet_qwenedit, ref_edit_qwenedit]
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/Qwen/Qwen-Image-Edit-2511
+      verified: "2026-09-25"
+    source:
+      repo: unsloth/Qwen-Image-Edit-2511-GGUF
+      revision: 0d33d9692b4b26212297240d87b0d4719aa4fd06
+      base: Qwen/Qwen-Image-Edit-2511@6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9
+    vram_mb: 11500
+    files:
+      - path: diffusion_models/qwen-image-edit-2511-Q4_K_M.gguf
+        remote: qwen-image-edit-2511-Q4_K_M.gguf
+        sha256: 8677bac90627adbbc11efab87b1870e701c4eb3689ee865a3de8ab81b705a723
+        size: 13244758624
+      - path: text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+        repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        remote: split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+        sha256: cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4
+        size: 9384670680
+      - path: vae/qwen_image_vae.safetensors
+        repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        remote: split_files/vae/qwen_image_vae.safetensors
+        sha256: a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f
+        size: 253806246
+
+  # Downloaded during the style comparison; its SDXL licence (CreativeML
+  # Open RAIL++-M) is outside the allowlist, so it is listed as blocked
+  # until the owner decides on the style model and the allowlist.
+  - name: illustrious-xl-v1.1
+    task: scene
+    title: Anime scene images (SDXL)
+    engine: comfyui
+    workflows: []
+    licence:
+      spdx: LicenseRef-CreativeML-OpenRAIL-PlusPlus-M
+      url: https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/LICENSE.md
+      verified: "2026-09-25"
+    source:
+      repo: OnomaAIResearch/Illustrious-XL-v1.1
+      revision: 8d966ec810874502d56a22ec9130dab6ef74c5ff
+    vram_mb: 8000
+    files:
+      - path: checkpoints/Illustrious-XL-v1.1.safetensors
+        remote: Illustrious-XL-v1.1.safetensors
+        sha256: 536863e9f0c13b0ce834e2f8a19ada425ee4f722c0ad3d0051ec7e6adaa8156c
+        size: 6938040728

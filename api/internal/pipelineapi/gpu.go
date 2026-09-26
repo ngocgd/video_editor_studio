@@ -107,7 +107,11 @@ func applyWorkerStatus(ctx context.Context, status *gen.GpuStatus, store workerS
 	}
 	backends := make([]gen.GpuBackendStatus, 0, len(ws.Providers))
 	for name, info := range ws.Providers {
-		backends = append(backends, gen.GpuBackendStatus{Name: name, Reachable: info.Available})
+		loaded := info.Loaded
+		if loaded == nil {
+			loaded = []string{}
+		}
+		backends = append(backends, gen.GpuBackendStatus{Name: name, Reachable: info.Available, Loaded: loaded})
 	}
 	status.Backends = backends
 }

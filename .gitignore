@@ -27,6 +27,9 @@ __pycache__/
 workers-python/.pytest_cache/
 workers-python/.ruff_cache/
 
+# Host disk probe directory mounted by compose.gpu.yml (always empty)
+deploy/host-disk/
+
 # Toolbox caches (named volumes, not bind mounts, but ignore stray dirs)
 .gocache/
 .gomodcache/
@@ -42,6 +45,7 @@ gitleaks-report.json
 
 # Spike scratch output (phase 1b comfyui smoke; not committed)
 spike-out/
+bench-out/
 
 # Local agent state
 .claude/

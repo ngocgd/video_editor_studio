@@ -26,6 +26,7 @@ import (
 	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
+	"loomtale/api/internal/models"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/bootstrap"
@@ -117,9 +118,24 @@ func run() error {
 		registry.Register(h)
 	}
 
-	residency, probe, residencyManager, err := buildResidency(ctx, cfg)
+	manifest, err := models.Embedded()
 	if err != nil {
 		return err
+	}
+	modelStore := &models.Store{Queries: queries}
+	loadGate := &models.LoadGate{Manifest: manifest, Store: modelStore, Dir: cfg.ModelsDir}
+	residency, probe, residencyManager, err := buildResidency(ctx, cfg, manifest, loadGate.Check)
+	if err != nil {
+		return err
+	}
+	// models.* steps only run on a GPU worker: that is the one with the
+	// models volume (read-write, for pulls) and the GPU network (for
+	// load/unload). A worker without them registers nothing, so it never
+	// claims a step it cannot run.
+	modelSteps := cfg.WorkerGPU && cfg.ModelsDir != ""
+	if modelSteps {
+		downloader := &models.Downloader{Dir: cfg.ModelsDir, HostDiskDir: cfg.ModelsHostDiskDir, HTTP: downloadHTTPClient(), Files: modelStore}
+		models.RegisterSteps(registry, manifest, modelStore, downloader, residency)
 	}
 	saasMode := strings.EqualFold(cfg.AppMode, "saas")
 	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager, func(ctx context.Context) map[string]workerstatus.ProviderInfo {
@@ -128,10 +144,11 @@ func run() error {
 
 	// A worker must never enable a queue no registered handler actually
 	// resolves to: claiming a step it cannot run destroys it (the CAS
-	// claim is a one-way door). This phase only registers llm.* handlers
-	// (see story.Handlers above), which only ever resolve to QueueLLM or,
-	// for the Ollama provider, QueueGPU (see registry.Registry.QueueFor) —
-	// so cpu/render/io stay disabled here until a later phase registers a
+	// claim is a one-way door). The llm.* handlers (see story.Handlers
+	// above) only ever resolve to QueueLLM or, for the Ollama provider,
+	// QueueGPU (see registry.Registry.QueueFor), and models.pull uses
+	// QueueIO only where the models steps are registered — so cpu/render
+	// (and io elsewhere) stay disabled here until a later phase registers a
 	// handler that actually uses them; enabling them unconditionally
 	// whenever registry.Len() > 0 (as before phase 6, when the registry
 	// was always empty and this was moot) would let this process's cpu/
@@ -145,6 +162,9 @@ func run() error {
 		}
 		if cfg.WorkerGPU {
 			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
+		}
+		if modelSteps {
+			queueConfig[pipeline.QueueIO] = river.QueueConfig{MaxWorkers: cfg.IOWorkers}
 		}
 	}
 

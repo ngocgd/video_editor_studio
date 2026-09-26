@@ -17,6 +17,7 @@ import { Route as AppJobsRouteImport } from './routes/_app/jobs'
 import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
+import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/models'
 import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/projects/$seriesId/index'
 import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
 import { Route as AppProjectsSeriesIdEpisodesEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/episodes/$episodeId'
@@ -60,6 +61,11 @@ const AppSettingsLlmRoute = AppSettingsLlmRouteImport.update({
   path: '/settings/llm',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsModelsRoute = AppSettingsModelsRouteImport.update({
+  id: '/settings/models',
+  path: '/settings/models',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsSeriesIdIndexRoute =
   AppProjectsSeriesIdIndexRouteImport.update({
     id: '/projects/$seriesId/',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof AppJobsRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
+  '/settings/models': typeof AppSettingsModelsRoute
   '/projects/': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
+  '/settings/models': typeof AppSettingsModelsRoute
   '/projects': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/llm': typeof AppSettingsLlmRoute
+  '/_app/settings/models': typeof AppSettingsModelsRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
   '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/settings/account'
     | '/settings/llm'
+    | '/settings/models'
     | '/projects/'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId/'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings/account'
     | '/settings/llm'
+    | '/settings/models'
     | '/projects'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/settings/account'
     | '/_app/settings/llm'
+    | '/_app/settings/models'
     | '/_app/projects/'
     | '/_app/projects/$seriesId/bible'
     | '/_app/projects/$seriesId/'
@@ -220,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsLlmRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/models': {
+      id: '/_app/settings/models'
+      path: '/settings/models'
+      fullPath: '/settings/models'
+      preLoaderRoute: typeof AppSettingsModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/': {
       id: '/_app/projects/$seriesId/'
       path: '/projects/$seriesId'
@@ -250,6 +269,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
   AppSettingsLlmRoute: typeof AppSettingsLlmRoute
+  AppSettingsModelsRoute: typeof AppSettingsModelsRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
   AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
@@ -262,6 +282,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppSettingsAccountRoute: AppSettingsAccountRoute,
   AppSettingsLlmRoute: AppSettingsLlmRoute,
+  AppSettingsModelsRoute: AppSettingsModelsRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppProjectsSeriesIdBibleRoute: AppProjectsSeriesIdBibleRoute,
   AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
