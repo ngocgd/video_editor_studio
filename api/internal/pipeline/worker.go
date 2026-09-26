@@ -25,8 +25,8 @@ var QueueTimeouts = map[string]time.Duration{
 // strings.HasPrefix). Every value here must stay below
 // RescueStuckJobsAfter; AssertTimeoutsBelowRescue checks this at startup.
 var KindTimeoutOverrides = map[string]time.Duration{
-	"train.lora":  2 * time.Hour,
-	"bench.":      1 * time.Hour,
+	"train.lora": 2 * time.Hour,
+	"bench.":     1 * time.Hour,
 	// A multi-GB model pull resumes across attempts, but each attempt
 	// should get as far as it can: at ~3 MB/s the largest entry needs
 	// more than the io queue's 2 h.

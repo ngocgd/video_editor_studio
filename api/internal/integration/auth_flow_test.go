@@ -145,4 +145,3 @@ func TestOldCookieRejectedAfterSwitchTenant(t *testing.T) {
 	meResp := sess.do(http.MethodGet, "/auth/me", nil)
 	requireStatus(t, meResp, http.StatusUnauthorized)
 }
-

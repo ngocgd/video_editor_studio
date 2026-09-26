@@ -34,10 +34,10 @@ const deltaFlushInterval = 100 * time.Millisecond
 // nonce-fenced storyctx.Context, calls Stream/Generate, and stores a
 // structured result. One instance is registered per kind (see Register).
 type AIActionHandler struct {
-	kind      string
-	action    registry.Action
+	kind        string
+	action      registry.Action
 	templateKey string
-	schema    string // non-empty for schema-constrained outputs (outline, bible_seed)
+	schema      string // non-empty for schema-constrained outputs (outline, bible_seed)
 
 	Registry *registry.Registry
 	Queries  *dbgen.Queries
