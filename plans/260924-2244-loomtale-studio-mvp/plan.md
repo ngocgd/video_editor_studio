@@ -79,8 +79,15 @@ Ordering: 1 is serial; 1b and 2 run in parallel (disjoint files). 3, 4 and 5 own
 
 Verification: plan already carries red-team evidence; no unresolved `[UNVERIFIED]` tags remain beyond the ones owned by live-check steps (P10 step 2 quota, P11 step 1 report id).
 
+### Session — 2026-09-26 (execution change, supersedes decision 4)
+1. **Execution:** two parallel lanes run by agent teams, each phase implemented by one agent and then verified by an independent agent (review, fixes, `make ci`, integration, e2e, success criteria). Lane A: 6 → 7 → 8. Lane B: 9a → 9b. Then 9c (needs 7 and 9b), 10, 11 and 12 run in order.
+2. **Merge gate:** a phase that passes verification is merged into `main` and pushed without pausing for review; the user reads the cook report afterwards.
+3. **Model downloads:** pre-approved for every model pinned in `models/manifest.yaml` (phases 9a–9c).
+4. **Shared resources:** code and unit tests run in parallel; anything that brings up a Docker stack (integration, e2e, GPU steps) and every merge into `main` runs under a shared lock (`.claude/locks/with-lock.sh heavy|merge`), so only one full stack runs at a time.
+
 ## Execution rules
 
+- **Parallel lanes** (from 2026-09-26, see Validation Log): one worktree and branch per phase under `.claude/worktrees/`; the lead wires `api/cmd/*` conflicts at merge; generated code is regenerated after merging `main` into the phase branch, never hand-merged.
 - **Context rule:** at every phase boundary, if context usage is at 40–50% or more, stop and ask the user to run `/compact` before the next phase.
 - One phase = one branch/PR; `make ci` (inside the toolbox) green before a phase is done. No plan/phase/finding IDs in code, migrations, tests or commits (conventional commits, no AI references).
 - A phase is complete only when its success criteria are observable. Model downloads happen only in 1b (user-approved) and 9a–9c.
