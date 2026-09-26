@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * Phase 6 smoke path: create a series -> writer loads -> import a fixture
@@ -31,7 +31,8 @@ test("series -> writer -> import -> settings/llm", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/01-series-list.png` });
 
-  await page.getByRole("button", { name: "New series" }).click();
+  // The header button; the empty state repeats it when no series exist yet.
+  await page.getByRole("button", { name: "New series" }).first().click();
   await page.getByLabel("Title").fill(`Smoke Test Series ${Date.now()}`);
   await page.getByRole("button", { name: "Create series" }).click();
   await expect(page.getByText("Generating bible and episode outlines")).toBeVisible();
@@ -46,7 +47,7 @@ test("series -> writer -> import -> settings/llm", async ({ page }) => {
 
   const seriesSelect = page.locator("select").first();
   await seriesSelect.selectOption({ index: 1 });
-  await page.setInputFiles('input[type="file"]', path.join(__dirname, "fixtures", "sample-chapter.txt"));
+  await page.setInputFiles('input[type="file"]', fileURLToPath(new URL("./fixtures/sample-chapter.txt", import.meta.url)));
   await expect(page.getByText("Split preset")).toBeVisible({ timeout: 15_000 });
   await page.screenshot({ path: `${SCREENSHOT_DIR}/04-import-preview.png` });
 
@@ -55,7 +56,6 @@ test("series -> writer -> import -> settings/llm", async ({ page }) => {
 
   await page.goto("/settings/llm");
   await expect(page.getByRole("heading", { name: "LLM providers" })).toBeVisible();
-  const noProviderConfigured = page.getByText(/no api key configured/i).first();
-  await expect(noProviderConfigured.or(page.getByText(/unavailable/i).first())).toBeVisible();
+  await expect(page.getByText(/no api key configured|unavailable/i).first()).toBeVisible();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/05-settings-llm.png` });
 });

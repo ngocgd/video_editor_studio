@@ -41,7 +41,7 @@ export function SeriesListView() {
       {isLoading && <p className="text-sm text-text-2">Loading…</p>}
 
       {!isLoading && series.length === 0 && (
-        <EmptyState message="No series yet. Create one from settings." actionLabel="New series" onAction={() => setCreating(true)} />
+        <EmptyState message="No series yet. Create your first one to start writing." actionLabel="New series" onAction={() => setCreating(true)} />
       )}
 
       {series.length > 0 && (
