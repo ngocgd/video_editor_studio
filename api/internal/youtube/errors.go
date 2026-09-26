@@ -27,6 +27,7 @@ const (
 	ReasonThumbnailNotPermitted = "thumbnail_not_permitted"
 	ReasonRenderChanged         = "render_changed_since_approval"
 	ReasonUploadSessionGone     = "upload_session_gone"
+	ReasonReconnectNeeded       = "reconnect_needed"
 )
 
 // APIError is every non-success answer from Google, classified.

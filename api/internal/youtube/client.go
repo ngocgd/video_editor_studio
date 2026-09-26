@@ -52,6 +52,12 @@ func transportError(op Op, err error) error {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
+	// The authorizing transport fails before any request when Google
+	// rejects the stored refresh token: the channel must be reconnected.
+	var rn interface{ ReconnectNeeded() bool }
+	if errors.As(err, &rn) && rn.ReconnectNeeded() {
+		return &APIError{Kind: KindAuth, Reason: ReasonReconnectNeeded, Message: fmt.Sprintf("%s: %v", op, err)}
+	}
 	return &APIError{Kind: KindTransient, Reason: "transport", Message: fmt.Sprintf("%s: %v", op, err)}
 }
 

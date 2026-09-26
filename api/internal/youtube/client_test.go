@@ -2,6 +2,8 @@ package youtube
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"testing"
 )
 
@@ -52,5 +54,28 @@ func TestMyChannelAndEligibility(t *testing.T) {
 	ch.LongUploadsStatus = "allowed"
 	if err := CheckEligibility(ch, 31*60); err != nil {
 		t.Errorf("verified channel: %v", err)
+	}
+}
+
+// deadGrant is what an authorizing transport returns when Google rejects
+// the stored refresh token.
+type deadGrant struct{}
+
+func (deadGrant) Error() string          { return "invalid_grant" }
+func (deadGrant) ReconnectNeeded() bool { return true }
+
+type failingTransport struct{ err error }
+
+func (t failingTransport) RoundTrip(*http.Request) (*http.Response, error) { return nil, t.err }
+
+func TestDeadGrantIsAuthError(t *testing.T) {
+	c := &Client{HTTP: &http.Client{Transport: failingTransport{deadGrant{}}}, APIBase: "http://127.0.0.1:1"}
+	_, err := c.MyChannel(context.Background())
+	if !IsKind(err, KindAuth) || !HasReason(err, ReasonReconnectNeeded) {
+		t.Fatalf("dead grant: got %v, want auth/%s", err, ReasonReconnectNeeded)
+	}
+	c.HTTP.Transport = failingTransport{errors.New("connection refused")}
+	if _, err := c.MyChannel(context.Background()); !IsKind(err, KindTransient) {
+		t.Fatalf("network failure: got %v, want transient", err)
 	}
 }
