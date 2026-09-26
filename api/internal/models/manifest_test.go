@@ -24,7 +24,7 @@ func TestEmbeddedManifestParsesAndLints(t *testing.T) {
 	if problems := Lint(m, templates, modelfiles); len(problems) > 0 {
 		t.Fatalf("embedded manifest has lint problems: %v", problems)
 	}
-	for _, name := range []string{"z-image-turbo", "qwen-image", "qwen-image-edit-2511", "chatterbox", "vieneu-v3-turbo", "whisper-align", "dinov2-base", "depth-anything-v2-small", "qwen3.5-9b", "gemma-4-12b"} {
+	for _, name := range []string{"z-image-turbo", "qwen-image", "qwen-image-edit-2511", "chatterbox", "vieneu-v3-turbo", "whisper-align", "dinov2-base", "depth-anything-v2-small", "z-image-turbo-trainer", "qwen3.5-9b", "gemma-4-12b"} {
 		e, ok := m.Get(name)
 		if !ok {
 			t.Fatalf("manifest is missing %s", name)
