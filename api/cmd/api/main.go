@@ -23,6 +23,7 @@ import (
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
 	"loomtale/api/internal/authapi"
+	"loomtale/api/internal/channelsapi"
 	"loomtale/api/internal/crypto/envelope"
 	"loomtale/api/internal/csrf"
 	dbgen "loomtale/api/internal/db/gen"
@@ -45,6 +46,7 @@ import (
 	"loomtale/api/internal/secheaders"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
+	"loomtale/api/internal/youtube"
 	"loomtale/api/internal/sse"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/story"
@@ -158,6 +160,10 @@ func run() error {
 	}
 	modelStore := &models.Store{Queries: queries}
 	secretsStore := &secrets.Store{Sealer: sealer, Queries: queries}
+	googleOAuth, err := googleOAuthConfig(cfg)
+	if err != nil {
+		return err
+	}
 	llmRegistry, llmStore, err := bootstrap.Build(bootstrap.Config{
 		AppMode:               cfg.AppMode,
 		AllowedProviderHosts:  cfg.AllowedProviderHosts,
@@ -277,6 +283,12 @@ func run() error {
 			Queries:      queries,
 			Engine:       engine,
 			WorkerStatus: &workerstatus.Store{Queries: queries},
+		},
+		ChannelsAPI: &channelsapi.ChannelsAPI{
+			Queries: queries,
+			Secrets: secretsStore,
+			OAuth:   googleOAuth,
+			Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
 		},
 	}
 
