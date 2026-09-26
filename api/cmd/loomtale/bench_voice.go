@@ -16,7 +16,9 @@ import (
 	"loomtale/api/internal/providers/llm/ollama"
 	"loomtale/api/internal/providers/pyworker"
 	"loomtale/api/internal/providers/residency"
+	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/providers/tts"
+	"loomtale/api/internal/providers/vision"
 	"loomtale/api/internal/providers/workerconn"
 	"loomtale/api/internal/secretstr"
 	"loomtale/api/internal/speechrate"
@@ -24,7 +26,10 @@ import (
 )
 
 // voiceSuites are run by runVoiceBench rather than the ComfyUI harness.
-var voiceSuites = []string{"tts", "align", "llm", "voice-smoke"}
+var voiceSuites = []string{"tts", "align", "llm", "voice-smoke", "vision", "train", "train-smoke"}
+
+// refSuites read their input images from the --refs directory.
+var refSuites = map[string]bool{"vision": true, "train": true, "train-smoke": true}
 
 func isVoiceSuite(name string) bool {
 	for _, s := range voiceSuites {
@@ -35,12 +40,20 @@ func isVoiceSuite(name string) bool {
 	return false
 }
 
-// runVoiceBench runs the tts, align, llm and voice-smoke suites against
-// the Python worker and Ollama through the residency manager. Needs
-// DATABASE_URL, MODELS_DIR, PYWORKER_ADDR and PYWORKER_BEARER_TOKEN_PATH;
-// OLLAMA_URL for the Ollama cases; LLMCLI_URL and
-// LLMCLI_BEARER_TOKEN_PATH to compare against claude CLI.
-func runVoiceBench(ctx context.Context, suite, outDir, ollamaModel string) error {
+// runVoiceBench runs the tts, align, llm, voice-smoke, vision, train and
+// train-smoke suites against the Python worker and Ollama through the
+// residency manager. Needs DATABASE_URL, MODELS_DIR, PYWORKER_ADDR and
+// PYWORKER_BEARER_TOKEN_PATH; OLLAMA_URL for the Ollama cases;
+// LLMCLI_URL and LLMCLI_BEARER_TOKEN_PATH to compare against claude CLI.
+// The vision and train suites read reference images from refsDir.
+func runVoiceBench(ctx context.Context, suite, outDir, ollamaModel, refsDir string) error {
+	var refs []bench.RefImage
+	if refSuites[suite] {
+		var err error
+		if refs, err = bench.LoadRefImages(refsDir); err != nil {
+			return err
+		}
+	}
 	m, store, dir, closeDB, err := modelsEnv(ctx)
 	if err != nil {
 		return err
@@ -116,6 +129,7 @@ func runVoiceBench(ctx context.Context, suite, outDir, ollamaModel string) error
 	defer func() { _ = sink.Close() }()
 	runner := &bench.VoiceRunner{
 		TTS: tts.New(workerv1.NewTTSClient(conn)), Align: align.New(workerv1.NewAlignClient(conn)),
+		Vision: vision.New(workerv1.NewVisionClient(conn)), Train: train.New(workerv1.NewTrainClient(conn)),
 		Residency: manager, Queries: store.Queries, Sink: sink,
 		Rates: &speechrate.Store{Queries: store.Queries}, OutDir: outDir, Log: logf,
 	}
@@ -154,6 +168,33 @@ func runVoiceBench(ctx context.Context, suite, outDir, ollamaModel string) error
 		}
 		failed, budgets = countFailed(report.Voices), report.Budgets
 		if report.Align.Err != nil {
+			failed++
+		}
+	case "vision":
+		results, b, err := runner.RunVision(ctx, refs)
+		if err != nil {
+			return err
+		}
+		budgets = b
+		for _, r := range results {
+			if r.Err != nil {
+				failed++
+			}
+		}
+	case "train", "train-smoke":
+		run := runner.RunTrain
+		if suite == "train-smoke" {
+			run = runner.RunTrainSmoke
+		}
+		report, err := run(ctx, refs)
+		if err != nil {
+			return err
+		}
+		budgets = report.Budgets
+		if report.Train.Err != nil {
+			failed++
+		}
+		if report.Score != nil && report.Score.Err != nil {
 			failed++
 		}
 	}
