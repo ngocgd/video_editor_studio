@@ -274,6 +274,13 @@ services:
       MASTER_KEY_PATH: /run/secrets/master_key
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
+      # The daily YouTube analytics sync refreshes channel tokens with the
+      # same Google OAuth client as api (mount the same secret file here);
+      # with no client id the analytics queue stays off.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET_PATH: ${GOOGLE_CLIENT_SECRET_PATH:-}
+      YOUTUBE_QUOTA_PROJECT: ${YOUTUBE_QUOTA_PROJECT:-default}
+      YOUTUBE_QUOTA_DAILY_LIMIT: ${YOUTUBE_QUOTA_DAILY_LIMIT:-10000}
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
