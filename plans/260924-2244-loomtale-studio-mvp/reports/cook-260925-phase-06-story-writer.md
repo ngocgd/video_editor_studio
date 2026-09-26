@@ -105,6 +105,14 @@ Checks after these fixes: `scripts/tb.sh gen lint test` green with no generated-
 
 Still open from the verifier report (not blocking): M1 in part (an action on an unavailable provider still waits in its queue; Settings now shows the reason and Test fails fast, but `CreateAiAction` does not refuse it), M2 to M10, and the Lows. LLM steps still store an empty `provider_ref`; the provider appears in the step output.
 
+## Merge into main
+
+The round-2 verifier passed the branch (`plans/reports/code-reviewer-260926-1140-phase-06-story-writer-verification-r2-review.md`). Merging main (the model manager and image engine work) conflicted in the api and worker wiring, the worker status types, `openapi/root.yaml`, the app shell navigation and the generated code. Both sides' registrations were kept: the api registers the models steps and the story and LLM check handlers, serves both `StoryAPI` and `ModelsAPI`, and the navigation keeps Projects, Import and Models. `ProviderInfo` keeps both `Loaded` and `CLI`. Generated code was regenerated with `scripts/tb.sh gen` and a vite build (route tree).
+
+One semantic conflict needed a code change: this branch enables only the llm (and, on a GPU worker, gpu) queues, while `models.pull` runs on the io queue. The worker now also enables the io queue exactly when it registers the models steps (a GPU worker with `MODELS_DIR` set), so model downloads still run and no other worker claims io steps.
+
+Checks after the merge: `scripts/tb.sh lint test` green; web typecheck, lint, 77 vitest tests, vite build and bundle budget green; integration suite on a fresh `loomtale-a` stack with `CI=1`: 67 top-level tests pass, 0 fail, 0 skip; Playwright `--workers=1`: 3 passed. Criterion 4 (provider switch completing on a second provider) stays pending until a second working provider exists; the Ollama variant stays deferred to phase 9c.
+
 ## Follow-ups
 
 - The writer shows the raw step `error_msg`, which exposes internal hostnames (for example, `lookup llm-cli on 127.0.0.11:53`). Map it to a user-safe message and keep the detail in logs.
