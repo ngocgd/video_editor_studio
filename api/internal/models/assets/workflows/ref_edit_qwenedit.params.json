@@ -1,0 +1,52 @@
+{
+  "description": "Reference image edit with Qwen-Image-Edit-2511 GGUF Q4_K_M, same graph as the character sheet with a square 1024x1024 output.",
+  "output_node": "11",
+  "params": {
+    "prompt": {
+      "node": "6",
+      "input": "prompt",
+      "required": true
+    },
+    "ref_image": {
+      "node": "4",
+      "input": "image",
+      "kind": "image",
+      "required": true
+    },
+    "seed": {
+      "node": "9",
+      "input": "seed"
+    },
+    "steps": {
+      "node": "9",
+      "input": "steps"
+    },
+    "width": {
+      "node": "8",
+      "input": "width"
+    },
+    "height": {
+      "node": "8",
+      "input": "height"
+    },
+    "ref_width": {
+      "node": "5",
+      "input": "width"
+    },
+    "ref_height": {
+      "node": "5",
+      "input": "height"
+    },
+    "filename_prefix": {
+      "node": "11",
+      "input": "filename_prefix"
+    }
+  },
+  "warmup": {
+    "width": 256,
+    "height": 256,
+    "steps": 1,
+    "ref_width": 256,
+    "ref_height": 256
+  }
+}

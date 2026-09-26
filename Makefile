@@ -1,10 +1,10 @@
-.PHONY: gen gen-check lint test test-integration test-integration-toolbox vuln audit build up down logs migrate ci gen-openapi gen-sqlc gen-proto gen-migrations-sync
+.PHONY: gen gen-models-sync gen-check lint test test-integration test-integration-toolbox vuln audit build up down logs migrate ci gen-openapi gen-sqlc gen-proto gen-migrations-sync
 
 GOFLAGS := -mod=mod
 
 ## Codegen: openapi bundle -> Go + TS, sql -> sqlc, proto -> Go + Python.
 ## Generated code is committed; gen-check fails CI on drift.
-gen: gen-migrations-sync gen-openapi gen-sqlc gen-proto web/node_modules
+gen: gen-migrations-sync gen-models-sync gen-openapi gen-sqlc gen-proto web/node_modules
 	cd web && npm run gen
 
 ## Fresh clones (CI) have no web deps yet; install them from the lockfile once.
@@ -15,6 +15,14 @@ web/node_modules: web/package-lock.json
 gen-migrations-sync:
 	rm -f api/internal/db/migrations/*.sql
 	cp db/migrations/*.sql api/internal/db/migrations/
+
+## The model manifest and ComfyUI workflow templates are embedded into
+## the Go binaries (api/internal/models/assets); edit the originals.
+gen-models-sync:
+	rm -f api/internal/models/assets/manifest.yaml api/internal/models/assets/workflows/*.json
+	mkdir -p api/internal/models/assets/workflows
+	cp models/manifest.yaml api/internal/models/assets/manifest.yaml
+	cp comfyui/workflows/*.json api/internal/models/assets/workflows/
 
 gen-openapi:
 	redocly bundle openapi/root.yaml -o openapi/openapi.gen.yaml
@@ -27,7 +35,7 @@ gen-proto:
 	cd proto && buf generate
 
 gen-check: gen
-	git -c safe.directory='*' diff --exit-code -- api/internal/db/gen api/internal/httpapi/gen api/internal/workerpb workers-python/src/loomtale_worker/pb web/src/api/gen openapi/openapi.gen.yaml api/internal/db/migrations \
+	git -c safe.directory='*' diff --exit-code -- api/internal/db/gen api/internal/httpapi/gen api/internal/workerpb workers-python/src/loomtale_worker/pb web/src/api/gen openapi/openapi.gen.yaml api/internal/db/migrations api/internal/models/assets \
 		|| (echo "generated code is out of date; run 'make gen' and commit the diff" && exit 1)
 
 lint:
@@ -37,6 +45,7 @@ lint:
 	cd tools && go build -o ../api/bin/tenantctx ./tenantctx/cmd/tenantctx
 	cd api && ./bin/tenantctx ./...
 	bash scripts/lint-tenant-queries.sh
+	cd api && go run ./cmd/loomtale models lint -manifest ../models/manifest.yaml -workflows ../comfyui/workflows
 	cd workers-python && uv run ruff check .
 	cd web && npm run lint
 

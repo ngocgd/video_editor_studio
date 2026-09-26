@@ -93,6 +93,16 @@ func (sc *StepContext) Tenant() uuid.UUID {
 	return idconv.FromPg(sc.step.TenantID)
 }
 
+// ScopeKind returns the step's scope kind (e.g. "episode", "model").
+func (sc *StepContext) ScopeKind() string {
+	return sc.step.ScopeKind
+}
+
+// ScopeID returns the step's scope id.
+func (sc *StepContext) ScopeID() uuid.UUID {
+	return idconv.FromPg(sc.step.ScopeID)
+}
+
 // Attempt returns the current (1-based) attempt number for this step,
 // matching pipeline_steps.attempt after the claiming CAS incremented it.
 func (sc *StepContext) Attempt() int {

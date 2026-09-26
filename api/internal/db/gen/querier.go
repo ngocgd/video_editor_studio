@@ -20,6 +20,12 @@ type Querier interface {
 	CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) ([]PipelineStep, error)
 	CancelScopeSteps(ctx context.Context, arg CancelScopeStepsParams) ([]PipelineStep, error)
 	CancelStep(ctx context.Context, arg CancelStepParams) (PipelineStep, error)
+	// Model installs, verified files and benchmarks. Not tenant-scoped (see
+	// the models migration): one GPU and one models volume per deployment.
+	// Moves a model into "downloading" unless a pull is already running for
+	// it. Returns no row when one is, so the caller can answer 409 instead
+	// of starting a second concurrent download into the same files.
+	ClaimModelInstall(ctx context.Context, arg ClaimModelInstallParams) (ModelInstall, error)
 	// The only fence: a handler only owns the rows this query returns. Driven
 	// solely by River job args (step ids the dispatcher itself enqueued),
 	// never by request input, so it is not tenant-filtered.
@@ -52,6 +58,8 @@ type Querier interface {
 	// Best-effort housekeeping, called opportunistically (not on a schedule)
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
+	DeleteModelFile(ctx context.Context, path string) error
+	DeleteModelInstall(ctx context.Context, name string) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
 	// Called on login so a fresh login revokes any session(s) left over from
 	// before (e.g. a device that was never logged out), not just the new one.
@@ -76,6 +84,7 @@ type Querier interface {
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
+	GetModelInstall(ctx context.Context, name string) (ModelInstall, error)
 	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
 	// Batch existence check for SSE topic authorization: one query for every
 	// requested topic instead of one round trip each.
@@ -102,6 +111,7 @@ type Querier interface {
 	// lint-tenant-queries:allow: internal reconciler write, not caller input
 	IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) (PipelineStep, error)
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertModelBenchmark(ctx context.Context, arg InsertModelBenchmarkParams) error
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
 	// transaction stays within the enqueue latency budget.
 	InsertStepBatch(ctx context.Context, arg []InsertStepBatchParams) *InsertStepBatchBatchResults
@@ -118,6 +128,9 @@ type Querier interface {
 	// belongs to (e.g. to populate the tenant switcher); it is scoped by
 	// user_id, not tenant_id, because no single tenant is selected yet.
 	ListMembershipsForUser(ctx context.Context, userID pgtype.UUID) ([]ListMembershipsForUserRow, error)
+	ListModelBenchmarksByRun(ctx context.Context, runID pgtype.UUID) ([]ModelBenchmark, error)
+	ListModelFiles(ctx context.Context) ([]ModelFile, error)
+	ListModelInstalls(ctx context.Context) ([]ModelInstall, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	// Serializes concurrent Enqueue calls for the same tenant so the
 	// quota check-then-insert in Engine.Enqueue cannot race: every caller
@@ -129,6 +142,10 @@ type Querier interface {
 	LockTenantForAdmission(ctx context.Context, tenantID string) error
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	MarkModelInstallFailed(ctx context.Context, arg MarkModelInstallFailedParams) error
+	// Unconditional on purpose: the files are verified on disk, which is the
+	// fact this row reports, whatever state a concurrent pause left it in.
+	MarkModelInstalled(ctx context.Context, arg MarkModelInstalledParams) error
 	// Guards against a cancel/rollup racing an already-terminal run (done,
 	// failed, canceled or superseded): only a run still "active" can change
 	// status through this path.
@@ -143,6 +160,7 @@ type Querier interface {
 	// sqlc/goose, so that check is a hand-written query in Go, not here).
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
 	OrphanedQueuedStepsBatch(ctx context.Context, arg OrphanedQueuedStepsBatchParams) ([]PipelineStep, error)
+	PauseModelInstall(ctx context.Context, name string) (ModelInstall, error)
 	// lint-tenant-queries:allow: internal read-only scheduling peek, not caller input
 	PeekSteps(ctx context.Context, ids []pgtype.UUID) ([]PipelineStep, error)
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
@@ -178,6 +196,7 @@ type Querier interface {
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
 	// itself never passes through an intermediate "canceled" state that a
@@ -185,10 +204,12 @@ type Querier interface {
 	// (insert it before calling this, never after).
 	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateModelInstallProgress(ctx context.Context, arg UpdateModelInstallProgressParams) error
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
+	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
