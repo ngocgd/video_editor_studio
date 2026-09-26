@@ -27,7 +27,7 @@ Source of truth: [contract](../reports/brainstorm-260924-2128-story-video-studio
 | 7 | [Characters, storyboard, scene editor](phase-07-characters-storyboard.md) | 28h | 6 | E | pending |
 | 8 | [Render pipeline and Library](phase-08-render-pipeline-library.md) | 28h | 3, 7 | F (with 9a→9c) | pending |
 | 9a | [Manifest, ComfyUI, image engines](phase-09a-comfyui-image-engines.md) | 26h | 1b, 4; e2e steps need 7; UI needs 5 | F | completed (criteria needing model weights pending: model downloads paused by the user) |
-| 9b | [TTS, align, Ollama LLM](phase-09b-tts-align-ollama.md) | 20h | 9a | F | pending |
+| 9b | [TTS, align, Ollama LLM](phase-09b-tts-align-ollama.md) | 20h | 9a | F | completed (criteria needing model weights or engine runtime wheels pending: model downloads paused by the user) |
 | 9c | [LoRA trainer, scoring, depth, sign-off](phase-09c-lora-scoring-benchmark.md) | 22h | 9b, 7 | F | pending |
 | 10 | [Review and publish to YouTube](phase-10-review-publish-youtube.md) | 24h | 8, 9a, 9c | G | pending |
 | 11 | [Analytics (Analytics + Reporting API)](phase-11-analytics.md) | 18h | 10 | H | pending |
