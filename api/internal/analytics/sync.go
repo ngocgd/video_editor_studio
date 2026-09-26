@@ -94,6 +94,12 @@ func (s *Syncer) SyncChannel(ctx context.Context, tenantID, channelID uuid.UUID)
 	if err := s.Queries.FinishAnalyticsSync(ctx, finish); err != nil {
 		return fmt.Errorf("analytics: finish sync: %w", err)
 	}
+	// Suggestions read the fresh totals; a failure keeps the previous
+	// suggestions and is retried by the next sync.
+	agg := &Aggregator{Pool: s.Pool, Queries: s.Queries, Now: s.Now}
+	if _, err := agg.RecomputeSuggestions(ctx, tenantID, channelID); err != nil {
+		slog.WarnContext(ctx, "analytics: recompute suggestions", "error", err)
+	}
 	return nil
 }
 

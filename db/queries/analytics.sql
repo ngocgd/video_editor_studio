@@ -219,6 +219,7 @@ SELECT t.youtube_video_id, t.title, t.source, t.duration_seconds, t.published_at
        COALESCE(sum(m.average_view_duration * m.views) / NULLIF(sum(m.views) FILTER (WHERE m.average_view_duration IS NOT NULL), 0), 0)::float8 AS average_view_duration,
        count(m.average_view_duration)::int AS average_view_duration_days,
        COALESCE(sum(m.subscribers_gained), 0)::bigint AS subscribers_gained,
+       count(m.subscribers_gained)::int AS subscribers_days,
        COALESCE(sum(m.impressions), 0)::bigint AS impressions,
        count(m.impressions)::int AS impressions_days,
        COALESCE(sum(m.ctr * m.impressions) / NULLIF(sum(m.impressions) FILTER (WHERE m.ctr IS NOT NULL), 0), 0)::float8 AS ctr,
