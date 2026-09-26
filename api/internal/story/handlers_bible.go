@@ -35,12 +35,11 @@ func (h *StoryAPI) GetBible(ctx context.Context, req gen.GetBibleRequestObject) 
 	return gen.GetBible200JSONResponse(dto), nil
 }
 
-// UpdateBibleSection implements gen.StrictServerInterface: a
-// read-modify-write of the whole sections jsonb map, CAS-checked against
-// the target section's own current version (Postgres has no per-key jsonb
-// CAS, see the UpdateStoryBibleSections query comment). A human edit of a
-// tainted section keeps its taint; editing sets origin=user only when the
-// section did not exist yet.
+// UpdateBibleSection implements gen.StrictServerInterface: replaces one
+// section, CAS-checked in the UPDATE itself against that section's
+// version (see the UpdateStoryBibleSection query), so a concurrent edit is
+// a 409 rather than a lost write. A human edit of a tainted section keeps
+// its taint.
 func (h *StoryAPI) UpdateBibleSection(ctx context.Context, req gen.UpdateBibleSectionRequestObject) (gen.UpdateBibleSectionResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 	// UpdateBibleSection's contract declares only 200/409 (no 404): a
@@ -72,15 +71,21 @@ func (h *StoryAPI) UpdateBibleSection(ctx context.Context, req gen.UpdateBibleSe
 		return gen.UpdateBibleSection409ApplicationProblemPlusJSONResponse{Title: "version conflict", Status: http.StatusConflict, Detail: &detail}, nil
 	}
 
-	next := bibleSectionDoc{Content: body.Content, Origin: "user", Tainted: current.Tainted, Version: current.Version + 1}
-	sections[name] = next
-
-	raw, err := json.Marshal(sections)
+	// The taint read above is still current if the version check below
+	// passes: any change to the section bumps its version.
+	next := bibleSectionDoc{Content: body.Content, Origin: "user", Tainted: current.Tainted, Version: body.ExpectedVersion + 1}
+	doc, err := json.Marshal(next)
 	if err != nil {
 		return nil, err
 	}
-	updated, err := h.Queries.UpdateStoryBibleSections(ctx, dbgen.UpdateStoryBibleSectionsParams{Sections: raw, TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Id)})
+	updated, err := h.Queries.UpdateStoryBibleSection(ctx, dbgen.UpdateStoryBibleSectionParams{
+		Section: name, Doc: doc, TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Id), ExpectedVersion: int32(body.ExpectedVersion),
+	})
 	if err != nil {
+		if isNoRows(err) {
+			detail := "the section was changed by someone else; reload and retry"
+			return gen.UpdateBibleSection409ApplicationProblemPlusJSONResponse{Title: "version conflict", Status: http.StatusConflict, Detail: &detail}, nil
+		}
 		return nil, err
 	}
 	dto, err := bibleToDTO(updated)

@@ -134,27 +134,14 @@ func (h *AIActionHandler) runBibleSeed(ctx context.Context, sc *pipeline.StepCon
 		return nil, fmt.Errorf("story: parse bible_seed response: %w", err)
 	}
 
-	bible, err := h.Queries.GetStoryBible(ctx, dbgen.GetStoryBibleParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
-	if err != nil {
-		return nil, err
-	}
-	existing, err := decodeBibleSections(bible.Sections)
-	if err != nil {
-		return nil, err
-	}
+	// One atomic update per section, so an edit someone saves meanwhile to
+	// another section survives, and sections a person wrote are kept.
 	for name, content := range raw {
-		version := 1
-		if s, ok := existing[name]; ok {
-			version = s.Version + 1
+		if err := h.Queries.SeedStoryBibleSection(ctx, dbgen.SeedStoryBibleSectionParams{
+			Section: name, Content: content, TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID),
+		}); err != nil {
+			return nil, err
 		}
-		existing[name] = bibleSectionDoc{Content: content, Origin: "model", Tainted: false, Version: version}
-	}
-	sections, err := json.Marshal(existing)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := h.Queries.UpdateStoryBibleSections(ctx, dbgen.UpdateStoryBibleSectionsParams{Sections: sections, TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)}); err != nil {
-		return nil, err
 	}
 
 	sc.Progress(100, 0)

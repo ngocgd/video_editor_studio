@@ -150,6 +150,8 @@ type Querier interface {
 	LockTenantForAdmission(ctx context.Context, tenantID string) error
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
+	// Only a previewed import can be committed, and only once: a concurrent or
+	// repeated commit finds no row and is refused.
 	MarkImportCommitted(ctx context.Context, arg MarkImportCommittedParams) (Import, error)
 	MarkImportFailed(ctx context.Context, arg MarkImportFailedParams) error
 	// Guards against a cancel/rollup racing an already-terminal run (done,
@@ -202,6 +204,9 @@ type Querier interface {
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	// Writes a generated section unless a person has written that section:
+	// regenerating the bible never overwrites user edits.
+	SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
 	// itself never passes through an intermediate "canceled" state that a
@@ -223,10 +228,11 @@ type Querier interface {
 	UpdateSeries(ctx context.Context, arg UpdateSeriesParams) (Series, error)
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
-	// The caller reads-modifies-writes the whole `sections` jsonb map (one
-	// section at a time) after checking the per-section version it already
-	// fetched, since Postgres has no per-key jsonb CAS.
-	UpdateStoryBibleSections(ctx context.Context, arg UpdateStoryBibleSectionsParams) (StoryBible, error)
+	// Replaces one section only if it is still at @expected_version (0 for a
+	// section that does not exist yet). Other sections are left untouched, so
+	// concurrent edits of different sections both land, and a second edit of
+	// the same section finds no row and is reported as a conflict.
+	UpdateStoryBibleSection(ctx context.Context, arg UpdateStoryBibleSectionParams) (StoryBible, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error

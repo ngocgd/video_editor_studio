@@ -66,25 +66,66 @@ func (q *Queries) GetStoryBible(ctx context.Context, arg GetStoryBibleParams) (S
 	return i, err
 }
 
-const updateStoryBibleSections = `-- name: UpdateStoryBibleSections :one
+const seedStoryBibleSection = `-- name: SeedStoryBibleSection :exec
 UPDATE story_bibles
-SET sections = $1,
+SET sections = jsonb_set(sections, ARRAY[$1::text], jsonb_build_object(
+        'content', $2::text,
+        'origin', 'model',
+        'tainted', false,
+        'version', COALESCE((sections -> $1::text ->> 'version')::int, 0) + 1)),
     updated_at = now()
-WHERE tenant_id = $2 AND series_id = $3
-RETURNING id, tenant_id, series_id, sections, created_at, updated_at
+WHERE tenant_id = $3 AND series_id = $4
+  AND COALESCE(sections -> $1::text ->> 'origin', '') <> 'user'
 `
 
-type UpdateStoryBibleSectionsParams struct {
-	Sections []byte      `json:"sections"`
+type SeedStoryBibleSectionParams struct {
+	Section  string      `json:"section"`
+	Content  string      `json:"content"`
 	TenantID pgtype.UUID `json:"tenant_id"`
 	SeriesID pgtype.UUID `json:"series_id"`
 }
 
-// The caller reads-modifies-writes the whole `sections` jsonb map (one
-// section at a time) after checking the per-section version it already
-// fetched, since Postgres has no per-key jsonb CAS.
-func (q *Queries) UpdateStoryBibleSections(ctx context.Context, arg UpdateStoryBibleSectionsParams) (StoryBible, error) {
-	row := q.db.QueryRow(ctx, updateStoryBibleSections, arg.Sections, arg.TenantID, arg.SeriesID)
+// Writes a generated section unless a person has written that section:
+// regenerating the bible never overwrites user edits.
+func (q *Queries) SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error {
+	_, err := q.db.Exec(ctx, seedStoryBibleSection,
+		arg.Section,
+		arg.Content,
+		arg.TenantID,
+		arg.SeriesID,
+	)
+	return err
+}
+
+const updateStoryBibleSection = `-- name: UpdateStoryBibleSection :one
+UPDATE story_bibles
+SET sections = jsonb_set(sections, ARRAY[$1::text], $2::jsonb),
+    updated_at = now()
+WHERE tenant_id = $3 AND series_id = $4
+  AND COALESCE((sections -> $1::text ->> 'version')::int, 0) = $5::int
+RETURNING id, tenant_id, series_id, sections, created_at, updated_at
+`
+
+type UpdateStoryBibleSectionParams struct {
+	Section         string      `json:"section"`
+	Doc             []byte      `json:"doc"`
+	TenantID        pgtype.UUID `json:"tenant_id"`
+	SeriesID        pgtype.UUID `json:"series_id"`
+	ExpectedVersion int32       `json:"expected_version"`
+}
+
+// Replaces one section only if it is still at @expected_version (0 for a
+// section that does not exist yet). Other sections are left untouched, so
+// concurrent edits of different sections both land, and a second edit of
+// the same section finds no row and is reported as a conflict.
+func (q *Queries) UpdateStoryBibleSection(ctx context.Context, arg UpdateStoryBibleSectionParams) (StoryBible, error) {
+	row := q.db.QueryRow(ctx, updateStoryBibleSection,
+		arg.Section,
+		arg.Doc,
+		arg.TenantID,
+		arg.SeriesID,
+		arg.ExpectedVersion,
+	)
 	var i StoryBible
 	err := row.Scan(
 		&i.ID,
