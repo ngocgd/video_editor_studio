@@ -91,7 +91,7 @@ func run() error {
 	// load/unload). A worker without them registers nothing, so it never
 	// claims a step it cannot run.
 	if cfg.WorkerGPU && cfg.ModelsDir != "" {
-		downloader := &models.Downloader{Dir: cfg.ModelsDir, HTTP: downloadHTTPClient(), Files: modelStore}
+		downloader := &models.Downloader{Dir: cfg.ModelsDir, HostDiskDir: cfg.ModelsHostDiskDir, HTTP: downloadHTTPClient(), Files: modelStore}
 		models.RegisterSteps(registry, manifest, modelStore, downloader, residency)
 	}
 	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)

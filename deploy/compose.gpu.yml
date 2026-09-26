@@ -43,8 +43,14 @@ services:
     # writable: models.pull downloads here (the worker is on
     # loomtale_core, which has egress, and only fetches pinned files from
     # Hugging Face). Every GPU container mounts it read-only.
+    # The host disk mount lets the download pre-flight read the real
+    # free space of the drive holding Docker's data disk: on Docker
+    # Desktop the models volume only reports its virtual disk's maximum
+    # size. Point MODELS_HOST_DISK_SOURCE at a directory on that drive
+    # when it is not the one holding this checkout.
     volumes:
       - loomtale_models:/models
+      - ${MODELS_HOST_DISK_SOURCE:-./host-disk}:/host-disk:ro
     deploy:
       resources:
         reservations:
@@ -61,6 +67,7 @@ services:
       PYWORKER_ADDR: pyworker:9090
       PYWORKER_BEARER_TOKEN_PATH: /run/secrets/pyworker_bearer_token
       MODELS_DIR: /models
+      MODELS_HOST_DISK_DIR: /host-disk
 
   # ComfyUI image engine (scene, thumbnail and character sheet
   # workflows). Pinned CUDA base, ComfyUI commit, custom node commit and
@@ -194,10 +201,12 @@ services:
     environment:
       DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
       MODELS_DIR: /models
+      MODELS_HOST_DISK_DIR: /host-disk
       COMFYUI_URL: http://comfyui:8188
       RENDER_RESERVE_MB: "1024"
     volumes:
       - loomtale_models:/models
+      - ${MODELS_HOST_DISK_SOURCE:-./host-disk}:/host-disk:ro
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]

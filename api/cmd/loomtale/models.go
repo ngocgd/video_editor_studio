@@ -143,7 +143,10 @@ func runModelsPull(ctx context.Context, args []string) error {
 		return err
 	}
 
-	downloader := &models.Downloader{Dir: dir, HTTP: cliDownloadClient(), Files: store}
+	downloader := &models.Downloader{
+		Dir: dir, HostDiskDir: strings.TrimSpace(os.Getenv("MODELS_HOST_DISK_DIR")),
+		HTTP: cliDownloadClient(), Files: store,
+	}
 	last := time.Time{}
 	err = downloader.Install(ctx, e, func(done, total int64) {
 		if time.Since(last) < 5*time.Second && done < total {
