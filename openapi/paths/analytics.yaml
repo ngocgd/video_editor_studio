@@ -1,0 +1,322 @@
+channelOverview:
+  get:
+    operationId: getAnalyticsOverview
+    summary: A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+    description: >-
+      Reads only the pre-aggregated daily tables. The window defaults to the
+      28 days ending at the newest synced day. A metric YouTube did not
+      provide is absent with its reason in `unavailable`, never 0.
+    tags: [analytics]
+    x-min-role: viewer
+    parameters:
+      - $ref: "#/components/analyticsChannelId"
+      - $ref: "#/components/analyticsFrom"
+      - $ref: "#/components/analyticsTo"
+    responses:
+      "200":
+        description: overview
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsOverview"
+      "400":
+        $ref: "#/components/analyticsBadRequest"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+channelSync:
+  post:
+    operationId: syncAnalyticsChannel
+    summary: Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+    tags: [analytics]
+    x-min-role: editor
+    parameters:
+      - $ref: "#/components/analyticsChannelId"
+    responses:
+      "202":
+        description: sync queued, or already queued or running
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsSyncQueued"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+      "409":
+        description: the channel is not connected (reconnect it in Settings > YouTube)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+videosCollection:
+  get:
+    operationId: listAnalyticsVideos
+    summary: The channel's tracked videos with totals over a window, sorted and paginated
+    description: >-
+      Lists videos published by this app plus videos added for tracking.
+      Videos whose sort metric is not available sort last.
+    tags: [analytics]
+    x-min-role: viewer
+    parameters:
+      - name: channelId
+        in: query
+        required: true
+        schema: { type: string, format: uuid }
+      - name: sort
+        in: query
+        schema:
+          type: string
+          enum: [views, watchTime, ctr, averageViewPercentage, published]
+          default: views
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+      - name: cursor
+        in: query
+        schema: { type: string, maxLength: 64 }
+      - name: limit
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      - $ref: "#/components/analyticsFrom"
+      - $ref: "#/components/analyticsTo"
+    responses:
+      "200":
+        description: one page of videos
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsVideoPage"
+      "400":
+        $ref: "#/components/analyticsBadRequest"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+videoItem:
+  get:
+    operationId: getAnalyticsVideo
+    summary: A tracked video's daily series over a window and its retention curve
+    tags: [analytics]
+    x-min-role: viewer
+    parameters:
+      - $ref: "#/components/analyticsVideoId"
+      - $ref: "#/components/analyticsFrom"
+      - $ref: "#/components/analyticsTo"
+    responses:
+      "200":
+        description: video detail
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsVideoDetail"
+      "400":
+        $ref: "#/components/analyticsBadRequest"
+      "404":
+        $ref: "#/components/analyticsVideoNotFound"
+trackedVideos:
+  post:
+    operationId: trackAnalyticsVideo
+    summary: Track an existing public video of a connected channel (by URL or id)
+    description: >-
+      Looks the video up with the Data API (1 quota unit) and checks it
+      belongs to the channel. Its metrics arrive with the next sync.
+    tags: [analytics]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/analytics.yaml#/TrackVideoRequest"
+    responses:
+      "201":
+        description: video tracked (or already tracked on this channel)
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/TrackedVideo"
+      "400":
+        $ref: "#/components/analyticsBadRequest"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+      "409":
+        description: the channel is not connected, or the video is already tracked on another channel
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: no such video, or it belongs to another channel
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "502":
+        description: YouTube did not answer the lookup (quota or API error)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+trackedVideoItem:
+  delete:
+    operationId: untrackAnalyticsVideo
+    summary: Stop tracking a manually added video (its suggestions go at the next sync)
+    tags: [analytics]
+    x-min-role: editor
+    parameters:
+      - $ref: "#/components/analyticsVideoId"
+    responses:
+      "204":
+        description: no longer tracked
+      "404":
+        $ref: "#/components/analyticsVideoNotFound"
+      "409":
+        description: the video was published by this app and is always tracked
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+suggestions:
+  get:
+    operationId: listAnalyticsSuggestions
+    summary: The channel's suggestions, each with its rule version and evidence
+    tags: [analytics]
+    x-min-role: viewer
+    parameters:
+      - $ref: "#/components/analyticsChannelId"
+      - name: videoId
+        in: query
+        description: Only this video's suggestions.
+        schema: { type: string, pattern: "^[A-Za-z0-9_-]{11}$" }
+      - name: includeDismissed
+        in: query
+        schema: { type: boolean, default: false }
+    responses:
+      "200":
+        description: suggestions
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsSuggestionList"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+  patch:
+    operationId: updateAnalyticsSuggestion
+    summary: Dismiss or restore one suggestion
+    tags: [analytics]
+    x-min-role: editor
+    parameters:
+      - $ref: "#/components/analyticsChannelId"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/analytics.yaml#/AnalyticsSuggestionUpdate"
+    responses:
+      "204":
+        description: updated
+      "404":
+        description: no such channel or suggestion
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+explain:
+  post:
+    operationId: explainAnalyticsChannel
+    summary: Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+    description: >-
+      Sends only aggregated numbers and the rule findings (no titles or
+      other text from YouTube) to the provider configured for summaries.
+      Poll GET /analytics/explanations/{id} for the answer, which is plain
+      text.
+    tags: [analytics]
+    x-min-role: editor
+    parameters:
+      - $ref: "#/components/analyticsChannelId"
+    responses:
+      "202":
+        description: explanation queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsExplanation"
+      "404":
+        $ref: "#/components/analyticsChannelNotFound"
+      "409":
+        description: nothing to explain yet (the channel has no synced data)
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: pipeline quota exceeded
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+explanationItem:
+  get:
+    operationId: getAnalyticsExplanation
+    summary: The state of an explanation and, once done, its text, provider and cost
+    tags: [analytics]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "200":
+        description: explanation
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/analytics.yaml#/AnalyticsExplanation"
+      "404":
+        description: no such explanation in this workspace
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+components:
+  analyticsChannelId:
+    name: id
+    in: path
+    required: true
+    description: Loomtale id of a connected YouTube channel.
+    schema: { type: string, format: uuid }
+  analyticsVideoId:
+    name: videoId
+    in: path
+    required: true
+    description: YouTube video id.
+    schema: { type: string, pattern: "^[A-Za-z0-9_-]{11}$" }
+  analyticsFrom:
+    name: from
+    in: query
+    description: First day of the window (inclusive). Windows span at most 366 days.
+    schema: { type: string, format: date }
+  analyticsTo:
+    name: to
+    in: query
+    description: Last day of the window (inclusive).
+    schema: { type: string, format: date }
+  analyticsBadRequest:
+    description: invalid window, sort or cursor
+    content:
+      application/problem+json:
+        schema:
+          $ref: "../schemas/problem.yaml#/Problem"
+  analyticsChannelNotFound:
+    description: channel not found in this workspace
+    content:
+      application/problem+json:
+        schema:
+          $ref: "../schemas/problem.yaml#/Problem"
+  analyticsVideoNotFound:
+    description: the video is not tracked in this workspace
+    content:
+      application/problem+json:
+        schema:
+          $ref: "../schemas/problem.yaml#/Problem"

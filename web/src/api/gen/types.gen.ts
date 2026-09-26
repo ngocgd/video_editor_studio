@@ -351,6 +351,218 @@ export type YouTubeChannelAuditUpdate = {
     auditNote?: string;
 };
 
+/**
+ * Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+ */
+export type AnalyticsSyncState = {
+    status: 'idle' | 'running' | 'failed';
+    analyticsThrough?: string;
+    reachThrough?: string;
+    lastStartedAt?: string;
+    lastFinishedAt?: string;
+    /**
+     * Last failure or partial-sync note; empty when the last sync was clean.
+     */
+    lastError: string;
+    /**
+     * Channel subscriber count at the last sync (absent when hidden or not synced).
+     */
+    subscriberCount?: number;
+};
+
+export type AnalyticsWindow = {
+    from: string;
+    to: string;
+};
+
+/**
+ * Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+ */
+export type Unavailable = {
+    [key: string]: string;
+};
+
+export type AnalyticsChannelDay = {
+    date: string;
+    views?: number;
+    watchHours?: number;
+    subscribersGained?: number;
+    subscribersLost?: number;
+    unavailable: Unavailable;
+};
+
+/**
+ * Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+ */
+export type YppProgress = {
+    /**
+     * Public watch hours over the window (Shorts views excluded by YouTube's own rule are not separated here).
+     */
+    watchHours: number;
+    watchHoursTarget: number;
+    windowFrom: string;
+    windowTo: string;
+    /**
+     * Days of the window with no synced watch time; the total is a lower bound while this is above 0.
+     */
+    daysMissing: number;
+    subscribers?: number;
+    subscribersTarget: number;
+};
+
+export type AnalyticsOverview = {
+    sync: AnalyticsSyncState;
+    window: AnalyticsWindow;
+    days: Array<AnalyticsChannelDay>;
+    ypp: YppProgress;
+};
+
+export type AnalyticsSyncQueued = {
+    /**
+     * False when a sync of the channel was already queued or running.
+     */
+    queued: boolean;
+};
+
+export type AnalyticsSuggestion = {
+    /**
+     * The video the suggestion is about; empty for a channel-level suggestion.
+     */
+    videoId: string;
+    /**
+     * Rule name, e.g. low_ctr, weak_hook, split_long_video, upload_cadence_gap.
+     */
+    rule: string;
+    /**
+     * Version of the rule that produced the suggestion.
+     */
+    version: number;
+    /**
+     * What to try, from the rule (fixed server text).
+     */
+    title: string;
+    /**
+     * The numbers the rule compared.
+     */
+    evidence: {
+        [key: string]: unknown;
+    };
+    dismissed: boolean;
+    updatedAt: string;
+};
+
+export type AnalyticsSuggestionList = {
+    items: Array<AnalyticsSuggestion>;
+};
+
+export type AnalyticsSuggestionUpdate = {
+    /**
+     * Empty for a channel-level suggestion.
+     */
+    videoId: string;
+    rule: string;
+    dismissed: boolean;
+};
+
+export type AnalyticsExplanation = {
+    id: string;
+    status: 'pending' | 'queued' | 'running' | 'done' | 'failed' | 'canceled';
+    /**
+     * The explanation as plain text (render it as text, never as HTML or Markdown).
+     */
+    text?: string;
+    provider?: string;
+    model?: string;
+    costUsd?: number;
+    error?: string;
+};
+
+/**
+ * A tracked video's totals over the window; an absent metric was not available from the API on any day.
+ */
+export type AnalyticsVideoRow = {
+    videoId: string;
+    title: string;
+    source: 'publication' | 'manual';
+    durationSeconds?: number;
+    publishedAt?: string;
+    views?: number;
+    watchHours?: number;
+    averageViewPercentage?: number;
+    /**
+     * Seconds.
+     */
+    averageViewDuration?: number;
+    subscribersGained?: number;
+    /**
+     * Thumbnail impressions from the reach report.
+     */
+    impressions?: number;
+    /**
+     * Impressions click-through rate as a fraction (0.05 = 5%), weighted by impressions.
+     */
+    ctr?: number;
+};
+
+export type AnalyticsVideoPage = {
+    items: Array<AnalyticsVideoRow>;
+    total: number;
+    nextCursor?: string;
+    window: AnalyticsWindow;
+    sync: AnalyticsSyncState;
+};
+
+export type TrackedVideo = {
+    videoId: string;
+    channelId: string;
+    title: string;
+    source: 'publication' | 'manual';
+    durationSeconds?: number;
+    publishedAt?: string;
+    createdAt: string;
+};
+
+export type AnalyticsVideoDay = {
+    date: string;
+    views?: number;
+    watchHours?: number;
+    averageViewDuration?: number;
+    averageViewPercentage?: number;
+    subscribersGained?: number;
+    impressions?: number;
+    ctr?: number;
+    unavailable: Unavailable;
+};
+
+export type RetentionPoint = {
+    /**
+     * Position in the video, 0 to 1.
+     */
+    elapsedRatio: number;
+    audienceWatchRatio?: number;
+    relativeRetentionPerformance?: number;
+};
+
+export type AnalyticsVideoDetail = {
+    video: TrackedVideo;
+    window: AnalyticsWindow;
+    sync: AnalyticsSyncState;
+    days: Array<AnalyticsVideoDay>;
+    /**
+     * Lifetime audience retention curve; empty until the first sync that covers the video.
+     */
+    retention: Array<RetentionPoint>;
+    retentionSyncedAt?: string;
+};
+
+export type TrackVideoRequest = {
+    channelId: string;
+    /**
+     * A YouTube video URL (watch, youtu.be, shorts, embed or live) or an 11-character video id.
+     */
+    video: string;
+};
+
 export type TargetLanguage = 'en' | 'vi';
 
 export type Series = {
@@ -1065,6 +1277,26 @@ export type MediaBackfillResponse = {
     variants: number;
     peaks: number;
 };
+
+/**
+ * Loomtale id of a connected YouTube channel.
+ */
+export type AnalyticsChannelId = string;
+
+/**
+ * First day of the window (inclusive). Windows span at most 366 days.
+ */
+export type AnalyticsFrom = string;
+
+/**
+ * Last day of the window (inclusive).
+ */
+export type AnalyticsTo = string;
+
+/**
+ * YouTube video id.
+ */
+export type AnalyticsVideoId = string;
 
 export type GetHealthzData = {
     body?: never;
@@ -1792,6 +2024,375 @@ export type UpdateYouTubeChannelAuditResponses = {
 };
 
 export type UpdateYouTubeChannelAuditResponse = UpdateYouTubeChannelAuditResponses[keyof UpdateYouTubeChannelAuditResponses];
+
+export type GetAnalyticsOverviewData = {
+    body?: never;
+    path: {
+        /**
+         * Loomtale id of a connected YouTube channel.
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * First day of the window (inclusive). Windows span at most 366 days.
+         */
+        from?: string;
+        /**
+         * Last day of the window (inclusive).
+         */
+        to?: string;
+    };
+    url: '/analytics/channels/{id}/overview';
+};
+
+export type GetAnalyticsOverviewErrors = {
+    /**
+     * invalid window, sort or cursor
+     */
+    400: Problem;
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+};
+
+export type GetAnalyticsOverviewError = GetAnalyticsOverviewErrors[keyof GetAnalyticsOverviewErrors];
+
+export type GetAnalyticsOverviewResponses = {
+    /**
+     * overview
+     */
+    200: AnalyticsOverview;
+};
+
+export type GetAnalyticsOverviewResponse = GetAnalyticsOverviewResponses[keyof GetAnalyticsOverviewResponses];
+
+export type SyncAnalyticsChannelData = {
+    body?: never;
+    path: {
+        /**
+         * Loomtale id of a connected YouTube channel.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/analytics/channels/{id}/sync';
+};
+
+export type SyncAnalyticsChannelErrors = {
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+    /**
+     * the channel is not connected (reconnect it in Settings > YouTube)
+     */
+    409: Problem;
+};
+
+export type SyncAnalyticsChannelError = SyncAnalyticsChannelErrors[keyof SyncAnalyticsChannelErrors];
+
+export type SyncAnalyticsChannelResponses = {
+    /**
+     * sync queued, or already queued or running
+     */
+    202: AnalyticsSyncQueued;
+};
+
+export type SyncAnalyticsChannelResponse = SyncAnalyticsChannelResponses[keyof SyncAnalyticsChannelResponses];
+
+export type ListAnalyticsSuggestionsData = {
+    body?: never;
+    path: {
+        /**
+         * Loomtale id of a connected YouTube channel.
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Only this video's suggestions.
+         */
+        videoId?: string;
+        includeDismissed?: boolean;
+    };
+    url: '/analytics/channels/{id}/suggestions';
+};
+
+export type ListAnalyticsSuggestionsErrors = {
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+};
+
+export type ListAnalyticsSuggestionsError = ListAnalyticsSuggestionsErrors[keyof ListAnalyticsSuggestionsErrors];
+
+export type ListAnalyticsSuggestionsResponses = {
+    /**
+     * suggestions
+     */
+    200: AnalyticsSuggestionList;
+};
+
+export type ListAnalyticsSuggestionsResponse = ListAnalyticsSuggestionsResponses[keyof ListAnalyticsSuggestionsResponses];
+
+export type UpdateAnalyticsSuggestionData = {
+    body: AnalyticsSuggestionUpdate;
+    path: {
+        /**
+         * Loomtale id of a connected YouTube channel.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/analytics/channels/{id}/suggestions';
+};
+
+export type UpdateAnalyticsSuggestionErrors = {
+    /**
+     * no such channel or suggestion
+     */
+    404: Problem;
+};
+
+export type UpdateAnalyticsSuggestionError = UpdateAnalyticsSuggestionErrors[keyof UpdateAnalyticsSuggestionErrors];
+
+export type UpdateAnalyticsSuggestionResponses = {
+    /**
+     * updated
+     */
+    204: void;
+};
+
+export type UpdateAnalyticsSuggestionResponse = UpdateAnalyticsSuggestionResponses[keyof UpdateAnalyticsSuggestionResponses];
+
+export type ExplainAnalyticsChannelData = {
+    body?: never;
+    path: {
+        /**
+         * Loomtale id of a connected YouTube channel.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/analytics/channels/{id}/explain';
+};
+
+export type ExplainAnalyticsChannelErrors = {
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+    /**
+     * nothing to explain yet (the channel has no synced data)
+     */
+    409: Problem;
+    /**
+     * pipeline quota exceeded
+     */
+    429: Problem;
+};
+
+export type ExplainAnalyticsChannelError = ExplainAnalyticsChannelErrors[keyof ExplainAnalyticsChannelErrors];
+
+export type ExplainAnalyticsChannelResponses = {
+    /**
+     * explanation queued
+     */
+    202: AnalyticsExplanation;
+};
+
+export type ExplainAnalyticsChannelResponse = ExplainAnalyticsChannelResponses[keyof ExplainAnalyticsChannelResponses];
+
+export type GetAnalyticsExplanationData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/analytics/explanations/{id}';
+};
+
+export type GetAnalyticsExplanationErrors = {
+    /**
+     * no such explanation in this workspace
+     */
+    404: Problem;
+};
+
+export type GetAnalyticsExplanationError = GetAnalyticsExplanationErrors[keyof GetAnalyticsExplanationErrors];
+
+export type GetAnalyticsExplanationResponses = {
+    /**
+     * explanation
+     */
+    200: AnalyticsExplanation;
+};
+
+export type GetAnalyticsExplanationResponse = GetAnalyticsExplanationResponses[keyof GetAnalyticsExplanationResponses];
+
+export type ListAnalyticsVideosData = {
+    body?: never;
+    path?: never;
+    query: {
+        channelId: string;
+        sort?: 'views' | 'watchTime' | 'ctr' | 'averageViewPercentage' | 'published';
+        order?: 'asc' | 'desc';
+        cursor?: string;
+        limit?: number;
+        /**
+         * First day of the window (inclusive). Windows span at most 366 days.
+         */
+        from?: string;
+        /**
+         * Last day of the window (inclusive).
+         */
+        to?: string;
+    };
+    url: '/analytics/videos';
+};
+
+export type ListAnalyticsVideosErrors = {
+    /**
+     * invalid window, sort or cursor
+     */
+    400: Problem;
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+};
+
+export type ListAnalyticsVideosError = ListAnalyticsVideosErrors[keyof ListAnalyticsVideosErrors];
+
+export type ListAnalyticsVideosResponses = {
+    /**
+     * one page of videos
+     */
+    200: AnalyticsVideoPage;
+};
+
+export type ListAnalyticsVideosResponse = ListAnalyticsVideosResponses[keyof ListAnalyticsVideosResponses];
+
+export type GetAnalyticsVideoData = {
+    body?: never;
+    path: {
+        /**
+         * YouTube video id.
+         */
+        videoId: string;
+    };
+    query?: {
+        /**
+         * First day of the window (inclusive). Windows span at most 366 days.
+         */
+        from?: string;
+        /**
+         * Last day of the window (inclusive).
+         */
+        to?: string;
+    };
+    url: '/analytics/videos/{videoId}';
+};
+
+export type GetAnalyticsVideoErrors = {
+    /**
+     * invalid window, sort or cursor
+     */
+    400: Problem;
+    /**
+     * the video is not tracked in this workspace
+     */
+    404: Problem;
+};
+
+export type GetAnalyticsVideoError = GetAnalyticsVideoErrors[keyof GetAnalyticsVideoErrors];
+
+export type GetAnalyticsVideoResponses = {
+    /**
+     * video detail
+     */
+    200: AnalyticsVideoDetail;
+};
+
+export type GetAnalyticsVideoResponse = GetAnalyticsVideoResponses[keyof GetAnalyticsVideoResponses];
+
+export type TrackAnalyticsVideoData = {
+    body: TrackVideoRequest;
+    path?: never;
+    query?: never;
+    url: '/analytics/tracked-videos';
+};
+
+export type TrackAnalyticsVideoErrors = {
+    /**
+     * invalid window, sort or cursor
+     */
+    400: Problem;
+    /**
+     * channel not found in this workspace
+     */
+    404: Problem;
+    /**
+     * the channel is not connected, or the video is already tracked on another channel
+     */
+    409: Problem;
+    /**
+     * no such video, or it belongs to another channel
+     */
+    422: Problem;
+    /**
+     * YouTube did not answer the lookup (quota or API error)
+     */
+    502: Problem;
+};
+
+export type TrackAnalyticsVideoError = TrackAnalyticsVideoErrors[keyof TrackAnalyticsVideoErrors];
+
+export type TrackAnalyticsVideoResponses = {
+    /**
+     * video tracked (or already tracked on this channel)
+     */
+    201: TrackedVideo;
+};
+
+export type TrackAnalyticsVideoResponse = TrackAnalyticsVideoResponses[keyof TrackAnalyticsVideoResponses];
+
+export type UntrackAnalyticsVideoData = {
+    body?: never;
+    path: {
+        /**
+         * YouTube video id.
+         */
+        videoId: string;
+    };
+    query?: never;
+    url: '/analytics/tracked-videos/{videoId}';
+};
+
+export type UntrackAnalyticsVideoErrors = {
+    /**
+     * the video is not tracked in this workspace
+     */
+    404: Problem;
+    /**
+     * the video was published by this app and is always tracked
+     */
+    409: Problem;
+};
+
+export type UntrackAnalyticsVideoError = UntrackAnalyticsVideoErrors[keyof UntrackAnalyticsVideoErrors];
+
+export type UntrackAnalyticsVideoResponses = {
+    /**
+     * no longer tracked
+     */
+    204: void;
+};
+
+export type UntrackAnalyticsVideoResponse = UntrackAnalyticsVideoResponses[keyof UntrackAnalyticsVideoResponses];
 
 export type ListSeriesData = {
     body?: never;

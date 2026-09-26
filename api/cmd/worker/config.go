@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"loomtale/api/internal/youtube"
+)
 
 // config holds the worker process settings, loaded via caarlos0/env.
 type config struct {
@@ -70,6 +74,18 @@ type config struct {
 	// host's real free space there (see models.Downloader.HostDiskDir).
 	// Empty refuses every download.
 	ModelsHostDiskDir string `env:"MODELS_HOST_DISK_DIR" envDefault:""`
+
+	// Google OAuth client the analytics sync refreshes channel tokens
+	// with (the same client cmd/api connects channels with). Empty
+	// GOOGLE_CLIENT_ID leaves the analytics queue and its daily schedule
+	// off.
+	GoogleClientID         string `env:"GOOGLE_CLIENT_ID" envDefault:""`
+	GoogleClientSecretPath string `env:"GOOGLE_CLIENT_SECRET_PATH" envDefault:""`
+	// YouTubeQuota is the Data API quota ledger shared with cmd/api
+	// (YOUTUBE_QUOTA_* vars); the sync spends a few read units a day.
+	YouTubeQuota youtube.QuotaConfig
+	// AnalyticsWorkers bounds concurrent channel syncs.
+	AnalyticsWorkers int `env:"WORKER_ANALYTICS_CONCURRENCY" envDefault:"2"`
 
 	// PinCharacters mirrors cmd/api's STORY_PIN_CHARACTERS: the worker is
 	// what actually builds the LLM requests.
