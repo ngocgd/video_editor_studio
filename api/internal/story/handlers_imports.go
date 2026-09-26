@@ -164,7 +164,7 @@ func (h *StoryAPI) PreviewImport(ctx context.Context, req gen.PreviewImportReque
 		return nil, err
 	}
 
-	obj, err := h.Internal.GetObject(ctx, h.Internal.Bucket, asset.StorageKey, minio.GetObjectOptions{})
+	obj, err := h.Internal.GetObject(ctx, h.Internal.Bucket, asset.StorageKey, importObjectOptions(asset))
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 	if err != nil {
 		return nil, err
 	}
-	obj, err := h.Internal.GetObject(ctx, h.Internal.Bucket, asset.StorageKey, minio.GetObjectOptions{})
+	obj, err := h.Internal.GetObject(ctx, h.Internal.Bucket, asset.StorageKey, importObjectOptions(asset))
 	if err != nil {
 		return nil, err
 	}
@@ -456,4 +456,10 @@ func presetFromDTO(p gen.ImportPreviewRequestSplitPreset) importer.SplitPreset {
 	default:
 		return importer.PresetAuto
 	}
+}
+
+// importObjectOptions reads the exact object version that was size- and
+// type-checked at finalize, not whatever was written to the key since.
+func importObjectOptions(asset dbgen.Asset) minio.GetObjectOptions {
+	return minio.GetObjectOptions{VersionID: asset.StorageVersionID.String}
 }
