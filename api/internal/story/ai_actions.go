@@ -129,9 +129,9 @@ func (h *AIActionHandler) runBibleSeed(ctx context.Context, sc *pipeline.StepCon
 		return nil, err
 	}
 
-	var raw map[string]string
-	if err := json.Unmarshal([]byte(resp.Text), &raw); err != nil {
-		return nil, fmt.Errorf("story: parse bible_seed response: %w", err)
+	raw, err := bibleSeedSections(resp.Text)
+	if err != nil {
+		return nil, err
 	}
 
 	// One atomic update per section, so an edit someone saves meanwhile to
