@@ -37,6 +37,7 @@ import (
 	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/providers/tts"
+	"loomtale/api/internal/providers/vision"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secrets"
@@ -150,6 +151,8 @@ func run() error {
 	if clients.Pyworker != nil {
 		sceneDeps.TTS = tts.New(workerv1.NewTTSClient(clients.Pyworker))
 		sceneDeps.Align = align.New(workerv1.NewAlignClient(clients.Pyworker))
+		sceneDeps.Vision = vision.New(workerv1.NewVisionClient(clients.Pyworker))
+		sceneDeps.VisionInstalled = loadGate.Check
 		charDeps.TTS = sceneDeps.TTS
 		charDeps.Train = train.New(workerv1.NewTrainClient(clients.Pyworker))
 	}
