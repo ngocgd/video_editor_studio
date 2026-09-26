@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppImportRouteImport } from './routes/_app/import'
 import { Route as AppJobsRouteImport } from './routes/_app/jobs'
+import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
@@ -24,6 +25,7 @@ import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/proj
 import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
 import { Route as AppProjectsSeriesIdCharactersIndexRouteImport } from './routes/_app/projects/$seriesId/characters/index'
 import { Route as AppProjectsSeriesIdEpisodesEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/episodes/$episodeId'
+import { Route as AppProjectsSeriesIdRenderEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/render/$episodeId'
 import { Route as AppProjectsSeriesIdStoryboardEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/storyboard/$episodeId'
 
 const AppRoute = AppRouteImport.update({
@@ -48,6 +50,11 @@ const AppImportRoute = AppImportRouteImport.update({
 const AppJobsRoute = AppJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryRoute = AppLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
@@ -104,6 +111,12 @@ const AppProjectsSeriesIdEpisodesEpisodeIdRoute =
     path: '/projects/$seriesId/episodes/$episodeId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProjectsSeriesIdRenderEpisodeIdRoute =
+  AppProjectsSeriesIdRenderEpisodeIdRouteImport.update({
+    id: '/projects/$seriesId/render/$episodeId',
+    path: '/projects/$seriesId/render/$episodeId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProjectsSeriesIdStoryboardEpisodeIdRoute =
   AppProjectsSeriesIdStoryboardEpisodeIdRouteImport.update({
     id: '/projects/$seriesId/storyboard/$episodeId',
@@ -116,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
+  '/library': typeof AppLibraryRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
@@ -125,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/projects/$seriesId/render/$episodeId': typeof AppProjectsSeriesIdRenderEpisodeIdRoute
   '/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
   '/projects/$seriesId/characters/': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
@@ -132,6 +147,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/import': typeof AppImportRoute
   '/jobs': typeof AppJobsRoute
+  '/library': typeof AppLibraryRoute
   '/': typeof AppIndexRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
@@ -142,6 +158,7 @@ export interface FileRoutesByTo {
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
   '/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/projects/$seriesId/render/$episodeId': typeof AppProjectsSeriesIdRenderEpisodeIdRoute
   '/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
   '/projects/$seriesId/characters': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
@@ -151,6 +168,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/import': typeof AppImportRoute
   '/_app/jobs': typeof AppJobsRoute
+  '/_app/library': typeof AppLibraryRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/llm': typeof AppSettingsLlmRoute
@@ -161,6 +179,7 @@ export interface FileRoutesById {
   '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
   '/_app/projects/$seriesId/episodes/$episodeId': typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  '/_app/projects/$seriesId/render/$episodeId': typeof AppProjectsSeriesIdRenderEpisodeIdRoute
   '/_app/projects/$seriesId/storyboard/$episodeId': typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
   '/_app/projects/$seriesId/characters/': typeof AppProjectsSeriesIdCharactersIndexRoute
 }
@@ -171,6 +190,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/import'
     | '/jobs'
+    | '/library'
     | '/settings/account'
     | '/settings/llm'
     | '/settings/models'
@@ -180,6 +200,7 @@ export interface FileRouteTypes {
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId/'
     | '/projects/$seriesId/episodes/$episodeId'
+    | '/projects/$seriesId/render/$episodeId'
     | '/projects/$seriesId/storyboard/$episodeId'
     | '/projects/$seriesId/characters/'
   fileRoutesByTo: FileRoutesByTo
@@ -187,6 +208,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/import'
     | '/jobs'
+    | '/library'
     | '/'
     | '/settings/account'
     | '/settings/llm'
@@ -197,6 +219,7 @@ export interface FileRouteTypes {
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId'
     | '/projects/$seriesId/episodes/$episodeId'
+    | '/projects/$seriesId/render/$episodeId'
     | '/projects/$seriesId/storyboard/$episodeId'
     | '/projects/$seriesId/characters'
   id:
@@ -205,6 +228,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/import'
     | '/_app/jobs'
+    | '/_app/library'
     | '/_app/'
     | '/_app/settings/account'
     | '/_app/settings/llm'
@@ -215,6 +239,7 @@ export interface FileRouteTypes {
     | '/_app/projects/$seriesId/bible'
     | '/_app/projects/$seriesId/'
     | '/_app/projects/$seriesId/episodes/$episodeId'
+    | '/_app/projects/$seriesId/render/$episodeId'
     | '/_app/projects/$seriesId/storyboard/$episodeId'
     | '/_app/projects/$seriesId/characters/'
   fileRoutesById: FileRoutesById
@@ -259,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/library': {
+      id: '/_app/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AppLibraryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/projects/': {
@@ -331,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/projects/$seriesId/render/$episodeId': {
+      id: '/_app/projects/$seriesId/render/$episodeId'
+      path: '/projects/$seriesId/render/$episodeId'
+      fullPath: '/projects/$seriesId/render/$episodeId'
+      preLoaderRoute: typeof AppProjectsSeriesIdRenderEpisodeIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/storyboard/$episodeId': {
       id: '/_app/projects/$seriesId/storyboard/$episodeId'
       path: '/projects/$seriesId/storyboard/$episodeId'
@@ -344,6 +383,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppImportRoute: typeof AppImportRoute
   AppJobsRoute: typeof AppJobsRoute
+  AppLibraryRoute: typeof AppLibraryRoute
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
   AppSettingsLlmRoute: typeof AppSettingsLlmRoute
@@ -354,6 +394,7 @@ interface AppRouteChildren {
   AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
   AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
   AppProjectsSeriesIdEpisodesEpisodeIdRoute: typeof AppProjectsSeriesIdEpisodesEpisodeIdRoute
+  AppProjectsSeriesIdRenderEpisodeIdRoute: typeof AppProjectsSeriesIdRenderEpisodeIdRoute
   AppProjectsSeriesIdStoryboardEpisodeIdRoute: typeof AppProjectsSeriesIdStoryboardEpisodeIdRoute
   AppProjectsSeriesIdCharactersIndexRoute: typeof AppProjectsSeriesIdCharactersIndexRoute
 }
@@ -361,6 +402,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppImportRoute: AppImportRoute,
   AppJobsRoute: AppJobsRoute,
+  AppLibraryRoute: AppLibraryRoute,
   AppIndexRoute: AppIndexRoute,
   AppSettingsAccountRoute: AppSettingsAccountRoute,
   AppSettingsLlmRoute: AppSettingsLlmRoute,
@@ -372,6 +414,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
   AppProjectsSeriesIdEpisodesEpisodeIdRoute:
     AppProjectsSeriesIdEpisodesEpisodeIdRoute,
+  AppProjectsSeriesIdRenderEpisodeIdRoute:
+    AppProjectsSeriesIdRenderEpisodeIdRoute,
   AppProjectsSeriesIdStoryboardEpisodeIdRoute:
     AppProjectsSeriesIdStoryboardEpisodeIdRoute,
   AppProjectsSeriesIdCharactersIndexRoute:

@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Cpu, LayoutDashboard, ListChecks, Settings } from "lucide-react";
+import { Cpu, LayoutDashboard, Library, ListChecks, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { popShortcutScope, pushShortcutScope, useShortcut } from "../../lib/shortcuts";
@@ -17,6 +17,7 @@ interface CommandItem {
 const ITEMS: CommandItem[] = [
   { id: "dashboard", label: "Go to Dashboard", icon: LayoutDashboard, to: "/" },
   { id: "jobs", label: "Go to Render Queue", icon: ListChecks, to: "/jobs" },
+  { id: "library", label: "Go to Library", icon: Library, to: "/library" },
   { id: "models", label: "Go to Model manager", icon: Cpu, to: "/settings/models" },
   { id: "settings", label: "Go to Account settings", icon: Settings, to: "/settings/account" },
 ];
