@@ -160,11 +160,11 @@ func TestPlanMissingChainsAlignAfterVoice(t *testing.T) {
 		return rs
 	}
 	roll := Rollup{Scenes: []RolledScene{
-		scene(StateNone, StateNone, StateNone, false),     // everything
-		scene(StateDone, StateStale, StateStale, true),    // voice + align
-		scene(StateDone, StateDone, StateNone, true),      // align only
+		scene(StateNone, StateNone, StateNone, false),      // everything
+		scene(StateDone, StateStale, StateStale, true),     // voice + align
+		scene(StateDone, StateDone, StateNone, true),       // align only
 		scene(StateRunning, StateQueued, StateNone, false), // already queued: nothing
-		scene(StateFailed, StateDone, StateDone, true),    // retry the image
+		scene(StateFailed, StateDone, StateDone, true),     // retry the image
 	}}
 	steps, counts := PlanMissing(roll, nil)
 	if counts != (MissingCounts{Image: 2, Voice: 2, Align: 3}) {

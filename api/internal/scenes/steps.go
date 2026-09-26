@@ -34,13 +34,13 @@ const presignTTL = 40 * time.Minute
 // Service and the LLM registry are set (it enqueues but never runs gpu
 // steps); a nil engine client makes Run fail with engine_not_installed.
 type StepDeps struct {
-	Service  *Service
-	Storage  *storage.Internal
-	Comfy    *comfyui.Engine
-	TTS      *tts.Client
-	Align    *align.Client
-	Runner   *ffmpeg.Runner
-	LLM      *registry.Registry
+	Service *Service
+	Storage *storage.Internal
+	Comfy   *comfyui.Engine
+	TTS     *tts.Client
+	Align   *align.Client
+	Runner  *ffmpeg.Runner
+	LLM     *registry.Registry
 	// SceneWorkflow maps a scene model (manifest entry) to its txt2img
 	// workflow; ok is false for a model without one.
 	SceneWorkflow func(model string) (string, bool)

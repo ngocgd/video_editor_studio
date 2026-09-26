@@ -30,8 +30,8 @@ type SceneModels func(name string) bool
 
 // PresetsAPI implements the presets slice of gen.StrictServerInterface.
 type PresetsAPI struct {
-	Pool        *pgxpool.Pool
-	Queries     *dbgen.Queries
+	Pool         *pgxpool.Pool
+	Queries      *dbgen.Queries
 	IsSceneModel SceneModels
 }
 

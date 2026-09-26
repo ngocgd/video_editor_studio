@@ -56,10 +56,10 @@ type StepDeps struct {
 	Storage *storage.Internal
 	// Scenes gives access to the pipeline engine once it exists (the
 	// handlers are registered before the engine is built).
-	Scenes  *scenes.Service
-	Comfy   *comfyui.Engine
-	TTS     *tts.Client
-	Train   *train.Client
+	Scenes *scenes.Service
+	Comfy  *comfyui.Engine
+	TTS    *tts.Client
+	Train  *train.Client
 	// SheetModel is the manifest model whose SheetWorkflow makes sheets.
 	SheetModel    string
 	SheetWorkflow string

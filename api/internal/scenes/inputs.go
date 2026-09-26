@@ -93,13 +93,13 @@ type EpisodeInputs struct {
 
 // SceneInputs is the part of a scene row the hashes depend on.
 type SceneInputs struct {
-	ID            uuid.UUID
-	Narration     string
-	Segments      []Segment
-	ImagePrompt   string
-	CharacterIDs  []uuid.UUID
-	ImageStyleID  *uuid.UUID
-	VoiceTakeID   *uuid.UUID
+	ID           uuid.UUID
+	Narration    string
+	Segments     []Segment
+	ImagePrompt  string
+	CharacterIDs []uuid.UUID
+	ImageStyleID *uuid.UUID
+	VoiceTakeID  *uuid.UUID
 }
 
 // StyleFor resolves a scene's style: its own, else the episode default.

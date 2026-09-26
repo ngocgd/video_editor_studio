@@ -23,9 +23,9 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
-	"loomtale/api/internal/characters"
 	"loomtale/api/internal/dbpool"
 	"loomtale/api/internal/media"
 	"loomtale/api/internal/media/ffmpeg"

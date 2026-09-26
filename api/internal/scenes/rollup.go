@@ -33,12 +33,12 @@ type StepInfo struct {
 
 // TakeInfo is the selected take of one kind for a scene.
 type TakeInfo struct {
-	ID         uuid.UUID         `json:"id"`
-	AssetID    uuid.UUID         `json:"assetId"`
-	InputHash  string            `json:"inputHash"`
-	Params     TakeParams        `json:"params"`
-	Variants   map[string]any    `json:"variants"`
-	DurationMs *int              `json:"durationMs"`
+	ID         uuid.UUID      `json:"id"`
+	AssetID    uuid.UUID      `json:"assetId"`
+	InputHash  string         `json:"inputHash"`
+	Params     TakeParams     `json:"params"`
+	Variants   map[string]any `json:"variants"`
+	DurationMs *int           `json:"durationMs"`
 }
 
 // TakeParams is the params jsonb of a take.

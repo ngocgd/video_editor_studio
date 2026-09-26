@@ -54,23 +54,25 @@ func TestArgsRefusals(t *testing.T) {
 	dir, base := tempJob(t)
 	outside := filepath.Join(filepath.Dir(dir), "elsewhere.png")
 	cases := map[string]func(j *Job){
-		"file outside the temp dir":     func(j *Job) { j.Inputs[0].Path = outside },
-		"parent traversal":              func(j *Job) { j.Inputs[0].Path = dir + string(filepath.Separator) + ".." + string(filepath.Separator) + "x.png" },
-		"the temp dir itself":           func(j *Job) { j.Inputs[0].Path = dir },
-		"relative path":                 func(j *Job) { j.Inputs[0].Path = "source.png" },
-		"concat protocol input":         func(j *Job) { j.Inputs[0] = Input{Format: FormatImage2, URL: "concat:a.png|b.png"} },
-		"file protocol url":             func(j *Job) { j.Inputs[0] = Input{Format: FormatImage2, URL: "file:///etc/passwd"} },
-		"plain http":                    func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "http://minio.internal:9000/a"} },
-		"foreign host":                  func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "https://evil.example/a"} },
-		"credentials in url":            func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "https://u:p@minio.internal:9000/a"} },
-		"remote concat list":            func(j *Job) { j.Inputs[0] = Input{Format: FormatConcat, URL: "https://minio.internal:9000/list"} },
-		"unforced or unknown format":    func(j *Job) { j.Inputs[0].Format = "lavfi" },
-		"both path and url":             func(j *Job) { j.Inputs[0].URL = "https://minio.internal:9000/a" },
-		"output outside the temp dir":   func(j *Job) { j.Output.Path = outside },
-		"output muxer not allowed":      func(j *Job) { j.Output.Muxer = "hls" },
-		"output codec not allowed":      func(j *Job) { j.Output.VideoCodec = "copy" },
-		"no inputs":                     func(j *Job) { j.Inputs = nil },
-		"relative temp dir":             func(j *Job) { j.TempDir = "tmp" },
+		"file outside the temp dir": func(j *Job) { j.Inputs[0].Path = outside },
+		"parent traversal": func(j *Job) {
+			j.Inputs[0].Path = dir + string(filepath.Separator) + ".." + string(filepath.Separator) + "x.png"
+		},
+		"the temp dir itself":         func(j *Job) { j.Inputs[0].Path = dir },
+		"relative path":               func(j *Job) { j.Inputs[0].Path = "source.png" },
+		"concat protocol input":       func(j *Job) { j.Inputs[0] = Input{Format: FormatImage2, URL: "concat:a.png|b.png"} },
+		"file protocol url":           func(j *Job) { j.Inputs[0] = Input{Format: FormatImage2, URL: "file:///etc/passwd"} },
+		"plain http":                  func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "http://minio.internal:9000/a"} },
+		"foreign host":                func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "https://evil.example/a"} },
+		"credentials in url":          func(j *Job) { j.Inputs[0] = Input{Format: FormatWAV, URL: "https://u:p@minio.internal:9000/a"} },
+		"remote concat list":          func(j *Job) { j.Inputs[0] = Input{Format: FormatConcat, URL: "https://minio.internal:9000/list"} },
+		"unforced or unknown format":  func(j *Job) { j.Inputs[0].Format = "lavfi" },
+		"both path and url":           func(j *Job) { j.Inputs[0].URL = "https://minio.internal:9000/a" },
+		"output outside the temp dir": func(j *Job) { j.Output.Path = outside },
+		"output muxer not allowed":    func(j *Job) { j.Output.Muxer = "hls" },
+		"output codec not allowed":    func(j *Job) { j.Output.VideoCodec = "copy" },
+		"no inputs":                   func(j *Job) { j.Inputs = nil },
+		"relative temp dir":           func(j *Job) { j.TempDir = "tmp" },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
