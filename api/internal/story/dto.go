@@ -66,10 +66,14 @@ func bibleToDTO(b dbgen.StoryBible) (gen.StoryBible, error) {
 }
 
 // outlineBeatDoc is the per-beat shape stored in episodes.outline jsonb.
+// Tainted is set once, at outline generation time, from whether the bible
+// excerpt fed into that llm.outline call was itself tainted (cheap to
+// record then; there is no per-beat provenance beyond that).
 type outlineBeatDoc struct {
 	ID          string `json:"id"`
 	Summary     string `json:"summary"`
 	TargetWords int    `json:"targetWords"`
+	Tainted     bool   `json:"tainted,omitempty"`
 }
 
 func decodeOutline(raw []byte) ([]outlineBeatDoc, error) {
@@ -98,7 +102,8 @@ func episodeToDTO(e dbgen.Episode) (gen.Episode, error) {
 		Outline:   make([]gen.OutlineBeat, 0, len(beats)),
 	}
 	for _, b := range beats {
-		dto.Outline = append(dto.Outline, gen.OutlineBeat{Id: b.ID, Summary: b.Summary, TargetWords: b.TargetWords})
+		tainted := b.Tainted
+		dto.Outline = append(dto.Outline, gen.OutlineBeat{Id: b.ID, Summary: b.Summary, TargetWords: b.TargetWords, Tainted: &tainted})
 	}
 	return dto, nil
 }
@@ -121,7 +126,7 @@ func draftToDTO(d dbgen.EpisodeDraft) (gen.EpisodeDraft, error) {
 	}
 	dto := gen.EpisodeDraft{
 		EpisodeId:  idconv.FromPg(d.EpisodeID),
-		Lang:       gen.TargetLanguage(d.Lang),
+		Lang:       gen.DraftLanguage(d.Lang),
 		Version:    int(d.Version),
 		WordCount:  int(d.WordCount),
 		Paragraphs: make([]gen.DraftParagraph, 0, len(paragraphs)),

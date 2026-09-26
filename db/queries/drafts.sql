@@ -9,6 +9,16 @@ INSERT INTO episode_drafts (id, tenant_id, episode_id, lang, paragraphs, word_co
 VALUES (@id, @tenant_id, @episode_id, @lang, @paragraphs, @word_count)
 RETURNING *;
 
+-- name: CreateDraftIfAbsent :one
+-- Used by the create-draft endpoint and by any AI action that needs a
+-- draft to write into (continue, expand_beat) but tolerates one already
+-- existing: zero rows back (no error) means a concurrent creator won and
+-- the caller should GetDraft instead of failing.
+INSERT INTO episode_drafts (id, tenant_id, episode_id, lang, paragraphs, word_count)
+VALUES (@id, @tenant_id, @episode_id, @lang, @paragraphs, @word_count)
+ON CONFLICT (episode_id, lang) DO NOTHING
+RETURNING *;
+
 -- name: UpdateDraftParagraphs :one
 -- version = current_version + 1 is computed by the caller (story.Store)
 -- after loading and CAS-checking the row inside the same transaction, so

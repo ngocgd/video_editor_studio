@@ -1,6 +1,7 @@
 package storyctx
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -20,6 +21,12 @@ func TestBuildNeverPutsStoryContentInSystem(t *testing.T) {
 	}
 	for action, want := range systemTemplates {
 		ctx := Build(action, req)
+		// "translate" is the one action whose template has a
+		// target-language placeholder (see renderSystemTemplate); every
+		// other action's System is the constant byte-for-byte.
+		if action == "translate" {
+			want = fmt.Sprintf(want, "the requested target language", "the requested target language")
+		}
 		if ctx.System != want {
 			t.Fatalf("action %q: System does not match the fixed template constant", action)
 		}
@@ -28,6 +35,19 @@ func TestBuildNeverPutsStoryContentInSystem(t *testing.T) {
 				t.Fatalf("action %q: System leaked story content: %q", action, needle)
 			}
 		}
+	}
+}
+
+// TestBuildNamesTheTranslateTargetLanguage proves the translate template's
+// placeholder is actually filled with the caller's TargetLanguageName, not
+// left as a literal "%s" or silently defaulted when one was supplied.
+func TestBuildNamesTheTranslateTargetLanguage(t *testing.T) {
+	ctx := Build("translate", BuildRequest{TargetLanguageName: "Vietnamese", Target: TaintedContent{Text: "hello"}})
+	if !strings.Contains(ctx.System, "Vietnamese") {
+		t.Fatalf("expected System to name the target language, got %q", ctx.System)
+	}
+	if strings.Contains(ctx.System, "%s") || strings.Contains(ctx.System, "%!s") {
+		t.Fatalf("translate template placeholder left unfilled: %q", ctx.System)
 	}
 }
 

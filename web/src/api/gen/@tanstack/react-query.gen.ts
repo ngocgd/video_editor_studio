@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { cancelRun, cancelStep, commitImport, createAiAction, createEpisode, createImport, createRun, createSeries, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, listAssets, listAudit, listEpisodes, listImports, listJobs, listRunSteps, listSeries, login, logout, type Options, patchDraft, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, switchTenant, testLlmSettings, updateBibleSection, updateEpisode, updateSeries } from '../sdk.gen';
-import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse } from '../types.gen';
+import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, listAssets, listAudit, listEpisodes, listImports, listJobs, listRunSteps, listSeries, login, logout, type Options, patchDraft, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, switchTenant, testLlmSettings, updateBibleSection, updateEpisode, updateSeries } from '../sdk.gen';
+import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -956,6 +956,40 @@ export const patchDraftMutation = (options?: Partial<Options<PatchDraftData>>): 
     const mutationOptions: UseMutationOptions<PatchDraftResponse, PatchDraftError, Options<PatchDraftData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await patchDraft({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create an empty draft for this episode/language if one does not already exist
+ */
+export const createDraftMutation = (options?: Partial<Options<CreateDraftData>>): UseMutationOptions<CreateDraftResponse, CreateDraftError, Options<CreateDraftData>> => {
+    const mutationOptions: UseMutationOptions<CreateDraftResponse, CreateDraftError, Options<CreateDraftData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createDraft({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+ */
+export const applyDraftStepMutation = (options?: Partial<Options<ApplyDraftStepData>>): UseMutationOptions<ApplyDraftStepResponse, ApplyDraftStepError, Options<ApplyDraftStepData>> => {
+    const mutationOptions: UseMutationOptions<ApplyDraftStepResponse, ApplyDraftStepError, Options<ApplyDraftStepData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await applyDraftStep({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

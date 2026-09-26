@@ -44,6 +44,11 @@ type Querier interface {
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
 	CreateDraft(ctx context.Context, arg CreateDraftParams) (EpisodeDraft, error)
+	// Used by the create-draft endpoint and by any AI action that needs a
+	// draft to write into (continue, expand_beat) but tolerates one already
+	// existing: zero rows back (no error) means a concurrent creator won and
+	// the caller should GetDraft instead of failing.
+	CreateDraftIfAbsent(ctx context.Context, arg CreateDraftIfAbsentParams) (EpisodeDraft, error)
 	CreateEpisode(ctx context.Context, arg CreateEpisodeParams) (Episode, error)
 	CreateImport(ctx context.Context, arg CreateImportParams) (Import, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)

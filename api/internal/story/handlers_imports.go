@@ -327,18 +327,30 @@ func (h *StoryAPI) CommitImport(ctx context.Context, req gen.CommitImportRequest
 		if err != nil {
 			return nil, err
 		}
+		// A Chinese-language source chapter is stored under its own
+		// language rather than mislabeled "en" (wrong word-count/duration
+		// heuristic, wrong language toggle in the writer).
+		sourceLang := "en"
+		if importer.IsMostlyCJK(chapterText) {
+			sourceLang = "zh"
+		}
 		if _, err := qtx.CreateDraft(ctx, dbgen.CreateDraftParams{
 			ID: idconv.ToPg(idconv.NewV7()), TenantID: idconv.ToPg(info.ID), EpisodeID: episode.ID,
-			Lang: "en", Paragraphs: paragraphsJSON, WordCount: int32(WordCount(paragraphs)),
+			Lang: sourceLang, Paragraphs: paragraphsJSON, WordCount: int32(WordCount(paragraphs)),
 		}); err != nil {
 			return nil, err
 		}
 
 		episodeIDs = append(episodeIDs, episodeID)
 		if req.Body.TranslateToLang != nil {
+			input := AiActionInput{Action: "translate", SourceLang: sourceLang, TargetLang: string(*req.Body.TranslateToLang), AutoApply: true}
+			inputJSON, err := json.Marshal(input)
+			if err != nil {
+				return nil, err
+			}
 			steps = append(steps, pipeline.StepSpec{
 				ID: idconv.NewV7(), Kind: KindTranslate, ScopeKind: ScopeEpisode, ScopeID: episodeID,
-				Priority: pipeline.PriorityBatch,
+				Priority: pipeline.PriorityBatch, Input: inputJSON,
 			})
 		}
 	}

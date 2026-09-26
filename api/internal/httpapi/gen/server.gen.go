@@ -192,6 +192,27 @@ func (e CreateRunRequestPriorityClass) Valid() bool {
 	}
 }
 
+// Defines values for DraftLanguage.
+const (
+	DraftLanguageEn DraftLanguage = "en"
+	DraftLanguageVi DraftLanguage = "vi"
+	DraftLanguageZh DraftLanguage = "zh"
+)
+
+// Valid indicates whether the value is a known member of the DraftLanguage enum.
+func (e DraftLanguage) Valid() bool {
+	switch e {
+	case DraftLanguageEn:
+		return true
+	case DraftLanguageVi:
+		return true
+	case DraftLanguageZh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EpisodeStatus.
 const (
 	EpisodeStatusDraft    EpisodeStatus = "draft"
@@ -545,16 +566,16 @@ func (e StepSummaryStatus) Valid() bool {
 
 // Defines values for TargetLanguage.
 const (
-	En TargetLanguage = "en"
-	Vi TargetLanguage = "vi"
+	TargetLanguageEn TargetLanguage = "en"
+	TargetLanguageVi TargetLanguage = "vi"
 )
 
 // Valid indicates whether the value is a known member of the TargetLanguage enum.
 func (e TargetLanguage) Valid() bool {
 	switch e {
-	case En:
+	case TargetLanguageEn:
 		return true
-	case Vi:
+	case TargetLanguageVi:
 		return true
 	default:
 		return false
@@ -593,6 +614,16 @@ type AiActionResult struct {
 
 // AiActionResultStatus defines model for AiActionResult.Status.
 type AiActionResultStatus string
+
+// ApplyDraftStepRequest Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
+type ApplyDraftStepRequest struct {
+	// AfterParagraphId For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
+	AfterParagraphId *string `json:"afterParagraphId,omitempty"`
+
+	// ParagraphIds The paragraphs the action was run against (its selection).
+	ParagraphIds *[]string          `json:"paragraphIds,omitempty"`
+	StepId       openapi_types.UUID `json:"stepId"`
+}
 
 // Asset defines model for Asset.
 type Asset struct {
@@ -707,6 +738,9 @@ type CsrfToken struct {
 	Token string `json:"token"`
 }
 
+// DraftLanguage Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+type DraftLanguage string
+
 // DraftParagraph defines model for DraftParagraph.
 type DraftParagraph struct {
 	Id      string `json:"id"`
@@ -747,12 +781,14 @@ type EpisodeStatus string
 type EpisodeDraft struct {
 	DurationEstimateMinutes *float32           `json:"durationEstimateMinutes,omitempty"`
 	EpisodeId               openapi_types.UUID `json:"episodeId"`
-	Lang                    TargetLanguage     `json:"lang"`
-	Paragraphs              []DraftParagraph   `json:"paragraphs"`
-	Summary                 *string            `json:"summary,omitempty"`
-	SummaryTainted          *bool              `json:"summaryTainted,omitempty"`
-	Version                 int                `json:"version"`
-	WordCount               int                `json:"wordCount"`
+
+	// Lang Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+	Lang           DraftLanguage    `json:"lang"`
+	Paragraphs     []DraftParagraph `json:"paragraphs"`
+	Summary        *string          `json:"summary,omitempty"`
+	SummaryTainted *bool            `json:"summaryTainted,omitempty"`
+	Version        int              `json:"version"`
+	WordCount      int              `json:"wordCount"`
 }
 
 // EpisodeList defines model for EpisodeList.
@@ -940,9 +976,12 @@ type Origin string
 
 // OutlineBeat defines model for OutlineBeat.
 type OutlineBeat struct {
-	Id          string `json:"id"`
-	Summary     string `json:"summary"`
-	TargetWords int    `json:"targetWords"`
+	Id      string `json:"id"`
+	Summary string `json:"summary"`
+
+	// Tainted True when the bible excerpt used to generate this episode's outline was itself tainted.
+	Tainted     *bool `json:"tainted,omitempty"`
+	TargetWords int   `json:"targetWords"`
 }
 
 // ParagraphOp defines model for ParagraphOp.
@@ -1223,6 +1262,9 @@ type CreateAiActionJSONRequestBody = AiActionRequest
 // PatchDraftJSONRequestBody defines body for PatchDraft for application/json ContentType.
 type PatchDraftJSONRequestBody = DraftPatchRequest
 
+// ApplyDraftStepJSONRequestBody defines body for ApplyDraftStep for application/json ContentType.
+type ApplyDraftStepJSONRequestBody = ApplyDraftStepRequest
+
 // CreateImportJSONRequestBody defines body for CreateImport for application/json ContentType.
 type CreateImportJSONRequestBody = ImportCreateRequest
 
@@ -1308,10 +1350,16 @@ type ServerInterface interface {
 	GetAiActionResult(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, stepId openapi_types.UUID)
 	// GetDraft The episode's draft for one language
 	// (GET /episodes/{id}/drafts/{lang})
-	GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage)
+	GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
 	// PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
 	// (PATCH /episodes/{id}/drafts/{lang})
-	PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage)
+	PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// CreateDraft Create an empty draft for this episode/language if one does not already exist
+	// (PUT /episodes/{id}/drafts/{lang})
+	CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
+	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+	// (POST /episodes/{id}/drafts/{lang}/apply-step)
+	ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -1505,13 +1553,25 @@ func (_ Unimplemented) GetAiActionResult(w http.ResponseWriter, r *http.Request,
 
 // GetDraft The episode's draft for one language
 // (GET /episodes/{id}/drafts/{lang})
-func (_ Unimplemented) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage) {
+func (_ Unimplemented) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
 // (PATCH /episodes/{id}/drafts/{lang})
-func (_ Unimplemented) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage) {
+func (_ Unimplemented) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDraft Create an empty draft for this episode/language if one does not already exist
+// (PUT /episodes/{id}/drafts/{lang})
+func (_ Unimplemented) CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+// (POST /episodes/{id}/drafts/{lang}/apply-step)
+func (_ Unimplemented) ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2149,7 +2209,7 @@ func (siw *ServerInterfaceWrapper) GetDraft(w http.ResponseWriter, r *http.Reque
 	}
 
 	// ------------- Path parameter "lang" -------------
-	var lang TargetLanguage
+	var lang DraftLanguage
 
 	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
@@ -2184,7 +2244,7 @@ func (siw *ServerInterfaceWrapper) PatchDraft(w http.ResponseWriter, r *http.Req
 	}
 
 	// ------------- Path parameter "lang" -------------
-	var lang TargetLanguage
+	var lang DraftLanguage
 
 	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
@@ -2194,6 +2254,76 @@ func (siw *ServerInterfaceWrapper) PatchDraft(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchDraft(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDraft operation middleware
+func (siw *ServerInterfaceWrapper) CreateDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDraft(w, r, id, lang)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApplyDraftStep operation middleware
+func (siw *ServerInterfaceWrapper) ApplyDraftStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "lang" -------------
+	var lang DraftLanguage
+
+	err = runtime.BindStyledParameterWithOptions("simple", "lang", chi.URLParam(r, "lang"), &lang, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApplyDraftStep(w, r, id, lang)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3196,6 +3326,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/episodes/{id}/drafts/{lang}", wrapper.PatchDraft)
 	})
 	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/episodes/{id}/drafts/{lang}", wrapper.CreateDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/episodes/{id}/drafts/{lang}/apply-step", wrapper.ApplyDraftStep)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/imports", wrapper.ListImports)
 	})
 	r.Group(func(r chi.Router) {
@@ -3747,7 +3883,7 @@ func (response GetAiActionResult404ApplicationProblemPlusJSONResponse) VisitGetA
 
 type GetDraftRequestObject struct {
 	Id   openapi_types.UUID `json:"id"`
-	Lang TargetLanguage     `json:"lang"`
+	Lang DraftLanguage      `json:"lang"`
 }
 
 type GetDraftResponseObject interface {
@@ -3784,7 +3920,7 @@ func (response GetDraft404ApplicationProblemPlusJSONResponse) VisitGetDraftRespo
 
 type PatchDraftRequestObject struct {
 	Id   openapi_types.UUID `json:"id"`
-	Lang TargetLanguage     `json:"lang"`
+	Lang DraftLanguage      `json:"lang"`
 	Body *PatchDraftJSONRequestBody
 }
 
@@ -3809,6 +3945,109 @@ func (response PatchDraft200JSONResponse) VisitPatchDraftResponse(w http.Respons
 type PatchDraft409ApplicationProblemPlusJSONResponse Problem
 
 func (response PatchDraft409ApplicationProblemPlusJSONResponse) VisitPatchDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraftRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+}
+
+type CreateDraftResponseObject interface {
+	VisitCreateDraftResponse(w http.ResponseWriter) error
+}
+
+type CreateDraft200JSONResponse EpisodeDraft
+
+func (response CreateDraft200JSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraft201JSONResponse EpisodeDraft
+
+func (response CreateDraft201JSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDraft404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateDraft404ApplicationProblemPlusJSONResponse) VisitCreateDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStepRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Lang DraftLanguage      `json:"lang"`
+	Body *ApplyDraftStepJSONRequestBody
+}
+
+type ApplyDraftStepResponseObject interface {
+	VisitApplyDraftStepResponse(w http.ResponseWriter) error
+}
+
+type ApplyDraftStep200JSONResponse EpisodeDraft
+
+func (response ApplyDraftStep200JSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStep404ApplicationProblemPlusJSONResponse Problem
+
+func (response ApplyDraftStep404ApplicationProblemPlusJSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApplyDraftStep409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApplyDraftStep409ApplicationProblemPlusJSONResponse) VisitApplyDraftStepResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4925,6 +5164,12 @@ type StrictServerInterface interface {
 	// PatchDraft Autosave paragraph ops with an optimistic-concurrency version check
 	// (PATCH /episodes/{id}/drafts/{lang})
 	PatchDraft(ctx context.Context, request PatchDraftRequestObject) (PatchDraftResponseObject, error)
+	// CreateDraft Create an empty draft for this episode/language if one does not already exist
+	// (PUT /episodes/{id}/drafts/{lang})
+	CreateDraft(ctx context.Context, request CreateDraftRequestObject) (CreateDraftResponseObject, error)
+	// ApplyDraftStep Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+	// (POST /episodes/{id}/drafts/{lang}/apply-step)
+	ApplyDraftStep(ctx context.Context, request ApplyDraftStepRequestObject) (ApplyDraftStepResponseObject, error)
 	// StreamEvents Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).
 	// The first event on every stream is "ready"; a client must subscribe before fetching its own initial snapshot (GET /runs/{id}/steps) and discard any event whose "version" is <= the snapshot's, so no event that arrived between snapshot and subscribe is lost.
 	// Progress-only updates are coalesced to at most one per step id per 250ms; every state transition (queued/running/done/failed/canceled) is delivered individually and is never dropped or coalesced. If the hub's own LISTEN connection drops and reconnects, every subscriber receives a "resync" event and must refetch its snapshot. A 15s heartbeat comment line keeps idle connections alive through proxies. A user may hold at most 6 concurrent streams (429 beyond that); the web client shares one stream across browser tabs.
@@ -5496,7 +5741,7 @@ func (sh *strictHandler) GetAiActionResult(w http.ResponseWriter, r *http.Reques
 }
 
 // GetDraft operation middleware
-func (sh *strictHandler) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage) {
+func (sh *strictHandler) GetDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
 	var request GetDraftRequestObject
 
 	request.Id = id
@@ -5523,7 +5768,7 @@ func (sh *strictHandler) GetDraft(w http.ResponseWriter, r *http.Request, id ope
 }
 
 // PatchDraft operation middleware
-func (sh *strictHandler) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang TargetLanguage) {
+func (sh *strictHandler) PatchDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
 	var request PatchDraftRequestObject
 
 	request.Id = id
@@ -5549,6 +5794,67 @@ func (sh *strictHandler) PatchDraft(w http.ResponseWriter, r *http.Request, id o
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PatchDraftResponseObject); ok {
 		if err := validResponse.VisitPatchDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDraft operation middleware
+func (sh *strictHandler) CreateDraft(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request CreateDraftRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDraft(ctx, request.(CreateDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDraftResponseObject); ok {
+		if err := validResponse.VisitCreateDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApplyDraftStep operation middleware
+func (sh *strictHandler) ApplyDraftStep(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, lang DraftLanguage) {
+	var request ApplyDraftStepRequestObject
+
+	request.Id = id
+	request.Lang = lang
+
+	var body ApplyDraftStepJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApplyDraftStep(ctx, request.(ApplyDraftStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApplyDraftStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApplyDraftStepResponseObject); ok {
+		if err := validResponse.VisitApplyDraftStepResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6382,135 +6688,145 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"J++tPVLxzMbJMc3Y8frp5PbD7f8LAAD//w==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

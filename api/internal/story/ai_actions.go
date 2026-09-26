@@ -173,6 +173,12 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 	if err := json.Unmarshal([]byte(resp.Text), &beats); err != nil {
 		return nil, fmt.Errorf("story: parse outline response: %w", err)
 	}
+	// The bible excerpt's taint carries to every beat: cheap to record here
+	// (already computed above), and it lets the writer's beats panel show a
+	// taint badge before any draft is written from a tainted beat.
+	for i := range beats {
+		beats[i].Tainted = bibleTainted
+	}
 	outlineJSON, err := json.Marshal(beats)
 	if err != nil {
 		return nil, err
@@ -195,10 +201,23 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 	return pipeline.Output{"provider": providerName, "episodeId": idconv.FromPg(episode.ID).String(), "beatCount": len(beats)}, nil
 }
 
+// defaultRewriteIntent supplies a server-side intent sentence for the
+// rewrite-family actions that have no dedicated template (expand, shorten,
+// tone all reuse KindRewrite's "rewrite" template) when the caller sent no
+// typed instruction of their own. "rewrite" itself has none: without an
+// instruction it is just a general polish pass, which the template already
+// covers.
+var defaultRewriteIntent = map[string]string{
+	"expand":  "Expand this text with more sensory detail, interiority and pacing, roughly doubling its length, while preserving its meaning and continuity.",
+	"shorten": "Shorten this text to roughly half its length while preserving its key story beats, voice and continuity.",
+	"tone":    "Adjust this text's tone to be more vivid and emotionally engaging while preserving its meaning and continuity.",
+}
+
 // runEpisodeAction handles expand_beat/continue/rewrite/translate/summarise.
-// It reads the request's lang/paragraphIds/beatId/instruction back from
-// the step's Input (set at enqueue time by CreateAiAction), so an action
-// targets exactly the paragraphs the user selected, with their own
+// It reads the request's action/lang/paragraphIds/beatId/instruction back
+// from the step's Input (set at enqueue time by CreateAiAction or
+// CommitImport), so an action targets exactly the paragraphs the user
+// selected (or the beat/language import specified), with their own
 // instruction applied, rather than the episode's whole draft.
 func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.StepContext, tenantID uuid.UUID, provider llm.Provider, providerName string) (pipeline.Output, error) {
 	var in AiActionInput
@@ -211,7 +230,21 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 	if err != nil {
 		return nil, err
 	}
-	lang, draft, err := h.pickDraft(ctx, tenantID, episodeID, in.Lang)
+
+	if h.kind == KindTranslate {
+		return h.runTranslate(ctx, sc, tenantID, episode, provider, providerName, in)
+	}
+
+	// Continue and expand_beat write into a draft that may not exist yet
+	// (an outlined or manual episode has none until something creates one);
+	// every other action needs an existing draft to act on.
+	var lang string
+	var draft dbgen.EpisodeDraft
+	if h.kind == KindContinue || h.kind == KindExpandBeat {
+		lang, draft, err = h.pickOrCreateDraft(ctx, tenantID, episodeID, in.Lang)
+	} else {
+		lang, draft, err = h.pickDraft(ctx, tenantID, episodeID, in.Lang)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -219,9 +252,24 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 	if err != nil {
 		return nil, err
 	}
-	selected := selectParagraphs(paragraphs, in.ParagraphIds)
-	targetText := joinParagraphs(selected)
-	targetTainted := anyParagraphTainted(selected)
+
+	var targetText string
+	var targetTainted bool
+	if h.kind == KindExpandBeat {
+		beat, ok := findBeat(episode.Outline, in.BeatId)
+		if !ok {
+			return nil, fmt.Errorf("story: beat %q not found in episode outline", in.BeatId)
+		}
+		targetText, targetTainted = beat.Summary, beat.Tainted
+	} else {
+		selected := selectParagraphs(paragraphs, in.ParagraphIds)
+		targetText, targetTainted = joinParagraphs(selected), anyParagraphTainted(selected)
+	}
+
+	instruction := in.Instruction
+	if h.kind == KindRewrite && instruction == "" {
+		instruction = defaultRewriteIntent[in.Action]
+	}
 
 	bibleExcerpt, bibleTainted, err := h.loadBibleExcerpt(ctx, tenantID, idconv.FromPg(episode.SeriesID))
 	if err != nil {
@@ -232,28 +280,11 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 		BibleExcerpt: storyctx.TaintedContent{Text: bibleExcerpt, Origin: originOf(bibleTainted), Tainted: bibleTainted},
 		Previously:   storyctx.TaintedContent{Text: draft.Summary, Origin: originOf(draft.SummaryTainted), Tainted: draft.SummaryTainted},
 		Target:       storyctx.TaintedContent{Text: targetText, Origin: originOf(targetTainted), Tainted: targetTainted},
-		Instruction:  in.Instruction,
+		Instruction:  instruction,
 		TokenBudget:  defaultTokenBudget,
 	})
 
-	var mu sync.Mutex
-	var buffer strings.Builder
-	lastFlush := time.Now()
-	onDelta := func(d llm.Delta) {
-		mu.Lock()
-		buffer.WriteString(d.Text)
-		flush := time.Since(lastFlush) >= deltaFlushInterval
-		if flush {
-			lastFlush = time.Now()
-		}
-		n := buffer.Len()
-		mu.Unlock()
-		if flush {
-			sc.Progress(progressFromLength(n), 0)
-		}
-	}
-
-	resp, err := provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: 4000}, onDelta)
+	resp, err := h.stream(ctx, sc, provider, built)
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +305,204 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 		"text":     resp.Text,
 		"tainted":  resultTainted,
 	}, nil
+}
+
+// runTranslate handles llm.translate. It always reads its own explicit
+// SourceLang draft (never the generic pickDraft fallback rewrite/continue
+// use) and produces text for TargetLang. When AutoApply is set (an
+// import-triggered translate: CommitImport enqueues one per chapter, never
+// interactively), the result is written straight into the target draft,
+// created if absent, but only when that draft is still empty — an
+// interactively-edited target draft is left alone and the translation is
+// only returned in the step's output, same as every other action, for the
+// writer to review as a proposal.
+func (h *AIActionHandler) runTranslate(ctx context.Context, sc *pipeline.StepContext, tenantID uuid.UUID, episode dbgen.Episode, provider llm.Provider, providerName string, in AiActionInput) (pipeline.Output, error) {
+	episodeID := idconv.FromPg(episode.ID)
+	sourceLang := in.SourceLang
+	if sourceLang == "" {
+		sourceLang = in.Lang // interactive callers with no distinct source: translate the currently open draft
+	}
+	targetLang := in.TargetLang
+	if targetLang == "" {
+		targetLang = in.Lang
+	}
+
+	source, err := h.Queries.GetDraft(ctx, dbgen.GetDraftParams{TenantID: idconv.ToPg(tenantID), EpisodeID: idconv.ToPg(episodeID), Lang: sourceLang})
+	if err != nil {
+		return nil, err
+	}
+	paragraphs, err := decodeParagraphs(source.Paragraphs)
+	if err != nil {
+		return nil, err
+	}
+	// An interactive translate covers the writer's selection (the whole
+	// draft when nothing is selected); an import-triggered one has no
+	// selection and translates the whole chapter.
+	selected := selectParagraphs(paragraphs, in.ParagraphIds)
+	targetText := joinParagraphs(selected)
+	targetTainted := anyParagraphTainted(selected)
+
+	bibleExcerpt, bibleTainted, err := h.loadBibleExcerpt(ctx, tenantID, idconv.FromPg(episode.SeriesID))
+	if err != nil {
+		bibleExcerpt, bibleTainted = "", false
+	}
+
+	built := storyctx.Build(h.templateKey, storyctx.BuildRequest{
+		BibleExcerpt:       storyctx.TaintedContent{Text: bibleExcerpt, Origin: originOf(bibleTainted), Tainted: bibleTainted},
+		Target:             storyctx.TaintedContent{Text: targetText, Origin: originOf(targetTainted), Tainted: targetTainted},
+		TargetLanguageName: targetLanguageName(targetLang),
+		TokenBudget:        defaultTokenBudget,
+	})
+
+	resp, err := h.stream(ctx, sc, provider, built)
+	if err != nil {
+		return nil, err
+	}
+	resultTainted := built.Tainted
+
+	if in.AutoApply {
+		if err := h.writeAutoTranslation(ctx, tenantID, episodeID, targetLang, resp.Text, resultTainted); err != nil {
+			return nil, err
+		}
+	}
+
+	sc.Progress(100, 0)
+	return pipeline.Output{
+		"provider": providerName,
+		"lang":     targetLang,
+		"text":     resp.Text,
+		"tainted":  resultTainted,
+	}, nil
+}
+
+// writeAutoTranslation stores text as targetLang's draft, creating it if
+// absent. If a draft already exists with paragraphs in it (a human, or an
+// earlier run, already put content there), the translation is left
+// unapplied: the caller's step output still carries the text, so nothing
+// is lost, but an editor's own draft is never silently overwritten.
+func (h *AIActionHandler) writeAutoTranslation(ctx context.Context, tenantID, episodeID uuid.UUID, lang, text string, tainted bool) error {
+	_, draft, err := h.pickOrCreateDraft(ctx, tenantID, episodeID, lang)
+	if err != nil {
+		return err
+	}
+	existing, err := decodeParagraphs(draft.Paragraphs)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return nil
+	}
+	paragraphs := paragraphsFromText(text, tainted)
+	paragraphsJSON, err := encodeParagraphs(paragraphs)
+	if err != nil {
+		return err
+	}
+	_, err = h.Queries.UpdateDraftParagraphs(ctx, dbgen.UpdateDraftParagraphsParams{
+		Paragraphs: paragraphsJSON, WordCount: int32(WordCount(paragraphs)), NextVersion: draft.Version + 1,
+		TenantID: idconv.ToPg(tenantID), ID: draft.ID, ExpectedVersion: draft.Version,
+	})
+	if isNoRows(err) {
+		return nil // someone else wrote to it in the meantime; leave it alone
+	}
+	return err
+}
+
+// paragraphsFromText splits model output into paragraphs on blank lines,
+// each with a fresh id and origin=model.
+func paragraphsFromText(text string, tainted bool) []Paragraph {
+	blocks := splitBlankLines(text)
+	paragraphs := make([]Paragraph, 0, len(blocks))
+	for _, b := range blocks {
+		paragraphs = append(paragraphs, Paragraph{ID: idconv.NewV7().String(), Text: b, Origin: "model", Tainted: tainted})
+	}
+	return paragraphs
+}
+
+// stream runs provider.Stream with the deltaFlushInterval progress
+// heuristic shared by every episode action (interactive rewrite/continue/
+// expand_beat and import-triggered translate alike).
+func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, provider llm.Provider, built storyctx.Context) (llm.Response, error) {
+	var mu sync.Mutex
+	var buffer strings.Builder
+	lastFlush := time.Now()
+	onDelta := func(d llm.Delta) {
+		mu.Lock()
+		buffer.WriteString(d.Text)
+		flush := time.Since(lastFlush) >= deltaFlushInterval
+		if flush {
+			lastFlush = time.Now()
+		}
+		n := buffer.Len()
+		mu.Unlock()
+		if flush {
+			sc.Progress(progressFromLength(n), 0)
+		}
+	}
+	return provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: 4000}, onDelta)
+}
+
+// findBeat returns the beat with id beatID from outlineJSON (episodes.
+// outline), and whether it was found.
+func findBeat(outlineJSON []byte, beatID string) (outlineBeatDoc, bool) {
+	beats, err := decodeOutline(outlineJSON)
+	if err != nil {
+		return outlineBeatDoc{}, false
+	}
+	for _, b := range beats {
+		if b.ID == beatID {
+			return b, true
+		}
+	}
+	return outlineBeatDoc{}, false
+}
+
+// targetLanguageName returns the human-readable language name the
+// translate template names as its target, so the model is told what to
+// translate into rather than inferring it from the glossary alone.
+func targetLanguageName(lang string) string {
+	switch lang {
+	case "vi":
+		return "Vietnamese"
+	case "en":
+		return "English"
+	default:
+		return lang
+	}
+}
+
+// pickOrCreateDraft returns the lang draft for episodeID, creating an
+// empty one if it does not exist yet. Used by continue and expand_beat,
+// which must be able to start a fresh episode's first draft, and by
+// import-triggered translate's auto-apply path.
+func (h *AIActionHandler) pickOrCreateDraft(ctx context.Context, tenantID, episodeID uuid.UUID, lang string) (string, dbgen.EpisodeDraft, error) {
+	return getOrCreateDraft(ctx, h.Queries, tenantID, episodeID, lang)
+}
+
+// getOrCreateDraft returns the lang draft for episodeID, creating an empty
+// one if it does not exist yet; a lang outside the writer's en/vi falls
+// back to en.
+func getOrCreateDraft(ctx context.Context, q *dbgen.Queries, tenantID, episodeID uuid.UUID, lang string) (string, dbgen.EpisodeDraft, error) {
+	if lang != "en" && lang != "vi" {
+		lang = "en"
+	}
+	if d, err := q.GetDraft(ctx, dbgen.GetDraftParams{TenantID: idconv.ToPg(tenantID), EpisodeID: idconv.ToPg(episodeID), Lang: lang}); err == nil {
+		return lang, d, nil
+	} else if !isNoRows(err) {
+		return "", dbgen.EpisodeDraft{}, err
+	}
+	created, err := q.CreateDraftIfAbsent(ctx, dbgen.CreateDraftIfAbsentParams{
+		ID: idconv.ToPg(idconv.NewV7()), TenantID: idconv.ToPg(tenantID), EpisodeID: idconv.ToPg(episodeID),
+		Lang: lang, Paragraphs: []byte("[]"), WordCount: 0,
+	})
+	if err == nil {
+		return lang, created, nil
+	}
+	if !isNoRows(err) {
+		return "", dbgen.EpisodeDraft{}, err
+	}
+	// A concurrent creator won the race; read what it wrote.
+	d, err := q.GetDraft(ctx, dbgen.GetDraftParams{TenantID: idconv.ToPg(tenantID), EpisodeID: idconv.ToPg(episodeID), Lang: lang})
+	return lang, d, err
 }
 
 // pickDraft returns the draft for preferredLang if set and it exists,

@@ -16,6 +16,52 @@ func TestApplyParagraphOpsUpsertNew(t *testing.T) {
 	}
 }
 
+func TestApplyParagraphOpsUpsertNewInheritsTaintFromDraft(t *testing.T) {
+	current := []Paragraph{{ID: "p1", Text: "imported", Origin: "import", Tainted: true}}
+	ops := []ParagraphOp{{Op: "upsert", ParagraphID: "p2", Text: strPtr("typed by a human")}}
+	got, err := ApplyParagraphOps(current, ops)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[1].Origin != "user" {
+		t.Fatalf("expected origin=user for a human-authored paragraph, got %+v", got[1])
+	}
+	if !got[1].Tainted {
+		t.Fatalf("expected a brand-new paragraph in an already-tainted draft to be conservatively tainted: %+v", got[1])
+	}
+}
+
+func TestApplyParagraphOpsSplitOfTaintedParagraphTaintsBothHalves(t *testing.T) {
+	// What pressing Enter inside a tainted imported paragraph sends: the
+	// original id keeps its first half, a brand-new id gets the rest.
+	current := []Paragraph{{ID: "p1", Text: "Hello world", Origin: "import", Tainted: true}}
+	ops := []ParagraphOp{
+		{Op: "upsert", ParagraphID: "p1", Text: strPtr("Hello")},
+		{Op: "upsert", ParagraphID: "p2", Text: strPtr("world"), AfterParagraphID: strPtr("p1")},
+	}
+	got, err := ApplyParagraphOps(current, ops)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got[0].Tainted || got[0].Origin != "import" {
+		t.Fatalf("expected the original half to keep its taint/origin: %+v", got[0])
+	}
+	if !got[1].Tainted || got[1].Origin != "user" {
+		t.Fatalf("expected the split-off new paragraph to inherit taint (origin=user): %+v", got[1])
+	}
+}
+
+func TestApplyParagraphOpsUpsertNewInCleanDraftStaysUntainted(t *testing.T) {
+	current := []Paragraph{{ID: "p1", Text: "clean"}}
+	got, err := ApplyParagraphOps(current, []ParagraphOp{{Op: "upsert", ParagraphID: "p2", Text: strPtr("also clean")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[1].Tainted {
+		t.Fatalf("expected a clean draft's new paragraph to stay untainted: %+v", got[1])
+	}
+}
+
 func TestApplyParagraphOpsUpsertExistingPreservesTaint(t *testing.T) {
 	current := []Paragraph{{ID: "p1", Text: "old", Origin: "import", Tainted: true}}
 	ops := []ParagraphOp{{Op: "upsert", ParagraphID: "p1", Text: strPtr("edited by human")}}
@@ -138,4 +184,35 @@ func idsOf(paragraphs []Paragraph) []string {
 		out[i] = p.ID
 	}
 	return out
+}
+
+func TestReplaceParagraphsSplicesAtTheFirstReplacedPosition(t *testing.T) {
+	current := []Paragraph{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}}
+	got := replaceParagraphs(current, []string{"b", "c"}, []Paragraph{{ID: "x"}, {ID: "y"}})
+	want := []string{"a", "x", "y", "d"}
+	if len(got) != len(want) {
+		t.Fatalf("got %+v", got)
+	}
+	for i, id := range want {
+		if got[i].ID != id {
+			t.Fatalf("position %d: got %q, want %q (%+v)", i, got[i].ID, id, got)
+		}
+	}
+}
+
+func TestInsertParagraphsAfterKeepsOrderAndDeletesNothing(t *testing.T) {
+	current := []Paragraph{{ID: "a"}, {ID: "b"}}
+	got, err := insertParagraphsAfter(current, []Paragraph{{ID: "x"}, {ID: "y"}}, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"a", "x", "y", "b"}
+	for i, id := range want {
+		if got[i].ID != id {
+			t.Fatalf("position %d: got %q, want %q", i, got[i].ID, id)
+		}
+	}
+	if _, err := insertParagraphsAfter(current, []Paragraph{{ID: "x"}}, "missing"); err != ErrUnknownParagraph {
+		t.Fatalf("expected ErrUnknownParagraph for a missing anchor, got %v", err)
+	}
 }

@@ -1248,6 +1248,10 @@ export const OutlineBeatSchema = {
         },
         targetWords: {
             type: 'integer'
+        },
+        tainted: {
+            type: 'boolean',
+            description: 'True when the bible excerpt used to generate this episode\'s outline was itself tainted.'
         }
     }
 } as const;
@@ -1458,6 +1462,16 @@ export const AiActionResultSchema = {
     }
 } as const;
 
+export const DraftLanguageSchema = {
+    type: 'string',
+    description: 'Every language an episode_drafts row can be stored under. Includes `zh` for an import\'s own source-language draft (see CommitImport); AI-action targets and the writer\'s translate toggle still only offer en/vi (TargetLanguage).',
+    enum: [
+        'en',
+        'vi',
+        'zh'
+    ]
+} as const;
+
 export const DraftParagraphSchema = {
     type: 'object',
     required: [
@@ -1497,7 +1511,7 @@ export const EpisodeDraftSchema = {
             format: 'uuid'
         },
         lang: {
-            $ref: '#/components/schemas/TargetLanguage'
+            $ref: '#/components/schemas/DraftLanguage'
         },
         paragraphs: {
             type: 'array',
@@ -1568,6 +1582,31 @@ export const DraftPatchRequestSchema = {
             },
             minItems: 1,
             maxItems: 200
+        }
+    }
+} as const;
+
+export const ApplyDraftStepRequestSchema = {
+    type: 'object',
+    required: [
+        'stepId'
+    ],
+    description: 'Applies a done AI action step\'s output to this draft. The server reads the step\'s stored action, text and taint rather than trusting the client\'s copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step\'s text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.',
+    properties: {
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        paragraphIds: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'The paragraphs the action was run against (its selection).'
+        },
+        afterParagraphId: {
+            type: 'string',
+            description: 'For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.'
         }
     }
 } as const;

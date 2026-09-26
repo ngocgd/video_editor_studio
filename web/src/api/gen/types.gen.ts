@@ -357,6 +357,10 @@ export type OutlineBeat = {
     id: string;
     summary: string;
     targetWords: number;
+    /**
+     * True when the bible excerpt used to generate this episode's outline was itself tainted.
+     */
+    tainted?: boolean;
 };
 
 export type DraftStatus = {
@@ -418,6 +422,11 @@ export type AiActionResult = {
     errorDetail?: string;
 };
 
+/**
+ * Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+ */
+export type DraftLanguage = 'en' | 'vi' | 'zh';
+
 export type DraftParagraph = {
     id: string;
     text: string;
@@ -427,7 +436,7 @@ export type DraftParagraph = {
 
 export type EpisodeDraft = {
     episodeId: string;
-    lang: TargetLanguage;
+    lang: DraftLanguage;
     paragraphs: Array<DraftParagraph>;
     version: number;
     wordCount: number;
@@ -449,6 +458,21 @@ export type ParagraphOp = {
 export type DraftPatchRequest = {
     expectedVersion: number;
     ops: Array<ParagraphOp>;
+};
+
+/**
+ * Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
+ */
+export type ApplyDraftStepRequest = {
+    stepId: string;
+    /**
+     * The paragraphs the action was run against (its selection).
+     */
+    paragraphIds?: Array<string>;
+    /**
+     * For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
+     */
+    afterParagraphId?: string;
 };
 
 export type ChapterPreview = {
@@ -1468,7 +1492,7 @@ export type GetDraftData = {
     body?: never;
     path: {
         id: string;
-        lang: TargetLanguage;
+        lang: DraftLanguage;
     };
     query?: never;
     url: '/episodes/{id}/drafts/{lang}';
@@ -1496,7 +1520,7 @@ export type PatchDraftData = {
     body: DraftPatchRequest;
     path: {
         id: string;
-        lang: TargetLanguage;
+        lang: DraftLanguage;
     };
     query?: never;
     url: '/episodes/{id}/drafts/{lang}';
@@ -1519,6 +1543,70 @@ export type PatchDraftResponses = {
 };
 
 export type PatchDraftResponse = PatchDraftResponses[keyof PatchDraftResponses];
+
+export type CreateDraftData = {
+    body?: never;
+    path: {
+        id: string;
+        lang: DraftLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/drafts/{lang}';
+};
+
+export type CreateDraftErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type CreateDraftError = CreateDraftErrors[keyof CreateDraftErrors];
+
+export type CreateDraftResponses = {
+    /**
+     * a draft already existed; it is returned unchanged
+     */
+    200: EpisodeDraft;
+    /**
+     * an empty draft was created
+     */
+    201: EpisodeDraft;
+};
+
+export type CreateDraftResponse = CreateDraftResponses[keyof CreateDraftResponses];
+
+export type ApplyDraftStepData = {
+    body: ApplyDraftStepRequest;
+    path: {
+        id: string;
+        lang: DraftLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/drafts/{lang}/apply-step';
+};
+
+export type ApplyDraftStepErrors = {
+    /**
+     * episode or draft not found in this tenant
+     */
+    404: Problem;
+    /**
+     * the step is not a done AI action step scoped to this episode
+     */
+    409: Problem;
+};
+
+export type ApplyDraftStepError = ApplyDraftStepErrors[keyof ApplyDraftStepErrors];
+
+export type ApplyDraftStepResponses = {
+    /**
+     * draft updated with the step's output
+     */
+    200: EpisodeDraft;
+};
+
+export type ApplyDraftStepResponse = ApplyDraftStepResponses[keyof ApplyDraftStepResponses];
 
 export type ListImportsData = {
     body?: never;

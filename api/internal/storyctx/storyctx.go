@@ -13,6 +13,7 @@
 package storyctx
 
 import (
+	"fmt"
 	"sort"
 
 	"loomtale/api/internal/providers/llm"
@@ -82,6 +83,13 @@ type BuildRequest struct {
 	// TokenBudget is the resolved provider's context window, in tokens.
 	// Zero means unbounded (no truncation).
 	TokenBudget int
+
+	// TargetLanguageName names the language a translate action's output
+	// must be in (e.g. "Vietnamese"). It is a fixed, small-enum operational
+	// parameter chosen server-side, not story content, so unlike everything
+	// else here it is safe to interpolate directly into System rather than
+	// carried as its own DataBlock. Ignored by every action but "translate".
+	TargetLanguageName string
 }
 
 // Context is the assembled, provider-ready result: System is a fixed
@@ -130,7 +138,7 @@ func Build(action string, req BuildRequest) Context {
 	}
 
 	return Context{
-		System:      systemTemplate(action),
+		System:      renderSystemTemplate(action, req.TargetLanguageName),
 		Data:        data,
 		Instruction: instruction,
 		Tainted:     tainted,
@@ -190,12 +198,22 @@ func isRuneStart(b byte) bool {
 	return b&0xC0 != 0x80
 }
 
-// systemTemplate returns the fixed server system string for action. It is
-// a Go constant per action: never interpolates story content.
-func systemTemplate(action string) string {
+// renderSystemTemplate returns the fixed server system string for action.
+// It is a Go constant per action, never story content; the one exception
+// is "translate", whose template has a target-language placeholder filled
+// with targetLanguageName (a small, server-chosen enum value, not user or
+// story-derived text).
+func renderSystemTemplate(action, targetLanguageName string) string {
 	tmpl, ok := systemTemplates[action]
 	if !ok {
 		return systemTemplateDefault
+	}
+	if action == "translate" {
+		name := targetLanguageName
+		if name == "" {
+			name = "the requested target language"
+		}
+		return fmt.Sprintf(tmpl, name, name)
 	}
 	return tmpl
 }

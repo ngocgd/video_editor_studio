@@ -197,7 +197,7 @@ episodeDraft:
         in: path
         required: true
         schema:
-          $ref: "../schemas/story.yaml#/TargetLanguage"
+          $ref: "../schemas/story.yaml#/DraftLanguage"
     responses:
       "200":
         description: draft
@@ -207,6 +207,42 @@ episodeDraft:
               $ref: "../schemas/story.yaml#/EpisodeDraft"
       "404":
         description: episode or draft not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  put:
+    operationId: createDraft
+    summary: Create an empty draft for this episode/language if one does not already exist
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/story.yaml#/DraftLanguage"
+    responses:
+      "201":
+        description: an empty draft was created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeDraft"
+      "200":
+        description: a draft already existed; it is returned unchanged
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeDraft"
+      "404":
+        description: episode not found in this tenant
         content:
           application/problem+json:
             schema:
@@ -227,7 +263,7 @@ episodeDraft:
         in: path
         required: true
         schema:
-          $ref: "../schemas/story.yaml#/TargetLanguage"
+          $ref: "../schemas/story.yaml#/DraftLanguage"
     requestBody:
       required: true
       content:
@@ -243,6 +279,49 @@ episodeDraft:
               $ref: "../schemas/story.yaml#/EpisodeDraft"
       "409":
         description: expectedVersion is stale; client should refetch and merge
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+applyDraftStep:
+  post:
+    operationId: applyDraftStep
+    summary: Apply a finished AI action step's output to the draft server-side, with taint/origin computed from the step and the paragraphs it replaces or follows
+    tags: [episodes]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/story.yaml#/DraftLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/story.yaml#/ApplyDraftStepRequest"
+    responses:
+      "200":
+        description: draft updated with the step's output
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/story.yaml#/EpisodeDraft"
+      "404":
+        description: episode or draft not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: the step is not a done AI action step scoped to this episode
         content:
           application/problem+json:
             schema:

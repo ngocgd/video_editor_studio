@@ -52,6 +52,52 @@ func (q *Queries) CreateDraft(ctx context.Context, arg CreateDraftParams) (Episo
 	return i, err
 }
 
+const createDraftIfAbsent = `-- name: CreateDraftIfAbsent :one
+INSERT INTO episode_drafts (id, tenant_id, episode_id, lang, paragraphs, word_count)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (episode_id, lang) DO NOTHING
+RETURNING id, tenant_id, episode_id, lang, paragraphs, version, word_count, summary, summary_tainted, created_at, updated_at
+`
+
+type CreateDraftIfAbsentParams struct {
+	ID         pgtype.UUID `json:"id"`
+	TenantID   pgtype.UUID `json:"tenant_id"`
+	EpisodeID  pgtype.UUID `json:"episode_id"`
+	Lang       string      `json:"lang"`
+	Paragraphs []byte      `json:"paragraphs"`
+	WordCount  int32       `json:"word_count"`
+}
+
+// Used by the create-draft endpoint and by any AI action that needs a
+// draft to write into (continue, expand_beat) but tolerates one already
+// existing: zero rows back (no error) means a concurrent creator won and
+// the caller should GetDraft instead of failing.
+func (q *Queries) CreateDraftIfAbsent(ctx context.Context, arg CreateDraftIfAbsentParams) (EpisodeDraft, error) {
+	row := q.db.QueryRow(ctx, createDraftIfAbsent,
+		arg.ID,
+		arg.TenantID,
+		arg.EpisodeID,
+		arg.Lang,
+		arg.Paragraphs,
+		arg.WordCount,
+	)
+	var i EpisodeDraft
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.EpisodeID,
+		&i.Lang,
+		&i.Paragraphs,
+		&i.Version,
+		&i.WordCount,
+		&i.Summary,
+		&i.SummaryTainted,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getDraft = `-- name: GetDraft :one
 SELECT id, tenant_id, episode_id, lang, paragraphs, version, word_count, summary, summary_tainted, created_at, updated_at FROM episode_drafts WHERE tenant_id = $1 AND episode_id = $2 AND lang = $3
 `

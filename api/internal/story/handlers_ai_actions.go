@@ -18,11 +18,25 @@ import (
 // scope_kind/scope_id. Instruction is re-capped by storyctx.Build
 // regardless, so a caller that already validated the 500-char OpenAPI
 // limit gets no surprise truncation, only defense in depth.
+//
+// Action is persisted (not just used to pick the pipeline step kind) so
+// runEpisodeAction can tell rewrite/expand/shorten/tone apart even though
+// they share KindRewrite, and so the apply-step endpoint later reads back
+// the right replace-vs-insert semantics for the step it is applying.
+//
+// SourceLang/TargetLang are set only for llm.translate (CommitImport is
+// the only caller today); AutoApply marks a translate step whose result
+// should be written straight into the target draft rather than left for a
+// human to accept as a proposal (see runTranslate).
 type AiActionInput struct {
+	Action       string   `json:"action,omitempty"`
 	Lang         string   `json:"lang"`
 	ParagraphIds []string `json:"paragraphIds,omitempty"`
 	BeatId       string   `json:"beatId,omitempty"`
 	Instruction  string   `json:"instruction,omitempty"`
+	SourceLang   string   `json:"sourceLang,omitempty"`
+	TargetLang   string   `json:"targetLang,omitempty"`
+	AutoApply    bool     `json:"autoApply,omitempty"`
 }
 
 // actionToKind maps the client-facing AiActionRequest.Action enum to a
@@ -39,6 +53,15 @@ var actionToKind = map[gen.AiActionRequestAction]string{
 	gen.Rewrite:    KindRewrite,
 	gen.Translate:  KindTranslate,
 	gen.Summarise:  KindSummarise,
+}
+
+// otherTargetLanguage returns the writer language a translation of lang
+// goes into: English and Vietnamese translate into each other.
+func otherTargetLanguage(lang string) string {
+	if lang == "en" {
+		return "vi"
+	}
+	return "en"
 }
 
 // isAiActionKind reports whether kind is one CreateAiAction can enqueue.
@@ -73,7 +96,12 @@ func (h *StoryAPI) CreateAiAction(ctx context.Context, req gen.CreateAiActionReq
 		return gen.CreateAiAction404ApplicationProblemPlusJSONResponse{Title: "unsupported action", Status: http.StatusNotFound, Detail: &detail}, nil
 	}
 
-	input := AiActionInput{Lang: string(req.Body.Lang)}
+	input := AiActionInput{Action: string(req.Body.Action), Lang: string(req.Body.Lang)}
+	if req.Body.Action == gen.Translate {
+		// The writer translates the open draft into the other language.
+		input.SourceLang = string(req.Body.Lang)
+		input.TargetLang = otherTargetLanguage(string(req.Body.Lang))
+	}
 	if req.Body.BeatId != nil {
 		input.BeatId = *req.Body.BeatId
 	}

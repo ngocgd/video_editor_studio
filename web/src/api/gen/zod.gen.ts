@@ -388,7 +388,8 @@ export const zBibleSectionUpdateRequest = z.object({
 export const zOutlineBeat = z.object({
     id: z.string(),
     summary: z.string(),
-    targetWords: z.number().int()
+    targetWords: z.number().int(),
+    tainted: z.boolean().optional()
 });
 
 export const zDraftStatus = z.object({
@@ -472,6 +473,15 @@ export const zAiActionResult = z.object({
     errorDetail: z.string().optional()
 });
 
+/**
+ * Every language an episode_drafts row can be stored under. Includes `zh` for an import's own source-language draft (see CommitImport); AI-action targets and the writer's translate toggle still only offer en/vi (TargetLanguage).
+ */
+export const zDraftLanguage = z.enum([
+    'en',
+    'vi',
+    'zh'
+]);
+
 export const zDraftParagraph = z.object({
     id: z.string(),
     text: z.string(),
@@ -481,7 +491,7 @@ export const zDraftParagraph = z.object({
 
 export const zEpisodeDraft = z.object({
     episodeId: z.string().uuid(),
-    lang: zTargetLanguage,
+    lang: zDraftLanguage,
     paragraphs: z.array(zDraftParagraph),
     version: z.number().int(),
     wordCount: z.number().int(),
@@ -504,6 +514,15 @@ export const zParagraphOp = z.object({
 export const zDraftPatchRequest = z.object({
     expectedVersion: z.number().int(),
     ops: z.array(zParagraphOp).min(1).max(200)
+});
+
+/**
+ * Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
+ */
+export const zApplyDraftStepRequest = z.object({
+    stepId: z.string().uuid(),
+    paragraphIds: z.array(z.string()).optional(),
+    afterParagraphId: z.string().optional()
 });
 
 export const zChapterPreview = z.object({
@@ -892,7 +911,7 @@ export const zGetAiActionResultResponse = zAiActionResult;
 
 export const zGetDraftPath = z.object({
     id: z.string().uuid(),
-    lang: zTargetLanguage
+    lang: zDraftLanguage
 });
 
 /**
@@ -904,13 +923,35 @@ export const zPatchDraftBody = zDraftPatchRequest;
 
 export const zPatchDraftPath = z.object({
     id: z.string().uuid(),
-    lang: zTargetLanguage
+    lang: zDraftLanguage
 });
 
 /**
  * draft updated
  */
 export const zPatchDraftResponse = zEpisodeDraft;
+
+export const zCreateDraftPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * a draft already existed; it is returned unchanged
+ */
+export const zCreateDraftResponse = zEpisodeDraft;
+
+export const zApplyDraftStepBody = zApplyDraftStepRequest;
+
+export const zApplyDraftStepPath = z.object({
+    id: z.string().uuid(),
+    lang: zDraftLanguage
+});
+
+/**
+ * draft updated with the step's output
+ */
+export const zApplyDraftStepResponse = zEpisodeDraft;
 
 export const zListImportsQuery = z.object({
     cursor: z.string().optional(),

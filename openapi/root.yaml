@@ -74,6 +74,8 @@ paths:
     $ref: paths/episodes.yaml#/getAiActionResult
   /episodes/{id}/drafts/{lang}:
     $ref: paths/episodes.yaml#/episodeDraft
+  /episodes/{id}/drafts/{lang}/apply-step:
+    $ref: paths/episodes.yaml#/applyDraftStep
   /imports:
     $ref: paths/imports.yaml#/importsCollection
   /imports/{id}:

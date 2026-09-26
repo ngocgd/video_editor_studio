@@ -2,7 +2,8 @@ package story
 
 import (
 	"errors"
-	"strings"
+
+	"loomtale/api/internal/importer"
 )
 
 // Paragraph is one paragraph of a draft, matching the episode_drafts.
@@ -40,8 +41,14 @@ var ErrInvalidOp = errors.New("story: invalid paragraph op")
 // ApplyParagraphOps applies ops in order to a copy of current, returning
 // the resulting paragraph slice. It never mutates current. A human edit
 // (upsert of an existing paragraph id) never clears that paragraph's
-// taint or origin; only inserting a brand new paragraph id starts fresh
-// as origin=user, untainted.
+// taint or origin. Inserting a brand new paragraph id is origin=user, but
+// its taint is inherited conservatively: if the draft (as of just before
+// this op) already has any tainted paragraph, the new one is stored
+// tainted too, since a paragraph split, pasted duplicate, or copy taken
+// from tainted surrounding text cannot be proven clean. This is a
+// deliberate over-taint until a "mark reviewed" action exists to clear it;
+// the alternative (new paragraphs always clean) would let injected content
+// escape its taint by being split or copied.
 func ApplyParagraphOps(current []Paragraph, ops []ParagraphOp) ([]Paragraph, error) {
 	result := make([]Paragraph, len(current))
 	copy(result, current)
@@ -50,7 +57,7 @@ func ApplyParagraphOps(current []Paragraph, ops []ParagraphOp) ([]Paragraph, err
 		var err error
 		switch op.Op {
 		case "upsert":
-			result, err = applyUpsert(result, op)
+			result, err = applyUpsert(result, op, anyParagraphTainted(result))
 		case "delete":
 			result, err = applyDelete(result, op)
 		case "move":
@@ -77,7 +84,7 @@ func ApplyParagraphOps(current []Paragraph, ops []ParagraphOp) ([]Paragraph, err
 	return result, nil
 }
 
-func applyUpsert(paragraphs []Paragraph, op ParagraphOp) ([]Paragraph, error) {
+func applyUpsert(paragraphs []Paragraph, op ParagraphOp, draftHasTainted bool) ([]Paragraph, error) {
 	if op.Text == nil {
 		return nil, ErrInvalidOp
 	}
@@ -90,9 +97,10 @@ func applyUpsert(paragraphs []Paragraph, op ParagraphOp) ([]Paragraph, error) {
 			return paragraphs, nil
 		}
 	}
-	// New paragraph: always origin=user, untainted (this op itself is
-	// the human authoring it).
-	newParagraph := Paragraph{ID: op.ParagraphID, Text: *op.Text, Origin: "user", Tainted: false}
+	// New paragraph: always origin=user (this op itself is the human
+	// authoring it), but conservatively tainted when the draft already
+	// has tainted content (see ApplyParagraphOps's doc comment).
+	newParagraph := Paragraph{ID: op.ParagraphID, Text: *op.Text, Origin: "user", Tainted: draftHasTainted}
 	if op.AfterParagraphID == nil {
 		return append(paragraphs, newParagraph), nil
 	}
@@ -149,14 +157,65 @@ func insertAfter(paragraphs []Paragraph, p Paragraph, afterID string) ([]Paragra
 	return nil, ErrUnknownParagraph
 }
 
-// WordCount sums whitespace-separated words across every paragraph's
-// text, matching the heuristic importer.wordCount uses elsewhere so a
-// draft's word_count and an imported chapter's preview word count are
-// computed the same way.
+// replaceParagraphs removes every paragraph whose id is in ids, splicing
+// newParagraphs in at the position of the earliest removed one (or
+// appending at the end when ids is empty, e.g. an action that ran against
+// the whole draft because nothing was selected). Used by ApplyDraftStep
+// for the rewrite-family actions (rewrite/expand/shorten/tone/translate),
+// which replace rather than insert.
+func replaceParagraphs(current []Paragraph, ids []string, newParagraphs []Paragraph) []Paragraph {
+	if len(ids) == 0 {
+		out := make([]Paragraph, 0, len(newParagraphs))
+		return append(out, newParagraphs...)
+	}
+	want := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		want[id] = true
+	}
+	out := make([]Paragraph, 0, len(current)+len(newParagraphs))
+	inserted := false
+	for _, p := range current {
+		if want[p.ID] {
+			if !inserted {
+				out = append(out, newParagraphs...)
+				inserted = true
+			}
+			continue
+		}
+		out = append(out, p)
+	}
+	if !inserted {
+		out = append(out, newParagraphs...)
+	}
+	return out
+}
+
+// insertParagraphsAfter inserts newParagraphs, in order, after the
+// paragraph with id afterID (or at the front when afterID is ""), each one
+// becoming the new anchor for the next. Used by ApplyDraftStep for the
+// inserting actions (continue/expand_beat), which never delete anything.
+func insertParagraphsAfter(current []Paragraph, newParagraphs []Paragraph, afterID string) ([]Paragraph, error) {
+	updated := current
+	anchor := afterID
+	for _, p := range newParagraphs {
+		var err error
+		updated, err = insertAfter(updated, p, anchor)
+		if err != nil {
+			return nil, err
+		}
+		anchor = p.ID
+	}
+	return updated, nil
+}
+
+// WordCount sums each paragraph's word count (see importer.WordCount for
+// the CJK-aware heuristic), matching the count an imported chapter's
+// preview reports so a draft's word_count and its source chapter's word
+// count are computed the same way.
 func WordCount(paragraphs []Paragraph) int {
 	total := 0
 	for _, p := range paragraphs {
-		total += len(strings.Fields(p.Text))
+		total += importer.WordCount(p.Text)
 	}
 	return total
 }
