@@ -229,3 +229,11 @@ func runConcurrently(n int, fn func(i int)) {
 	}
 	wg.Wait()
 }
+
+// testQueue is the queue the engine tests put their fake kinds on. The
+// live worker container of the same stack serves the cpu queue (the
+// media steps run there) and would pick these jobs up and snooze them,
+// having no handler for a test-only kind; it never serves render, so a
+// test that runs its own River client or inspects River job state is not
+// raced by it.
+const testQueue = pipeline.QueueRender

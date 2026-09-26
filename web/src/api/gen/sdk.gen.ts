@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, DisconnectYouTubeChannelData, DisconnectYouTubeChannelErrors, DisconnectYouTubeChannelResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, ListYouTubeChannelsData, ListYouTubeChannelsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StartYouTubeConnectData, StartYouTubeConnectErrors, StartYouTubeConnectResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditErrors, UpdateYouTubeChannelAuditResponses, YouTubeOAuthCallbackData } from './types.gen';
+import type { AddCharacterRefData, AddCharacterRefErrors, AddCharacterRefResponses, ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, BackfillMediaData, BackfillMediaResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateCharacterData, CreateCharacterErrors, CreateCharacterResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImageStyleData, CreateImageStyleErrors, CreateImageStyleResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, CreateVoicePresetData, CreateVoicePresetErrors, CreateVoicePresetResponses, DeleteCharacterData, DeleteCharacterErrors, DeleteCharacterRefData, DeleteCharacterRefErrors, DeleteCharacterRefResponses, DeleteCharacterResponses, DeleteImageStyleData, DeleteImageStyleErrors, DeleteImageStyleResponses, DeleteVoicePresetData, DeleteVoicePresetErrors, DeleteVoicePresetResponses, DisconnectYouTubeChannelData, DisconnectYouTubeChannelErrors, DisconnectYouTubeChannelResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateMissingData, GenerateMissingErrors, GenerateMissingResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetAssetVariantData, GetAssetVariantErrors, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetScenePeaksData, GetScenePeaksErrors, GetScenePeaksResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, GetStoryboardSettingsData, GetStoryboardSettingsErrors, GetStoryboardSettingsResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListCharactersData, ListCharactersErrors, ListCharactersResponses, ListEpisodesData, ListEpisodesResponses, ListImageStylesData, ListImageStylesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListScenesData, ListScenesErrors, ListScenesResponses, ListSceneTakesData, ListSceneTakesErrors, ListSceneTakesResponses, ListSeriesData, ListSeriesResponses, ListVoicePresetsData, ListVoicePresetsResponses, ListYouTubeChannelsData, ListYouTubeChannelsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewCharacterVoiceData, PreviewCharacterVoiceErrors, PreviewCharacterVoiceResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, PutStoryboardSettingsData, PutStoryboardSettingsErrors, PutStoryboardSettingsResponses, RegenerateCharacterSheetData, RegenerateCharacterSheetErrors, RegenerateCharacterSheetResponses, RegenerateSceneData, RegenerateSceneErrors, RegenerateSceneResponses, RetryStepData, RetryStepErrors, RetryStepResponses, SelectSceneTakeData, SelectSceneTakeErrors, SelectSceneTakeResponses, SetCharacterVoiceData, SetCharacterVoiceErrors, SetCharacterVoiceResponses, SetNarratorVoiceData, SetNarratorVoiceErrors, SetNarratorVoiceResponses, SplitScenesData, SplitScenesErrors, SplitScenesResponses, StartYouTubeConnectData, StartYouTubeConnectErrors, StartYouTubeConnectResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, TrainCharacterLoraData, TrainCharacterLoraErrors, TrainCharacterLoraResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateCharacterData, UpdateCharacterErrors, UpdateCharacterRefData, UpdateCharacterRefErrors, UpdateCharacterRefResponses, UpdateCharacterResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateImageStyleData, UpdateImageStyleErrors, UpdateImageStyleResponses, UpdateSceneData, UpdateSceneErrors, UpdateSceneResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses, UpdateVoicePresetData, UpdateVoicePresetErrors, UpdateVoicePresetResponses, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditErrors, UpdateYouTubeChannelAuditResponses, YouTubeOAuthCallbackData } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -442,6 +442,292 @@ export const pauseModelInstall = <ThrowOnError extends boolean = false>(options:
  * Make a model the single resident GPU model (a models.load step on the gpu queue)
  */
 export const loadModel = <ThrowOnError extends boolean = false>(options: Options<LoadModelData, ThrowOnError>): RequestResult<LoadModelResponses, LoadModelErrors, ThrowOnError> => (options.client ?? client).post<LoadModelResponses, LoadModelErrors, ThrowOnError>({ url: '/models/{name}/load', ...options });
+
+/**
+ * Voice presets of this tenant
+ */
+export const listVoicePresets = <ThrowOnError extends boolean = false>(options?: Options<ListVoicePresetsData, ThrowOnError>): RequestResult<ListVoicePresetsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListVoicePresetsResponses, unknown, ThrowOnError>({ url: '/settings/voice-presets', ...options });
+
+/**
+ * Create a voice preset; a reference voice needs the consent flag, which is audited
+ */
+export const createVoicePreset = <ThrowOnError extends boolean = false>(options: Options<CreateVoicePresetData, ThrowOnError>): RequestResult<CreateVoicePresetResponses, CreateVoicePresetErrors, ThrowOnError> => (options.client ?? client).post<CreateVoicePresetResponses, CreateVoicePresetErrors, ThrowOnError>({
+    url: '/settings/voice-presets',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a voice preset that no voice uses
+ */
+export const deleteVoicePreset = <ThrowOnError extends boolean = false>(options: Options<DeleteVoicePresetData, ThrowOnError>): RequestResult<DeleteVoicePresetResponses, DeleteVoicePresetErrors, ThrowOnError> => (options.client ?? client).delete<DeleteVoicePresetResponses, DeleteVoicePresetErrors, ThrowOnError>({ url: '/settings/voice-presets/{id}', ...options });
+
+/**
+ * Replace a voice preset
+ */
+export const updateVoicePreset = <ThrowOnError extends boolean = false>(options: Options<UpdateVoicePresetData, ThrowOnError>): RequestResult<UpdateVoicePresetResponses, UpdateVoicePresetErrors, ThrowOnError> => (options.client ?? client).put<UpdateVoicePresetResponses, UpdateVoicePresetErrors, ThrowOnError>({
+    url: '/settings/voice-presets/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Image styles of this tenant
+ */
+export const listImageStyles = <ThrowOnError extends boolean = false>(options?: Options<ListImageStylesData, ThrowOnError>): RequestResult<ListImageStylesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListImageStylesResponses, unknown, ThrowOnError>({ url: '/settings/image-styles', ...options });
+
+/**
+ * Create an image style
+ */
+export const createImageStyle = <ThrowOnError extends boolean = false>(options: Options<CreateImageStyleData, ThrowOnError>): RequestResult<CreateImageStyleResponses, CreateImageStyleErrors, ThrowOnError> => (options.client ?? client).post<CreateImageStyleResponses, CreateImageStyleErrors, ThrowOnError>({
+    url: '/settings/image-styles',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete an image style (scenes using it fall back to the series default)
+ */
+export const deleteImageStyle = <ThrowOnError extends boolean = false>(options: Options<DeleteImageStyleData, ThrowOnError>): RequestResult<DeleteImageStyleResponses, DeleteImageStyleErrors, ThrowOnError> => (options.client ?? client).delete<DeleteImageStyleResponses, DeleteImageStyleErrors, ThrowOnError>({ url: '/settings/image-styles/{id}', ...options });
+
+/**
+ * Replace an image style
+ */
+export const updateImageStyle = <ThrowOnError extends boolean = false>(options: Options<UpdateImageStyleData, ThrowOnError>): RequestResult<UpdateImageStyleResponses, UpdateImageStyleErrors, ThrowOnError> => (options.client ?? client).put<UpdateImageStyleResponses, UpdateImageStyleErrors, ThrowOnError>({
+    url: '/settings/image-styles/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Characters of a series with refs, LoRA versions, voices and episode appearances
+ */
+export const listCharacters = <ThrowOnError extends boolean = false>(options: Options<ListCharactersData, ThrowOnError>): RequestResult<ListCharactersResponses, ListCharactersErrors, ThrowOnError> => (options.client ?? client).get<ListCharactersResponses, ListCharactersErrors, ThrowOnError>({ url: '/series/{id}/characters', ...options });
+
+/**
+ * Create a character
+ */
+export const createCharacter = <ThrowOnError extends boolean = false>(options: Options<CreateCharacterData, ThrowOnError>): RequestResult<CreateCharacterResponses, CreateCharacterErrors, ThrowOnError> => (options.client ?? client).post<CreateCharacterResponses, CreateCharacterErrors, ThrowOnError>({
+    url: '/series/{id}/characters',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Assign the narrator's voice of a series for one language
+ */
+export const setNarratorVoice = <ThrowOnError extends boolean = false>(options: Options<SetNarratorVoiceData, ThrowOnError>): RequestResult<SetNarratorVoiceResponses, SetNarratorVoiceErrors, ThrowOnError> => (options.client ?? client).put<SetNarratorVoiceResponses, SetNarratorVoiceErrors, ThrowOnError>({
+    url: '/series/{id}/narrator-voices/{lang}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a character
+ */
+export const deleteCharacter = <ThrowOnError extends boolean = false>(options: Options<DeleteCharacterData, ThrowOnError>): RequestResult<DeleteCharacterResponses, DeleteCharacterErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCharacterResponses, DeleteCharacterErrors, ThrowOnError>({ url: '/characters/{id}', ...options });
+
+/**
+ * Replace a character's names, prompts and profile
+ */
+export const updateCharacter = <ThrowOnError extends boolean = false>(options: Options<UpdateCharacterData, ThrowOnError>): RequestResult<UpdateCharacterResponses, UpdateCharacterErrors, ThrowOnError> => (options.client ?? client).put<UpdateCharacterResponses, UpdateCharacterErrors, ThrowOnError>({
+    url: '/characters/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Attach an uploaded image as a reference; queues its image variants
+ */
+export const addCharacterRef = <ThrowOnError extends boolean = false>(options: Options<AddCharacterRefData, ThrowOnError>): RequestResult<AddCharacterRefResponses, AddCharacterRefErrors, ThrowOnError> => (options.client ?? client).post<AddCharacterRefResponses, AddCharacterRefErrors, ThrowOnError>({
+    url: '/characters/{id}/refs',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove a reference image
+ */
+export const deleteCharacterRef = <ThrowOnError extends boolean = false>(options: Options<DeleteCharacterRefData, ThrowOnError>): RequestResult<DeleteCharacterRefResponses, DeleteCharacterRefErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCharacterRefResponses, DeleteCharacterRefErrors, ThrowOnError>({ url: '/characters/{id}/refs/{refId}', ...options });
+
+/**
+ * Change a reference's angle label or approval
+ */
+export const updateCharacterRef = <ThrowOnError extends boolean = false>(options: Options<UpdateCharacterRefData, ThrowOnError>): RequestResult<UpdateCharacterRefResponses, UpdateCharacterRefErrors, ThrowOnError> => (options.client ?? client).patch<UpdateCharacterRefResponses, UpdateCharacterRefErrors, ThrowOnError>({
+    url: '/characters/{id}/refs/{refId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+ */
+export const regenerateCharacterSheet = <ThrowOnError extends boolean = false>(options: Options<RegenerateCharacterSheetData, ThrowOnError>): RequestResult<RegenerateCharacterSheetResponses, RegenerateCharacterSheetErrors, ThrowOnError> => (options.client ?? client).post<RegenerateCharacterSheetResponses, RegenerateCharacterSheetErrors, ThrowOnError>({
+    url: '/characters/{id}/sheet',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Train a new LoRA version from approved references (a gpu step at training priority)
+ */
+export const trainCharacterLora = <ThrowOnError extends boolean = false>(options: Options<TrainCharacterLoraData, ThrowOnError>): RequestResult<TrainCharacterLoraResponses, TrainCharacterLoraErrors, ThrowOnError> => (options.client ?? client).post<TrainCharacterLoraResponses, TrainCharacterLoraErrors, ThrowOnError>({
+    url: '/characters/{id}/loras',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Assign a character's voice for one language
+ */
+export const setCharacterVoice = <ThrowOnError extends boolean = false>(options: Options<SetCharacterVoiceData, ThrowOnError>): RequestResult<SetCharacterVoiceResponses, SetCharacterVoiceErrors, ThrowOnError> => (options.client ?? client).put<SetCharacterVoiceResponses, SetCharacterVoiceErrors, ThrowOnError>({
+    url: '/characters/{id}/voices/{lang}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Synthesize a preview line with the character's voice (a TTS step)
+ */
+export const previewCharacterVoice = <ThrowOnError extends boolean = false>(options: Options<PreviewCharacterVoiceData, ThrowOnError>): RequestResult<PreviewCharacterVoiceResponses, PreviewCharacterVoiceErrors, ThrowOnError> => (options.client ?? client).post<PreviewCharacterVoiceResponses, PreviewCharacterVoiceErrors, ThrowOnError>({
+    url: '/characters/{id}/voices/{lang}/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Storyboard defaults of a series (image style, cadence, segment gap)
+ */
+export const getStoryboardSettings = <ThrowOnError extends boolean = false>(options: Options<GetStoryboardSettingsData, ThrowOnError>): RequestResult<GetStoryboardSettingsResponses, GetStoryboardSettingsErrors, ThrowOnError> => (options.client ?? client).get<GetStoryboardSettingsResponses, GetStoryboardSettingsErrors, ThrowOnError>({ url: '/series/{id}/storyboard-settings', ...options });
+
+/**
+ * Replace the storyboard defaults of a series
+ */
+export const putStoryboardSettings = <ThrowOnError extends boolean = false>(options: Options<PutStoryboardSettingsData, ThrowOnError>): RequestResult<PutStoryboardSettingsResponses, PutStoryboardSettingsErrors, ThrowOnError> => (options.client ?? client).put<PutStoryboardSettingsResponses, PutStoryboardSettingsErrors, ThrowOnError>({
+    url: '/series/{id}/storyboard-settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+ */
+export const listScenes = <ThrowOnError extends boolean = false>(options: Options<ListScenesData, ThrowOnError>): RequestResult<ListScenesResponses, ListScenesErrors, ThrowOnError> => (options.client ?? client).get<ListScenesResponses, ListScenesErrors, ThrowOnError>({ url: '/episodes/{id}/scenes', ...options });
+
+/**
+ * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+ */
+export const splitScenes = <ThrowOnError extends boolean = false>(options: Options<SplitScenesData, ThrowOnError>): RequestResult<SplitScenesResponses, SplitScenesErrors, ThrowOnError> => (options.client ?? client).post<SplitScenesResponses, SplitScenesErrors, ThrowOnError>({
+    url: '/episodes/{id}/scenes/split',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Queue every missing or stale image, voice and align step of an episode as one batch run
+ */
+export const generateMissing = <ThrowOnError extends boolean = false>(options: Options<GenerateMissingData, ThrowOnError>): RequestResult<GenerateMissingResponses, GenerateMissingErrors, ThrowOnError> => (options.client ?? client).post<GenerateMissingResponses, GenerateMissingErrors, ThrowOnError>({
+    url: '/episodes/{id}/generate-missing',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Edit a scene's narration, segments, prompt, characters, motion or style
+ */
+export const updateScene = <ThrowOnError extends boolean = false>(options: Options<UpdateSceneData, ThrowOnError>): RequestResult<UpdateSceneResponses, UpdateSceneErrors, ThrowOnError> => (options.client ?? client).patch<UpdateSceneResponses, UpdateSceneErrors, ThrowOnError>({
+    url: '/scenes/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Queue exactly one step to regenerate one kind of take for one scene
+ */
+export const regenerateScene = <ThrowOnError extends boolean = false>(options: Options<RegenerateSceneData, ThrowOnError>): RequestResult<RegenerateSceneResponses, RegenerateSceneErrors, ThrowOnError> => (options.client ?? client).post<RegenerateSceneResponses, RegenerateSceneErrors, ThrowOnError>({
+    url: '/scenes/{id}/regenerate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Every take of a scene, for the takes strip and A/B compare
+ */
+export const listSceneTakes = <ThrowOnError extends boolean = false>(options: Options<ListSceneTakesData, ThrowOnError>): RequestResult<ListSceneTakesResponses, ListSceneTakesErrors, ThrowOnError> => (options.client ?? client).get<ListSceneTakesResponses, ListSceneTakesErrors, ThrowOnError>({ url: '/scenes/{id}/takes', ...options });
+
+/**
+ * Select a take (also how a revert works)
+ */
+export const selectSceneTake = <ThrowOnError extends boolean = false>(options: Options<SelectSceneTakeData, ThrowOnError>): RequestResult<SelectSceneTakeResponses, SelectSceneTakeErrors, ThrowOnError> => (options.client ?? client).post<SelectSceneTakeResponses, SelectSceneTakeErrors, ThrowOnError>({ url: '/scenes/{id}/takes/{takeId}/select', ...options });
+
+/**
+ * Waveform peaks of the scene's selected voice take, optionally for a window only
+ */
+export const getScenePeaks = <ThrowOnError extends boolean = false>(options: Options<GetScenePeaksData, ThrowOnError>): RequestResult<GetScenePeaksResponses, GetScenePeaksErrors, ThrowOnError> => (options.client ?? client).get<GetScenePeaksResponses, GetScenePeaksErrors, ThrowOnError>({ url: '/scenes/{id}/peaks', ...options });
+
+/**
+ * Redirect to a short-lived URL of an asset or one of its image variants
+ */
+export const getAssetVariant = <ThrowOnError extends boolean = false>(options: Options<GetAssetVariantData, ThrowOnError>): RequestResult<unknown, GetAssetVariantErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAssetVariantErrors, ThrowOnError>({ url: '/assets/{id}/variants/{variant}', ...options });
+
+/**
+ * Queue image variants and waveform peaks for every ready asset that lacks them
+ */
+export const backfillMedia = <ThrowOnError extends boolean = false>(options?: Options<BackfillMediaData, ThrowOnError>): RequestResult<BackfillMediaResponses, unknown, ThrowOnError> => (options?.client ?? client).post<BackfillMediaResponses, unknown, ThrowOnError>({ url: '/media/backfill', ...options });
 
 /**
  * Server-sent events for pipeline step progress and state changes. Cookie-authenticated, tenant-filtered. Requires a "topics" query parameter: a comma-separated list of pipeline run ids the caller's tenant owns (checked against pipeline_runs at subscribe time; an unknown or foreign topic is rejected with 403).

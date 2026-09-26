@@ -231,3 +231,35 @@ func TestUnknownActionUsesDefaultTemplate(t *testing.T) {
 		t.Fatalf("expected the default template for an unknown action")
 	}
 }
+
+func TestPinnedCharactersAreTheirOwnBlockBetweenPreviouslyAndBible(t *testing.T) {
+	ctx := Build("continue", BuildRequest{
+		Target:       TaintedContent{Text: "target", Origin: llm.OriginUser},
+		Previously:   TaintedContent{Text: "previously", Origin: llm.OriginModel},
+		Characters:   TaintedContent{Text: "Lin Mo: speaks little.", Origin: llm.OriginUser},
+		BibleExcerpt: TaintedContent{Text: "bible", Origin: llm.OriginImport, Tainted: true},
+	})
+	var labels []string
+	for _, b := range ctx.Data {
+		labels = append(labels, b.Label)
+	}
+	if strings.Join(labels, ",") != "target,previously,characters,bible" {
+		t.Fatalf("blocks = %v", labels)
+	}
+	if strings.Contains(ctx.System, "Lin Mo") {
+		t.Fatal("character profiles must never be interpolated into System")
+	}
+	// Under a tight budget the bible goes before the pinned profiles.
+	tight := Build("continue", BuildRequest{
+		Target:       TaintedContent{Text: strings.Repeat("t", 40)},
+		Characters:   TaintedContent{Text: strings.Repeat("c", 40)},
+		BibleExcerpt: TaintedContent{Text: strings.Repeat("b", 40)},
+		TokenBudget:  20,
+	})
+	if len(tight.Data) != 2 || tight.Data[1].Label != "characters" {
+		t.Fatalf("tight budget kept %+v", tight.Data)
+	}
+	if EstimateTokens("") != 0 || EstimateTokens("abcd") != 1 || EstimateTokens("abcde") != 2 {
+		t.Fatal("token estimate is not ceil(bytes/4)")
+	}
+}

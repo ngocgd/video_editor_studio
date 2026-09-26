@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	authpkg "loomtale/api/internal/auth"
 	"loomtale/api/internal/authapi"
 	"loomtale/api/internal/channelsapi"
+	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	"loomtale/api/internal/csrf"
 	dbgen "loomtale/api/internal/db/gen"
@@ -31,18 +33,21 @@ import (
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
+	"loomtale/api/internal/media"
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/presets"
 	"loomtale/api/internal/providers/bootstrap"
 	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
+	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secheaders"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
@@ -185,12 +190,28 @@ func run() error {
 	// refuse to Run (only the worker has the models volume and the GPU).
 	models.RegisterSteps(stepRegistry, manifest, modelStore, nil, nil)
 	for _, handler := range story.Handlers(llmRegistry, queries) {
+		handler.PinCharacters = cfg.PinCharacters
 		stepRegistry.Register(handler)
 	}
 	for _, handler := range llmcheck.Handlers(llmRegistry) {
 		stepRegistry.Register(handler)
 	}
-	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
+	// The scene, character and media steps are registered so Enqueue can
+	// resolve their queue, input hash and model; with no engine clients
+	// here they never run in this process (only the worker claims them).
+	sceneHooks := &scenes.Hooks{}
+	sceneService := &scenes.Service{Pool: pool.Pool, Queries: queries, Hooks: sceneHooks}
+	for _, handler := range scenes.Handlers(scenes.StepDeps{Service: sceneService, LLM: llmRegistry}) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range characters.Handlers(characters.StepDeps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range media.Handlers(media.Deps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, scenes.Estimate)
+	sceneService.Engine = engine
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
@@ -277,6 +298,10 @@ func run() error {
 			Registry: llmRegistry,
 			Internal: internalStore,
 		},
+		PresetsAPI:    &presets.PresetsAPI{Pool: pool.Pool, Queries: queries, IsSceneModel: scenes.IsSceneModel(manifest)},
+		CharactersAPI: &characters.CharactersAPI{Queries: queries, Engine: engine},
+		ScenesAPI:     &scenes.ScenesAPI{Service: sceneService, Storage: internalStore},
+		MediaAPI:      &media.MediaAPI{Queries: queries, Engine: engine, Browser: browserStore},
 		ModelsAPI: &modelsapi.ModelsAPI{
 			Manifest:     manifest,
 			Store:        modelStore,
@@ -297,10 +322,10 @@ func run() error {
 		ResponseErrorHandlerFunc: problemErrorHandler(http.StatusInternalServerError, "internal error"),
 	})
 
-	if cfg.RateLimitPerMinute <= 0 {
-		return fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
+	generalLimiter, mediaLimiter, err := newRequestLimiters(cfg)
+	if err != nil {
+		return err
 	}
-	generalLimiter := ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
 	headers := secheaders.Config{MediaOrigin: cfg.MediaOrigin, PublicURL: cfg.PublicURL}
 	sessionMW := authpkg.Middleware(authpkg.Store{}, queries)
 	csrfMW := csrf.Middleware(csrfPepper, authpkg.CSRFLookup, allowedOrigins, csrfRejected)
@@ -311,7 +336,7 @@ func run() error {
 	r.Use(httpx.RealIP(cfg.TrustedProxyCIDRs))
 	r.Use(headers.Middleware)
 	r.Use(httpx.MaxBodyMiddleware)
-	r.Use(generalLimiter.Middleware(httpx.ClientIP, tooManyRequests))
+	r.Use(ratelimit.SplitMiddleware(generalLimiter, mediaLimiter, isAssetVariantRequest, httpx.ClientIP, tooManyRequests))
 	r.Use(httpx.WithRequestMiddleware)
 	r.Use(httpx.AccessLogMiddleware)
 	r.Use(sessionMW)
@@ -351,6 +376,29 @@ func run() error {
 		}
 	}
 	return nil
+}
+
+// newRequestLimiters builds the general and media per-client-IP buckets;
+// each refills its whole per-minute budget over one minute.
+func newRequestLimiters(cfg config) (general, media *ratelimit.Memory, err error) {
+	if cfg.RateLimitPerMinute <= 0 {
+		return nil, nil, fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
+	}
+	if cfg.MediaRateLimitPerMinute <= 0 {
+		return nil, nil, fmt.Errorf("API_MEDIA_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.MediaRateLimitPerMinute)
+	}
+	general = ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
+	media = ratelimit.NewMemory(float64(cfg.MediaRateLimitPerMinute), float64(cfg.MediaRateLimitPerMinute)/60)
+	return general, media, nil
+}
+
+// assetVariantPath is GET /api/v1/assets/{id}/variants/{variant}.
+var assetVariantPath = regexp.MustCompile(`^/api/v1/assets/[^/]+/variants/[^/]+$`)
+
+// isAssetVariantRequest selects the media redirects that draw from the
+// media rate-limit bucket.
+func isAssetVariantRequest(r *http.Request) bool {
+	return (r.Method == http.MethodGet || r.Method == http.MethodHead) && assetVariantPath.MatchString(r.URL.Path)
 }
 
 func tooManyRequests(w http.ResponseWriter, _ *http.Request) {

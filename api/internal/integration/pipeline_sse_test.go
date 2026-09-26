@@ -105,7 +105,7 @@ func (r *sseReader) next(t *testing.T, timeout time.Duration) sseFrame {
 func TestSSESubscribeReadyThenTransitionsDeliveredAndTenantIsolated(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("sse-step", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("sse-step", testQueue))
 	engine, _ := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantA := pipelineFixtureTenant(t, q, "sse-tenant-a")

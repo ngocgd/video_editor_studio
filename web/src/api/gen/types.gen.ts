@@ -644,6 +644,428 @@ export type ModelActionResult = {
     stepId: string;
 };
 
+/**
+ * Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
+ */
+export type StringParams = {
+    [key: string]: string;
+};
+
+export type VoicePreset = {
+    id: string;
+    name: string;
+    engine: string;
+    refAudioAssetId?: string;
+    params: StringParams;
+    /**
+     * True once someone confirmed the reference voice is their own or licensed.
+     */
+    consented: boolean;
+    consentedAt?: string;
+};
+
+export type VoicePresetList = {
+    items: Array<VoicePreset>;
+};
+
+export type VoicePresetInput = {
+    name: string;
+    engine: string;
+    /**
+     * A ready audio asset to clone. Requires consent.
+     */
+    refAudioAssetId?: string;
+    params?: StringParams;
+    /**
+     * Confirms the reference voice is the uploader's own or licensed; recorded in the audit log.
+     */
+    consent?: boolean;
+};
+
+export type ImageStyleLora = {
+    name: string;
+    strength: number;
+};
+
+export type ImageStyle = {
+    id: string;
+    name: string;
+    stylePrompt: string;
+    negativePrompt: string;
+    baseModel: string;
+    sampler: string;
+    steps: number;
+    width: number;
+    height: number;
+    loras: Array<ImageStyleLora>;
+};
+
+export type ImageStyleList = {
+    items: Array<ImageStyle>;
+};
+
+export type ImageStyleInput = {
+    name: string;
+    stylePrompt?: string;
+    negativePrompt?: string;
+    /**
+     * A models/manifest.yaml entry whose task is scene.
+     */
+    baseModel: string;
+    sampler?: string;
+    steps?: number;
+    width?: number;
+    height?: number;
+    loras?: Array<ImageStyleLora>;
+};
+
+export type CharacterNames = {
+    orig: string;
+    en: string;
+    vi: string;
+};
+
+export type CharacterRef = {
+    id: string;
+    assetId: string;
+    angle: string;
+    approved: boolean;
+    origin: 'upload' | 'generated';
+};
+
+export type CharacterLora = {
+    id: string;
+    version: number;
+    status: 'queued' | 'training' | 'ready' | 'failed';
+    datasetSize: number;
+    trainerParams: StringParams;
+    weightsFile?: string;
+    stepId?: string;
+    createdAt: string;
+};
+
+export type VoiceLanguage = 'en' | 'vi';
+
+export type CharacterVoice = {
+    lang: VoiceLanguage;
+    engine: string;
+    voicePresetId?: string;
+    params: StringParams;
+    /**
+     * Audio of the latest "Preview line" with this voice.
+     */
+    previewAssetId?: string;
+};
+
+export type CharacterAppearance = {
+    episodeId: string;
+    episodeIdx: number;
+    sceneCount: number;
+};
+
+export type Character = {
+    id: string;
+    seriesId: string;
+    names: CharacterNames;
+    role: string;
+    appearancePrompt: string;
+    negativePrompt: string;
+    triggerToken: string;
+    /**
+     * Sent to the LLM with every request for this series while pinned.
+     */
+    profile: string;
+    /**
+     * Estimated LLM tokens of the profile.
+     */
+    profileTokens: number;
+    pinned: boolean;
+    refs: Array<CharacterRef>;
+    loras: Array<CharacterLora>;
+    voices: Array<CharacterVoice>;
+    appearances: Array<CharacterAppearance>;
+};
+
+export type CharacterList = {
+    items: Array<Character>;
+    narratorVoices: Array<CharacterVoice>;
+    /**
+     * Estimated LLM tokens every request for this series spends on pinned character profiles.
+     */
+    pinnedTokens: number;
+};
+
+export type CharacterInput = {
+    names: CharacterNames;
+    role?: string;
+    appearancePrompt?: string;
+    negativePrompt?: string;
+    triggerToken?: string;
+    profile?: string;
+    pinned?: boolean;
+};
+
+export type VoiceAssignment = {
+    engine: string;
+    voicePresetId?: string;
+    params?: StringParams;
+};
+
+export type CharacterRefCreate = {
+    assetId: string;
+    angle?: string;
+    approved?: boolean;
+};
+
+export type CharacterRefUpdate = {
+    angle?: string;
+    approved?: boolean;
+};
+
+export type CharacterSheetRequest = {
+    /**
+     * The reference image the sheet is edited from.
+     */
+    refId: string;
+    prompt?: string;
+};
+
+export type StepAccepted = {
+    runId: string;
+    stepIds: Array<string>;
+};
+
+export type LoraTrainRequest = {
+    /**
+     * Defaults to every approved reference image.
+     */
+    datasetAssetIds?: Array<string>;
+    steps?: number;
+    rank?: number;
+};
+
+export type VoicePreviewRequest = {
+    text: string;
+};
+
+export type StoryboardSettings = {
+    imageStyleId?: string;
+    cadenceMinS: number;
+    cadenceMaxS: number;
+    segmentGapMs: number;
+};
+
+export type SceneLanguage = 'en' | 'vi';
+
+export type SceneFilter = 'all' | 'stale' | 'failed' | 'missing' | 'in_queue';
+
+export type SceneSegment = {
+    /**
+     * Absent for the narrator.
+     */
+    speakerCharacterId?: string;
+    text: string;
+    /**
+     * A speaker name the split could not match to a character; the segment is voiced by the narrator until someone assigns it.
+     */
+    unrecognisedName?: string;
+};
+
+export type MotionPreset = 'ken_burns' | 'parallax' | 'static';
+
+export type PipKind = 'text' | 'image' | 'voice' | 'align' | 'motion';
+
+export type PipState = 'done' | 'running' | 'queued' | 'failed' | 'stale' | 'none';
+
+export type ScenePip = {
+    kind: PipKind;
+    state: PipState;
+    stepId?: string;
+    runId?: string;
+    progress?: number;
+    errorCode?: string;
+    errorMessage?: string;
+    staleReason?: string;
+};
+
+export type Scene = {
+    id: string;
+    episodeId: string;
+    lang: SceneLanguage;
+    idx: number;
+    paragraphIds: Array<string>;
+    narration: string;
+    segments: Array<SceneSegment>;
+    imagePrompt: string;
+    characterIds: Array<string>;
+    motionPreset: MotionPreset;
+    imageStyleId?: string;
+    durationMs: number;
+    /**
+     * True once a voice take set the duration; before that it is a words-per-minute estimate.
+     */
+    durationMeasured: boolean;
+    /**
+     * Offset of this scene in the episode timeline.
+     */
+    startMs: number;
+    tainted: boolean;
+    version: number;
+    pips: Array<ScenePip>;
+    worstState: PipState;
+    imageAssetId?: string;
+    /**
+     * True once WebP/AVIF variants exist for the selected image.
+     */
+    imageVariants?: boolean;
+    voiceAssetId?: string;
+    alignAssetId?: string;
+    /**
+     * True once waveform peaks exist for the selected voice take.
+     */
+    peaks: boolean;
+};
+
+export type SceneCounts = {
+    all: number;
+    stale: number;
+    failed: number;
+    missing: number;
+    inQueue: number;
+};
+
+export type StageProgress = {
+    kind: PipKind;
+    done: number;
+    total: number;
+};
+
+export type SceneList = {
+    items: Array<Scene>;
+    counts: SceneCounts;
+    stages: Array<StageProgress>;
+    totalDurationMs: number;
+    /**
+     * Runs with queued or running per-scene steps, for the SSE subscription.
+     */
+    activeRunIds: Array<string>;
+    /**
+     * How many per-scene steps "Generate missing" would queue.
+     */
+    missingCount: number;
+    nextCursor?: string;
+};
+
+export type SceneSplitRequest = {
+    lang: SceneLanguage;
+    mode: 'paragraphs' | 'llm';
+    cadenceMinS?: number;
+    cadenceMaxS?: number;
+    /**
+     * Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
+     */
+    discardWork?: boolean;
+};
+
+export type SceneSplitResult = {
+    mode: 'paragraphs' | 'llm';
+    sceneCount: number;
+    /**
+     * Scenes whose narration was unchanged, kept with their takes.
+     */
+    keptCount: number;
+    /**
+     * Old scenes the paragraph split deleted, with their takes.
+     */
+    droppedCount?: number;
+    unrecognisedSpeakers?: number;
+    runId?: string;
+    stepId?: string;
+};
+
+/**
+ * A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+ */
+export type SceneSplitConflict = {
+    title: string;
+    status: number;
+    detail: string;
+    droppedCount: number;
+    editedCount: number;
+    takeCount: number;
+};
+
+export type TakeKind = 'image' | 'voice' | 'align';
+
+export type GenerateMissingRequest = {
+    lang: SceneLanguage;
+    kinds?: Array<TakeKind>;
+};
+
+export type GenerateMissingResponse = {
+    runId?: string;
+    queued: {
+        image: number;
+        voice: number;
+        align: number;
+    };
+};
+
+export type ScenePatch = {
+    expectedVersion: number;
+    /**
+     * Replaces the narration; segments are re-derived from it, each quoted line keeping the speaker of the quoted line at the same position. Ignored for segments when segments is also given.
+     */
+    narration?: string;
+    segments?: Array<SceneSegment>;
+    imagePrompt?: string;
+    characterIds?: Array<string>;
+    motionPreset?: MotionPreset;
+    imageStyleId?: string;
+    clearImageStyle?: boolean;
+};
+
+export type SceneRegenerateRequest = {
+    kind: TakeKind;
+};
+
+export type SceneTake = {
+    id: string;
+    kind: TakeKind;
+    assetId: string;
+    selected: boolean;
+    stale: boolean;
+    durationMs?: number;
+    variants: boolean;
+    createdAt: string;
+    params: {
+        [key: string]: unknown;
+    };
+};
+
+export type SceneTakeList = {
+    items: Array<SceneTake>;
+};
+
+export type Peaks = {
+    peaksPerSecond: number;
+    startMs: number;
+    durationMs: number;
+    /**
+     * Per-peak minimum, scaled to -127..127.
+     */
+    min: Array<number>;
+    max: Array<number>;
+};
+
+export type AssetVariantName = 'original' | 'webp-320' | 'webp-640' | 'webp-1280' | 'avif-320' | 'avif-640' | 'avif-1280';
+
+export type MediaBackfillResponse = {
+    runId?: string;
+    variants: number;
+    peaks: number;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -2091,6 +2513,924 @@ export type LoadModelResponses = {
 };
 
 export type LoadModelResponse = LoadModelResponses[keyof LoadModelResponses];
+
+export type ListVoicePresetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/settings/voice-presets';
+};
+
+export type ListVoicePresetsResponses = {
+    /**
+     * voice presets
+     */
+    200: VoicePresetList;
+};
+
+export type ListVoicePresetsResponse = ListVoicePresetsResponses[keyof ListVoicePresetsResponses];
+
+export type CreateVoicePresetData = {
+    body: VoicePresetInput;
+    path?: never;
+    query?: never;
+    url: '/settings/voice-presets';
+};
+
+export type CreateVoicePresetErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
+};
+
+export type CreateVoicePresetError = CreateVoicePresetErrors[keyof CreateVoicePresetErrors];
+
+export type CreateVoicePresetResponses = {
+    /**
+     * voice preset created
+     */
+    201: VoicePreset;
+};
+
+export type CreateVoicePresetResponse = CreateVoicePresetResponses[keyof CreateVoicePresetResponses];
+
+export type DeleteVoicePresetData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/settings/voice-presets/{id}';
+};
+
+export type DeleteVoicePresetErrors = {
+    /**
+     * voice preset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * a character or narrator voice still uses it
+     */
+    409: Problem;
+};
+
+export type DeleteVoicePresetError = DeleteVoicePresetErrors[keyof DeleteVoicePresetErrors];
+
+export type DeleteVoicePresetResponses = {
+    /**
+     * deleted
+     */
+    204: void;
+};
+
+export type DeleteVoicePresetResponse = DeleteVoicePresetResponses[keyof DeleteVoicePresetResponses];
+
+export type UpdateVoicePresetData = {
+    body: VoicePresetInput;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/settings/voice-presets/{id}';
+};
+
+export type UpdateVoicePresetErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * voice preset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
+};
+
+export type UpdateVoicePresetError = UpdateVoicePresetErrors[keyof UpdateVoicePresetErrors];
+
+export type UpdateVoicePresetResponses = {
+    /**
+     * voice preset updated
+     */
+    200: VoicePreset;
+};
+
+export type UpdateVoicePresetResponse = UpdateVoicePresetResponses[keyof UpdateVoicePresetResponses];
+
+export type ListImageStylesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/settings/image-styles';
+};
+
+export type ListImageStylesResponses = {
+    /**
+     * image styles
+     */
+    200: ImageStyleList;
+};
+
+export type ListImageStylesResponse = ListImageStylesResponses[keyof ListImageStylesResponses];
+
+export type CreateImageStyleData = {
+    body: ImageStyleInput;
+    path?: never;
+    query?: never;
+    url: '/settings/image-styles';
+};
+
+export type CreateImageStyleErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * base model is not a scene model in the manifest
+     */
+    422: Problem;
+};
+
+export type CreateImageStyleError = CreateImageStyleErrors[keyof CreateImageStyleErrors];
+
+export type CreateImageStyleResponses = {
+    /**
+     * image style created
+     */
+    201: ImageStyle;
+};
+
+export type CreateImageStyleResponse = CreateImageStyleResponses[keyof CreateImageStyleResponses];
+
+export type DeleteImageStyleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/settings/image-styles/{id}';
+};
+
+export type DeleteImageStyleErrors = {
+    /**
+     * image style not found in this tenant
+     */
+    404: Problem;
+};
+
+export type DeleteImageStyleError = DeleteImageStyleErrors[keyof DeleteImageStyleErrors];
+
+export type DeleteImageStyleResponses = {
+    /**
+     * deleted
+     */
+    204: void;
+};
+
+export type DeleteImageStyleResponse = DeleteImageStyleResponses[keyof DeleteImageStyleResponses];
+
+export type UpdateImageStyleData = {
+    body: ImageStyleInput;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/settings/image-styles/{id}';
+};
+
+export type UpdateImageStyleErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * image style not found in this tenant
+     */
+    404: Problem;
+    /**
+     * base model is not a scene model in the manifest
+     */
+    422: Problem;
+};
+
+export type UpdateImageStyleError = UpdateImageStyleErrors[keyof UpdateImageStyleErrors];
+
+export type UpdateImageStyleResponses = {
+    /**
+     * image style updated
+     */
+    200: ImageStyle;
+};
+
+export type UpdateImageStyleResponse = UpdateImageStyleResponses[keyof UpdateImageStyleResponses];
+
+export type ListCharactersData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/characters';
+};
+
+export type ListCharactersErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type ListCharactersError = ListCharactersErrors[keyof ListCharactersErrors];
+
+export type ListCharactersResponses = {
+    /**
+     * characters
+     */
+    200: CharacterList;
+};
+
+export type ListCharactersResponse = ListCharactersResponses[keyof ListCharactersResponses];
+
+export type CreateCharacterData = {
+    body: CharacterInput;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/characters';
+};
+
+export type CreateCharacterErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type CreateCharacterError = CreateCharacterErrors[keyof CreateCharacterErrors];
+
+export type CreateCharacterResponses = {
+    /**
+     * character created
+     */
+    201: Character;
+};
+
+export type CreateCharacterResponse = CreateCharacterResponses[keyof CreateCharacterResponses];
+
+export type SetNarratorVoiceData = {
+    body: VoiceAssignment;
+    path: {
+        id: string;
+        lang: VoiceLanguage;
+    };
+    query?: never;
+    url: '/series/{id}/narrator-voices/{lang}';
+};
+
+export type SetNarratorVoiceErrors = {
+    /**
+     * series or voice preset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
+};
+
+export type SetNarratorVoiceError = SetNarratorVoiceErrors[keyof SetNarratorVoiceErrors];
+
+export type SetNarratorVoiceResponses = {
+    /**
+     * voice assigned
+     */
+    200: CharacterVoice;
+};
+
+export type SetNarratorVoiceResponse = SetNarratorVoiceResponses[keyof SetNarratorVoiceResponses];
+
+export type DeleteCharacterData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/characters/{id}';
+};
+
+export type DeleteCharacterErrors = {
+    /**
+     * character not found in this tenant
+     */
+    404: Problem;
+};
+
+export type DeleteCharacterError = DeleteCharacterErrors[keyof DeleteCharacterErrors];
+
+export type DeleteCharacterResponses = {
+    /**
+     * deleted
+     */
+    204: void;
+};
+
+export type DeleteCharacterResponse = DeleteCharacterResponses[keyof DeleteCharacterResponses];
+
+export type UpdateCharacterData = {
+    body: CharacterInput;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/characters/{id}';
+};
+
+export type UpdateCharacterErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * character not found in this tenant
+     */
+    404: Problem;
+};
+
+export type UpdateCharacterError = UpdateCharacterErrors[keyof UpdateCharacterErrors];
+
+export type UpdateCharacterResponses = {
+    /**
+     * character updated
+     */
+    200: Character;
+};
+
+export type UpdateCharacterResponse = UpdateCharacterResponses[keyof UpdateCharacterResponses];
+
+export type AddCharacterRefData = {
+    body: CharacterRefCreate;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/characters/{id}/refs';
+};
+
+export type AddCharacterRefErrors = {
+    /**
+     * character or asset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * the asset is not a ready image
+     */
+    422: Problem;
+};
+
+export type AddCharacterRefError = AddCharacterRefErrors[keyof AddCharacterRefErrors];
+
+export type AddCharacterRefResponses = {
+    /**
+     * reference added
+     */
+    201: CharacterRef;
+};
+
+export type AddCharacterRefResponse = AddCharacterRefResponses[keyof AddCharacterRefResponses];
+
+export type DeleteCharacterRefData = {
+    body?: never;
+    path: {
+        id: string;
+        refId: string;
+    };
+    query?: never;
+    url: '/characters/{id}/refs/{refId}';
+};
+
+export type DeleteCharacterRefErrors = {
+    /**
+     * reference not found in this tenant
+     */
+    404: Problem;
+};
+
+export type DeleteCharacterRefError = DeleteCharacterRefErrors[keyof DeleteCharacterRefErrors];
+
+export type DeleteCharacterRefResponses = {
+    /**
+     * deleted
+     */
+    204: void;
+};
+
+export type DeleteCharacterRefResponse = DeleteCharacterRefResponses[keyof DeleteCharacterRefResponses];
+
+export type UpdateCharacterRefData = {
+    body: CharacterRefUpdate;
+    path: {
+        id: string;
+        refId: string;
+    };
+    query?: never;
+    url: '/characters/{id}/refs/{refId}';
+};
+
+export type UpdateCharacterRefErrors = {
+    /**
+     * reference not found in this tenant
+     */
+    404: Problem;
+};
+
+export type UpdateCharacterRefError = UpdateCharacterRefErrors[keyof UpdateCharacterRefErrors];
+
+export type UpdateCharacterRefResponses = {
+    /**
+     * reference updated
+     */
+    200: CharacterRef;
+};
+
+export type UpdateCharacterRefResponse = UpdateCharacterRefResponses[keyof UpdateCharacterRefResponses];
+
+export type RegenerateCharacterSheetData = {
+    body: CharacterSheetRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/characters/{id}/sheet';
+};
+
+export type RegenerateCharacterSheetErrors = {
+    /**
+     * character or reference not found in this tenant
+     */
+    404: Problem;
+};
+
+export type RegenerateCharacterSheetError = RegenerateCharacterSheetErrors[keyof RegenerateCharacterSheetErrors];
+
+export type RegenerateCharacterSheetResponses = {
+    /**
+     * sheet step queued
+     */
+    202: StepAccepted;
+};
+
+export type RegenerateCharacterSheetResponse = RegenerateCharacterSheetResponses[keyof RegenerateCharacterSheetResponses];
+
+export type TrainCharacterLoraData = {
+    body: LoraTrainRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/characters/{id}/loras';
+};
+
+export type TrainCharacterLoraErrors = {
+    /**
+     * character not found in this tenant
+     */
+    404: Problem;
+    /**
+     * no approved reference images to train on
+     */
+    422: Problem;
+};
+
+export type TrainCharacterLoraError = TrainCharacterLoraErrors[keyof TrainCharacterLoraErrors];
+
+export type TrainCharacterLoraResponses = {
+    /**
+     * training step queued
+     */
+    202: StepAccepted;
+};
+
+export type TrainCharacterLoraResponse = TrainCharacterLoraResponses[keyof TrainCharacterLoraResponses];
+
+export type SetCharacterVoiceData = {
+    body: VoiceAssignment;
+    path: {
+        id: string;
+        lang: VoiceLanguage;
+    };
+    query?: never;
+    url: '/characters/{id}/voices/{lang}';
+};
+
+export type SetCharacterVoiceErrors = {
+    /**
+     * character or voice preset not found in this tenant
+     */
+    404: Problem;
+    /**
+     * a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
+};
+
+export type SetCharacterVoiceError = SetCharacterVoiceErrors[keyof SetCharacterVoiceErrors];
+
+export type SetCharacterVoiceResponses = {
+    /**
+     * voice assigned
+     */
+    200: CharacterVoice;
+};
+
+export type SetCharacterVoiceResponse = SetCharacterVoiceResponses[keyof SetCharacterVoiceResponses];
+
+export type PreviewCharacterVoiceData = {
+    body: VoicePreviewRequest;
+    path: {
+        id: string;
+        lang: VoiceLanguage;
+    };
+    query?: never;
+    url: '/characters/{id}/voices/{lang}/preview';
+};
+
+export type PreviewCharacterVoiceErrors = {
+    /**
+     * character not found in this tenant
+     */
+    404: Problem;
+    /**
+     * no voice assigned for this language
+     */
+    422: Problem;
+};
+
+export type PreviewCharacterVoiceError = PreviewCharacterVoiceErrors[keyof PreviewCharacterVoiceErrors];
+
+export type PreviewCharacterVoiceResponses = {
+    /**
+     * preview step queued
+     */
+    202: StepAccepted;
+};
+
+export type PreviewCharacterVoiceResponse = PreviewCharacterVoiceResponses[keyof PreviewCharacterVoiceResponses];
+
+export type GetStoryboardSettingsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/storyboard-settings';
+};
+
+export type GetStoryboardSettingsErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetStoryboardSettingsError = GetStoryboardSettingsErrors[keyof GetStoryboardSettingsErrors];
+
+export type GetStoryboardSettingsResponses = {
+    /**
+     * settings
+     */
+    200: StoryboardSettings;
+};
+
+export type GetStoryboardSettingsResponse = GetStoryboardSettingsResponses[keyof GetStoryboardSettingsResponses];
+
+export type PutStoryboardSettingsData = {
+    body: StoryboardSettings;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/series/{id}/storyboard-settings';
+};
+
+export type PutStoryboardSettingsErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * series or image style not found in this tenant
+     */
+    404: Problem;
+};
+
+export type PutStoryboardSettingsError = PutStoryboardSettingsErrors[keyof PutStoryboardSettingsErrors];
+
+export type PutStoryboardSettingsResponses = {
+    /**
+     * settings
+     */
+    200: StoryboardSettings;
+};
+
+export type PutStoryboardSettingsResponse = PutStoryboardSettingsResponses[keyof PutStoryboardSettingsResponses];
+
+export type ListScenesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        lang: SceneLanguage;
+        filter?: SceneFilter;
+        q?: string;
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/episodes/{id}/scenes';
+};
+
+export type ListScenesErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type ListScenesError = ListScenesErrors[keyof ListScenesErrors];
+
+export type ListScenesResponses = {
+    /**
+     * scenes
+     */
+    200: SceneList;
+};
+
+export type ListScenesResponse = ListScenesResponses[keyof ListScenesResponses];
+
+export type SplitScenesData = {
+    body: SceneSplitRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}/scenes/split';
+};
+
+export type SplitScenesErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+    /**
+     * the split would delete edited scenes or takes and discardWork was not set; nothing changed
+     */
+    409: SceneSplitConflict;
+    /**
+     * no draft for this language, or it is empty
+     */
+    422: Problem;
+};
+
+export type SplitScenesError = SplitScenesErrors[keyof SplitScenesErrors];
+
+export type SplitScenesResponses = {
+    /**
+     * paragraph split applied
+     */
+    200: SceneSplitResult;
+    /**
+     * LLM split step queued
+     */
+    202: SceneSplitResult;
+};
+
+export type SplitScenesResponse = SplitScenesResponses[keyof SplitScenesResponses];
+
+export type GenerateMissingData = {
+    body: GenerateMissingRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}/generate-missing';
+};
+
+export type GenerateMissingErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GenerateMissingError = GenerateMissingErrors[keyof GenerateMissingErrors];
+
+export type GenerateMissingResponses = {
+    /**
+     * batch queued (queued counts may all be zero)
+     */
+    202: GenerateMissingResponse;
+};
+
+export type GenerateMissingResponse2 = GenerateMissingResponses[keyof GenerateMissingResponses];
+
+export type UpdateSceneData = {
+    body: ScenePatch;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/scenes/{id}';
+};
+
+export type UpdateSceneErrors = {
+    /**
+     * invalid request
+     */
+    400: Problem;
+    /**
+     * scene not found in this tenant
+     */
+    404: Problem;
+    /**
+     * the scene changed since expectedVersion
+     */
+    409: Problem;
+};
+
+export type UpdateSceneError = UpdateSceneErrors[keyof UpdateSceneErrors];
+
+export type UpdateSceneResponses = {
+    /**
+     * scene updated
+     */
+    200: Scene;
+};
+
+export type UpdateSceneResponse = UpdateSceneResponses[keyof UpdateSceneResponses];
+
+export type RegenerateSceneData = {
+    body: SceneRegenerateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/scenes/{id}/regenerate';
+};
+
+export type RegenerateSceneErrors = {
+    /**
+     * scene not found in this tenant
+     */
+    404: Problem;
+    /**
+     * the scene has no voice take to align
+     */
+    422: Problem;
+};
+
+export type RegenerateSceneError = RegenerateSceneErrors[keyof RegenerateSceneErrors];
+
+export type RegenerateSceneResponses = {
+    /**
+     * step queued
+     */
+    202: StepAccepted;
+};
+
+export type RegenerateSceneResponse = RegenerateSceneResponses[keyof RegenerateSceneResponses];
+
+export type ListSceneTakesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/scenes/{id}/takes';
+};
+
+export type ListSceneTakesErrors = {
+    /**
+     * scene not found in this tenant
+     */
+    404: Problem;
+};
+
+export type ListSceneTakesError = ListSceneTakesErrors[keyof ListSceneTakesErrors];
+
+export type ListSceneTakesResponses = {
+    /**
+     * takes
+     */
+    200: SceneTakeList;
+};
+
+export type ListSceneTakesResponse = ListSceneTakesResponses[keyof ListSceneTakesResponses];
+
+export type SelectSceneTakeData = {
+    body?: never;
+    path: {
+        id: string;
+        takeId: string;
+    };
+    query?: never;
+    url: '/scenes/{id}/takes/{takeId}/select';
+};
+
+export type SelectSceneTakeErrors = {
+    /**
+     * scene or take not found in this tenant
+     */
+    404: Problem;
+};
+
+export type SelectSceneTakeError = SelectSceneTakeErrors[keyof SelectSceneTakeErrors];
+
+export type SelectSceneTakeResponses = {
+    /**
+     * scene with the take selected
+     */
+    200: Scene;
+};
+
+export type SelectSceneTakeResponse = SelectSceneTakeResponses[keyof SelectSceneTakeResponses];
+
+export type GetScenePeaksData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        startMs?: number;
+        endMs?: number;
+    };
+    url: '/scenes/{id}/peaks';
+};
+
+export type GetScenePeaksErrors = {
+    /**
+     * scene or peaks not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetScenePeaksError = GetScenePeaksErrors[keyof GetScenePeaksErrors];
+
+export type GetScenePeaksResponses = {
+    /**
+     * peaks
+     */
+    200: Peaks;
+};
+
+export type GetScenePeaksResponse = GetScenePeaksResponses[keyof GetScenePeaksResponses];
+
+export type GetAssetVariantData = {
+    body?: never;
+    path: {
+        id: string;
+        variant: AssetVariantName;
+    };
+    query?: never;
+    url: '/assets/{id}/variants/{variant}';
+};
+
+export type GetAssetVariantErrors = {
+    /**
+     * asset or variant not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetAssetVariantError = GetAssetVariantErrors[keyof GetAssetVariantErrors];
+
+export type BackfillMediaData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/media/backfill';
+};
+
+export type BackfillMediaResponses = {
+    /**
+     * derivative steps queued
+     */
+    202: MediaBackfillResponse;
+};
+
+export type BackfillMediaResponse = BackfillMediaResponses[keyof BackfillMediaResponses];
 
 export type StreamEventsData = {
     body?: never;

@@ -70,4 +70,11 @@ type config struct {
 	// host's real free space there (see models.Downloader.HostDiskDir).
 	// Empty refuses every download.
 	ModelsHostDiskDir string `env:"MODELS_HOST_DISK_DIR" envDefault:""`
+
+	// PinCharacters mirrors cmd/api's STORY_PIN_CHARACTERS: the worker is
+	// what actually builds the LLM requests.
+	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
+
+	// FFmpegPath is the ffmpeg binary the media and voice steps run.
+	FFmpegPath string `env:"FFMPEG_PATH" envDefault:"ffmpeg"`
 }

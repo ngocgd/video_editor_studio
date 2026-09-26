@@ -37,9 +37,23 @@ type config struct {
 	ArgonMaxConcurrency int `env:"ARGON2_MAX_CONCURRENCY" envDefault:"4"`
 
 	// RateLimitPerMinute is the general per-client-IP request budget
-	// (burst and refill per minute). Only the integration test stacks
-	// raise it, because the whole suite reaches the API from one IP.
-	RateLimitPerMinute int `env:"API_RATE_LIMIT_PER_MINUTE" envDefault:"100"`
+	// (burst and refill per minute). It is a flood guard sized for the
+	// SPA itself: one open tab polls GPU status, jobs and readiness, an
+	// active storyboard run adds scene and run polling, and every full
+	// page load re-fetches the shell (session, CSRF token, GPU, jobs,
+	// readiness). One user clicking through the app reaches about 230
+	// requests in a minute, so a budget of 100 starved ordinary use.
+	// Login keeps its own much tighter per-IP and per-account buckets.
+	// Only the integration test stacks raise it, because the whole suite
+	// reaches the API from one IP.
+	RateLimitPerMinute int `env:"API_RATE_LIMIT_PER_MINUTE" envDefault:"600"`
+
+	// MediaRateLimitPerMinute is the separate per-client-IP budget of the
+	// asset variant redirects. A storyboard page loads one per image tile
+	// and audio clip (hundreds per episode), each a single indexed lookup
+	// and a local URL signature, so they get their own larger bucket
+	// instead of starving the general one, which login also draws from.
+	MediaRateLimitPerMinute int `env:"API_MEDIA_RATE_LIMIT_PER_MINUTE" envDefault:"1200"`
 
 	// AppMode gates the claude-cli provider (local-only per the
 	// contract): "saas" disables it entirely, any other value (default
@@ -67,6 +81,10 @@ type config struct {
 	AnthropicModel      string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-5"`
 	GeminiAPIKeyPath    string `env:"GEMINI_API_KEY_PATH" envDefault:""`
 	GeminiModel         string `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
+
+	// PinCharacters adds a series' pinned character profiles to every
+	// story LLM request; false is the rollback switch for the pinning.
+	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
 
 	// Google OAuth client for connecting YouTube channels. Empty client
 	// id disables connecting; the secret lives in a mounted file.

@@ -2100,3 +2100,1384 @@ export const ModelActionResultSchema = {
         }
     }
 } as const;
+
+export const StringParamsSchema = {
+    type: 'object',
+    description: 'Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine\'s built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.',
+    maxProperties: 32,
+    additionalProperties: {
+        type: 'string',
+        maxLength: 200
+    }
+} as const;
+
+export const VoicePresetSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'name',
+        'engine',
+        'params',
+        'consented'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        name: {
+            type: 'string'
+        },
+        engine: {
+            type: 'string'
+        },
+        refAudioAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        params: {
+            $ref: '#/components/schemas/StringParams'
+        },
+        consented: {
+            type: 'boolean',
+            description: 'True once someone confirmed the reference voice is their own or licensed.'
+        },
+        consentedAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const VoicePresetListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/VoicePreset'
+            }
+        }
+    }
+} as const;
+
+export const VoicePresetInputSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'engine'
+    ],
+    properties: {
+        name: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100
+        },
+        engine: {
+            type: 'string',
+            pattern: '^[a-z0-9][a-z0-9.-]{1,62}$'
+        },
+        refAudioAssetId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'A ready audio asset to clone. Requires consent.'
+        },
+        params: {
+            $ref: '#/components/schemas/StringParams'
+        },
+        consent: {
+            type: 'boolean',
+            description: 'Confirms the reference voice is the uploader\'s own or licensed; recorded in the audit log.'
+        }
+    }
+} as const;
+
+export const ImageStyleLoraSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'strength'
+    ],
+    properties: {
+        name: {
+            type: 'string',
+            pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
+        },
+        strength: {
+            type: 'number',
+            minimum: -2,
+            maximum: 2
+        }
+    }
+} as const;
+
+export const ImageStyleSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'name',
+        'stylePrompt',
+        'negativePrompt',
+        'baseModel',
+        'sampler',
+        'steps',
+        'width',
+        'height',
+        'loras'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        name: {
+            type: 'string'
+        },
+        stylePrompt: {
+            type: 'string'
+        },
+        negativePrompt: {
+            type: 'string'
+        },
+        baseModel: {
+            type: 'string'
+        },
+        sampler: {
+            type: 'string'
+        },
+        steps: {
+            type: 'integer'
+        },
+        width: {
+            type: 'integer'
+        },
+        height: {
+            type: 'integer'
+        },
+        loras: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ImageStyleLora'
+            }
+        }
+    }
+} as const;
+
+export const ImageStyleListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ImageStyle'
+            }
+        }
+    }
+} as const;
+
+export const ImageStyleInputSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'baseModel'
+    ],
+    properties: {
+        name: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100
+        },
+        stylePrompt: {
+            type: 'string',
+            maxLength: 2000
+        },
+        negativePrompt: {
+            type: 'string',
+            maxLength: 2000
+        },
+        baseModel: {
+            type: 'string',
+            pattern: '^[a-z0-9][a-z0-9.-]{1,62}$',
+            description: 'A models/manifest.yaml entry whose task is scene.'
+        },
+        sampler: {
+            type: 'string',
+            maxLength: 50
+        },
+        steps: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 150
+        },
+        width: {
+            type: 'integer',
+            minimum: 64,
+            maximum: 4096
+        },
+        height: {
+            type: 'integer',
+            minimum: 64,
+            maximum: 4096
+        },
+        loras: {
+            type: 'array',
+            maxItems: 4,
+            items: {
+                $ref: '#/components/schemas/ImageStyleLora'
+            }
+        }
+    }
+} as const;
+
+export const CharacterNamesSchema = {
+    type: 'object',
+    required: [
+        'orig',
+        'en',
+        'vi'
+    ],
+    properties: {
+        orig: {
+            type: 'string',
+            maxLength: 100
+        },
+        en: {
+            type: 'string',
+            maxLength: 100
+        },
+        vi: {
+            type: 'string',
+            maxLength: 100
+        }
+    }
+} as const;
+
+export const CharacterRefSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'assetId',
+        'angle',
+        'approved',
+        'origin'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        angle: {
+            type: 'string'
+        },
+        approved: {
+            type: 'boolean'
+        },
+        origin: {
+            type: 'string',
+            enum: [
+                'upload',
+                'generated'
+            ]
+        }
+    }
+} as const;
+
+export const CharacterLoraSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'version',
+        'status',
+        'datasetSize',
+        'trainerParams',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        version: {
+            type: 'integer'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'queued',
+                'training',
+                'ready',
+                'failed'
+            ]
+        },
+        datasetSize: {
+            type: 'integer'
+        },
+        trainerParams: {
+            $ref: '#/components/schemas/StringParams'
+        },
+        weightsFile: {
+            type: 'string'
+        },
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const VoiceLanguageSchema = {
+    type: 'string',
+    enum: [
+        'en',
+        'vi'
+    ]
+} as const;
+
+export const CharacterVoiceSchema = {
+    type: 'object',
+    required: [
+        'lang',
+        'engine',
+        'params'
+    ],
+    properties: {
+        lang: {
+            $ref: '#/components/schemas/VoiceLanguage'
+        },
+        engine: {
+            type: 'string'
+        },
+        voicePresetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        params: {
+            $ref: '#/components/schemas/StringParams'
+        },
+        previewAssetId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Audio of the latest "Preview line" with this voice.'
+        }
+    }
+} as const;
+
+export const CharacterAppearanceSchema = {
+    type: 'object',
+    required: [
+        'episodeId',
+        'episodeIdx',
+        'sceneCount'
+    ],
+    properties: {
+        episodeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        episodeIdx: {
+            type: 'integer'
+        },
+        sceneCount: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const CharacterSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'seriesId',
+        'names',
+        'role',
+        'appearancePrompt',
+        'negativePrompt',
+        'triggerToken',
+        'profile',
+        'profileTokens',
+        'pinned',
+        'refs',
+        'loras',
+        'voices',
+        'appearances'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        names: {
+            $ref: '#/components/schemas/CharacterNames'
+        },
+        role: {
+            type: 'string'
+        },
+        appearancePrompt: {
+            type: 'string'
+        },
+        negativePrompt: {
+            type: 'string'
+        },
+        triggerToken: {
+            type: 'string'
+        },
+        profile: {
+            type: 'string',
+            description: 'Sent to the LLM with every request for this series while pinned.'
+        },
+        profileTokens: {
+            type: 'integer',
+            description: 'Estimated LLM tokens of the profile.'
+        },
+        pinned: {
+            type: 'boolean'
+        },
+        refs: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CharacterRef'
+            }
+        },
+        loras: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CharacterLora'
+            }
+        },
+        voices: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CharacterVoice'
+            }
+        },
+        appearances: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CharacterAppearance'
+            }
+        }
+    }
+} as const;
+
+export const CharacterListSchema = {
+    type: 'object',
+    required: [
+        'items',
+        'narratorVoices',
+        'pinnedTokens'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Character'
+            }
+        },
+        narratorVoices: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CharacterVoice'
+            }
+        },
+        pinnedTokens: {
+            type: 'integer',
+            description: 'Estimated LLM tokens every request for this series spends on pinned character profiles.'
+        }
+    }
+} as const;
+
+export const CharacterInputSchema = {
+    type: 'object',
+    required: [
+        'names'
+    ],
+    properties: {
+        names: {
+            $ref: '#/components/schemas/CharacterNames'
+        },
+        role: {
+            type: 'string',
+            maxLength: 100
+        },
+        appearancePrompt: {
+            type: 'string',
+            maxLength: 2000
+        },
+        negativePrompt: {
+            type: 'string',
+            maxLength: 1000
+        },
+        triggerToken: {
+            type: 'string',
+            pattern: '^[A-Za-z0-9_]{0,40}$'
+        },
+        profile: {
+            type: 'string',
+            maxLength: 8000
+        },
+        pinned: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const VoiceAssignmentSchema = {
+    type: 'object',
+    required: [
+        'engine'
+    ],
+    properties: {
+        engine: {
+            type: 'string',
+            pattern: '^[a-z0-9][a-z0-9.-]{1,62}$'
+        },
+        voicePresetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        params: {
+            $ref: '#/components/schemas/StringParams'
+        }
+    }
+} as const;
+
+export const CharacterRefCreateSchema = {
+    type: 'object',
+    required: [
+        'assetId'
+    ],
+    properties: {
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        angle: {
+            type: 'string',
+            maxLength: 40
+        },
+        approved: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const CharacterRefUpdateSchema = {
+    type: 'object',
+    properties: {
+        angle: {
+            type: 'string',
+            maxLength: 40
+        },
+        approved: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const CharacterSheetRequestSchema = {
+    type: 'object',
+    required: [
+        'refId'
+    ],
+    properties: {
+        refId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'The reference image the sheet is edited from.'
+        },
+        prompt: {
+            type: 'string',
+            maxLength: 1000
+        }
+    }
+} as const;
+
+export const StepAcceptedSchema = {
+    type: 'object',
+    required: [
+        'runId',
+        'stepIds'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        stepIds: {
+            type: 'array',
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        }
+    }
+} as const;
+
+export const LoraTrainRequestSchema = {
+    type: 'object',
+    properties: {
+        datasetAssetIds: {
+            type: 'array',
+            maxItems: 200,
+            items: {
+                type: 'string',
+                format: 'uuid'
+            },
+            description: 'Defaults to every approved reference image.'
+        },
+        steps: {
+            type: 'integer',
+            minimum: 100,
+            maximum: 10000
+        },
+        rank: {
+            type: 'integer',
+            minimum: 4,
+            maximum: 128
+        }
+    }
+} as const;
+
+export const VoicePreviewRequestSchema = {
+    type: 'object',
+    required: [
+        'text'
+    ],
+    properties: {
+        text: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 500
+        }
+    }
+} as const;
+
+export const StoryboardSettingsSchema = {
+    type: 'object',
+    required: [
+        'cadenceMinS',
+        'cadenceMaxS',
+        'segmentGapMs'
+    ],
+    properties: {
+        imageStyleId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        cadenceMinS: {
+            type: 'integer',
+            minimum: 5,
+            maximum: 300
+        },
+        cadenceMaxS: {
+            type: 'integer',
+            minimum: 5,
+            maximum: 600
+        },
+        segmentGapMs: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 5000
+        }
+    }
+} as const;
+
+export const SceneLanguageSchema = {
+    type: 'string',
+    enum: [
+        'en',
+        'vi'
+    ]
+} as const;
+
+export const SceneFilterSchema = {
+    type: 'string',
+    enum: [
+        'all',
+        'stale',
+        'failed',
+        'missing',
+        'in_queue'
+    ]
+} as const;
+
+export const SceneSegmentSchema = {
+    type: 'object',
+    required: [
+        'text'
+    ],
+    properties: {
+        speakerCharacterId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Absent for the narrator.'
+        },
+        text: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 20000
+        },
+        unrecognisedName: {
+            type: 'string',
+            description: 'A speaker name the split could not match to a character; the segment is voiced by the narrator until someone assigns it.'
+        }
+    }
+} as const;
+
+export const MotionPresetSchema = {
+    type: 'string',
+    enum: [
+        'ken_burns',
+        'parallax',
+        'static'
+    ]
+} as const;
+
+export const PipKindSchema = {
+    type: 'string',
+    enum: [
+        'text',
+        'image',
+        'voice',
+        'align',
+        'motion'
+    ]
+} as const;
+
+export const PipStateSchema = {
+    type: 'string',
+    enum: [
+        'done',
+        'running',
+        'queued',
+        'failed',
+        'stale',
+        'none'
+    ]
+} as const;
+
+export const ScenePipSchema = {
+    type: 'object',
+    required: [
+        'kind',
+        'state'
+    ],
+    properties: {
+        kind: {
+            $ref: '#/components/schemas/PipKind'
+        },
+        state: {
+            $ref: '#/components/schemas/PipState'
+        },
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        progress: {
+            type: 'integer'
+        },
+        errorCode: {
+            type: 'string'
+        },
+        errorMessage: {
+            type: 'string'
+        },
+        staleReason: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const SceneSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'episodeId',
+        'lang',
+        'idx',
+        'paragraphIds',
+        'narration',
+        'segments',
+        'imagePrompt',
+        'characterIds',
+        'motionPreset',
+        'durationMs',
+        'durationMeasured',
+        'startMs',
+        'tainted',
+        'version',
+        'pips',
+        'worstState',
+        'peaks'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        episodeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        },
+        idx: {
+            type: 'integer'
+        },
+        paragraphIds: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        },
+        narration: {
+            type: 'string'
+        },
+        segments: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/SceneSegment'
+            }
+        },
+        imagePrompt: {
+            type: 'string'
+        },
+        characterIds: {
+            type: 'array',
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        },
+        motionPreset: {
+            $ref: '#/components/schemas/MotionPreset'
+        },
+        imageStyleId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        durationMs: {
+            type: 'integer'
+        },
+        durationMeasured: {
+            type: 'boolean',
+            description: 'True once a voice take set the duration; before that it is a words-per-minute estimate.'
+        },
+        startMs: {
+            type: 'integer',
+            description: 'Offset of this scene in the episode timeline.'
+        },
+        tainted: {
+            type: 'boolean'
+        },
+        version: {
+            type: 'integer',
+            format: 'int64'
+        },
+        pips: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ScenePip'
+            }
+        },
+        worstState: {
+            $ref: '#/components/schemas/PipState'
+        },
+        imageAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        imageVariants: {
+            type: 'boolean',
+            description: 'True once WebP/AVIF variants exist for the selected image.'
+        },
+        voiceAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        alignAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        peaks: {
+            type: 'boolean',
+            description: 'True once waveform peaks exist for the selected voice take.'
+        }
+    }
+} as const;
+
+export const SceneCountsSchema = {
+    type: 'object',
+    required: [
+        'all',
+        'stale',
+        'failed',
+        'missing',
+        'inQueue'
+    ],
+    properties: {
+        all: {
+            type: 'integer'
+        },
+        stale: {
+            type: 'integer'
+        },
+        failed: {
+            type: 'integer'
+        },
+        missing: {
+            type: 'integer'
+        },
+        inQueue: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const StageProgressSchema = {
+    type: 'object',
+    required: [
+        'kind',
+        'done',
+        'total'
+    ],
+    properties: {
+        kind: {
+            $ref: '#/components/schemas/PipKind'
+        },
+        done: {
+            type: 'integer'
+        },
+        total: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const SceneListSchema = {
+    type: 'object',
+    required: [
+        'items',
+        'counts',
+        'stages',
+        'totalDurationMs',
+        'activeRunIds',
+        'missingCount'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Scene'
+            }
+        },
+        counts: {
+            $ref: '#/components/schemas/SceneCounts'
+        },
+        stages: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/StageProgress'
+            }
+        },
+        totalDurationMs: {
+            type: 'integer'
+        },
+        activeRunIds: {
+            type: 'array',
+            description: 'Runs with queued or running per-scene steps, for the SSE subscription.',
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        },
+        missingCount: {
+            type: 'integer',
+            description: 'How many per-scene steps "Generate missing" would queue.'
+        },
+        nextCursor: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const SceneSplitRequestSchema = {
+    type: 'object',
+    required: [
+        'lang',
+        'mode'
+    ],
+    properties: {
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        },
+        mode: {
+            type: 'string',
+            enum: [
+                'paragraphs',
+                'llm'
+            ]
+        },
+        cadenceMinS: {
+            type: 'integer',
+            minimum: 5,
+            maximum: 300
+        },
+        cadenceMaxS: {
+            type: 'integer',
+            minimum: 5,
+            maximum: 600
+        },
+        discardWork: {
+            type: 'boolean',
+            default: false,
+            description: 'Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.'
+        }
+    }
+} as const;
+
+export const SceneSplitResultSchema = {
+    type: 'object',
+    required: [
+        'mode',
+        'sceneCount',
+        'keptCount'
+    ],
+    properties: {
+        mode: {
+            type: 'string',
+            enum: [
+                'paragraphs',
+                'llm'
+            ]
+        },
+        sceneCount: {
+            type: 'integer'
+        },
+        keptCount: {
+            type: 'integer',
+            description: 'Scenes whose narration was unchanged, kept with their takes.'
+        },
+        droppedCount: {
+            type: 'integer',
+            description: 'Old scenes the paragraph split deleted, with their takes.'
+        },
+        unrecognisedSpeakers: {
+            type: 'integer'
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const SceneSplitConflictSchema = {
+    description: 'A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.',
+    type: 'object',
+    required: [
+        'title',
+        'status',
+        'detail',
+        'droppedCount',
+        'editedCount',
+        'takeCount'
+    ],
+    properties: {
+        title: {
+            type: 'string'
+        },
+        status: {
+            type: 'integer'
+        },
+        detail: {
+            type: 'string'
+        },
+        droppedCount: {
+            type: 'integer'
+        },
+        editedCount: {
+            type: 'integer'
+        },
+        takeCount: {
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const TakeKindSchema = {
+    type: 'string',
+    enum: [
+        'image',
+        'voice',
+        'align'
+    ]
+} as const;
+
+export const GenerateMissingRequestSchema = {
+    type: 'object',
+    required: [
+        'lang'
+    ],
+    properties: {
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        },
+        kinds: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/TakeKind'
+            }
+        }
+    }
+} as const;
+
+export const GenerateMissingResponseSchema = {
+    type: 'object',
+    required: [
+        'queued'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        queued: {
+            type: 'object',
+            required: [
+                'image',
+                'voice',
+                'align'
+            ],
+            properties: {
+                image: {
+                    type: 'integer'
+                },
+                voice: {
+                    type: 'integer'
+                },
+                align: {
+                    type: 'integer'
+                }
+            }
+        }
+    }
+} as const;
+
+export const ScenePatchSchema = {
+    type: 'object',
+    required: [
+        'expectedVersion'
+    ],
+    properties: {
+        expectedVersion: {
+            type: 'integer',
+            format: 'int64'
+        },
+        narration: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 20000,
+            description: 'Replaces the narration; segments are re-derived from it, each quoted line keeping the speaker of the quoted line at the same position. Ignored for segments when segments is also given.'
+        },
+        segments: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 200,
+            items: {
+                $ref: '#/components/schemas/SceneSegment'
+            }
+        },
+        imagePrompt: {
+            type: 'string',
+            maxLength: 4000
+        },
+        characterIds: {
+            type: 'array',
+            maxItems: 20,
+            items: {
+                type: 'string',
+                format: 'uuid'
+            }
+        },
+        motionPreset: {
+            $ref: '#/components/schemas/MotionPreset'
+        },
+        imageStyleId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        clearImageStyle: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const SceneRegenerateRequestSchema = {
+    type: 'object',
+    required: [
+        'kind'
+    ],
+    properties: {
+        kind: {
+            $ref: '#/components/schemas/TakeKind'
+        }
+    }
+} as const;
+
+export const SceneTakeSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'assetId',
+        'selected',
+        'stale',
+        'createdAt',
+        'params',
+        'variants'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            $ref: '#/components/schemas/TakeKind'
+        },
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        selected: {
+            type: 'boolean'
+        },
+        stale: {
+            type: 'boolean'
+        },
+        durationMs: {
+            type: 'integer'
+        },
+        variants: {
+            type: 'boolean'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        params: {
+            type: 'object',
+            additionalProperties: true
+        }
+    }
+} as const;
+
+export const SceneTakeListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/SceneTake'
+            }
+        }
+    }
+} as const;
+
+export const PeaksSchema = {
+    type: 'object',
+    required: [
+        'peaksPerSecond',
+        'startMs',
+        'durationMs',
+        'min',
+        'max'
+    ],
+    properties: {
+        peaksPerSecond: {
+            type: 'integer'
+        },
+        startMs: {
+            type: 'integer'
+        },
+        durationMs: {
+            type: 'integer'
+        },
+        min: {
+            type: 'array',
+            description: 'Per-peak minimum, scaled to -127..127.',
+            items: {
+                type: 'integer'
+            }
+        },
+        max: {
+            type: 'array',
+            items: {
+                type: 'integer'
+            }
+        }
+    }
+} as const;
+
+export const AssetVariantNameSchema = {
+    type: 'string',
+    enum: [
+        'original',
+        'webp-320',
+        'webp-640',
+        'webp-1280',
+        'avif-320',
+        'avif-640',
+        'avif-1280'
+    ]
+} as const;
+
+export const MediaBackfillResponseSchema = {
+    type: 'object',
+    required: [
+        'variants',
+        'peaks'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        variants: {
+            type: 'integer'
+        },
+        peaks: {
+            type: 'integer'
+        }
+    }
+} as const;

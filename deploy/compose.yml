@@ -215,6 +215,10 @@ services:
       # source for the api container.
       TRUSTED_PROXY_CIDRS: 172.28.0.10/32
       ARGON2_MAX_CONCURRENCY: "4"
+      # Per-client-IP request budget; a local e2e run (every spec from one
+      # browser) may raise it through the environment, never .env edits.
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-600}
+      API_MEDIA_RATE_LIMIT_PER_MINUTE: ${API_MEDIA_RATE_LIMIT_PER_MINUTE:-1200}
       APP_MODE: ${APP_MODE:-local}
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
@@ -274,11 +278,15 @@ services:
       MASTER_KEY_PATH: /run/secrets/master_key
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
+      FFMPEG_PATH: /usr/local/bin/ffmpeg
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 10
+    # Media and voice steps stage their inputs and ffmpeg outputs in a
+    # per-step temp dir; the root filesystem stays read-only.
+    tmpfs: ["/tmp:size=1g,mode=1777"]
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]

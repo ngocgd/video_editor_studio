@@ -23,18 +23,26 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
+	"loomtale/api/internal/media"
+	"loomtale/api/internal/media/ffmpeg"
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/providers/align"
 	"loomtale/api/internal/providers/bootstrap"
 	"loomtale/api/internal/providers/llmcheck"
+	"loomtale/api/internal/providers/train"
+	"loomtale/api/internal/providers/tts"
 	"loomtale/api/internal/providers/workerstatus"
+	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/story"
+	workerv1 "loomtale/api/internal/workerpb/loomtale/worker/v1"
 )
 
 const healthAddr = "127.0.0.1:8081"
@@ -112,6 +120,7 @@ func run() error {
 
 	registry := pipeline.NewRegistry()
 	for _, h := range story.Handlers(llmRegistry, queries) {
+		h.PinCharacters = cfg.PinCharacters
 		registry.Register(h)
 	}
 	for _, h := range llmcheck.Handlers(llmRegistry) {
@@ -124,9 +133,34 @@ func run() error {
 	}
 	modelStore := &models.Store{Queries: queries}
 	loadGate := &models.LoadGate{Manifest: manifest, Store: modelStore, Dir: cfg.ModelsDir}
-	residency, probe, residencyManager, err := buildResidency(ctx, cfg, manifest, loadGate.Check)
+	residency, probe, residencyManager, clients, err := buildResidency(ctx, cfg, manifest, loadGate.Check)
 	if err != nil {
 		return err
+	}
+
+	// Scene, character and media steps. Every worker registers them: the
+	// media steps run on the cpu queue anywhere ffmpeg is installed, and
+	// the gpu ones are only ever claimed by a worker with the gpu queue
+	// enabled (which is also the one with the engine clients below).
+	ffmpegRunner := &ffmpeg.Runner{Binary: cfg.FFmpegPath}
+	sceneService := &scenes.Service{Pool: pool.Pool, Queries: queries, Hooks: &scenes.Hooks{}}
+	sceneDeps := scenes.StepDeps{Service: sceneService, Storage: internalStore, Comfy: clients.Comfy, Runner: ffmpegRunner, LLM: llmRegistry, SceneWorkflow: scenes.SceneWorkflows(manifest)}
+	sheetModel, sheetWorkflow := scenes.SheetModel(manifest)
+	charDeps := characters.StepDeps{Queries: queries, Storage: internalStore, Scenes: sceneService, Comfy: clients.Comfy, SheetModel: sheetModel, SheetWorkflow: sheetWorkflow}
+	if clients.Pyworker != nil {
+		sceneDeps.TTS = tts.New(workerv1.NewTTSClient(clients.Pyworker))
+		sceneDeps.Align = align.New(workerv1.NewAlignClient(clients.Pyworker))
+		charDeps.TTS = sceneDeps.TTS
+		charDeps.Train = train.New(workerv1.NewTrainClient(clients.Pyworker))
+	}
+	for _, h := range scenes.Handlers(sceneDeps) {
+		registry.Register(h)
+	}
+	for _, h := range characters.Handlers(charDeps) {
+		registry.Register(h)
+	}
+	for _, h := range media.Handlers(media.Deps{Queries: queries, Storage: internalStore, Runner: ffmpegRunner}) {
+		registry.Register(h)
 	}
 	// models.* steps only run on a GPU worker: that is the one with the
 	// models volume (read-write, for pulls) and the GPU network (for
@@ -159,6 +193,8 @@ func run() error {
 	if registry.Len() > 0 {
 		queueConfig = map[string]river.QueueConfig{
 			pipeline.QueueLLM: {MaxWorkers: cfg.LLMWorkers},
+			// media.variants / media.peaks (ffmpeg on the worker image).
+			pipeline.QueueCPU: {MaxWorkers: cfg.CPUWorkers},
 		}
 		if cfg.WorkerGPU {
 			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
@@ -172,7 +208,8 @@ func run() error {
 	// worker bundle (needed to construct the client) holds a StepWorker
 	// that references this same Engine by pointer, so the dependency
 	// only resolves one way at a time.
-	engine := pipeline.NewEngine(pool.Pool, queries, nil, registry, nil, nil)
+	engine := pipeline.NewEngine(pool.Pool, queries, nil, registry, nil, scenes.Estimate)
+	sceneService.Engine = engine
 	gpuExecutor := pipeline.NewGPUExecutor(engine, residency, cfg.RenderReserveMB)
 
 	workers := river.NewWorkers()

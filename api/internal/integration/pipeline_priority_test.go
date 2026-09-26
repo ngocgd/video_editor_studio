@@ -48,7 +48,7 @@ func TestQueueResolvedAtEnqueueTimeIsPinnedOnTheStepRow(t *testing.T) {
 func TestPriorityIsStoredOnTheRiverJobRow(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("priority-check", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("priority-check", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "priority-tenant")

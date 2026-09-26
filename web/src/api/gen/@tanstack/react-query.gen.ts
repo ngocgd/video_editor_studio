@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, disconnectYouTubeChannel, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, installModel, listAssets, listAudit, listEpisodes, listImports, listJobs, listModels, listRunSteps, listSeries, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, startYouTubeConnect, switchTenant, testLlmSettings, unloadModels, updateBibleSection, updateEpisode, updateSeries, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
-import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
+import { addCharacterRef, applyDraftStep, backfillMedia, cancelRun, cancelStep, commitImport, createAiAction, createCharacter, createDraft, createEpisode, createImageStyle, createImport, createRun, createSeries, createVoicePreset, deleteCharacter, deleteCharacterRef, deleteImageStyle, deleteVoicePreset, disconnectYouTubeChannel, finalizeAsset, generateMissing, generateSeries, getAiActionResult, getAsset, getAssetVariant, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getScenePeaks, getSeries, getStepLog, getStoryboardSettings, installModel, listAssets, listAudit, listCharacters, listEpisodes, listImageStyles, listImports, listJobs, listModels, listRunSteps, listScenes, listSceneTakes, listSeries, listVoicePresets, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewCharacterVoice, previewImport, putLlmApiKey, putLlmSettings, putStoryboardSettings, regenerateCharacterSheet, regenerateScene, retryStep, selectSceneTake, setCharacterVoice, setNarratorVoice, splitScenes, startYouTubeConnect, switchTenant, testLlmSettings, trainCharacterLora, unloadModels, updateBibleSection, updateCharacter, updateCharacterRef, updateEpisode, updateImageStyle, updateScene, updateSeries, updateVoicePreset, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
+import type { AddCharacterRefData, AddCharacterRefError, AddCharacterRefResponse, ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, BackfillMediaData, BackfillMediaResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateCharacterData, CreateCharacterError, CreateCharacterResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImageStyleData, CreateImageStyleError, CreateImageStyleResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, CreateVoicePresetData, CreateVoicePresetError, CreateVoicePresetResponse, DeleteCharacterData, DeleteCharacterError, DeleteCharacterRefData, DeleteCharacterRefError, DeleteCharacterRefResponse, DeleteCharacterResponse, DeleteImageStyleData, DeleteImageStyleError, DeleteImageStyleResponse, DeleteVoicePresetData, DeleteVoicePresetError, DeleteVoicePresetResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateMissingData, GenerateMissingError, GenerateMissingResponse2, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetAssetVariantData, GetAssetVariantError, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetScenePeaksData, GetScenePeaksError, GetScenePeaksResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, GetStoryboardSettingsData, GetStoryboardSettingsError, GetStoryboardSettingsResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListCharactersData, ListCharactersError, ListCharactersResponse, ListEpisodesData, ListEpisodesResponse, ListImageStylesData, ListImageStylesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListScenesData, ListScenesError, ListScenesResponse, ListSceneTakesData, ListSceneTakesError, ListSceneTakesResponse, ListSeriesData, ListSeriesResponse, ListVoicePresetsData, ListVoicePresetsResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewCharacterVoiceData, PreviewCharacterVoiceError, PreviewCharacterVoiceResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, PutStoryboardSettingsData, PutStoryboardSettingsError, PutStoryboardSettingsResponse, RegenerateCharacterSheetData, RegenerateCharacterSheetError, RegenerateCharacterSheetResponse, RegenerateSceneData, RegenerateSceneError, RegenerateSceneResponse, RetryStepData, RetryStepError, RetryStepResponse, SelectSceneTakeData, SelectSceneTakeError, SelectSceneTakeResponse, SetCharacterVoiceData, SetCharacterVoiceError, SetCharacterVoiceResponse, SetNarratorVoiceData, SetNarratorVoiceError, SetNarratorVoiceResponse, SplitScenesData, SplitScenesError, SplitScenesResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrainCharacterLoraData, TrainCharacterLoraError, TrainCharacterLoraResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateCharacterData, UpdateCharacterError, UpdateCharacterRefData, UpdateCharacterRefError, UpdateCharacterRefResponse, UpdateCharacterResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateImageStyleData, UpdateImageStyleError, UpdateImageStyleResponse, UpdateSceneData, UpdateSceneError, UpdateSceneResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateVoicePresetData, UpdateVoicePresetError, UpdateVoicePresetResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1282,6 +1282,588 @@ export const loadModelMutation = (options?: Partial<Options<LoadModelData>>): Us
     const mutationOptions: UseMutationOptions<LoadModelResponse, LoadModelError, Options<LoadModelData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await loadModel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listVoicePresetsQueryKey = (options?: Options<ListVoicePresetsData>) => createQueryKey('listVoicePresets', options);
+
+/**
+ * Voice presets of this tenant
+ */
+export const listVoicePresetsOptions = (options?: Options<ListVoicePresetsData>) => queryOptions<ListVoicePresetsResponse, DefaultError, ListVoicePresetsResponse, ReturnType<typeof listVoicePresetsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listVoicePresets({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listVoicePresetsQueryKey(options)
+});
+
+/**
+ * Create a voice preset; a reference voice needs the consent flag, which is audited
+ */
+export const createVoicePresetMutation = (options?: Partial<Options<CreateVoicePresetData>>): UseMutationOptions<CreateVoicePresetResponse, CreateVoicePresetError, Options<CreateVoicePresetData>> => {
+    const mutationOptions: UseMutationOptions<CreateVoicePresetResponse, CreateVoicePresetError, Options<CreateVoicePresetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createVoicePreset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a voice preset that no voice uses
+ */
+export const deleteVoicePresetMutation = (options?: Partial<Options<DeleteVoicePresetData>>): UseMutationOptions<DeleteVoicePresetResponse, DeleteVoicePresetError, Options<DeleteVoicePresetData>> => {
+    const mutationOptions: UseMutationOptions<DeleteVoicePresetResponse, DeleteVoicePresetError, Options<DeleteVoicePresetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteVoicePreset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Replace a voice preset
+ */
+export const updateVoicePresetMutation = (options?: Partial<Options<UpdateVoicePresetData>>): UseMutationOptions<UpdateVoicePresetResponse, UpdateVoicePresetError, Options<UpdateVoicePresetData>> => {
+    const mutationOptions: UseMutationOptions<UpdateVoicePresetResponse, UpdateVoicePresetError, Options<UpdateVoicePresetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateVoicePreset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listImageStylesQueryKey = (options?: Options<ListImageStylesData>) => createQueryKey('listImageStyles', options);
+
+/**
+ * Image styles of this tenant
+ */
+export const listImageStylesOptions = (options?: Options<ListImageStylesData>) => queryOptions<ListImageStylesResponse, DefaultError, ListImageStylesResponse, ReturnType<typeof listImageStylesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listImageStyles({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listImageStylesQueryKey(options)
+});
+
+/**
+ * Create an image style
+ */
+export const createImageStyleMutation = (options?: Partial<Options<CreateImageStyleData>>): UseMutationOptions<CreateImageStyleResponse, CreateImageStyleError, Options<CreateImageStyleData>> => {
+    const mutationOptions: UseMutationOptions<CreateImageStyleResponse, CreateImageStyleError, Options<CreateImageStyleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createImageStyle({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete an image style (scenes using it fall back to the series default)
+ */
+export const deleteImageStyleMutation = (options?: Partial<Options<DeleteImageStyleData>>): UseMutationOptions<DeleteImageStyleResponse, DeleteImageStyleError, Options<DeleteImageStyleData>> => {
+    const mutationOptions: UseMutationOptions<DeleteImageStyleResponse, DeleteImageStyleError, Options<DeleteImageStyleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteImageStyle({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Replace an image style
+ */
+export const updateImageStyleMutation = (options?: Partial<Options<UpdateImageStyleData>>): UseMutationOptions<UpdateImageStyleResponse, UpdateImageStyleError, Options<UpdateImageStyleData>> => {
+    const mutationOptions: UseMutationOptions<UpdateImageStyleResponse, UpdateImageStyleError, Options<UpdateImageStyleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateImageStyle({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listCharactersQueryKey = (options: Options<ListCharactersData>) => createQueryKey('listCharacters', options);
+
+/**
+ * Characters of a series with refs, LoRA versions, voices and episode appearances
+ */
+export const listCharactersOptions = (options: Options<ListCharactersData>) => queryOptions<ListCharactersResponse, ListCharactersError, ListCharactersResponse, ReturnType<typeof listCharactersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listCharacters({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listCharactersQueryKey(options)
+});
+
+/**
+ * Create a character
+ */
+export const createCharacterMutation = (options?: Partial<Options<CreateCharacterData>>): UseMutationOptions<CreateCharacterResponse, CreateCharacterError, Options<CreateCharacterData>> => {
+    const mutationOptions: UseMutationOptions<CreateCharacterResponse, CreateCharacterError, Options<CreateCharacterData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createCharacter({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Assign the narrator's voice of a series for one language
+ */
+export const setNarratorVoiceMutation = (options?: Partial<Options<SetNarratorVoiceData>>): UseMutationOptions<SetNarratorVoiceResponse, SetNarratorVoiceError, Options<SetNarratorVoiceData>> => {
+    const mutationOptions: UseMutationOptions<SetNarratorVoiceResponse, SetNarratorVoiceError, Options<SetNarratorVoiceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setNarratorVoice({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a character
+ */
+export const deleteCharacterMutation = (options?: Partial<Options<DeleteCharacterData>>): UseMutationOptions<DeleteCharacterResponse, DeleteCharacterError, Options<DeleteCharacterData>> => {
+    const mutationOptions: UseMutationOptions<DeleteCharacterResponse, DeleteCharacterError, Options<DeleteCharacterData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteCharacter({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Replace a character's names, prompts and profile
+ */
+export const updateCharacterMutation = (options?: Partial<Options<UpdateCharacterData>>): UseMutationOptions<UpdateCharacterResponse, UpdateCharacterError, Options<UpdateCharacterData>> => {
+    const mutationOptions: UseMutationOptions<UpdateCharacterResponse, UpdateCharacterError, Options<UpdateCharacterData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateCharacter({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Attach an uploaded image as a reference; queues its image variants
+ */
+export const addCharacterRefMutation = (options?: Partial<Options<AddCharacterRefData>>): UseMutationOptions<AddCharacterRefResponse, AddCharacterRefError, Options<AddCharacterRefData>> => {
+    const mutationOptions: UseMutationOptions<AddCharacterRefResponse, AddCharacterRefError, Options<AddCharacterRefData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addCharacterRef({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Remove a reference image
+ */
+export const deleteCharacterRefMutation = (options?: Partial<Options<DeleteCharacterRefData>>): UseMutationOptions<DeleteCharacterRefResponse, DeleteCharacterRefError, Options<DeleteCharacterRefData>> => {
+    const mutationOptions: UseMutationOptions<DeleteCharacterRefResponse, DeleteCharacterRefError, Options<DeleteCharacterRefData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteCharacterRef({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Change a reference's angle label or approval
+ */
+export const updateCharacterRefMutation = (options?: Partial<Options<UpdateCharacterRefData>>): UseMutationOptions<UpdateCharacterRefResponse, UpdateCharacterRefError, Options<UpdateCharacterRefData>> => {
+    const mutationOptions: UseMutationOptions<UpdateCharacterRefResponse, UpdateCharacterRefError, Options<UpdateCharacterRefData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateCharacterRef({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+ */
+export const regenerateCharacterSheetMutation = (options?: Partial<Options<RegenerateCharacterSheetData>>): UseMutationOptions<RegenerateCharacterSheetResponse, RegenerateCharacterSheetError, Options<RegenerateCharacterSheetData>> => {
+    const mutationOptions: UseMutationOptions<RegenerateCharacterSheetResponse, RegenerateCharacterSheetError, Options<RegenerateCharacterSheetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await regenerateCharacterSheet({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Train a new LoRA version from approved references (a gpu step at training priority)
+ */
+export const trainCharacterLoraMutation = (options?: Partial<Options<TrainCharacterLoraData>>): UseMutationOptions<TrainCharacterLoraResponse, TrainCharacterLoraError, Options<TrainCharacterLoraData>> => {
+    const mutationOptions: UseMutationOptions<TrainCharacterLoraResponse, TrainCharacterLoraError, Options<TrainCharacterLoraData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await trainCharacterLora({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Assign a character's voice for one language
+ */
+export const setCharacterVoiceMutation = (options?: Partial<Options<SetCharacterVoiceData>>): UseMutationOptions<SetCharacterVoiceResponse, SetCharacterVoiceError, Options<SetCharacterVoiceData>> => {
+    const mutationOptions: UseMutationOptions<SetCharacterVoiceResponse, SetCharacterVoiceError, Options<SetCharacterVoiceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setCharacterVoice({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Synthesize a preview line with the character's voice (a TTS step)
+ */
+export const previewCharacterVoiceMutation = (options?: Partial<Options<PreviewCharacterVoiceData>>): UseMutationOptions<PreviewCharacterVoiceResponse, PreviewCharacterVoiceError, Options<PreviewCharacterVoiceData>> => {
+    const mutationOptions: UseMutationOptions<PreviewCharacterVoiceResponse, PreviewCharacterVoiceError, Options<PreviewCharacterVoiceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewCharacterVoice({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getStoryboardSettingsQueryKey = (options: Options<GetStoryboardSettingsData>) => createQueryKey('getStoryboardSettings', options);
+
+/**
+ * Storyboard defaults of a series (image style, cadence, segment gap)
+ */
+export const getStoryboardSettingsOptions = (options: Options<GetStoryboardSettingsData>) => queryOptions<GetStoryboardSettingsResponse, GetStoryboardSettingsError, GetStoryboardSettingsResponse, ReturnType<typeof getStoryboardSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStoryboardSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStoryboardSettingsQueryKey(options)
+});
+
+/**
+ * Replace the storyboard defaults of a series
+ */
+export const putStoryboardSettingsMutation = (options?: Partial<Options<PutStoryboardSettingsData>>): UseMutationOptions<PutStoryboardSettingsResponse, PutStoryboardSettingsError, Options<PutStoryboardSettingsData>> => {
+    const mutationOptions: UseMutationOptions<PutStoryboardSettingsResponse, PutStoryboardSettingsError, Options<PutStoryboardSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putStoryboardSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listScenesQueryKey = (options: Options<ListScenesData>) => createQueryKey('listScenes', options);
+
+/**
+ * Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+ */
+export const listScenesOptions = (options: Options<ListScenesData>) => queryOptions<ListScenesResponse, ListScenesError, ListScenesResponse, ReturnType<typeof listScenesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listScenes({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listScenesQueryKey(options)
+});
+
+export const listScenesInfiniteQueryKey = (options: Options<ListScenesData>): QueryKey<Options<ListScenesData>> => createQueryKey('listScenes', options, true);
+
+/**
+ * Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+ */
+export const listScenesInfiniteOptions = (options: Options<ListScenesData>) => {
+    const opts = infiniteQueryOptions<ListScenesResponse, ListScenesError, InfiniteData<ListScenesResponse>, QueryKey<Options<ListScenesData>>, string | Pick<QueryKey<Options<ListScenesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListScenesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listScenes({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listScenesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
+ */
+export const splitScenesMutation = (options?: Partial<Options<SplitScenesData>>): UseMutationOptions<SplitScenesResponse, SplitScenesError, Options<SplitScenesData>> => {
+    const mutationOptions: UseMutationOptions<SplitScenesResponse, SplitScenesError, Options<SplitScenesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await splitScenes({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Queue every missing or stale image, voice and align step of an episode as one batch run
+ */
+export const generateMissingMutation = (options?: Partial<Options<GenerateMissingData>>): UseMutationOptions<GenerateMissingResponse2, GenerateMissingError, Options<GenerateMissingData>> => {
+    const mutationOptions: UseMutationOptions<GenerateMissingResponse2, GenerateMissingError, Options<GenerateMissingData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await generateMissing({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Edit a scene's narration, segments, prompt, characters, motion or style
+ */
+export const updateSceneMutation = (options?: Partial<Options<UpdateSceneData>>): UseMutationOptions<UpdateSceneResponse, UpdateSceneError, Options<UpdateSceneData>> => {
+    const mutationOptions: UseMutationOptions<UpdateSceneResponse, UpdateSceneError, Options<UpdateSceneData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateScene({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Queue exactly one step to regenerate one kind of take for one scene
+ */
+export const regenerateSceneMutation = (options?: Partial<Options<RegenerateSceneData>>): UseMutationOptions<RegenerateSceneResponse, RegenerateSceneError, Options<RegenerateSceneData>> => {
+    const mutationOptions: UseMutationOptions<RegenerateSceneResponse, RegenerateSceneError, Options<RegenerateSceneData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await regenerateScene({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listSceneTakesQueryKey = (options: Options<ListSceneTakesData>) => createQueryKey('listSceneTakes', options);
+
+/**
+ * Every take of a scene, for the takes strip and A/B compare
+ */
+export const listSceneTakesOptions = (options: Options<ListSceneTakesData>) => queryOptions<ListSceneTakesResponse, ListSceneTakesError, ListSceneTakesResponse, ReturnType<typeof listSceneTakesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listSceneTakes({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listSceneTakesQueryKey(options)
+});
+
+/**
+ * Select a take (also how a revert works)
+ */
+export const selectSceneTakeMutation = (options?: Partial<Options<SelectSceneTakeData>>): UseMutationOptions<SelectSceneTakeResponse, SelectSceneTakeError, Options<SelectSceneTakeData>> => {
+    const mutationOptions: UseMutationOptions<SelectSceneTakeResponse, SelectSceneTakeError, Options<SelectSceneTakeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await selectSceneTake({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getScenePeaksQueryKey = (options: Options<GetScenePeaksData>) => createQueryKey('getScenePeaks', options);
+
+/**
+ * Waveform peaks of the scene's selected voice take, optionally for a window only
+ */
+export const getScenePeaksOptions = (options: Options<GetScenePeaksData>) => queryOptions<GetScenePeaksResponse, GetScenePeaksError, GetScenePeaksResponse, ReturnType<typeof getScenePeaksQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getScenePeaks({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getScenePeaksQueryKey(options)
+});
+
+export const getAssetVariantQueryKey = (options: Options<GetAssetVariantData>) => createQueryKey('getAssetVariant', options);
+
+/**
+ * Redirect to a short-lived URL of an asset or one of its image variants
+ */
+export const getAssetVariantOptions = (options: Options<GetAssetVariantData>) => queryOptions<unknown, GetAssetVariantError, unknown, ReturnType<typeof getAssetVariantQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAssetVariant({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAssetVariantQueryKey(options)
+});
+
+/**
+ * Queue image variants and waveform peaks for every ready asset that lacks them
+ */
+export const backfillMediaMutation = (options?: Partial<Options<BackfillMediaData>>): UseMutationOptions<BackfillMediaResponse, DefaultError, Options<BackfillMediaData>> => {
+    const mutationOptions: UseMutationOptions<BackfillMediaResponse, DefaultError, Options<BackfillMediaData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await backfillMedia({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

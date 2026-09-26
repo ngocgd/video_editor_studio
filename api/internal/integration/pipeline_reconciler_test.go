@@ -24,7 +24,7 @@ import (
 func TestReconcilerResumesAfterCrash(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("crash-resume", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("crash-resume", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "crash-resume-tenant")
@@ -93,7 +93,7 @@ func TestReconcilerResumesAfterCrash(t *testing.T) {
 func TestReconcilerRecoversWhileTheDeadRiverJobIsStillRunning(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("dead-job-crash", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("dead-job-crash", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "dead-job-crash-tenant")
@@ -164,7 +164,7 @@ func TestReconcilerRecoversWhileTheDeadRiverJobIsStillRunning(t *testing.T) {
 func TestZombieWriterFailsHeartbeatAndCommitsNothing(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("zombie", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("zombie", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "zombie-tenant")
@@ -225,8 +225,8 @@ func TestZombieWriterFailsHeartbeatAndCommitsNothing(t *testing.T) {
 func TestReconcilerSweepsReadyPendingStepWithNoLiveJob(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("sweep-dep", pipeline.QueueCPU))
-	registry.Register(succeedsImmediately("sweep-target", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("sweep-dep", testQueue))
+	registry.Register(succeedsImmediately("sweep-target", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "sweep-tenant")
