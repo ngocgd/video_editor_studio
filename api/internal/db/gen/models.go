@@ -219,6 +219,18 @@ type User struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type VoiceRateCalibration struct {
+	VoiceKey   string             `json:"voice_key"`
+	Engine     string             `json:"engine"`
+	Language   string             `json:"language"`
+	Words      int64              `json:"words"`
+	Seconds    float64            `json:"seconds"`
+	Wpm        float64            `json:"wpm"`
+	Samples    int32              `json:"samples"`
+	RunID      pgtype.UUID        `json:"run_id"`
+	MeasuredAt pgtype.Timestamptz `json:"measured_at"`
+}
+
 type WorkerStatus struct {
 	WorkerID    string             `json:"worker_id"`
 	Gpu         []byte             `json:"gpu"`

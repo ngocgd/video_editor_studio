@@ -100,6 +100,7 @@ type Querier interface {
 	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetVoiceRateCalibration(ctx context.Context, voiceKey string) (VoiceRateCalibration, error)
 	HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error)
 	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
 	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
@@ -211,6 +212,9 @@ type Querier interface {
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
+	// Measured narration speed per voice (see the voice_rate_calibrations
+	// migration). Not tenant-scoped.
+	UpsertVoiceRateCalibration(ctx context.Context, arg UpsertVoiceRateCalibrationParams) error
 	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
 
