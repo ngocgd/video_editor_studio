@@ -102,6 +102,15 @@ func NewManagerWithBudget(ctx context.Context, probe pipeline.GpuProbe, backends
 		budget = 0
 	}
 	m.BudgetMB = budget
+	// Every manifest estimate should fit the measured budget; one that
+	// does not still loads (the backend offloads the rest to CPU RAM),
+	// but slower, so say so where an operator will see it.
+	for ref, mb := range manifests {
+		if budget > 0 && mb > budget {
+			slog.WarnContext(ctx, "residency: model VRAM estimate exceeds the measured budget; it will offload to CPU RAM",
+				"model", ref, "estimate_mb", mb, "budget_mb", budget)
+		}
+	}
 	return m, nil
 }
 
@@ -165,7 +174,7 @@ func (m *Manager) Ensure(ctx context.Context, target pipeline.ModelRef) error {
 
 	m.unloadAllLocked(ctx)
 
-	if needed := m.Manifests[target.Backend+":"+target.Model]; needed > 0 {
+	if needed := m.waitTargetMB(target); needed > 0 {
 		if err := m.waitForFreeVRAM(ctx, needed); err != nil {
 			return err
 		}
@@ -220,6 +229,20 @@ func (m *Manager) unloadAllLocked(ctx context.Context) {
 	m.mu.Lock()
 	m.current = nil
 	m.mu.Unlock()
+}
+
+// waitTargetMB is how much free VRAM Ensure waits for before loading
+// target: its manifest estimate, capped at BudgetMB. A model planned
+// above the budget offloads the excess to CPU RAM (ComfyUI runs with
+// --reserve-vram), so waiting for more than the budget would only ever
+// time out: at boot with nothing loaded, free VRAM is the budget plus
+// the render reserve.
+func (m *Manager) waitTargetMB(target pipeline.ModelRef) int64 {
+	needed := m.Manifests[target.Backend+":"+target.Model]
+	if m.BudgetMB > 0 && needed > m.BudgetMB {
+		return m.BudgetMB
+	}
+	return needed
 }
 
 // waitForFreeVRAM polls Probe every vramPollInterval until at least
