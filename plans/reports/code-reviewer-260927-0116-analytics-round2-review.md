@@ -15,7 +15,7 @@ Two items are expected to stay pending:
 - The dashboard "videos awaiting review" widget, because it needs phase 10 part 2.
 - The criteria that need a real channel, which are external.
 
-The board shows no new CHANGE lines from other lanes that affect this branch since round 1. Lane a's merge of phase 7 held the heavy lock just before this run. When it lands on main, the merge step must merge main into this branch again.
+The board shows no new CHANGE lines from other lanes that affect this branch since round 1. While this run was going, lane a merged phase 7 into main (main is now `c05667d`, board 01:11:49). This verification therefore covers the branch on top of `cfe5f1a`. The merge step must merge `c05667d` into the branch and re-run the checks under the merge lock.
 
 ## Verification run
 
@@ -91,7 +91,7 @@ The board shows no new CHANGE lines from other lanes that affect this branch sin
 
 ## Required before merge
 
-Nothing on this branch. The merge step must merge main into the branch again if main has moved, for example with phase 7 from lane a. It must then regenerate the generated code rather than hand-merge it, and keep the union of `TENANT_TABLES` in `scripts/lint-tenant-queries.sh`.
+Nothing on this branch. The merge step must merge main `c05667d` (phase 7 from lane a) into the branch. It must then regenerate the generated code rather than hand-merge it, and keep the union of `TENANT_TABLES` in `scripts/lint-tenant-queries.sh`.
 
 ## Unresolved questions
 
