@@ -1,0 +1,339 @@
+Unavailable:
+  type: object
+  description: >-
+    Why a metric is missing, keyed by the YouTube API metric name (e.g.
+    views, impressions). A metric listed here is absent from its row, never 0.
+  additionalProperties:
+    type: string
+AnalyticsWindow:
+  type: object
+  required: [from, to]
+  properties:
+    from:
+      type: string
+      format: date
+    to:
+      type: string
+      format: date
+AnalyticsSyncState:
+  type: object
+  description: >-
+    Sync state of one channel. analyticsThrough and reachThrough are the
+    "data through" dates of the Analytics API and the reach report; they
+    are absent before the first data arrives.
+  required: [status, lastError]
+  properties:
+    status:
+      type: string
+      enum: [idle, running, failed]
+    analyticsThrough:
+      type: string
+      format: date
+    reachThrough:
+      type: string
+      format: date
+    lastStartedAt:
+      type: string
+      format: date-time
+    lastFinishedAt:
+      type: string
+      format: date-time
+    lastError:
+      type: string
+      description: Last failure or partial-sync note; empty when the last sync was clean.
+    subscriberCount:
+      type: integer
+      format: int64
+      description: Channel subscriber count at the last sync (absent when hidden or not synced).
+AnalyticsChannelDay:
+  type: object
+  required: [date, unavailable]
+  properties:
+    date:
+      type: string
+      format: date
+    views:
+      type: integer
+      format: int64
+    watchHours:
+      type: number
+      format: double
+    subscribersGained:
+      type: integer
+      format: int64
+    subscribersLost:
+      type: integer
+      format: int64
+    unavailable:
+      $ref: "#/Unavailable"
+YPPProgress:
+  type: object
+  description: Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+  required: [watchHours, watchHoursTarget, windowFrom, windowTo, daysMissing, subscribersTarget]
+  properties:
+    watchHours:
+      type: number
+      format: double
+      description: Public watch hours over the window (Shorts views excluded by YouTube's own rule are not separated here).
+    watchHoursTarget:
+      type: integer
+    windowFrom:
+      type: string
+      format: date
+    windowTo:
+      type: string
+      format: date
+    daysMissing:
+      type: integer
+      description: Days of the window with no synced watch time; the total is a lower bound while this is above 0.
+    subscribers:
+      type: integer
+      format: int64
+    subscribersTarget:
+      type: integer
+AnalyticsOverview:
+  type: object
+  required: [sync, window, days, ypp]
+  properties:
+    sync:
+      $ref: "#/AnalyticsSyncState"
+    window:
+      $ref: "#/AnalyticsWindow"
+    days:
+      type: array
+      items:
+        $ref: "#/AnalyticsChannelDay"
+    ypp:
+      $ref: "#/YPPProgress"
+AnalyticsSyncQueued:
+  type: object
+  required: [queued]
+  properties:
+    queued:
+      type: boolean
+      description: False when a sync of the channel was already queued or running.
+AnalyticsVideoRow:
+  type: object
+  description: A tracked video's totals over the window; an absent metric was not available from the API on any day.
+  required: [videoId, title, source]
+  properties:
+    videoId:
+      type: string
+    title:
+      type: string
+    source:
+      type: string
+      enum: [publication, manual]
+    durationSeconds:
+      type: integer
+    publishedAt:
+      type: string
+      format: date-time
+    views:
+      type: integer
+      format: int64
+    watchHours:
+      type: number
+      format: double
+    averageViewPercentage:
+      type: number
+      format: double
+    averageViewDuration:
+      type: number
+      format: double
+      description: Seconds.
+    subscribersGained:
+      type: integer
+      format: int64
+    impressions:
+      type: integer
+      format: int64
+      description: Thumbnail impressions from the reach report.
+    ctr:
+      type: number
+      format: double
+      description: Impressions click-through rate as a fraction (0.05 = 5%), weighted by impressions.
+AnalyticsVideoPage:
+  type: object
+  required: [items, total, window, sync]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/AnalyticsVideoRow"
+    total:
+      type: integer
+    nextCursor:
+      type: string
+    window:
+      $ref: "#/AnalyticsWindow"
+    sync:
+      $ref: "#/AnalyticsSyncState"
+AnalyticsVideoDay:
+  type: object
+  required: [date, unavailable]
+  properties:
+    date:
+      type: string
+      format: date
+    views:
+      type: integer
+      format: int64
+    watchHours:
+      type: number
+      format: double
+    averageViewDuration:
+      type: number
+      format: double
+    averageViewPercentage:
+      type: number
+      format: double
+    subscribersGained:
+      type: integer
+      format: int64
+    impressions:
+      type: integer
+      format: int64
+    ctr:
+      type: number
+      format: double
+    unavailable:
+      $ref: "#/Unavailable"
+RetentionPoint:
+  type: object
+  required: [elapsedRatio]
+  properties:
+    elapsedRatio:
+      type: number
+      format: double
+      description: Position in the video, 0 to 1.
+    audienceWatchRatio:
+      type: number
+      format: double
+    relativeRetentionPerformance:
+      type: number
+      format: double
+TrackedVideo:
+  type: object
+  required: [videoId, channelId, title, source, createdAt]
+  properties:
+    videoId:
+      type: string
+    channelId:
+      type: string
+      format: uuid
+    title:
+      type: string
+    source:
+      type: string
+      enum: [publication, manual]
+    durationSeconds:
+      type: integer
+    publishedAt:
+      type: string
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+AnalyticsVideoDetail:
+  type: object
+  required: [video, window, sync, days, retention]
+  properties:
+    video:
+      $ref: "#/TrackedVideo"
+    window:
+      $ref: "#/AnalyticsWindow"
+    sync:
+      $ref: "#/AnalyticsSyncState"
+    days:
+      type: array
+      items:
+        $ref: "#/AnalyticsVideoDay"
+    retention:
+      type: array
+      description: Lifetime audience retention curve; empty until the first sync that covers the video.
+      items:
+        $ref: "#/RetentionPoint"
+    retentionSyncedAt:
+      type: string
+      format: date-time
+TrackVideoRequest:
+  type: object
+  required: [channelId, video]
+  properties:
+    channelId:
+      type: string
+      format: uuid
+    video:
+      type: string
+      minLength: 11
+      maxLength: 512
+      description: A YouTube video URL (watch, youtu.be, shorts, embed or live) or an 11-character video id.
+AnalyticsSuggestion:
+  type: object
+  required: [videoId, rule, version, title, evidence, dismissed, updatedAt]
+  properties:
+    videoId:
+      type: string
+      description: The video the suggestion is about; empty for a channel-level suggestion.
+    rule:
+      type: string
+      description: Rule name, e.g. low_ctr, weak_hook, split_long_video, upload_cadence_gap.
+    version:
+      type: integer
+      description: Version of the rule that produced the suggestion.
+    title:
+      type: string
+      description: What to try, from the rule (fixed server text).
+    evidence:
+      type: object
+      additionalProperties: true
+      description: The numbers the rule compared.
+    dismissed:
+      type: boolean
+    updatedAt:
+      type: string
+      format: date-time
+AnalyticsSuggestionList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/AnalyticsSuggestion"
+AnalyticsSuggestionUpdate:
+  type: object
+  required: [videoId, rule, dismissed]
+  properties:
+    videoId:
+      type: string
+      maxLength: 11
+      description: Empty for a channel-level suggestion.
+    rule:
+      type: string
+      maxLength: 64
+    dismissed:
+      type: boolean
+AnalyticsExplanation:
+  type: object
+  required: [id, status]
+  properties:
+    id:
+      type: string
+      format: uuid
+    status:
+      type: string
+      enum: [pending, queued, running, done, failed, canceled]
+    text:
+      type: string
+      description: The explanation as plain text (render it as text, never as HTML or Markdown).
+    provider:
+      type: string
+    model:
+      type: string
+    costUsd:
+      type: number
+      format: double
+    error:
+      type: string
