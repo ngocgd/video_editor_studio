@@ -501,7 +501,7 @@ func (s *Service) GenerateMissing(ctx context.Context, tenantID uuid.UUID, creat
 	if len(steps) == 0 {
 		return uuid.Nil, counts, nil
 	}
-	runID, err := s.Engine.Enqueue(ctx, tenantID, pipeline.RunSpec{
+	runID, err := s.Engine.Enqueue(WithInputsCache(ctx), tenantID, pipeline.RunSpec{
 		ID: idconv.NewV7(), ScopeKind: ScopeEpisode, ScopeID: idconv.FromPg(episode.ID), Kind: "scenes.generate_missing", CreatedBy: createdBy, Steps: steps,
 	})
 	return runID, counts, err

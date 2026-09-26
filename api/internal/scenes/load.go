@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -245,6 +246,45 @@ func (sc sceneContext) sceneInputs() SceneInputs {
 	return SceneInputsOf(sc.Scene, take)
 }
 
+// inputsCacheKey marks a context that memoizes LoadEpisodeInputs, so a
+// batch enqueue (hundreds of steps whose InputHash and ModelRef each need
+// the same episode inputs) loads them once instead of once per call.
+type inputsCacheKey struct{}
+
+type inputsCache struct {
+	mu      sync.Mutex
+	entries map[string]cachedInputs
+}
+
+type cachedInputs struct {
+	inputs EpisodeInputs
+	chars  []dbgen.Character
+}
+
+// WithInputsCache returns ctx carrying a fresh episode-inputs memo, for
+// the span of one batch enqueue.
+func WithInputsCache(ctx context.Context) context.Context {
+	return context.WithValue(ctx, inputsCacheKey{}, &inputsCache{entries: map[string]cachedInputs{}})
+}
+
+func loadEpisodeInputsCached(ctx context.Context, q *dbgen.Queries, tenantID, seriesID uuid.UUID, lang string) (EpisodeInputs, []dbgen.Character, error) {
+	cache, _ := ctx.Value(inputsCacheKey{}).(*inputsCache)
+	if cache == nil {
+		return LoadEpisodeInputs(ctx, q, tenantID, seriesID, lang)
+	}
+	key := tenantID.String() + "/" + seriesID.String() + "/" + lang
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if hit, ok := cache.entries[key]; ok {
+		return hit.inputs, hit.chars, nil
+	}
+	inputs, chars, err := LoadEpisodeInputs(ctx, q, tenantID, seriesID, lang)
+	if err == nil {
+		cache.entries[key] = cachedInputs{inputs: inputs, chars: chars}
+	}
+	return inputs, chars, err
+}
+
 // loadSceneContext loads a scene of tenantID with everything its hashes
 // and steps need.
 func loadSceneContext(ctx context.Context, q *dbgen.Queries, tenantID, sceneID uuid.UUID) (sceneContext, error) {
@@ -257,7 +297,7 @@ func loadSceneContext(ctx context.Context, q *dbgen.Queries, tenantID, sceneID u
 	if err != nil {
 		return sceneContext{}, fmt.Errorf("scenes: load episode: %w", err)
 	}
-	inputs, chars, err := LoadEpisodeInputs(ctx, q, tenantID, idconv.FromPg(episode.SeriesID), scene.Lang)
+	inputs, chars, err := loadEpisodeInputsCached(ctx, q, tenantID, idconv.FromPg(episode.SeriesID), scene.Lang)
 	if err != nil {
 		return sceneContext{}, err
 	}
