@@ -16,9 +16,9 @@ import { OWNER_EMAIL as EMAIL, OWNER_PASSWORD as PASSWORD } from "./owner-sessio
  * seeded database row instead and is not re-tested here to keep this file
  * runnable against any stack, not just one with test fixtures pre-loaded.
  */
-// Starts signed out (not from global-setup's session): this spec is the
-// one that exercises the login form, and its logout ends only this session.
-test.use({ storageState: { cookies: [], origins: [] } });
+// Starts signed out and signs in through the form. Its login revokes the
+// session made by global-setup.ts, so playwright.config.ts runs this spec
+// in its own project after every signed-in spec.
 
 test("login, app shell, command palette, logout", async ({ page }) => {
   const response = await page.goto("/login");

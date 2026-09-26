@@ -8,9 +8,12 @@ import { OWNER_AUTH_FILE } from "./e2e/owner-session";
  * user, neither of which CI provisions today. Run locally with:
  *   LT_E2E_BASE_URL=http://127.0.0.1:8080 LT_E2E_EMAIL=... LT_E2E_PASSWORD=... npx playwright test
  *
- * e2e/global-setup.ts signs the owner in once and every spec starts from
- * that session, so adding spec files never adds logins against the
- * per-account login limit. smoke.spec.ts opts out to test the login form.
+ * Sign-ins: the API limits logins per account (a burst of 5, then one
+ * every 12 s) and a login revokes the account's other sessions. So
+ * e2e/global-setup.ts signs the owner in once and every "signed-in" spec
+ * reuses that session, however many spec files there are. smoke.spec.ts
+ * tests the login form itself, and its login would end that shared
+ * session, so it runs in its own project after all signed-in specs.
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -20,6 +23,9 @@ export default defineConfig({
     baseURL: process.env.LT_E2E_BASE_URL ?? "http://127.0.0.1:8080",
     viewport: { width: 1440, height: 900 },
     screenshot: "only-on-failure",
-    storageState: OWNER_AUTH_FILE,
   },
+  projects: [
+    { name: "signed-in", testIgnore: /smoke\.spec\.ts$/, use: { storageState: OWNER_AUTH_FILE } },
+    { name: "login-form", testMatch: /smoke\.spec\.ts$/, dependencies: ["signed-in"] },
+  ],
 });
