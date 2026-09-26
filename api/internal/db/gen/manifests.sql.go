@@ -329,6 +329,31 @@ func (q *Queries) ListManifestSceneInputs(ctx context.Context, arg ListManifestS
 	return items, nil
 }
 
+const manifestCacheProgress = `-- name: ManifestCacheProgress :one
+SELECT count(*)::int AS total, count(s.input_hash)::int AS cached
+FROM render_manifest_segments ms
+LEFT JOIN render_segments s ON s.tenant_id = ms.tenant_id AND s.input_hash = ms.input_hash
+WHERE ms.tenant_id = $1 AND ms.manifest_id = $2
+`
+
+type ManifestCacheProgressParams struct {
+	TenantID   pgtype.UUID `json:"tenant_id"`
+	ManifestID pgtype.UUID `json:"manifest_id"`
+}
+
+type ManifestCacheProgressRow struct {
+	Total  int32 `json:"total"`
+	Cached int32 `json:"cached"`
+}
+
+// How many of a manifest's pinned cache entries are encoded so far.
+func (q *Queries) ManifestCacheProgress(ctx context.Context, arg ManifestCacheProgressParams) (ManifestCacheProgressRow, error) {
+	row := q.db.QueryRow(ctx, manifestCacheProgress, arg.TenantID, arg.ManifestID)
+	var i ManifestCacheProgressRow
+	err := row.Scan(&i.Total, &i.Cached)
+	return i, err
+}
+
 const setManifestRun = `-- name: SetManifestRun :one
 UPDATE render_manifests SET run_id = $1
 WHERE tenant_id = $2 AND id = $3

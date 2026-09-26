@@ -275,6 +275,8 @@ type Querier interface {
 	// native 32-bit single-key overload; a hash collision between two
 	// tenants only costs extra serialization, never a correctness bug.
 	LockTenantForAdmission(ctx context.Context, tenantID string) error
+	// How many of a manifest's pinned cache entries are encoded so far.
+	ManifestCacheProgress(ctx context.Context, arg ManifestCacheProgressParams) (ManifestCacheProgressRow, error)
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
 	// Only a previewed import can be committed, and only once: a concurrent or

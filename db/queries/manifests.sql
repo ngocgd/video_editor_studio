@@ -61,3 +61,10 @@ WHERE e.tenant_id = @tenant_id AND e.id = @id;
 -- name: DeleteRenderManifest :exec
 -- Removes a manifest whose run could not be enqueued.
 DELETE FROM render_manifests WHERE tenant_id = @tenant_id AND id = @id AND run_id IS NULL;
+
+-- name: ManifestCacheProgress :one
+-- How many of a manifest's pinned cache entries are encoded so far.
+SELECT count(*)::int AS total, count(s.input_hash)::int AS cached
+FROM render_manifest_segments ms
+LEFT JOIN render_segments s ON s.tenant_id = ms.tenant_id AND s.input_hash = ms.input_hash
+WHERE ms.tenant_id = @tenant_id AND ms.manifest_id = @manifest_id;
