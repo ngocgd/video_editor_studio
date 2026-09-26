@@ -24,7 +24,7 @@ import (
 // Step kinds and the scope kind of every character step.
 const (
 	KindSheet      = "image.character_sheet"
-	KindTrain      = "lora.train"
+	KindTrain      = "train.lora"
 	KindPreview    = "voice.preview"
 	ScopeCharacter = "character"
 
