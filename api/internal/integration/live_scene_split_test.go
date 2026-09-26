@@ -104,13 +104,14 @@ func TestLiveLLMSceneSplitOfASixThousandWordDraft(t *testing.T) {
 		t.Fatalf("scene split run %s ended %s: %v", split.RunID, run.Status, errMsg)
 	}
 	var out struct {
-		Provider             string `json:"provider"`
-		SceneCount           int    `json:"sceneCount"`
-		UnrecognisedSpeakers int    `json:"unrecognisedSpeakers"`
+		Provider             string   `json:"provider"`
+		SceneCount           int      `json:"sceneCount"`
+		UnrecognisedSpeakers int      `json:"unrecognisedSpeakers"`
+		UnrecognisedNames    []string `json:"unrecognisedNames"`
 	}
 	_ = json.Unmarshal(output, &out)
 	n, _ := words()
-	t.Logf("llm.scene_split step %s (run %s) by %s in %s: %d words -> %d scenes, %d unrecognised speakers", split.StepID, split.RunID, out.Provider, time.Since(start).Round(time.Second), n, out.SceneCount, out.UnrecognisedSpeakers)
+	t.Logf("llm.scene_split step %s (run %s) by %s in %s: %d words -> %d scenes, %d unrecognised speakers %q", split.StepID, split.RunID, out.Provider, time.Since(start).Round(time.Second), n, out.SceneCount, out.UnrecognisedSpeakers, out.UnrecognisedNames)
 
 	list := listScenes(t, sess, f.episodeID, "all")
 	perSpeaker := map[string]int{}

@@ -168,6 +168,27 @@ func NormalizeLLMSplit(sp splitPrompt, out LLMSplit, idx NameIndex, lang string)
 	return drafts, unrecognised
 }
 
+// UnrecognisedNames lists the distinct speaker names the split could not
+// resolve, in order of first use and at most max of them, so a step's
+// output shows why dialogue fell back to the narrator.
+func UnrecognisedNames(drafts []Draft, max int) []string {
+	names := []string{}
+	seen := map[string]bool{}
+	for _, d := range drafts {
+		for _, s := range d.Segments {
+			if s.UnrecognisedName == "" || seen[s.UnrecognisedName] {
+				continue
+			}
+			if len(names) == max {
+				return names
+			}
+			seen[s.UnrecognisedName] = true
+			names = append(names, s.UnrecognisedName)
+		}
+	}
+	return names
+}
+
 func indexOf(ps []Paragraph, id string) int {
 	for i, p := range ps {
 		if p.ID == id {

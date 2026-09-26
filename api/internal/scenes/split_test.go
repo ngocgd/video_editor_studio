@@ -150,6 +150,22 @@ func TestNormalizeLLMSplitResolvesRosterStyleNames(t *testing.T) {
 	}
 }
 
+func TestUnrecognisedNamesAreDistinctAndCapped(t *testing.T) {
+	drafts := []Draft{
+		{Segments: []Segment{{Text: "a", UnrecognisedName: "Su Yao"}, {Text: "b"}, {Text: "c", UnrecognisedName: "Wei"}}},
+		{Segments: []Segment{{Text: "d", UnrecognisedName: "Su Yao"}, {Text: "e", UnrecognisedName: "Hua"}}},
+	}
+	if got := UnrecognisedNames(drafts, 10); !slices.Equal(got, []string{"Su Yao", "Wei", "Hua"}) {
+		t.Fatalf("names = %v", got)
+	}
+	if got := UnrecognisedNames(drafts, 2); len(got) != 2 {
+		t.Fatalf("cap ignored: %v", got)
+	}
+	if got := UnrecognisedNames(nil, 5); got == nil || len(got) != 0 {
+		t.Fatalf("no names must be an empty list, got %#v", got)
+	}
+}
+
 func para(id, text string) Paragraph { return Paragraph{ID: id, Text: text} }
 
 func words(n int) string { return strings.TrimSpace(strings.Repeat("word ", n)) }
