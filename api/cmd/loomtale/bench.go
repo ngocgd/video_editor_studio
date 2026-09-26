@@ -24,18 +24,24 @@ import (
 // runBench runs a benchmark suite against the real engines:
 //
 //	loomtale bench --suite image-smoke [--out /bench] [--rss-samples /bench/rss.tsv]
+//	loomtale bench --suite tts|align|llm|voice-smoke [--out /bench] [--ollama-model qwen3.5-9b]
 //
-// Needs DATABASE_URL, MODELS_DIR and COMFYUI_URL; run it through the
-// `cli` compose service (scripts/bench-image.sh wraps it with the host
-// side RSS sampler). It takes the GPU slot's advisory lock for its whole
-// run, so no gpu-queue step touches the GPU meanwhile.
+// The image suites need DATABASE_URL, MODELS_DIR and COMFYUI_URL
+// (scripts/bench-image.sh wraps them with the host-side RSS sampler);
+// the voice and llm suites are described at runVoiceBench. Run it
+// through the `cli` compose service. It takes the GPU slot's advisory
+// lock for its whole run, so no gpu-queue step touches the GPU meanwhile.
 func runBench(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet("bench", flag.ExitOnError)
 	suiteName := fs.String("suite", "", "suite to run: "+suiteNames())
 	outDir := fs.String("out", "", "directory to save output images into (optional)")
 	rssSamples := fs.String("rss-samples", "", "file of '<unix_ms> <rss_bytes>' ComfyUI RSS samples written by the host (optional)")
+	ollamaModel := fs.String("ollama-model", os.Getenv("OLLAMA_MODEL"), "manifest LLM to load in Ollama for the llm and voice-smoke suites")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	if isVoiceSuite(*suiteName) {
+		return runVoiceBench(ctx, *suiteName, *outDir, *ollamaModel)
 	}
 	suite, ok := bench.Suites()[*suiteName]
 	if !ok {
@@ -167,7 +173,7 @@ func benchHTTPClient() *http.Client {
 }
 
 func suiteNames() string {
-	names := make([]string, 0)
+	names := append([]string(nil), voiceSuites...)
 	for name := range bench.Suites() {
 		names = append(names, name)
 	}
