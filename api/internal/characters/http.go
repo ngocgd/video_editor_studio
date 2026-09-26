@@ -93,7 +93,7 @@ func (h *CharactersAPI) loadSeries(ctx context.Context, tid, sid pgtype.UUID) (s
 	}
 	for _, v := range voices {
 		id := idconv.FromPg(v.CharacterID)
-		d.voices[id] = append(d.voices[id], gen.CharacterVoice{Lang: gen.VoiceLanguage(v.Lang), Engine: v.Engine, VoicePresetId: idconv.FromPgPtr(v.VoicePresetID), Params: decodeParams(v.Params)})
+		d.voices[id] = append(d.voices[id], gen.CharacterVoice{Lang: gen.VoiceLanguage(v.Lang), Engine: v.Engine, VoicePresetId: idconv.FromPgPtr(v.VoicePresetID), Params: decodeParams(v.Params), PreviewAssetId: idconv.FromPgPtr(v.PreviewAssetID)})
 	}
 	apps, err := h.Queries.CharacterEpisodeAppearances(ctx, dbgen.CharacterEpisodeAppearancesParams{TenantID: tid, SeriesID: sid})
 	if err != nil {

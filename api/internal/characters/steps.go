@@ -376,6 +376,11 @@ func (h *PreviewHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pip
 	}); err != nil {
 		return nil, err
 	}
+	if err := h.Queries.SetCharacterVoicePreview(ctx, dbgen.SetCharacterVoicePreviewParams{
+		PreviewAssetID: idconv.ToPg(assetID), TenantID: idconv.ToPg(sc.Tenant()), CharacterID: idconv.ToPg(sc.ScopeID()), Lang: in.Lang,
+	}); err != nil {
+		return nil, err
+	}
 	return pipeline.Output{"assetId": assetID.String(), "durationMs": int(res.DurationS * 1000)}, nil
 }
 

@@ -681,6 +681,10 @@ export type CharacterVoice = {
     engine: string;
     voicePresetId?: string;
     params: StringParams;
+    /**
+     * Audio of the latest "Preview line" with this voice.
+     */
+    previewAssetId?: string;
 };
 
 export type CharacterAppearance = {

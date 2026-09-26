@@ -94,6 +94,10 @@ SET engine = EXCLUDED.engine, voice_preset_id = EXCLUDED.voice_preset_id, params
 WHERE character_voices.tenant_id = @tenant_id
 RETURNING *;
 
+-- name: SetCharacterVoicePreview :exec
+UPDATE character_voices SET preview_asset_id = @preview_asset_id, updated_at = now()
+WHERE tenant_id = @tenant_id AND character_id = @character_id AND lang = @lang;
+
 -- name: ListNarratorVoicesBySeries :many
 SELECT * FROM narrator_voices WHERE tenant_id = @tenant_id AND series_id = @series_id ORDER BY lang;
 

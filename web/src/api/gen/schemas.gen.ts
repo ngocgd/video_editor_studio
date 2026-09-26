@@ -2287,6 +2287,11 @@ export const CharacterVoiceSchema = {
         },
         params: {
             $ref: '#/components/schemas/StringParams'
+        },
+        previewAssetId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Audio of the latest "Preview line" with this voice.'
         }
     }
 } as const;

@@ -295,6 +295,7 @@ type Querier interface {
 	// Merges new derivative keys (image variants, waveform peaks) into the
 	// asset's variants map without dropping keys another step wrote.
 	SetAssetVariants(ctx context.Context, arg SetAssetVariantsParams) (Asset, error)
+	SetCharacterVoicePreview(ctx context.Context, arg SetCharacterVoicePreviewParams) error
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
 	SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeasuredDurationParams) (Scene, error)
 	// Cancels and links a run to its replacement in a single statement (the

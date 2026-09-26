@@ -70,6 +70,10 @@ CharacterVoice:
       format: uuid
     params:
       $ref: "presets.yaml#/StringParams"
+    previewAssetId:
+      type: string
+      format: uuid
+      description: Audio of the latest "Preview line" with this voice.
 VoiceAssignment:
   type: object
   required: [engine]

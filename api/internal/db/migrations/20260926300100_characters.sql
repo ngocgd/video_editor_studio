@@ -71,6 +71,8 @@ CREATE TABLE character_voices (
     engine text NOT NULL,
     voice_preset_id uuid,
     params jsonb NOT NULL DEFAULT '{}'::jsonb,
+    -- The latest "Preview line" synthesis with this voice.
+    preview_asset_id uuid REFERENCES assets (id) ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT character_voices_tenant_character_fkey FOREIGN KEY (tenant_id, character_id)

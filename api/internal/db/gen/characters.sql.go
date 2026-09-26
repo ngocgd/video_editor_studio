@@ -455,7 +455,7 @@ func (q *Queries) ListCharacterRefsBySeries(ctx context.Context, arg ListCharact
 }
 
 const listCharacterVoicesBySeries = `-- name: ListCharacterVoicesBySeries :many
-SELECT v.id, v.tenant_id, v.character_id, v.lang, v.engine, v.voice_preset_id, v.params, v.created_at, v.updated_at FROM character_voices v
+SELECT v.id, v.tenant_id, v.character_id, v.lang, v.engine, v.voice_preset_id, v.params, v.preview_asset_id, v.created_at, v.updated_at FROM character_voices v
 JOIN characters c ON c.id = v.character_id AND c.tenant_id = $1
 WHERE v.tenant_id = $1 AND c.series_id = $2
 ORDER BY v.character_id, v.lang
@@ -483,6 +483,7 @@ func (q *Queries) ListCharacterVoicesBySeries(ctx context.Context, arg ListChara
 			&i.Engine,
 			&i.VoicePresetID,
 			&i.Params,
+			&i.PreviewAssetID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -641,6 +642,28 @@ func (q *Queries) NextCharacterLoraVersion(ctx context.Context, arg NextCharacte
 	return next_version, err
 }
 
+const setCharacterVoicePreview = `-- name: SetCharacterVoicePreview :exec
+UPDATE character_voices SET preview_asset_id = $1, updated_at = now()
+WHERE tenant_id = $2 AND character_id = $3 AND lang = $4
+`
+
+type SetCharacterVoicePreviewParams struct {
+	PreviewAssetID pgtype.UUID `json:"preview_asset_id"`
+	TenantID       pgtype.UUID `json:"tenant_id"`
+	CharacterID    pgtype.UUID `json:"character_id"`
+	Lang           string      `json:"lang"`
+}
+
+func (q *Queries) SetCharacterVoicePreview(ctx context.Context, arg SetCharacterVoicePreviewParams) error {
+	_, err := q.db.Exec(ctx, setCharacterVoicePreview,
+		arg.PreviewAssetID,
+		arg.TenantID,
+		arg.CharacterID,
+		arg.Lang,
+	)
+	return err
+}
+
 const updateCharacter = `-- name: UpdateCharacter :one
 UPDATE characters
 SET name_orig = $1, name_en = $2, name_vi = $3, role = $4,
@@ -779,7 +802,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (character_id, lang) DO UPDATE
 SET engine = EXCLUDED.engine, voice_preset_id = EXCLUDED.voice_preset_id, params = EXCLUDED.params, updated_at = now()
 WHERE character_voices.tenant_id = $2
-RETURNING id, tenant_id, character_id, lang, engine, voice_preset_id, params, created_at, updated_at
+RETURNING id, tenant_id, character_id, lang, engine, voice_preset_id, params, preview_asset_id, created_at, updated_at
 `
 
 type UpsertCharacterVoiceParams struct {
@@ -811,6 +834,7 @@ func (q *Queries) UpsertCharacterVoice(ctx context.Context, arg UpsertCharacterV
 		&i.Engine,
 		&i.VoicePresetID,
 		&i.Params,
+		&i.PreviewAssetID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

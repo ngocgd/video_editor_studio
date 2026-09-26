@@ -4154,6 +4154,10 @@ components:
           format: uuid
         params:
           $ref: '#/components/schemas/StringParams'
+        previewAssetId:
+          type: string
+          format: uuid
+          description: Audio of the latest "Preview line" with this voice.
     CharacterAppearance:
       type: object
       required:

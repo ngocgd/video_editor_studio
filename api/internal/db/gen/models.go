@@ -96,15 +96,16 @@ type CharacterRef struct {
 }
 
 type CharacterVoice struct {
-	ID            pgtype.UUID        `json:"id"`
-	TenantID      pgtype.UUID        `json:"tenant_id"`
-	CharacterID   pgtype.UUID        `json:"character_id"`
-	Lang          string             `json:"lang"`
-	Engine        string             `json:"engine"`
-	VoicePresetID pgtype.UUID        `json:"voice_preset_id"`
-	Params        []byte             `json:"params"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	CharacterID    pgtype.UUID        `json:"character_id"`
+	Lang           string             `json:"lang"`
+	Engine         string             `json:"engine"`
+	VoicePresetID  pgtype.UUID        `json:"voice_preset_id"`
+	Params         []byte             `json:"params"`
+	PreviewAssetID pgtype.UUID        `json:"preview_asset_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Episode struct {

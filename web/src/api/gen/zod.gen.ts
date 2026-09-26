@@ -717,7 +717,8 @@ export const zCharacterVoice = z.object({
     lang: zVoiceLanguage,
     engine: z.string(),
     voicePresetId: z.string().uuid().optional(),
-    params: zStringParams
+    params: zStringParams,
+    previewAssetId: z.string().uuid().optional()
 });
 
 export const zCharacterAppearance = z.object({
