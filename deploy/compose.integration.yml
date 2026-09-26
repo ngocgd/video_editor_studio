@@ -16,3 +16,11 @@ services:
       MINIO_PUBLIC_ENDPOINT: minio:9000
       # The whole suite reaches the API from one client IP.
       API_RATE_LIMIT_PER_MINUTE: "1000"
+      # Test runners have far less free disk than the production
+      # watermark; the tests fake a full disk themselves.
+      DISK_MIN_FREE_GB: "1"
+      DISK_WARN_FREE_GB: "2"
+  worker:
+    environment:
+      DISK_MIN_FREE_GB: "1"
+      DISK_WARN_FREE_GB: "2"
