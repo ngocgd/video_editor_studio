@@ -33,11 +33,13 @@ const charsPerToken = 4
 
 // Priority order (highest kept first) when truncating to fit the token
 // budget, per the phase contract: target/selected text > user
-// instruction > previously-summary > bible excerpt.
+// instruction > previously-summary > pinned character profiles > bible
+// excerpt.
 const (
 	priorityTarget = iota
 	priorityInstruction
 	priorityPreviously
+	priorityCharacters
 	priorityBible
 )
 
@@ -70,6 +72,10 @@ type BuildRequest struct {
 
 	// Previously is the rolling "Previously" summary text.
 	Previously TaintedContent
+
+	// Characters is the series' pinned character profiles (or, for the
+	// scene split, the character roster the model names speakers from).
+	Characters TaintedContent
 
 	// Target is the selected/target story text the action operates on
 	// (e.g. the paragraphs being rewritten, or the beat being expanded).
@@ -121,6 +127,9 @@ func Build(action string, req BuildRequest) Context {
 	}
 	if req.Previously.Text != "" {
 		blocks = append(blocks, Block{Label: "previously", Text: req.Previously.Text, Origin: req.Previously.Origin, Tainted: req.Previously.Tainted, priority: priorityPreviously})
+	}
+	if req.Characters.Text != "" {
+		blocks = append(blocks, Block{Label: "characters", Text: req.Characters.Text, Origin: req.Characters.Origin, Tainted: req.Characters.Tainted, priority: priorityCharacters})
 	}
 	if req.BibleExcerpt.Text != "" {
 		blocks = append(blocks, Block{Label: "bible", Text: req.BibleExcerpt.Text, Origin: req.BibleExcerpt.Origin, Tainted: req.BibleExcerpt.Tainted, priority: priorityBible})
@@ -176,6 +185,12 @@ func fitBudget(blocks []Block, budget int) []Block {
 	// which blocks got dropped.
 	sort.SliceStable(kept, func(i, j int) bool { return kept[i].priority < kept[j].priority })
 	return kept
+}
+
+// EstimateTokens is the token estimate Build budgets with, exposed so the
+// Characters page can show what a pinned profile costs every request.
+func EstimateTokens(text string) int {
+	return (len(text) + charsPerToken - 1) / charsPerToken
 }
 
 // truncateRunes truncates s to at most n bytes without splitting a
