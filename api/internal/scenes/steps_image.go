@@ -144,5 +144,6 @@ func (h *ImageHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pipel
 		return nil, err
 	}
 	enqueueDerivatives(ctx, h.StepDeps, sc, asset)
+	enqueueAnalysis(ctx, h.StepDeps, sc, in.ID, idOf(take.ID), len(looks) > 0)
 	return pipeline.Output{"assetId": idOf(asset.ID).String(), "takeId": idOf(take.ID).String(), "seed": seed, "seconds": res.Seconds}, nil
 }

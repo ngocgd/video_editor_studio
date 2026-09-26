@@ -1049,10 +1049,16 @@ export type StepAccepted = {
 
 export type LoraTrainRequest = {
     /**
-     * Defaults to every approved reference image.
+     * PNG, JPEG or WebP images. Defaults to the approved reference images (up to 64).
      */
     datasetAssetIds?: Array<string>;
+    /**
+     * Defaults to 1500.
+     */
     steps?: number;
+    /**
+     * Defaults to 16.
+     */
     rank?: number;
 };
 

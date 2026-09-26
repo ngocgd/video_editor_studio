@@ -256,7 +256,7 @@ function CharacterDetail({ seriesId, character, presets }: { seriesId: string; c
           <button type="button" className={`${buttonClass} self-start`} disabled={runActive} onClick={() => actions.train.mutate(character.id, { onSuccess: (res) => setRunId(res?.runId), onError })}>
             Train LoRA v{character.loras.length + 1}
           </button>
-          <span className="text-2xs text-muted-foreground">Trains on approved references; queues behind other GPU work at training priority.</span>
+          <span className="text-2xs text-muted-foreground">Trains on 4 to 64 approved references (20 to 24 give the best likeness); queues behind other GPU work at training priority.</span>
         </InspectorSection>
 
         <InspectorSection title="Voice">

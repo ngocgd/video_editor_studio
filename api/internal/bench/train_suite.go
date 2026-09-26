@@ -1,14 +1,11 @@
 package bench
 
 import (
-	"archive/zip"
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -153,32 +150,13 @@ func (r *VoiceRunner) trainCase(ctx context.Context, name string, refs []RefImag
 
 // TrainDataset zips the reference images with one caption file per
 // image holding the trigger word, the dataset layout the worker's
-// trainer accepts (a flat archive of images and same-named .txt files).
+// trainer accepts.
 func TrainDataset(refs []RefImage, trigger string) ([]byte, error) {
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
+	images := make([]train.DatasetImage, len(refs))
 	for i, img := range refs {
-		// Numbered names keep the archive flat and collision-free
-		// whatever the source file names are.
-		stem := fmt.Sprintf("ref-%02d", i+1)
-		files := []struct {
-			name string
-			data []byte
-		}{{stem + strings.ToLower(filepath.Ext(img.Name)), img.Data}, {stem + ".txt", []byte(trigger)}}
-		for _, f := range files {
-			w, err := zw.Create(f.name)
-			if err != nil {
-				return nil, err
-			}
-			if _, err := w.Write(f.data); err != nil {
-				return nil, err
-			}
-		}
+		images[i] = train.DatasetImage{Ext: filepath.Ext(img.Name), Data: img.Data, Caption: trigger}
 	}
-	if err := zw.Close(); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return train.DatasetZip(images)
 }
 
 // IsSafetensors reports whether data starts with a well-formed

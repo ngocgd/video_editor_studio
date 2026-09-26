@@ -270,6 +270,11 @@ type LibrarySetting struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type LlmDefaultSeed struct {
+	TenantID pgtype.UUID        `json:"tenant_id"`
+	SeededAt pgtype.Timestamptz `json:"seeded_at"`
+}
+
 type LlmSetting struct {
 	TenantID        pgtype.UUID        `json:"tenant_id"`
 	DefaultProvider string             `json:"default_provider"`

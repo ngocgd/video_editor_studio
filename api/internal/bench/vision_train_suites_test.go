@@ -274,7 +274,7 @@ func TestTrainDatasetIsFlatWithOneCaptionPerImage(t *testing.T) {
 		}
 	}
 	sort.Strings(names)
-	want := "ref-01.png,ref-01.txt,ref-02.jpeg,ref-02.txt,ref-03.png,ref-03.txt,ref-04.png,ref-04.txt"
+	want := "ref-01.png,ref-01.txt,ref-02.jpg,ref-02.txt,ref-03.png,ref-03.txt,ref-04.png,ref-04.txt"
 	if strings.Join(names, ",") != want {
 		t.Fatalf("entries %v", names)
 	}
