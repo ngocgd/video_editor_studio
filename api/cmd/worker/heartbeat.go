@@ -22,8 +22,9 @@ const heartbeatInterval = 5 * time.Second
 // to heartbeatInterval. workerID identifies this row; the hostname is
 // unique per container by default, which is all a single-worker
 // deployment needs. llmStatus, when set, reports the LLM providers this
-// worker can call (claude-cli is probed on each beat).
-func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, probe pipeline.GpuProbe, manager *residency.Manager, llmStatus func(context.Context) map[string]workerstatus.ProviderInfo) {
+// worker can call (claude-cli is probed on each beat). encoder, when
+// set, reports the render encoder probe so the api can resolve "auto".
+func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, probe pipeline.GpuProbe, manager *residency.Manager, llmStatus func(context.Context) map[string]workerstatus.ProviderInfo, encoder func(context.Context) *workerstatus.Encoder) {
 	workerID, err := os.Hostname()
 	if err != nil || workerID == "" {
 		workerID = "worker"
@@ -39,6 +40,9 @@ func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, pro
 					BudgetMB: snap.BudgetMB, RenderReserveMB: snap.RenderReserveMB, MeasuredAt: snap.MeasuredAt,
 				}
 			}
+		}
+		if encoder != nil {
+			status.Encoder = encoder(ctx)
 		}
 		residentRef := ""
 		providers := map[string]workerstatus.ProviderInfo{}

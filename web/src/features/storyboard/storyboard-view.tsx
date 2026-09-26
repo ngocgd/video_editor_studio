@@ -23,6 +23,7 @@ import { SceneFilterChips } from "./scene-filter-chips";
 import { ResplitConfirmDialog } from "./resplit-confirm-dialog";
 import { StoryboardSettingsPanel } from "./storyboard-settings";
 import { nextMotion, PIP_LABELS, rangeSelection } from "./storyboard-model";
+import { useRenders } from "../render/use-render";
 import { assetUrl, useGenerateMissing, useRegenerate, useScenes, useSplitScenes, useUpdateScene } from "./use-scenes";
 
 const SCOPE = "storyboard";
@@ -68,6 +69,7 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
   const generate = useGenerateMissing(episodeId);
   const regenerate = useRegenerate(episodeId);
   const update = useUpdateScene(episodeId);
+  const renders = useRenders(episodeId, lang);
   // A re-split that would delete edited scenes or takes answers 409 with
   // the counts; ask before re-sending it with discardWork.
   const runSplit = (body: SceneSplitRequest) =>
@@ -229,6 +231,9 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
             <span aria-current="page" className="rounded-md bg-accent px-2 py-1">
               Storyboard
             </span>
+            <Link to="/projects/$seriesId/render/$episodeId" params={{ seriesId, episodeId }} className="rounded-md px-2 py-1 text-text-2 hover:bg-accent">
+              Render
+            </Link>
           </nav>
           <span className="flex-1" />
           <div role="radiogroup" aria-label="Language" className="flex gap-1">
@@ -343,6 +348,7 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
         styles={styles.data?.items ?? []}
         editingNarration={editingNarration}
         onEditingNarrationChange={setEditingNarration}
+        previewAssetId={active ? renders.data?.items[0]?.report.scenePreviews?.[active.id] : undefined}
       />
       <ResplitConfirmDialog
         message={confirmSplit?.message}

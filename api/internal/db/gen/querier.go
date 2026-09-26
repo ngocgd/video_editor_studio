@@ -91,6 +91,9 @@ type Querier interface {
 	CreateVoicePreset(ctx context.Context, arg CreateVoicePresetParams) (VoicePreset, error)
 	CreateYouTubeOAuthState(ctx context.Context, arg CreateYouTubeOAuthStateParams) error
 	DecrementRemainingDeps(ctx context.Context, arg DecrementRemainingDepsParams) ([]PipelineStep, error)
+	// Drops an asset row (a cached segment whose object no longer matches
+	// its checksum); dependent cache rows go with it.
+	DeleteAssetRow(ctx context.Context, arg DeleteAssetRowParams) error
 	DeleteCharacter(ctx context.Context, arg DeleteCharacterParams) (int64, error)
 	DeleteCharacterRef(ctx context.Context, arg DeleteCharacterRefParams) (int64, error)
 	DeleteEpisode(ctx context.Context, arg DeleteEpisodeParams) error
@@ -100,8 +103,14 @@ type Querier interface {
 	// lint-tenant-queries:allow: housekeeping of expired handshakes across all tenants; returns nothing
 	DeleteExpiredYouTubeOAuthStates(ctx context.Context) error
 	DeleteImageStyle(ctx context.Context, arg DeleteImageStyleParams) (int64, error)
+	// Deletes the assets a cleanup just listed (their cache rows and takes go
+	// with them by cascade), re-checking in the same statement that no
+	// selected take or render gained a reference to one in the meantime.
+	DeleteLibraryAssets(ctx context.Context, arg DeleteLibraryAssetsParams) ([]DeleteLibraryAssetsRow, error)
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
+	// Removes a manifest whose run could not be enqueued.
+	DeleteRenderManifest(ctx context.Context, arg DeleteRenderManifestParams) error
 	// Drops the scenes a re-split did not keep (their takes cascade).
 	DeleteScenesExcept(ctx context.Context, arg DeleteScenesExceptParams) ([]pgtype.UUID, error)
 	DeleteSecret(ctx context.Context, arg DeleteSecretParams) error
@@ -132,6 +141,9 @@ type Querier interface {
 	// Only a connected channel moves to reconnect_needed, so a sync that
 	// fails after the user disconnected never overrides the disconnect.
 	FlagChannelReconnectNeeded(ctx context.Context, arg FlagChannelReconnectNeededParams) (int64, error)
+	// The newest manifest of an episode/lang whose run is still active: the
+	// run a scene edit supersedes.
+	GetActiveRenderRun(ctx context.Context, arg GetActiveRenderRunParams) (GetActiveRenderRunRow, error)
 	GetAnalyticsSyncState(ctx context.Context, arg GetAnalyticsSyncStateParams) (AnalyticsSyncState, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
@@ -146,16 +158,26 @@ type Querier interface {
 	GetDraft(ctx context.Context, arg GetDraftParams) (EpisodeDraft, error)
 	GetDraftByID(ctx context.Context, arg GetDraftByIDParams) (EpisodeDraft, error)
 	GetEpisodeByID(ctx context.Context, arg GetEpisodeByIDParams) (Episode, error)
+	GetEpisodeForRender(ctx context.Context, arg GetEpisodeForRenderParams) (GetEpisodeForRenderRow, error)
 	GetImageStyle(ctx context.Context, arg GetImageStyleParams) (ImageStyle, error)
 	GetImportByID(ctx context.Context, arg GetImportByIDParams) (Import, error)
 	GetLLMSettings(ctx context.Context, tenantID pgtype.UUID) (LlmSetting, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
 	GetLatestWorkerStatus(ctx context.Context) (WorkerStatus, error)
+	GetLibrarySettings(ctx context.Context, tenantID pgtype.UUID) (LibrarySetting, error)
 	// Every cross-tenant lookup goes through this query so an attacker probing
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	GetModelInstall(ctx context.Context, name string) (ModelInstall, error)
 	GetQuotaUnits(ctx context.Context, arg GetQuotaUnitsParams) (int32, error)
+	GetRender(ctx context.Context, arg GetRenderParams) (Render, error)
+	GetRenderByManifest(ctx context.Context, arg GetRenderByManifestParams) (Render, error)
+	GetRenderManifest(ctx context.Context, arg GetRenderManifestParams) (RenderManifest, error)
+	GetRenderManifestByRun(ctx context.Context, arg GetRenderManifestByRunParams) (RenderManifest, error)
+	// A cached segment with the checksum its asset row recorded; the caller
+	// compares it with the stored object's checksum before reusing it.
+	GetRenderSegment(ctx context.Context, arg GetRenderSegmentParams) (GetRenderSegmentRow, error)
+	GetRenderSettings(ctx context.Context, arg GetRenderSettingsParams) (RenderSetting, error)
 	GetReportingJob(ctx context.Context, arg GetReportingJobParams) (AnalyticsReportingJob, error)
 	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
 	// Batch existence check for SSE topic authorization: one query for every
@@ -196,7 +218,10 @@ type Querier interface {
 	IncrementStrandedRequeue(ctx context.Context, id pgtype.UUID) (PipelineStep, error)
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDraftRevision(ctx context.Context, arg InsertDraftRevisionParams) error
+	InsertManifestSegments(ctx context.Context, arg InsertManifestSegmentsParams) error
 	InsertModelBenchmark(ctx context.Context, arg InsertModelBenchmarkParams) error
+	InsertRender(ctx context.Context, arg InsertRenderParams) (Render, error)
+	InsertRenderManifest(ctx context.Context, arg InsertRenderManifestParams) (RenderManifest, error)
 	InsertReportingJob(ctx context.Context, arg InsertReportingJobParams) (AnalyticsReportingJob, error)
 	InsertScene(ctx context.Context, arg InsertSceneParams) (Scene, error)
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
@@ -208,11 +233,18 @@ type Querier interface {
 	InsertVideoRetention(ctx context.Context, arg InsertVideoRetentionParams) error
 	// The newest ready LoRA of each given character: what an image step uses.
 	LatestReadyLoras(ctx context.Context, arg LatestReadyLorasParams) ([]CharacterLora, error)
+	LatestRenderManifest(ctx context.Context, arg LatestRenderManifestParams) (RenderManifest, error)
+	// Storage used per project; assets no project references group under a
+	// NULL series.
+	LibraryUsageBySeries(ctx context.Context, tenantID pgtype.UUID) ([]LibraryUsageBySeriesRow, error)
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
 	// Backfill: ready images without image variants and ready audio without
 	// waveform peaks.
 	ListAssetsMissingDerivatives(ctx context.Context, arg ListAssetsMissingDerivativesParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	// Which of the given input hashes already have a cache entry; freezing
+	// a manifest creates no step for those.
+	ListCachedSegmentHashes(ctx context.Context, arg ListCachedSegmentHashesParams) ([]string, error)
 	// Analytics: tracked videos, daily metrics from the Analytics API and the
 	// Reporting API reach report, retention, sync bookkeeping, suggestions.
 	// Batched writes take their rows as one jsonb array so NULL ("not
@@ -228,6 +260,17 @@ type Querier interface {
 	// One query for the episode list: word count and draft presence per
 	// language are aggregated here instead of a per-row N+1 lookup.
 	ListEpisodesWithDraftStatus(ctx context.Context, arg ListEpisodesWithDraftStatusParams) ([]ListEpisodesWithDraftStatusRow, error)
+	// Cached render segments unused for ttl_days and not pinned: a segment is
+	// pinned while the latest manifest of its episode/lang, or any manifest
+	// that produced a render, needs it, or while a render row points at it.
+	// input_hashes, when set, limits the result to those entries (a manual
+	// cleanup deletes only what its dry run showed and is still expired).
+	ListExpiredSegments(ctx context.Context, arg ListExpiredSegmentsParams) ([]ListExpiredSegmentsRow, error)
+	// Unselected takes older than ttl_days that no pinned manifest (see
+	// ListExpiredSegments) froze into a render and whose asset nothing else
+	// uses (a selected take, a character reference, a voice preset, a LoRA,
+	// a character voice preview). take_ids, when set, limits the result.
+	ListExpiredTakes(ctx context.Context, arg ListExpiredTakesParams) ([]ListExpiredTakesRow, error)
 	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
 	ListImageStyles(ctx context.Context, tenantID pgtype.UUID) ([]ImageStyle, error)
 	ListImports(ctx context.Context, arg ListImportsParams) ([]Import, error)
@@ -236,6 +279,13 @@ type Querier interface {
 	ListJobsByQueue(ctx context.Context, arg ListJobsByQueueParams) ([]PipelineStep, error)
 	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]PipelineStep, error)
 	ListJobsByStatusAndQueue(ctx context.Context, arg ListJobsByStatusAndQueueParams) ([]PipelineStep, error)
+	// One page of the tenant's assets, newest first (ids are UUIDv7, so id
+	// order is creation order), with the project each one belongs to and
+	// what references it.
+	ListLibraryAssets(ctx context.Context, arg ListLibraryAssetsParams) ([]ListLibraryAssetsRow, error)
+	// Every scene of an episode/lang in order with its selected image, voice
+	// and align takes: the raw material a render manifest freezes.
+	ListManifestSceneInputs(ctx context.Context, arg ListManifestSceneInputsParams) ([]ListManifestSceneInputsRow, error)
 	// lint-tenant-queries:allow: by design this lists every tenant the user
 	// belongs to (e.g. to populate the tenant switcher); it is scoped by
 	// user_id, not tenant_id, because no single tenant is selected yet.
@@ -246,6 +296,7 @@ type Querier interface {
 	ListNarratorVoicesBySeries(ctx context.Context, arg ListNarratorVoicesBySeriesParams) ([]NarratorVoice, error)
 	// Everything storyctx pins into a series' LLM requests.
 	ListPinnedCharacterProfiles(ctx context.Context, arg ListPinnedCharacterProfilesParams) ([]ListPinnedCharacterProfilesRow, error)
+	ListRenders(ctx context.Context, arg ListRendersParams) ([]Render, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	ListScenes(ctx context.Context, arg ListScenesParams) ([]Scene, error)
 	// The scenes a re-split replaces, locked against a concurrent edit, with
@@ -257,6 +308,9 @@ type Querier interface {
 	// video missing here is backfilled from its publication day.
 	ListSyncedVideoIDs(ctx context.Context, arg ListSyncedVideoIDsParams) ([]string, error)
 	ListTakes(ctx context.Context, arg ListTakesParams) ([]ListTakesRow, error)
+	// Tenants whose daily cleanup is due (never ran, or ran over a day ago).
+	// lint-tenant-queries:allow: the daily scheduler lists due tenant ids across tenants; each cleanup then runs tenant-scoped
+	ListTenantsForCleanup(ctx context.Context) ([]pgtype.UUID, error)
 	ListTrackedVideos(ctx context.Context, arg ListTrackedVideosParams) ([]AnalyticsTrackedVideo, error)
 	// Tracked videos of a channel with totals over [from_date, to_date].
 	// Averages are view-weighted and CTR is impression-weighted. Each *_days
@@ -273,12 +327,15 @@ type Querier interface {
 	// native 32-bit single-key overload; a hash collision between two
 	// tenants only costs extra serialization, never a correctness bug.
 	LockTenantForAdmission(ctx context.Context, tenantID string) error
+	// How many of a manifest's pinned cache entries are encoded so far.
+	ManifestCacheProgress(ctx context.Context, arg ManifestCacheProgressParams) (ManifestCacheProgressRow, error)
 	MarkAssetFailed(ctx context.Context, arg MarkAssetFailedParams) error
 	MarkAssetReady(ctx context.Context, arg MarkAssetReadyParams) (Asset, error)
 	// Only a previewed import can be committed, and only once: a concurrent or
 	// repeated commit finds no row and is refused.
 	MarkImportCommitted(ctx context.Context, arg MarkImportCommittedParams) (Import, error)
 	MarkImportFailed(ctx context.Context, arg MarkImportFailedParams) error
+	MarkLibraryCleanup(ctx context.Context, tenantID pgtype.UUID) error
 	MarkModelInstallFailed(ctx context.Context, arg MarkModelInstallFailedParams) error
 	// Unconditional on purpose: the files are verified on disk, which is the
 	// fact this row reports, whatever state a concurrent pause left it in.
@@ -366,7 +423,11 @@ type Querier interface {
 	// asset's variants map without dropping keys another step wrote.
 	SetAssetVariants(ctx context.Context, arg SetAssetVariantsParams) (Asset, error)
 	SetCharacterVoicePreview(ctx context.Context, arg SetCharacterVoicePreviewParams) error
+	SetManifestRun(ctx context.Context, arg SetManifestRunParams) (RenderManifest, error)
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
+	// Records the episode preview proxy and the per-scene proxies (scene id
+	// -> asset id) in the render's report.
+	SetRenderPreviews(ctx context.Context, arg SetRenderPreviewsParams) (Render, error)
 	SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeasuredDurationParams) (Scene, error)
 	SetSuggestionDismissed(ctx context.Context, arg SetSuggestionDismissedParams) (int64, error)
 	SetYouTubeChannelStatus(ctx context.Context, arg SetYouTubeChannelStatusParams) (YoutubeChannel, error)
@@ -380,6 +441,7 @@ type Querier interface {
 	// concurrent reader could observe, and newRunID must already exist
 	// (insert it before calling this, never after).
 	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
+	TouchRenderSegments(ctx context.Context, arg TouchRenderSegmentsParams) error
 	TouchScene(ctx context.Context, arg TouchSceneParams) (Scene, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	// Keeps only the newest 50 revisions per draft; called after each insert.
@@ -418,8 +480,11 @@ type Querier interface {
 	UpsertChannelMetricsDaily(ctx context.Context, arg UpsertChannelMetricsDailyParams) error
 	UpsertCharacterVoice(ctx context.Context, arg UpsertCharacterVoiceParams) (CharacterVoice, error)
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
+	UpsertLibrarySettings(ctx context.Context, arg UpsertLibrarySettingsParams) (LibrarySetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
 	UpsertNarratorVoice(ctx context.Context, arg UpsertNarratorVoiceParams) (NarratorVoice, error)
+	UpsertRenderSegment(ctx context.Context, arg UpsertRenderSegmentParams) (RenderSegment, error)
+	UpsertRenderSettings(ctx context.Context, arg UpsertRenderSettingsParams) (RenderSetting, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
 	UpsertStoryboardSettings(ctx context.Context, arg UpsertStoryboardSettingsParams) (SeriesStoryboardSetting, error)
 	// A new rule version re-opens a dismissed suggestion.

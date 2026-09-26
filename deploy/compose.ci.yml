@@ -13,6 +13,13 @@ services:
   api:
     environment:
       API_RATE_LIMIT_PER_MINUTE: "1000"
+      # Test runners have far less free disk than the production
+      # watermark; the tests fake a full disk themselves.
+      DISK_MIN_FREE_GB: "1"
+      DISK_WARN_FREE_GB: "2"
   # GitHub-hosted runners have 4 vCPUs; Docker rejects a cpus limit above the host count.
   worker:
     cpus: 2
+    environment:
+      DISK_MIN_FREE_GB: "1"
+      DISK_WARN_FREE_GB: "2"

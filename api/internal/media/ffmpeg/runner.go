@@ -1,20 +1,14 @@
 package ffmpeg
 
 import (
-	"bufio"
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"loomtale/api/internal/obs/scrub"
 	"loomtale/api/internal/pipeline"
 )
 
@@ -36,6 +30,11 @@ type Input struct {
 	Format Format
 	Path   string
 	URL    string
+	// Loop repeats a still image input forever (-loop 1); the output's
+	// frame count ends it.
+	Loop bool
+	// FrameRate is the rate an image input is read at (-framerate).
+	FrameRate int
 }
 
 // Output describes the single output file with typed options only.
@@ -62,6 +61,20 @@ type Output struct {
 	// NoVideo/NoAudio drop that stream (-vn / -an).
 	NoVideo bool
 	NoAudio bool
+
+	// Maps selects output streams (-map): a graph label such as "v" or
+	// an input stream such as "1:a". Empty keeps ffmpeg's default pick.
+	Maps []string
+	// Video holds the H.264 settings of a render segment or proxy.
+	Video *VideoEncode
+	// AudioBitrateK is the AAC bitrate in kbit/s (-b:a).
+	AudioBitrateK int
+	// SubtitleCodec encodes a subtitle input (-c:s), e.g. mov_text.
+	SubtitleCodec string
+	// SubtitleLanguage is the ISO 639-2 code of the subtitle stream.
+	SubtitleLanguage string
+	// Faststart moves the MP4 index to the front (-movflags +faststart).
+	Faststart bool
 }
 
 // Job is one ffmpeg invocation.
@@ -70,7 +83,10 @@ type Job struct {
 	// inside it.
 	TempDir string
 	Inputs  []Input
-	Output  Output
+	// Graph, when set, is passed as -filter_complex; outputs then pick
+	// its labels with Output.Maps.
+	Graph  *Graph
+	Output Output
 	// TotalMs, when positive, turns ffmpeg's progress output into a
 	// percentage for OnProgress.
 	TotalMs    int64
@@ -104,6 +120,16 @@ func (r *Runner) Args(job Job) ([]string, error) {
 		}
 		args = append(args, inArgs...)
 	}
+	if job.Graph != nil {
+		if job.Output.ScaleWidth > 0 {
+			return nil, fmt.Errorf("%w: a filtergraph job scales inside its graph", ErrRefused)
+		}
+		g, err := job.Graph.String()
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "-filter_complex", g)
+	}
 	outArgs, err := outputArgs(job.TempDir, job.Output)
 	if err != nil {
 		return nil, err
@@ -116,6 +142,9 @@ func (r *Runner) inputArgs(tempDir string, in Input) ([]string, error) {
 	if !knownFormats[in.Format] {
 		return nil, fmt.Errorf("%w: input format %q is not allowed", ErrRefused, in.Format)
 	}
+	if (in.Loop || in.FrameRate != 0) && (in.Format != FormatImage2 || in.FrameRate < 0) {
+		return nil, fmt.Errorf("%w: loop and frame rate apply to image inputs only", ErrRefused)
+	}
 	switch {
 	case in.Path != "" && in.URL != "":
 		return nil, fmt.Errorf("%w: an input is either a file or a URL", ErrRefused)
@@ -127,6 +156,7 @@ func (r *Runner) inputArgs(tempDir string, in Input) ([]string, error) {
 		if in.Format == FormatConcat {
 			args = append(args, "-safe", "1")
 		}
+		args = append(args, imageInputArgs(in)...)
 		return append(args, "-i", in.Path), nil
 	case in.URL != "":
 		if in.Format == FormatConcat {
@@ -135,7 +165,9 @@ func (r *Runner) inputArgs(tempDir string, in Input) ([]string, error) {
 		if err := r.checkRemote(in.URL); err != nil {
 			return nil, err
 		}
-		return []string{"-protocol_whitelist", RemoteProtocolWhitelist, "-f", string(in.Format), "-i", in.URL}, nil
+		args := []string{"-protocol_whitelist", RemoteProtocolWhitelist, "-f", string(in.Format)}
+		args = append(args, imageInputArgs(in)...)
+		return append(args, "-i", in.URL), nil
 	default:
 		return nil, fmt.Errorf("%w: an input needs a file or a URL", ErrRefused)
 	}
@@ -168,20 +200,39 @@ func insideDir(dir, p string) error {
 	return nil
 }
 
-var allowedMuxers = map[string]bool{"webp": true, "avif": true, "wav": true, "s16le": true, "image2": true}
-var allowedCodecs = map[string]bool{"": true, "libwebp": true, "libaom-av1": true, "libsvtav1": true, "pcm_s16le": true, "png": true}
+var allowedMuxers = map[string]bool{
+	"webp": true, "avif": true, "wav": true, "s16le": true, "image2": true, "mp4": true, MuxerNull: true,
+}
+var allowedCodecs = map[string]bool{
+	"": true, "libwebp": true, "libaom-av1": true, "libsvtav1": true, "pcm_s16le": true, "png": true,
+	CodecX264: true, CodecNVENC: true, "aac": true, CodecCopy: true,
+}
+var allowedSubtitleCodecs = map[string]bool{"": true, "mov_text": true, CodecCopy: true}
+
+// MuxerNull discards the output; its Path must be empty. Measuring runs
+// (loudnorm first pass, ebur128) use it.
+const MuxerNull = "null"
 
 func outputArgs(tempDir string, out Output) ([]string, error) {
-	if err := insideDir(tempDir, out.Path); err != nil {
+	target := out.Path
+	if out.Muxer == MuxerNull {
+		if out.Path != "" {
+			return nil, fmt.Errorf("%w: a null output has no path", ErrRefused)
+		}
+		target = "-"
+	} else if err := insideDir(tempDir, out.Path); err != nil {
 		return nil, err
 	}
 	if !allowedMuxers[out.Muxer] {
 		return nil, fmt.Errorf("%w: output format %q is not allowed", ErrRefused, out.Muxer)
 	}
-	if !allowedCodecs[out.VideoCodec] || !allowedCodecs[out.AudioCodec] {
+	if !allowedCodecs[out.VideoCodec] || !allowedCodecs[out.AudioCodec] || !allowedSubtitleCodecs[out.SubtitleCodec] {
 		return nil, fmt.Errorf("%w: codec is not allowed", ErrRefused)
 	}
-	var args []string
+	args, err := mapArgs(out.Maps)
+	if err != nil {
+		return nil, err
+	}
 	if out.NoVideo {
 		args = append(args, "-vn")
 	}
@@ -195,6 +246,11 @@ func outputArgs(tempDir string, out Output) ([]string, error) {
 	if out.VideoCodec != "" {
 		args = append(args, "-c:v", out.VideoCodec)
 	}
+	videoArgs, err := out.Video.args(out.VideoCodec)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, videoArgs...)
 	if out.StillPicture {
 		args = append(args, "-still-picture", "1")
 	}
@@ -212,96 +268,22 @@ func outputArgs(tempDir string, out Output) ([]string, error) {
 	if out.AudioCodec != "" {
 		args = append(args, "-c:a", out.AudioCodec)
 	}
+	if out.AudioBitrateK > 0 {
+		args = append(args, "-b:a", strconv.Itoa(out.AudioBitrateK)+"k")
+	}
 	if out.Channels > 0 {
 		args = append(args, "-ac", strconv.Itoa(out.Channels))
 	}
 	if out.SampleRate > 0 {
 		args = append(args, "-ar", strconv.Itoa(out.SampleRate))
 	}
-	return append(args, "-f", out.Muxer, out.Path), nil
-}
-
-// Run executes job. A non-zero exit returns an error carrying the capped,
-// URL-scrubbed stderr; a refused job never starts a process.
-func (r *Runner) Run(ctx context.Context, job Job) error {
-	args, err := r.Args(job)
+	containerArgs, err := out.containerArgs()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	timeout := r.Timeout
-	if timeout <= 0 {
-		timeout = defaultTimeout
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	binary := r.Binary
-	if binary == "" {
-		binary = "ffmpeg"
-	}
-	cmd := exec.CommandContext(ctx, binary, args...) //nolint:gosec // argv is built from typed, validated values only (see Args)
-	cmd.Dir = job.TempDir
-	stderr := &cappedBuffer{limit: maxStderrBytes}
-	cmd.Stderr = stderr
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("ffmpeg: start: %w", err)
-	}
-	parseProgress(stdout, job.TotalMs, job.OnProgress)
-	if err := cmd.Wait(); err != nil {
-		msg := strings.TrimSpace(scrub.URL(stderr.String()))
-		if ctx.Err() != nil {
-			return fmt.Errorf("ffmpeg: timed out or cancelled: %w", ctx.Err())
-		}
-		return fmt.Errorf("ffmpeg: %w: %s", err, msg)
-	}
-	return nil
+	args = append(args, containerArgs...)
+	return append(args, "-f", out.Muxer, target), nil
 }
-
-// parseProgress reads ffmpeg's -progress key=value stream until EOF and
-// reports out_time as a percentage of totalMs.
-func parseProgress(r io.Reader, totalMs int64, onProgress func(int)) {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		key, value, ok := strings.Cut(scanner.Text(), "=")
-		if !ok || onProgress == nil || totalMs <= 0 {
-			continue
-		}
-		if key == "out_time_us" || key == "out_time_ms" {
-			// Both keys carry microseconds (out_time_ms is misnamed upstream).
-			us, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
-			if err != nil || us < 0 {
-				continue
-			}
-			pct := int(us / 1000 * 100 / totalMs)
-			onProgress(min(pct, 99))
-		}
-		if key == "progress" && value == "end" {
-			onProgress(100)
-		}
-	}
-}
-
-type cappedBuffer struct {
-	buf   bytes.Buffer
-	limit int
-}
-
-func (c *cappedBuffer) Write(p []byte) (int, error) {
-	if room := c.limit - c.buf.Len(); room > 0 {
-		if len(p) > room {
-			c.buf.Write(p[:room])
-		} else {
-			c.buf.Write(p)
-		}
-	}
-	return len(p), nil
-}
-
-func (c *cappedBuffer) String() string { return c.buf.String() }
 
 // WriteConcatList writes a concat demuxer list of plain file names (no
 // directories, resolved relative to the list itself) into dir and returns

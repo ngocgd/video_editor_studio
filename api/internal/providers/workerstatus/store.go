@@ -36,6 +36,17 @@ type GPU struct {
 	BudgetMB        int64     `json:"budget_mb"`
 	RenderReserveMB int64     `json:"render_reserve_mb"`
 	MeasuredAt      time.Time `json:"measured_at"`
+	// Encoder is the render worker's video encoder probe; nil until it
+	// probed (older rows and workers without ffmpeg omit it).
+	Encoder *Encoder `json:"encoder,omitempty"`
+}
+
+// Encoder is the encoder a render "auto" setting resolves to on this
+// worker, and why NVENC is unavailable when it is.
+type Encoder struct {
+	Codec  string `json:"codec"`
+	NVENC  bool   `json:"nvenc"`
+	Reason string `json:"reason,omitempty"`
 }
 
 // ProviderInfo is one provider's availability as observed by the

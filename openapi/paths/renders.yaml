@@ -1,0 +1,222 @@
+renderSettings:
+  get:
+    operationId: getRenderSettings
+    summary: Render settings of an episode language (defaults when never saved)
+    tags: [render]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneLanguage"
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderSettings"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  put:
+    operationId: putRenderSettings
+    summary: Replace the render settings of an episode language
+    tags: [render]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/render.yaml#/RenderSettings"
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderSettings"
+      "400":
+        description: invalid settings
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+renderStatus:
+  get:
+    operationId: getRenderStatus
+    summary: Stage summary, readiness with the reasons a render is disabled, disk watermark, estimate and the latest render run of an episode language
+    tags: [render]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: query
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneLanguage"
+    responses:
+      "200":
+        description: status
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderStatus"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+episodeRenders:
+  get:
+    operationId: listRenders
+    summary: Finished renders of an episode language, newest first, with their QC reports
+    tags: [render]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: query
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneLanguage"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+    responses:
+      "200":
+        description: renders
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderList"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  post:
+    operationId: startRender
+    summary: Freeze a render manifest of the episode language and start its run; unchanged segments are reused from the cache
+    tags: [render]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/render.yaml#/StartRenderRequest"
+    responses:
+      "202":
+        description: render run queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderStarted"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: a render of this episode language is already running
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: the episode is not ready to render; reasons lists why
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/render.yaml#/RenderNotReady"
+      "429":
+        description: tenant quota exceeded
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "507":
+        description: refused by the disk watermark
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+renderItem:
+  get:
+    operationId: getRender
+    summary: One finished render with its QC report and preview assets
+    tags: [render]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: render
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/render.yaml#/Render"
+      "404":
+        description: render not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

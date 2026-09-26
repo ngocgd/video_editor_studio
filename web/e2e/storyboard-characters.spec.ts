@@ -11,20 +11,11 @@ import { join } from "node:path";
  * characters, voices and styles pages. Generation steps are queued but
  * not run: this stack has no GPU worker, so they honestly stay queued.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 const SCREENSHOT_DIR = "../plans/260924-2244-loomtale-studio-mvp/reports/phase-07-screens";
 const SCENES = 450;
 
 test.setTimeout(240_000);
 
-async function login(page: Page) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
-}
 
 /** Calls the API from the page (same origin, session cookie, CSRF token). */
 async function api<T>(page: Page, method: string, path: string, body?: unknown): Promise<T> {
@@ -56,7 +47,7 @@ function paragraph(i: number): string {
 
 test("storyboard at 450 scenes, scene edit, characters, voices and styles", async ({ page }) => {
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
-  await login(page);
+  await page.goto("/");
 
   const series = await api<{ id: string }>(page, "POST", "/series", { title: `Storyboard E2E ${Date.now()}`, targetLanguages: ["en"], targetEpisodeMinutes: 120, plannedEpisodeCount: 1 });
   const style = await api<{ id: string }>(page, "POST", "/settings/image-styles", { name: `Ink wash ${Date.now()}`, baseModel: "z-image-turbo", stylePrompt: "ink wash painting, xianxia" });

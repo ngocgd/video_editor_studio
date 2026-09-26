@@ -32,9 +32,11 @@ import (
 	"loomtale/api/internal/csrf"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
+	"loomtale/api/internal/diskguard"
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
+	"loomtale/api/internal/library"
 	"loomtale/api/internal/media"
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/modelsapi"
@@ -49,6 +51,7 @@ import (
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
+	"loomtale/api/internal/render"
 	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secheaders"
 	"loomtale/api/internal/secrets"
@@ -212,9 +215,32 @@ func run() error {
 	for _, handler := range media.Handlers(media.Deps{Queries: queries}) {
 		stepRegistry.Register(handler)
 	}
+	for _, handler := range render.Handlers(render.Deps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range library.Handlers(library.Deps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
 	stepRegistry.Register(&analytics.ExplainHandler{Registry: llmRegistry})
-	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, scenes.Estimate)
+	admission := []pipeline.AdmissionCheck{quotaChecker.Check}
+	var disk *diskguard.Watermark
+	if cfg.DiskGuardPath != "" {
+		disk = diskguard.New(cfg.DiskGuardPath, cfg.DiskMinFreeGB, cfg.DiskWarnFreeGB)
+		admission = append(admission, disk.Check)
+	}
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, admission, library.EstimateWith(render.EstimateWith(scenes.Estimate)))
 	sceneService.Engine = engine
+
+	// A scene edit restarts the episode's running render; the render
+	// worker's heartbeat tells the api which encoder "auto" means.
+	freezer := &render.Freezer{Pool: pool.Pool, Queries: queries, Engine: engine, Encoder: render.HeartbeatEncoder{Store: &workerstatus.Store{Queries: queries}}}
+	superseder := &render.Superseder{Freezer: freezer}
+	defer superseder.Stop()
+	sceneHooks.Register(superseder.Handle)
+	libraryService := &library.Service{Queries: queries, Engine: engine}
+	// The daily TTL cleanup is scheduled from the api only, so exactly
+	// one process enqueues it.
+	go libraryService.RunScheduler(ctx)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
@@ -305,6 +331,8 @@ func run() error {
 		CharactersAPI: &characters.CharactersAPI{Queries: queries, Engine: engine},
 		ScenesAPI:     &scenes.ScenesAPI{Service: sceneService, Storage: internalStore},
 		MediaAPI:      &media.MediaAPI{Queries: queries, Engine: engine, Browser: browserStore},
+		RenderAPI:     &render.RenderAPI{Freezer: freezer, Disk: disk},
+		LibraryAPI:    &library.LibraryAPI{Service: libraryService, Disk: disk},
 		ModelsAPI: &modelsapi.ModelsAPI{
 			Manifest:     manifest,
 			Store:        modelStore,

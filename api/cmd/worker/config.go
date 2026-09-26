@@ -93,4 +93,13 @@ type config struct {
 
 	// FFmpegPath is the ffmpeg binary the media and voice steps run.
 	FFmpegPath string `env:"FFMPEG_PATH" envDefault:"ffmpeg"`
+	// FFprobePath is the ffprobe binary the render QC and keyframe
+	// checks run.
+	FFprobePath string `env:"FFPROBE_PATH" envDefault:"ffprobe"`
+
+	// DiskGuardPath and the thresholds mirror cmd/api's: the worker also
+	// enqueues renders (a scene edit restarts a running render).
+	DiskGuardPath  string `env:"DISK_GUARD_PATH" envDefault:""`
+	DiskMinFreeGB  uint64 `env:"DISK_MIN_FREE_GB" envDefault:"40"`
+	DiskWarnFreeGB uint64 `env:"DISK_WARN_FREE_GB" envDefault:"60"`
 }

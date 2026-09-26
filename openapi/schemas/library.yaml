@@ -1,0 +1,153 @@
+# Library: every asset of the tenant, storage usage, retention and
+# cleanups.
+LibraryAsset:
+  type: object
+  required: [id, kind, mime, bytes, status, createdAt, referencedBy]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      $ref: "./assets.yaml#/AssetKind"
+    mime:
+      type: string
+    bytes:
+      type: integer
+      format: int64
+    status:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+    seriesId:
+      type: string
+      format: uuid
+    seriesTitle:
+      type: string
+    referencedBy:
+      description: What uses the asset (for example selected-take, render, manifest).
+      type: array
+      items:
+        type: string
+LibraryAssetPage:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/LibraryAsset"
+    nextCursor:
+      type: string
+      format: uuid
+LibrarySeriesUsage:
+  type: object
+  required: [assets, bytes]
+  properties:
+    seriesId:
+      description: Absent for assets no project references.
+      type: string
+      format: uuid
+    seriesTitle:
+      type: string
+    assets:
+      type: integer
+      format: int64
+    bytes:
+      type: integer
+      format: int64
+LibraryUsage:
+  type: object
+  required: [series, totalBytes, assets, disk]
+  properties:
+    series:
+      type: array
+      items:
+        $ref: "#/LibrarySeriesUsage"
+    totalBytes:
+      type: integer
+      format: int64
+    assets:
+      type: integer
+      format: int64
+    disk:
+      $ref: "./render.yaml#/DiskStatus"
+LibrarySettings:
+  type: object
+  required: [segmentTtlDays, takeTtlDays]
+  properties:
+    segmentTtlDays:
+      description: Days an unreferenced render segment is kept after its last use.
+      type: integer
+      minimum: 1
+      maximum: 365
+    takeTtlDays:
+      description: Days an unselected take is kept.
+      type: integer
+      minimum: 1
+      maximum: 365
+    lastCleanupAt:
+      type: string
+      format: date-time
+CleanupCandidate:
+  type: object
+  required: [id, kind, assetId, bytes, since]
+  properties:
+    id:
+      description: The segment's input hash or the take's id.
+      type: string
+    kind:
+      type: string
+    assetId:
+      type: string
+      format: uuid
+    bytes:
+      type: integer
+      format: int64
+    since:
+      type: string
+      format: date-time
+CleanupPreview:
+  type: object
+  required: [settings, segments, takes, bytes, truncated, token]
+  properties:
+    settings:
+      $ref: "#/LibrarySettings"
+    segments:
+      type: array
+      items:
+        $ref: "#/CleanupCandidate"
+    takes:
+      type: array
+      items:
+        $ref: "#/CleanupCandidate"
+    bytes:
+      type: integer
+      format: int64
+    truncated:
+      type: boolean
+    token:
+      description: Confirms exactly this candidate set.
+      type: string
+ConfirmCleanupRequest:
+  type: object
+  required: [token]
+  properties:
+    token:
+      type: string
+      minLength: 1
+      maxLength: 128
+CleanupStarted:
+  type: object
+  required: [runId, segments, takes, bytes]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    segments:
+      type: integer
+    takes:
+      type: integer
+    bytes:
+      type: integer
+      format: int64

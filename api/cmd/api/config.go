@@ -86,6 +86,13 @@ type config struct {
 	// story LLM request; false is the rollback switch for the pinning.
 	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
 
+	// DiskGuardPath is a mount on the Docker data disk (the object
+	// store's volume, read-only); the render and model-pull admission
+	// check measures free space there. Empty disables the check.
+	DiskGuardPath  string `env:"DISK_GUARD_PATH" envDefault:""`
+	DiskMinFreeGB  uint64 `env:"DISK_MIN_FREE_GB" envDefault:"40"`
+	DiskWarnFreeGB uint64 `env:"DISK_WARN_FREE_GB" envDefault:"60"`
+
 	// Google OAuth client for connecting YouTube channels. Empty client
 	// id disables connecting; the secret lives in a mounted file.
 	GoogleClientID         string `env:"GOOGLE_CLIENT_ID" envDefault:""`

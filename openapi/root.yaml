@@ -168,6 +168,24 @@ paths:
     $ref: paths/media.yaml#/assetVariant
   /media/backfill:
     $ref: paths/media.yaml#/mediaBackfill
+  /episodes/{id}/render-settings/{lang}:
+    $ref: paths/renders.yaml#/renderSettings
+  /episodes/{id}/render-status:
+    $ref: paths/renders.yaml#/renderStatus
+  /episodes/{id}/renders:
+    $ref: paths/renders.yaml#/episodeRenders
+  /renders/{id}:
+    $ref: paths/renders.yaml#/renderItem
+  /library/assets:
+    $ref: paths/library.yaml#/libraryAssets
+  /library/usage:
+    $ref: paths/library.yaml#/libraryUsage
+  /library/settings:
+    $ref: paths/library.yaml#/librarySettings
+  /library/cleanup/preview:
+    $ref: paths/library.yaml#/libraryCleanupPreview
+  /library/cleanup:
+    $ref: paths/library.yaml#/libraryCleanup
   /events:
     $ref: paths/events.yaml#/events
 components:

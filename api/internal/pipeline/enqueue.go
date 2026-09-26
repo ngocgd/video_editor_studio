@@ -67,8 +67,9 @@ func (e *Engine) Enqueue(ctx context.Context, tenantID uuid.UUID, spec RunSpec) 
 	if err := qtx.LockTenantForAdmission(ctx, tenantID.String()); err != nil {
 		return uuid.Nil, fmt.Errorf("pipeline: lock tenant for admission: %w", err)
 	}
+	checkCtx := WithEnqueueKinds(ctx, enqueueKindsOf(spec))
 	for _, check := range e.Checks {
-		if err := check(ctx, qtx, tenantID, len(spec.Steps)); err != nil {
+		if err := check(checkCtx, qtx, tenantID, len(spec.Steps)); err != nil {
 			return uuid.Nil, err
 		}
 	}
@@ -116,7 +117,7 @@ func (e *Engine) insertSteps(ctx context.Context, qtx *dbgen.Queries, tenantID u
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownStepKind, s.Kind)
 		}
-		ref := StepRef{ID: s.ID, TenantID: tenantID, RunID: spec.ID, ScopeKind: s.ScopeKind, ScopeID: s.ScopeID, Kind: s.Kind}
+		ref := StepRef{ID: s.ID, TenantID: tenantID, RunID: spec.ID, ScopeKind: s.ScopeKind, ScopeID: s.ScopeID, Kind: s.Kind, Input: s.Input}
 		queue, err := h.Queue(ctx, ref)
 		if err != nil {
 			return nil, fmt.Errorf("pipeline: resolve queue for step %s: %w", s.ID, err)

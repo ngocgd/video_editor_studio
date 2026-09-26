@@ -1,0 +1,134 @@
+libraryAssets:
+  get:
+    operationId: listLibraryAssets
+    summary: One page of the tenant's assets, newest first, with the project and what references each one
+    tags: [library]
+    x-min-role: viewer
+    parameters:
+      - name: kind
+        in: query
+        schema:
+          $ref: "../schemas/assets.yaml#/AssetKind"
+      - name: seriesId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+    responses:
+      "200":
+        description: assets
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/LibraryAssetPage"
+libraryUsage:
+  get:
+    operationId: getLibraryUsage
+    summary: Storage use per project and the data disk's free space against the watermark
+    tags: [library]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: usage
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/LibraryUsage"
+librarySettings:
+  get:
+    operationId: getLibrarySettings
+    summary: Retention of unreferenced segments and unselected takes
+    tags: [library]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/LibrarySettings"
+  put:
+    operationId: putLibrarySettings
+    summary: Change the retention used by the daily and manual cleanups
+    tags: [library]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/library.yaml#/LibrarySettings"
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/LibrarySettings"
+      "400":
+        description: invalid settings
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+libraryCleanupPreview:
+  post:
+    operationId: previewLibraryCleanup
+    summary: Dry run of a cleanup; lists what would be deleted now and a token that confirms exactly that set
+    tags: [library]
+    x-min-role: editor
+    responses:
+      "200":
+        description: preview
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/CleanupPreview"
+libraryCleanup:
+  post:
+    operationId: confirmLibraryCleanup
+    summary: Start the cleanup a dry run showed, as an audited step
+    tags: [library]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/library.yaml#/ConfirmCleanupRequest"
+    responses:
+      "202":
+        description: cleanup run queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/library.yaml#/CleanupStarted"
+      "409":
+        description: the candidates changed since the preview; preview again
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: nothing to clean up
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "429":
+        description: tenant quota exceeded
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

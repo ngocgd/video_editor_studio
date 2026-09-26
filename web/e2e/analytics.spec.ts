@@ -6,15 +6,9 @@ import { expect, test } from "@playwright/test";
  * OAuth app, so no channel is connected: the page must say how to get data
  * instead of showing zeros, and lead to Settings > YouTube.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 
 test("analytics without a connected youtube channel", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
+  await page.goto("/");
 
   await page.getByRole("link", { name: "Analytics" }).first().click();
   await page.waitForURL("**/analytics");

@@ -233,6 +233,17 @@ services:
       # concurrent argon2 work triggers more aggressive GC instead of an
       # OOM kill.
       GOMEMLIMIT: 400MiB
+      # Render and model-pull enqueues are refused below DISK_MIN_FREE_GB
+      # free, measured on the object store's volume (the Docker data
+      # disk, mounted read-only) and on the host drive holding that disk
+      # (a Docker Desktop volume only reports its virtual disk); the
+      # tighter one counts. A warning shows below DISK_WARN_FREE_GB.
+      DISK_GUARD_PATH: /mnt/data-disk,/host-disk
+      DISK_MIN_FREE_GB: ${DISK_MIN_FREE_GB:-40}
+      DISK_WARN_FREE_GB: ${DISK_WARN_FREE_GB:-60}
+    volumes:
+      - miniodata:/mnt/data-disk:ro
+      - ${MODELS_HOST_DISK_SOURCE:-./host-disk}:/host-disk:ro
     healthcheck:
       test: ["CMD", "/usr/local/bin/api", "healthcheck"]
       interval: 5s
@@ -286,13 +297,24 @@ services:
       YOUTUBE_QUOTA_PROJECT: ${YOUTUBE_QUOTA_PROJECT:-default}
       YOUTUBE_QUOTA_DAILY_LIMIT: ${YOUTUBE_QUOTA_DAILY_LIMIT:-10000}
       FFMPEG_PATH: /usr/local/bin/ffmpeg
+      FFPROBE_PATH: /usr/local/bin/ffprobe
+      WORKER_RENDER_CONCURRENCY: ${WORKER_RENDER_CONCURRENCY:-2}
+      # Step temp dirs live on the render scratch volume: a compose holds
+      # every segment of an episode (GBs), far beyond a RAM tmpfs.
+      TMPDIR: /scratch
+      DISK_GUARD_PATH: /scratch,/host-disk
+      DISK_MIN_FREE_GB: ${DISK_MIN_FREE_GB:-40}
+      DISK_WARN_FREE_GB: ${DISK_WARN_FREE_GB:-60}
+    volumes:
+      - renderscratch:/scratch
+      - ${MODELS_HOST_DISK_SOURCE:-./host-disk}:/host-disk:ro
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 10
-    # Media and voice steps stage their inputs and ffmpeg outputs in a
-    # per-step temp dir; the root filesystem stays read-only.
+    # Anything not honouring TMPDIR still gets a small /tmp; the root
+    # filesystem stays read-only.
     tmpfs: ["/tmp:size=1g,mode=1777"]
     read_only: true
     security_opt: ["no-new-privileges:true"]
@@ -441,3 +463,4 @@ services:
 volumes:
   pgdata:
   miniodata:
+  renderscratch:

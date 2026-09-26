@@ -12,6 +12,7 @@ web/coverage/
 web/bundle-stats.html
 web/test-results/
 web/playwright-report/
+web/playwright/.auth/
 *.tsbuildinfo
 
 # Go

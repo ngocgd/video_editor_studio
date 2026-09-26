@@ -70,7 +70,7 @@ func TestArgsRefusals(t *testing.T) {
 		"both path and url":           func(j *Job) { j.Inputs[0].URL = "https://minio.internal:9000/a" },
 		"output outside the temp dir": func(j *Job) { j.Output.Path = outside },
 		"output muxer not allowed":    func(j *Job) { j.Output.Muxer = "hls" },
-		"output codec not allowed":    func(j *Job) { j.Output.VideoCodec = "copy" },
+		"output codec not allowed":    func(j *Job) { j.Output.VideoCodec = "libx265" },
 		"no inputs":                   func(j *Job) { j.Inputs = nil },
 		"relative temp dir":           func(j *Job) { j.TempDir = "tmp" },
 	}

@@ -27,10 +27,11 @@ const (
 	FormatMP3    Format = "mp3"
 	FormatImage2 Format = "image2"
 	FormatConcat Format = "concat"
+	FormatSRT    Format = "srt"
 )
 
 var knownFormats = map[Format]bool{
-	FormatMP4: true, FormatWAV: true, FormatFLAC: true, FormatMP3: true, FormatImage2: true, FormatConcat: true,
+	FormatMP4: true, FormatWAV: true, FormatFLAC: true, FormatMP3: true, FormatImage2: true, FormatConcat: true, FormatSRT: true,
 }
 
 // FormatForMIME maps an asset's sniffed MIME type to the demuxer forced

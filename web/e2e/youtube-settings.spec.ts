@@ -8,15 +8,9 @@ import { expect, test } from "@playwright/test";
  * callback error redirect into a readable alert without reflecting anything
  * but the fixed reason codes.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 
 test("settings/youtube without a configured google oauth app", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
+  await page.goto("/");
 
   await page.goto("/settings/youtube");
   await expect(page.getByRole("heading", { name: "YouTube channels" })).toBeVisible();

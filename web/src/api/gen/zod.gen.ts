@@ -1229,6 +1229,236 @@ export const zMediaBackfillResponse = z.object({
     peaks: z.number().int()
 });
 
+export const zRenderSubtitleStyle = z.object({
+    font: z.string().regex(/^[A-Za-z0-9 ]{1,64}$/),
+    sizePx: z.number().int().gte(12).lte(160),
+    position: z.enum([
+        'bottom',
+        'top',
+        'middle'
+    ]),
+    shadowPx: z.number().int().gte(0).lte(10)
+});
+
+export const zRenderSettings = z.object({
+    width: z.number().int().gte(320).lte(3840),
+    height: z.number().int().gte(180).lte(2160),
+    fps: z.union([
+        z.literal(24),
+        z.literal(25),
+        z.literal(30),
+        z.literal(60)
+    ]),
+    encoder: z.string().regex(/^(auto|h264_nvenc|libx264)$/),
+    subtitles: z.enum([
+        'burn',
+        'srt',
+        'both'
+    ]),
+    subtitleStyle: zRenderSubtitleStyle,
+    defaultMotion: zMotionPreset,
+    crossfadeMs: z.number().int().gte(0).lte(3000),
+    loudnessLufs: z.number().gte(-30).lte(-5),
+    truePeakDbtp: z.number().gte(-9).lte(0)
+});
+
+export const zRenderStage = z.object({
+    key: z.enum([
+        'script',
+        'scenes',
+        'images',
+        'voice',
+        'subtitles',
+        'compose',
+        'encode'
+    ]),
+    label: z.string(),
+    done: z.number().int(),
+    total: z.number().int(),
+    state: z.enum([
+        'done',
+        'partial',
+        'missing',
+        'running',
+        'idle'
+    ])
+});
+
+export const zDiskStatus = z.object({
+    level: z.enum([
+        'ok',
+        'warning',
+        'blocked',
+        'unknown'
+    ]),
+    freeBytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    minFreeBytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    warnFreeBytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    message: z.string()
+});
+
+export const zRenderEstimate = z.object({
+    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    scenes: z.number().int(),
+    segments: z.number().int(),
+    cachedSegments: z.number().int(),
+    encodeSeconds: z.number().int(),
+    encoder: z.string()
+});
+
+export const zRenderRestart = z.object({
+    manifestId: z.string().uuid(),
+    runId: z.string().uuid().optional(),
+    restartedAfterEdit: z.boolean(),
+    reusedSegments: z.number().int(),
+    createdAt: z.string().datetime()
+});
+
+export const zRenderStatus = z.object({
+    lang: zSceneLanguage,
+    ready: z.boolean(),
+    reasons: z.array(z.string()),
+    stages: z.array(zRenderStage),
+    disk: zDiskStatus,
+    settings: zRenderSettings,
+    estimate: zRenderEstimate.optional(),
+    activeRunId: z.string().uuid().optional(),
+    latest: zRenderRestart.optional()
+});
+
+export const zQcSceneScore = z.object({
+    sceneId: z.string(),
+    idx: z.number().int(),
+    score: z.number().optional()
+});
+
+export const zQcReport = z.object({
+    passed: z.boolean(),
+    failures: z.array(z.string()),
+    integratedLufs: z.number(),
+    truePeakDbtp: z.number(),
+    targetLufs: z.number().optional(),
+    targetTruePeakDbtp: z.number().optional(),
+    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    expectedDurationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    avDriftMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    maxSubtitleDriftMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    missingScenes: z.array(z.number().int()),
+    placeholderScenes: z.array(z.number().int()),
+    streams: z.object({
+        video: z.number().int(),
+        audio: z.number().int(),
+        subtitle: z.number().int()
+    }),
+    missingKeyframes: z.array(z.number().int()),
+    sceneScores: z.array(zQcSceneScore),
+    encoder: z.string(),
+    sha256: z.string(),
+    scenePreviews: z.record(z.string()).optional()
+});
+
+export const zRender = z.object({
+    id: z.string().uuid(),
+    episodeId: z.string().uuid(),
+    lang: zSceneLanguage,
+    manifestId: z.string().uuid(),
+    assetId: z.string().uuid(),
+    srtAssetId: z.string().uuid().optional(),
+    previewAssetId: z.string().uuid().optional(),
+    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    encoder: z.string(),
+    report: zQcReport,
+    createdAt: z.string().datetime()
+});
+
+export const zRenderList = z.object({
+    items: z.array(zRender)
+});
+
+export const zStartRenderRequest = z.object({
+    lang: zSceneLanguage
+});
+
+export const zRenderStarted = z.object({
+    runId: z.string().uuid(),
+    manifestId: z.string().uuid(),
+    hash: z.string(),
+    steps: z.number().int(),
+    reused: z.number().int()
+});
+
+export const zRenderNotReady = z.object({
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string().optional(),
+    reasons: z.array(z.string())
+});
+
+export const zLibraryAsset = z.object({
+    id: z.string().uuid(),
+    kind: zAssetKind,
+    mime: z.string(),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    status: z.string(),
+    createdAt: z.string().datetime(),
+    seriesId: z.string().uuid().optional(),
+    seriesTitle: z.string().optional(),
+    referencedBy: z.array(z.string())
+});
+
+export const zLibraryAssetPage = z.object({
+    items: z.array(zLibraryAsset),
+    nextCursor: z.string().uuid().optional()
+});
+
+export const zLibrarySeriesUsage = z.object({
+    seriesId: z.string().uuid().optional(),
+    seriesTitle: z.string().optional(),
+    assets: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+export const zLibraryUsage = z.object({
+    series: z.array(zLibrarySeriesUsage),
+    totalBytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    assets: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    disk: zDiskStatus
+});
+
+export const zLibrarySettings = z.object({
+    segmentTtlDays: z.number().int().gte(1).lte(365),
+    takeTtlDays: z.number().int().gte(1).lte(365),
+    lastCleanupAt: z.string().datetime().optional()
+});
+
+export const zCleanupCandidate = z.object({
+    id: z.string(),
+    kind: z.string(),
+    assetId: z.string().uuid(),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    since: z.string().datetime()
+});
+
+export const zCleanupPreview = z.object({
+    settings: zLibrarySettings,
+    segments: z.array(zCleanupCandidate),
+    takes: z.array(zCleanupCandidate),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    truncated: z.boolean(),
+    token: z.string()
+});
+
+export const zConfirmCleanupRequest = z.object({
+    token: z.string().min(1).max(128)
+});
+
+export const zCleanupStarted = z.object({
+    runId: z.string().uuid(),
+    segments: z.number().int(),
+    takes: z.number().int(),
+    bytes: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
 /**
  * Loomtale id of a connected YouTube channel.
  */
@@ -2180,6 +2410,116 @@ export const zGetAssetVariantPath = z.object({
  * derivative steps queued
  */
 export const zBackfillMediaResponse = zMediaBackfillResponse;
+
+export const zGetRenderSettingsPath = z.object({
+    id: z.string().uuid(),
+    lang: zSceneLanguage
+});
+
+/**
+ * settings
+ */
+export const zGetRenderSettingsResponse = zRenderSettings;
+
+export const zPutRenderSettingsBody = zRenderSettings;
+
+export const zPutRenderSettingsPath = z.object({
+    id: z.string().uuid(),
+    lang: zSceneLanguage
+});
+
+/**
+ * settings
+ */
+export const zPutRenderSettingsResponse = zRenderSettings;
+
+export const zGetRenderStatusPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zGetRenderStatusQuery = z.object({
+    lang: zSceneLanguage
+});
+
+/**
+ * status
+ */
+export const zGetRenderStatusResponse = zRenderStatus;
+
+export const zListRendersPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zListRendersQuery = z.object({
+    lang: zSceneLanguage,
+    limit: z.number().int().gte(1).lte(100).optional()
+});
+
+/**
+ * renders
+ */
+export const zListRendersResponse = zRenderList;
+
+export const zStartRenderBody = zStartRenderRequest;
+
+export const zStartRenderPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * render run queued
+ */
+export const zStartRenderResponse = zRenderStarted;
+
+export const zGetRenderPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * render
+ */
+export const zGetRenderResponse = zRender;
+
+export const zListLibraryAssetsQuery = z.object({
+    kind: zAssetKind.optional(),
+    seriesId: z.string().uuid().optional(),
+    cursor: z.string().uuid().optional(),
+    limit: z.number().int().gte(1).lte(500).optional()
+});
+
+/**
+ * assets
+ */
+export const zListLibraryAssetsResponse = zLibraryAssetPage;
+
+/**
+ * usage
+ */
+export const zGetLibraryUsageResponse = zLibraryUsage;
+
+/**
+ * settings
+ */
+export const zGetLibrarySettingsResponse = zLibrarySettings;
+
+export const zPutLibrarySettingsBody = zLibrarySettings;
+
+/**
+ * settings
+ */
+export const zPutLibrarySettingsResponse = zLibrarySettings;
+
+/**
+ * preview
+ */
+export const zPreviewLibraryCleanupResponse = zCleanupPreview;
+
+export const zConfirmLibraryCleanupBody = zConfirmCleanupRequest;
+
+/**
+ * cleanup run queued
+ */
+export const zConfirmLibraryCleanupResponse = zCleanupStarted;
 
 export const zStreamEventsQuery = z.object({
     topics: z.string()

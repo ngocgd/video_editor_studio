@@ -2990,6 +2990,374 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MediaBackfillResponse'
+  /episodes/{id}/render-settings/{lang}:
+    get:
+      operationId: getRenderSettings
+      summary: Render settings of an episode language (defaults when never saved)
+      tags:
+        - render
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SceneLanguage'
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderSettings'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      operationId: putRenderSettings
+      summary: Replace the render settings of an episode language
+      tags:
+        - render
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SceneLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderSettings'
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderSettings'
+        '400':
+          description: invalid settings
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/render-status:
+    get:
+      operationId: getRenderStatus
+      summary: Stage summary, readiness with the reasons a render is disabled, disk watermark, estimate and the latest render run of an episode language
+      tags:
+        - render
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/SceneLanguage'
+      responses:
+        '200':
+          description: status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderStatus'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /episodes/{id}/renders:
+    get:
+      operationId: listRenders
+      summary: Finished renders of an episode language, newest first, with their QC reports
+      tags:
+        - render
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: lang
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/SceneLanguage'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: renders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderList'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    post:
+      operationId: startRender
+      summary: Freeze a render manifest of the episode language and start its run; unchanged segments are reused from the cache
+      tags:
+        - render
+      x-min-role: editor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartRenderRequest'
+      responses:
+        '202':
+          description: render run queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderStarted'
+        '404':
+          description: episode not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: a render of this episode language is already running
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: the episode is not ready to render; reasons lists why
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/RenderNotReady'
+        '429':
+          description: tenant quota exceeded
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '507':
+          description: refused by the disk watermark
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /renders/{id}:
+    get:
+      operationId: getRender
+      summary: One finished render with its QC report and preview assets
+      tags:
+        - render
+      x-min-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: render
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Render'
+        '404':
+          description: render not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /library/assets:
+    get:
+      operationId: listLibraryAssets
+      summary: One page of the tenant's assets, newest first, with the project and what references each one
+      tags:
+        - library
+      x-min-role: viewer
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            $ref: '#/components/schemas/AssetKind'
+        - name: seriesId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        '200':
+          description: assets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryAssetPage'
+  /library/usage:
+    get:
+      operationId: getLibraryUsage
+      summary: Storage use per project and the data disk's free space against the watermark
+      tags:
+        - library
+      x-min-role: viewer
+      responses:
+        '200':
+          description: usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryUsage'
+  /library/settings:
+    get:
+      operationId: getLibrarySettings
+      summary: Retention of unreferenced segments and unselected takes
+      tags:
+        - library
+      x-min-role: viewer
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibrarySettings'
+    put:
+      operationId: putLibrarySettings
+      summary: Change the retention used by the daily and manual cleanups
+      tags:
+        - library
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibrarySettings'
+      responses:
+        '200':
+          description: settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibrarySettings'
+        '400':
+          description: invalid settings
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /library/cleanup/preview:
+    post:
+      operationId: previewLibraryCleanup
+      summary: Dry run of a cleanup; lists what would be deleted now and a token that confirms exactly that set
+      tags:
+        - library
+      x-min-role: editor
+      responses:
+        '200':
+          description: preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupPreview'
+  /library/cleanup:
+    post:
+      operationId: confirmLibraryCleanup
+      summary: Start the cleanup a dry run showed, as an audited step
+      tags:
+        - library
+      x-min-role: editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmCleanupRequest'
+      responses:
+        '202':
+          description: cleanup run queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupStarted'
+        '409':
+          description: the candidates changed since the preview; preview again
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: nothing to clean up
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: tenant quota exceeded
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /events:
     get:
       operationId: streamEvents
@@ -5834,6 +6202,609 @@ components:
           type: integer
         peaks:
           type: integer
+    RenderSubtitleStyle:
+      type: object
+      required:
+        - font
+        - sizePx
+        - position
+        - shadowPx
+      properties:
+        font:
+          type: string
+          pattern: ^[A-Za-z0-9 ]{1,64}$
+        sizePx:
+          type: integer
+          minimum: 12
+          maximum: 160
+        position:
+          type: string
+          enum:
+            - bottom
+            - top
+            - middle
+        shadowPx:
+          type: integer
+          minimum: 0
+          maximum: 10
+    RenderSettings:
+      type: object
+      required:
+        - width
+        - height
+        - fps
+        - encoder
+        - subtitles
+        - subtitleStyle
+        - defaultMotion
+        - crossfadeMs
+        - loudnessLufs
+        - truePeakDbtp
+      properties:
+        width:
+          type: integer
+          minimum: 320
+          maximum: 3840
+        height:
+          type: integer
+          minimum: 180
+          maximum: 2160
+        fps:
+          type: integer
+          enum:
+            - 24
+            - 25
+            - 30
+            - 60
+        encoder:
+          description: auto, h264_nvenc or libx264 (a pattern, not an enum, so the generated constants of other enums sharing "auto" keep their names).
+          type: string
+          pattern: ^(auto|h264_nvenc|libx264)$
+        subtitles:
+          type: string
+          enum:
+            - burn
+            - srt
+            - both
+        subtitleStyle:
+          $ref: '#/components/schemas/RenderSubtitleStyle'
+        defaultMotion:
+          $ref: '#/components/schemas/MotionPreset'
+        crossfadeMs:
+          type: integer
+          minimum: 0
+          maximum: 3000
+        loudnessLufs:
+          description: Integrated loudness target in LUFS, one decimal.
+          type: number
+          minimum: -30
+          maximum: -5
+        truePeakDbtp:
+          description: True-peak ceiling in dBTP, one decimal.
+          type: number
+          minimum: -9
+          maximum: 0
+    RenderStage:
+      type: object
+      required:
+        - key
+        - label
+        - done
+        - total
+        - state
+      properties:
+        key:
+          type: string
+          enum:
+            - script
+            - scenes
+            - images
+            - voice
+            - subtitles
+            - compose
+            - encode
+        label:
+          type: string
+        done:
+          type: integer
+        total:
+          type: integer
+        state:
+          type: string
+          enum:
+            - done
+            - partial
+            - missing
+            - running
+            - idle
+    DiskStatus:
+      type: object
+      required:
+        - level
+        - freeBytes
+        - minFreeBytes
+        - warnFreeBytes
+        - message
+      properties:
+        level:
+          type: string
+          enum:
+            - ok
+            - warning
+            - blocked
+            - unknown
+        freeBytes:
+          type: integer
+          format: int64
+        minFreeBytes:
+          type: integer
+          format: int64
+        warnFreeBytes:
+          type: integer
+          format: int64
+        message:
+          type: string
+    RenderEstimate:
+      type: object
+      required:
+        - durationMs
+        - scenes
+        - segments
+        - cachedSegments
+        - encodeSeconds
+        - encoder
+      properties:
+        durationMs:
+          description: Length of the finished video.
+          type: integer
+          format: int64
+        scenes:
+          type: integer
+        segments:
+          description: Body and transition segments on the timeline.
+          type: integer
+        cachedSegments:
+          description: Cache entries (segments, audio, subtitles) already encoded and reused.
+          type: integer
+        encodeSeconds:
+          description: Rough wall time of the render on the render queue.
+          type: integer
+        encoder:
+          description: The concrete encoder a render would use now.
+          type: string
+    RenderRestart:
+      type: object
+      required:
+        - manifestId
+        - restartedAfterEdit
+        - reusedSegments
+        - createdAt
+      properties:
+        manifestId:
+          type: string
+          format: uuid
+        runId:
+          type: string
+          format: uuid
+        restartedAfterEdit:
+          type: boolean
+        reusedSegments:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    RenderStatus:
+      type: object
+      required:
+        - lang
+        - ready
+        - reasons
+        - stages
+        - disk
+        - settings
+      properties:
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+        ready:
+          description: True when "Render episode" can be pressed.
+          type: boolean
+        reasons:
+          description: Why the render button is disabled, one sentence each.
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/RenderStage'
+        disk:
+          $ref: '#/components/schemas/DiskStatus'
+        settings:
+          $ref: '#/components/schemas/RenderSettings'
+        estimate:
+          $ref: '#/components/schemas/RenderEstimate'
+        activeRunId:
+          type: string
+          format: uuid
+        latest:
+          $ref: '#/components/schemas/RenderRestart'
+    QCSceneScore:
+      type: object
+      required:
+        - sceneId
+        - idx
+      properties:
+        sceneId:
+          type: string
+        idx:
+          type: integer
+        score:
+          type: number
+    QCReport:
+      type: object
+      required:
+        - passed
+        - failures
+        - integratedLufs
+        - truePeakDbtp
+        - durationMs
+        - expectedDurationMs
+        - avDriftMs
+        - maxSubtitleDriftMs
+        - missingScenes
+        - placeholderScenes
+        - streams
+        - missingKeyframes
+        - sceneScores
+        - encoder
+        - sha256
+      properties:
+        passed:
+          type: boolean
+        failures:
+          type: array
+          items:
+            type: string
+        integratedLufs:
+          type: number
+        truePeakDbtp:
+          type: number
+        targetLufs:
+          type: number
+        targetTruePeakDbtp:
+          type: number
+        durationMs:
+          type: integer
+          format: int64
+        expectedDurationMs:
+          type: integer
+          format: int64
+        avDriftMs:
+          type: integer
+          format: int64
+        maxSubtitleDriftMs:
+          type: integer
+          format: int64
+        missingScenes:
+          type: array
+          items:
+            type: integer
+        placeholderScenes:
+          type: array
+          items:
+            type: integer
+        streams:
+          type: object
+          required:
+            - video
+            - audio
+            - subtitle
+          properties:
+            video:
+              type: integer
+            audio:
+              type: integer
+            subtitle:
+              type: integer
+        missingKeyframes:
+          type: array
+          items:
+            type: integer
+        sceneScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/QCSceneScore'
+        encoder:
+          type: string
+        sha256:
+          type: string
+        scenePreviews:
+          description: Scene id to its 540p preview asset id.
+          type: object
+          additionalProperties:
+            type: string
+    Render:
+      type: object
+      required:
+        - id
+        - episodeId
+        - lang
+        - manifestId
+        - assetId
+        - durationMs
+        - encoder
+        - report
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        episodeId:
+          type: string
+          format: uuid
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+        manifestId:
+          type: string
+          format: uuid
+        assetId:
+          type: string
+          format: uuid
+        srtAssetId:
+          type: string
+          format: uuid
+        previewAssetId:
+          type: string
+          format: uuid
+        durationMs:
+          type: integer
+          format: int64
+        encoder:
+          type: string
+        report:
+          $ref: '#/components/schemas/QCReport'
+        createdAt:
+          type: string
+          format: date-time
+    RenderList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Render'
+    StartRenderRequest:
+      type: object
+      required:
+        - lang
+      properties:
+        lang:
+          $ref: '#/components/schemas/SceneLanguage'
+    RenderStarted:
+      type: object
+      required:
+        - runId
+        - manifestId
+        - hash
+        - steps
+        - reused
+      properties:
+        runId:
+          type: string
+          format: uuid
+        manifestId:
+          type: string
+          format: uuid
+        hash:
+          type: string
+        steps:
+          description: Cacheable steps enqueued (segments, audio, subtitles).
+          type: integer
+        reused:
+          description: Cache entries reused without a step.
+          type: integer
+    RenderNotReady:
+      type: object
+      required:
+        - title
+        - status
+        - reasons
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+    LibraryAsset:
+      type: object
+      required:
+        - id
+        - kind
+        - mime
+        - bytes
+        - status
+        - createdAt
+        - referencedBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        mime:
+          type: string
+        bytes:
+          type: integer
+          format: int64
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        seriesId:
+          type: string
+          format: uuid
+        seriesTitle:
+          type: string
+        referencedBy:
+          description: What uses the asset (for example selected-take, render, manifest).
+          type: array
+          items:
+            type: string
+    LibraryAssetPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryAsset'
+        nextCursor:
+          type: string
+          format: uuid
+    LibrarySeriesUsage:
+      type: object
+      required:
+        - assets
+        - bytes
+      properties:
+        seriesId:
+          description: Absent for assets no project references.
+          type: string
+          format: uuid
+        seriesTitle:
+          type: string
+        assets:
+          type: integer
+          format: int64
+        bytes:
+          type: integer
+          format: int64
+    LibraryUsage:
+      type: object
+      required:
+        - series
+        - totalBytes
+        - assets
+        - disk
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibrarySeriesUsage'
+        totalBytes:
+          type: integer
+          format: int64
+        assets:
+          type: integer
+          format: int64
+        disk:
+          $ref: '#/components/schemas/DiskStatus'
+    LibrarySettings:
+      type: object
+      required:
+        - segmentTtlDays
+        - takeTtlDays
+      properties:
+        segmentTtlDays:
+          description: Days an unreferenced render segment is kept after its last use.
+          type: integer
+          minimum: 1
+          maximum: 365
+        takeTtlDays:
+          description: Days an unselected take is kept.
+          type: integer
+          minimum: 1
+          maximum: 365
+        lastCleanupAt:
+          type: string
+          format: date-time
+    CleanupCandidate:
+      type: object
+      required:
+        - id
+        - kind
+        - assetId
+        - bytes
+        - since
+      properties:
+        id:
+          description: The segment's input hash or the take's id.
+          type: string
+        kind:
+          type: string
+        assetId:
+          type: string
+          format: uuid
+        bytes:
+          type: integer
+          format: int64
+        since:
+          type: string
+          format: date-time
+    CleanupPreview:
+      type: object
+      required:
+        - settings
+        - segments
+        - takes
+        - bytes
+        - truncated
+        - token
+      properties:
+        settings:
+          $ref: '#/components/schemas/LibrarySettings'
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CleanupCandidate'
+        takes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CleanupCandidate'
+        bytes:
+          type: integer
+          format: int64
+        truncated:
+          type: boolean
+        token:
+          description: Confirms exactly this candidate set.
+          type: string
+    ConfirmCleanupRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 128
+    CleanupStarted:
+      type: object
+      required:
+        - runId
+        - segments
+        - takes
+        - bytes
+      properties:
+        runId:
+          type: string
+          format: uuid
+        segments:
+          type: integer
+        takes:
+          type: integer
+        bytes:
+          type: integer
+          format: int64
   parameters:
     analyticsChannelId:
       name: id

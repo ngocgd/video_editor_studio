@@ -4052,3 +4052,849 @@ export const MediaBackfillResponseSchema = {
         }
     }
 } as const;
+
+export const RenderSubtitleStyleSchema = {
+    type: 'object',
+    required: [
+        'font',
+        'sizePx',
+        'position',
+        'shadowPx'
+    ],
+    properties: {
+        font: {
+            type: 'string',
+            pattern: '^[A-Za-z0-9 ]{1,64}$'
+        },
+        sizePx: {
+            type: 'integer',
+            minimum: 12,
+            maximum: 160
+        },
+        position: {
+            type: 'string',
+            enum: [
+                'bottom',
+                'top',
+                'middle'
+            ]
+        },
+        shadowPx: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 10
+        }
+    }
+} as const;
+
+export const RenderSettingsSchema = {
+    type: 'object',
+    required: [
+        'width',
+        'height',
+        'fps',
+        'encoder',
+        'subtitles',
+        'subtitleStyle',
+        'defaultMotion',
+        'crossfadeMs',
+        'loudnessLufs',
+        'truePeakDbtp'
+    ],
+    properties: {
+        width: {
+            type: 'integer',
+            minimum: 320,
+            maximum: 3840
+        },
+        height: {
+            type: 'integer',
+            minimum: 180,
+            maximum: 2160
+        },
+        fps: {
+            type: 'integer',
+            enum: [
+                24,
+                25,
+                30,
+                60
+            ]
+        },
+        encoder: {
+            description: 'auto, h264_nvenc or libx264 (a pattern, not an enum, so the generated constants of other enums sharing "auto" keep their names).',
+            type: 'string',
+            pattern: '^(auto|h264_nvenc|libx264)$'
+        },
+        subtitles: {
+            type: 'string',
+            enum: [
+                'burn',
+                'srt',
+                'both'
+            ]
+        },
+        subtitleStyle: {
+            $ref: '#/components/schemas/RenderSubtitleStyle'
+        },
+        defaultMotion: {
+            $ref: '#/components/schemas/MotionPreset'
+        },
+        crossfadeMs: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 3000
+        },
+        loudnessLufs: {
+            description: 'Integrated loudness target in LUFS, one decimal.',
+            type: 'number',
+            minimum: -30,
+            maximum: -5
+        },
+        truePeakDbtp: {
+            description: 'True-peak ceiling in dBTP, one decimal.',
+            type: 'number',
+            minimum: -9,
+            maximum: 0
+        }
+    }
+} as const;
+
+export const RenderStageSchema = {
+    type: 'object',
+    required: [
+        'key',
+        'label',
+        'done',
+        'total',
+        'state'
+    ],
+    properties: {
+        key: {
+            type: 'string',
+            enum: [
+                'script',
+                'scenes',
+                'images',
+                'voice',
+                'subtitles',
+                'compose',
+                'encode'
+            ]
+        },
+        label: {
+            type: 'string'
+        },
+        done: {
+            type: 'integer'
+        },
+        total: {
+            type: 'integer'
+        },
+        state: {
+            type: 'string',
+            enum: [
+                'done',
+                'partial',
+                'missing',
+                'running',
+                'idle'
+            ]
+        }
+    }
+} as const;
+
+export const DiskStatusSchema = {
+    type: 'object',
+    required: [
+        'level',
+        'freeBytes',
+        'minFreeBytes',
+        'warnFreeBytes',
+        'message'
+    ],
+    properties: {
+        level: {
+            type: 'string',
+            enum: [
+                'ok',
+                'warning',
+                'blocked',
+                'unknown'
+            ]
+        },
+        freeBytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        minFreeBytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        warnFreeBytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        message: {
+            type: 'string'
+        }
+    }
+} as const;
+
+export const RenderEstimateSchema = {
+    type: 'object',
+    required: [
+        'durationMs',
+        'scenes',
+        'segments',
+        'cachedSegments',
+        'encodeSeconds',
+        'encoder'
+    ],
+    properties: {
+        durationMs: {
+            description: 'Length of the finished video.',
+            type: 'integer',
+            format: 'int64'
+        },
+        scenes: {
+            type: 'integer'
+        },
+        segments: {
+            description: 'Body and transition segments on the timeline.',
+            type: 'integer'
+        },
+        cachedSegments: {
+            description: 'Cache entries (segments, audio, subtitles) already encoded and reused.',
+            type: 'integer'
+        },
+        encodeSeconds: {
+            description: 'Rough wall time of the render on the render queue.',
+            type: 'integer'
+        },
+        encoder: {
+            description: 'The concrete encoder a render would use now.',
+            type: 'string'
+        }
+    }
+} as const;
+
+export const RenderRestartSchema = {
+    type: 'object',
+    required: [
+        'manifestId',
+        'restartedAfterEdit',
+        'reusedSegments',
+        'createdAt'
+    ],
+    properties: {
+        manifestId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        restartedAfterEdit: {
+            type: 'boolean'
+        },
+        reusedSegments: {
+            type: 'integer'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const RenderStatusSchema = {
+    type: 'object',
+    required: [
+        'lang',
+        'ready',
+        'reasons',
+        'stages',
+        'disk',
+        'settings'
+    ],
+    properties: {
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        },
+        ready: {
+            description: 'True when "Render episode" can be pressed.',
+            type: 'boolean'
+        },
+        reasons: {
+            description: 'Why the render button is disabled, one sentence each.',
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        },
+        stages: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/RenderStage'
+            }
+        },
+        disk: {
+            $ref: '#/components/schemas/DiskStatus'
+        },
+        settings: {
+            $ref: '#/components/schemas/RenderSettings'
+        },
+        estimate: {
+            $ref: '#/components/schemas/RenderEstimate'
+        },
+        activeRunId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        latest: {
+            $ref: '#/components/schemas/RenderRestart'
+        }
+    }
+} as const;
+
+export const QCSceneScoreSchema = {
+    type: 'object',
+    required: [
+        'sceneId',
+        'idx'
+    ],
+    properties: {
+        sceneId: {
+            type: 'string'
+        },
+        idx: {
+            type: 'integer'
+        },
+        score: {
+            type: 'number'
+        }
+    }
+} as const;
+
+export const QCReportSchema = {
+    type: 'object',
+    required: [
+        'passed',
+        'failures',
+        'integratedLufs',
+        'truePeakDbtp',
+        'durationMs',
+        'expectedDurationMs',
+        'avDriftMs',
+        'maxSubtitleDriftMs',
+        'missingScenes',
+        'placeholderScenes',
+        'streams',
+        'missingKeyframes',
+        'sceneScores',
+        'encoder',
+        'sha256'
+    ],
+    properties: {
+        passed: {
+            type: 'boolean'
+        },
+        failures: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        },
+        integratedLufs: {
+            type: 'number'
+        },
+        truePeakDbtp: {
+            type: 'number'
+        },
+        targetLufs: {
+            type: 'number'
+        },
+        targetTruePeakDbtp: {
+            type: 'number'
+        },
+        durationMs: {
+            type: 'integer',
+            format: 'int64'
+        },
+        expectedDurationMs: {
+            type: 'integer',
+            format: 'int64'
+        },
+        avDriftMs: {
+            type: 'integer',
+            format: 'int64'
+        },
+        maxSubtitleDriftMs: {
+            type: 'integer',
+            format: 'int64'
+        },
+        missingScenes: {
+            type: 'array',
+            items: {
+                type: 'integer'
+            }
+        },
+        placeholderScenes: {
+            type: 'array',
+            items: {
+                type: 'integer'
+            }
+        },
+        streams: {
+            type: 'object',
+            required: [
+                'video',
+                'audio',
+                'subtitle'
+            ],
+            properties: {
+                video: {
+                    type: 'integer'
+                },
+                audio: {
+                    type: 'integer'
+                },
+                subtitle: {
+                    type: 'integer'
+                }
+            }
+        },
+        missingKeyframes: {
+            type: 'array',
+            items: {
+                type: 'integer'
+            }
+        },
+        sceneScores: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/QCSceneScore'
+            }
+        },
+        encoder: {
+            type: 'string'
+        },
+        sha256: {
+            type: 'string'
+        },
+        scenePreviews: {
+            description: 'Scene id to its 540p preview asset id.',
+            type: 'object',
+            additionalProperties: {
+                type: 'string'
+            }
+        }
+    }
+} as const;
+
+export const RenderSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'episodeId',
+        'lang',
+        'manifestId',
+        'assetId',
+        'durationMs',
+        'encoder',
+        'report',
+        'createdAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        episodeId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        },
+        manifestId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        srtAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        previewAssetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        durationMs: {
+            type: 'integer',
+            format: 'int64'
+        },
+        encoder: {
+            type: 'string'
+        },
+        report: {
+            $ref: '#/components/schemas/QCReport'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const RenderListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/Render'
+            }
+        }
+    }
+} as const;
+
+export const StartRenderRequestSchema = {
+    type: 'object',
+    required: [
+        'lang'
+    ],
+    properties: {
+        lang: {
+            $ref: '#/components/schemas/SceneLanguage'
+        }
+    }
+} as const;
+
+export const RenderStartedSchema = {
+    type: 'object',
+    required: [
+        'runId',
+        'manifestId',
+        'hash',
+        'steps',
+        'reused'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        manifestId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        hash: {
+            type: 'string'
+        },
+        steps: {
+            description: 'Cacheable steps enqueued (segments, audio, subtitles).',
+            type: 'integer'
+        },
+        reused: {
+            description: 'Cache entries reused without a step.',
+            type: 'integer'
+        }
+    }
+} as const;
+
+export const RenderNotReadySchema = {
+    type: 'object',
+    required: [
+        'title',
+        'status',
+        'reasons'
+    ],
+    properties: {
+        title: {
+            type: 'string'
+        },
+        status: {
+            type: 'integer'
+        },
+        detail: {
+            type: 'string'
+        },
+        reasons: {
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        }
+    }
+} as const;
+
+export const LibraryAssetSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'mime',
+        'bytes',
+        'status',
+        'createdAt',
+        'referencedBy'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        kind: {
+            $ref: '#/components/schemas/AssetKind'
+        },
+        mime: {
+            type: 'string'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        status: {
+            type: 'string'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesTitle: {
+            type: 'string'
+        },
+        referencedBy: {
+            description: 'What uses the asset (for example selected-take, render, manifest).',
+            type: 'array',
+            items: {
+                type: 'string'
+            }
+        }
+    }
+} as const;
+
+export const LibraryAssetPageSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/LibraryAsset'
+            }
+        },
+        nextCursor: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;
+
+export const LibrarySeriesUsageSchema = {
+    type: 'object',
+    required: [
+        'assets',
+        'bytes'
+    ],
+    properties: {
+        seriesId: {
+            description: 'Absent for assets no project references.',
+            type: 'string',
+            format: 'uuid'
+        },
+        seriesTitle: {
+            type: 'string'
+        },
+        assets: {
+            type: 'integer',
+            format: 'int64'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        }
+    }
+} as const;
+
+export const LibraryUsageSchema = {
+    type: 'object',
+    required: [
+        'series',
+        'totalBytes',
+        'assets',
+        'disk'
+    ],
+    properties: {
+        series: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/LibrarySeriesUsage'
+            }
+        },
+        totalBytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        assets: {
+            type: 'integer',
+            format: 'int64'
+        },
+        disk: {
+            $ref: '#/components/schemas/DiskStatus'
+        }
+    }
+} as const;
+
+export const LibrarySettingsSchema = {
+    type: 'object',
+    required: [
+        'segmentTtlDays',
+        'takeTtlDays'
+    ],
+    properties: {
+        segmentTtlDays: {
+            description: 'Days an unreferenced render segment is kept after its last use.',
+            type: 'integer',
+            minimum: 1,
+            maximum: 365
+        },
+        takeTtlDays: {
+            description: 'Days an unselected take is kept.',
+            type: 'integer',
+            minimum: 1,
+            maximum: 365
+        },
+        lastCleanupAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const CleanupCandidateSchema = {
+    type: 'object',
+    required: [
+        'id',
+        'kind',
+        'assetId',
+        'bytes',
+        'since'
+    ],
+    properties: {
+        id: {
+            description: 'The segment\'s input hash or the take\'s id.',
+            type: 'string'
+        },
+        kind: {
+            type: 'string'
+        },
+        assetId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        since: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const CleanupPreviewSchema = {
+    type: 'object',
+    required: [
+        'settings',
+        'segments',
+        'takes',
+        'bytes',
+        'truncated',
+        'token'
+    ],
+    properties: {
+        settings: {
+            $ref: '#/components/schemas/LibrarySettings'
+        },
+        segments: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CleanupCandidate'
+            }
+        },
+        takes: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/CleanupCandidate'
+            }
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        truncated: {
+            type: 'boolean'
+        },
+        token: {
+            description: 'Confirms exactly this candidate set.',
+            type: 'string'
+        }
+    }
+} as const;
+
+export const ConfirmCleanupRequestSchema = {
+    type: 'object',
+    required: [
+        'token'
+    ],
+    properties: {
+        token: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 128
+        }
+    }
+} as const;
+
+export const CleanupStartedSchema = {
+    type: 'object',
+    required: [
+        'runId',
+        'segments',
+        'takes',
+        'bytes'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        segments: {
+            type: 'integer'
+        },
+        takes: {
+            type: 'integer'
+        },
+        bytes: {
+            type: 'integer',
+            format: 'int64'
+        }
+    }
+} as const;

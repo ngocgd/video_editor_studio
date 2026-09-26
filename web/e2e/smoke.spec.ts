@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { OWNER_EMAIL as EMAIL, OWNER_PASSWORD as PASSWORD } from "./owner-session";
 
 /**
  * A real end-to-end smoke test against a live compose stack (not mocks).
@@ -15,8 +16,9 @@ import { expect, test } from "@playwright/test";
  * seeded database row instead and is not re-tested here to keep this file
  * runnable against any stack, not just one with test fixtures pre-loaded.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
+// Starts signed out and signs in through the form. Its login revokes the
+// session made by global-setup.ts, so playwright.config.ts runs this spec
+// in its own project after every signed-in spec.
 
 test("login, app shell, command palette, logout", async ({ page }) => {
   const response = await page.goto("/login");
@@ -34,7 +36,7 @@ test("login, app shell, command palette, logout", async ({ page }) => {
   await page.waitForURL("**/");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByText("GPU")).toBeVisible();
+  await expect(page.getByText("GPU", { exact: true })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Render Queue" }).click();
   await expect(page.getByRole("heading", { name: "Render Queue" })).toBeVisible();

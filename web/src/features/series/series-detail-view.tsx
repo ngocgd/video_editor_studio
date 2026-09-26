@@ -76,6 +76,9 @@ export function SeriesDetailView({ seriesId }: { seriesId: string }) {
                   <Link to="/projects/$seriesId/storyboard/$episodeId" params={{ seriesId, episodeId: ep.id }} className="text-xs text-primary-text hover:underline">
                     Storyboard
                   </Link>
+                  <Link to="/projects/$seriesId/render/$episodeId" params={{ seriesId, episodeId: ep.id }} className="ml-3 text-xs text-primary-text hover:underline">
+                    Render
+                  </Link>
                 </td>
               </tr>
             ))}
