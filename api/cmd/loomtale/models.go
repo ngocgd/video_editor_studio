@@ -104,8 +104,9 @@ func runModelsList(ctx context.Context) error {
 			installs[r.Name] = r
 		}
 	}
+	// tabwriter buffers rows; a write error surfaces from Flush.
 	w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tTASK\tLICENCE\tSIZE\tVRAM\tSTATUS")
+	_, _ = fmt.Fprintln(w, "NAME\tTASK\tLICENCE\tSIZE\tVRAM\tSTATUS")
 	for _, e := range m.Models {
 		status := models.StatusNotInstalled
 		if !models.LicenceAllowed(e.Licence.SPDX) {
@@ -113,7 +114,7 @@ func runModelsList(ctx context.Context) error {
 		} else if r, ok := installs[e.Name]; ok {
 			status = r.Status
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%.1f GB\t%d MB\t%s\n", e.Name, e.Task, e.Licence.SPDX, float64(e.SizeBytes())/1e9, e.VRAMMB, status)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%.1f GB\t%d MB\t%s\n", e.Name, e.Task, e.Licence.SPDX, float64(e.SizeBytes())/1e9, e.VRAMMB, status)
 	}
 	return w.Flush()
 }
