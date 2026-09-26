@@ -93,7 +93,7 @@ func (w *SyncWorker) Work(ctx context.Context, job *river.Job[SyncArgs]) error {
 // jobOutcome maps a sync error to what River should do with the job.
 func jobOutcome(err error, now time.Time) error {
 	switch {
-	case err == nil, errors.Is(err, ErrSyncRunning):
+	case err == nil, errors.Is(err, ErrSyncRunning), errors.Is(err, ErrChannelNotConnected):
 		return nil
 	case youtube.IsKind(err, youtube.KindQuota):
 		return river.JobSnooze(youtube.NextReset(now).Sub(now) + quotaSnoozeSlack)

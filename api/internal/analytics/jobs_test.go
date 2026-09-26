@@ -34,6 +34,9 @@ func TestJobOutcome(t *testing.T) {
 	if err := jobOutcome(ErrSyncRunning, now); err != nil {
 		t.Fatalf("already running: %v", err)
 	}
+	if err := jobOutcome(ErrChannelNotConnected, now); err != nil {
+		t.Fatalf("channel not connected: %v", err)
+	}
 
 	var snooze *river.JobSnoozeError
 	quota := &youtube.APIError{Kind: youtube.KindQuota, Status: 403, Reason: "quotaExceeded"}

@@ -107,6 +107,9 @@ type Querier interface {
 	FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) (PipelineStep, error)
 	// A NULL through date or subscriber count keeps the stored one.
 	FinishAnalyticsSync(ctx context.Context, arg FinishAnalyticsSyncParams) error
+	// Only a connected channel moves to reconnect_needed, so a sync that
+	// fails after the user disconnected never overrides the disconnect.
+	FlagChannelReconnectNeeded(ctx context.Context, arg FlagChannelReconnectNeededParams) (int64, error)
 	GetAnalyticsSyncState(ctx context.Context, arg GetAnalyticsSyncStateParams) (AnalyticsSyncState, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.

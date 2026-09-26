@@ -25,6 +25,13 @@ const staleSyncAfter = time.Hour
 // ErrSyncRunning means another sync of the channel is in progress.
 var ErrSyncRunning = errors.New("analytics: a sync of this channel is already running")
 
+// ErrChannelNotConnected means the channel was disconnected, needs a
+// reconnect or no longer exists, so there is nothing to sync.
+var ErrChannelNotConnected = errors.New("analytics: the channel is not connected")
+
+// maxSyncErrorLen is the analytics_sync_state.last_error CHECK bound.
+const maxSyncErrorLen = 500
+
 // Syncer pulls one channel's Analytics API metrics and reach reports into
 // Postgres. Every write is an upsert keyed by day (or a claimed report
 // id), so a retried or overlapping window never double counts.
@@ -56,6 +63,15 @@ type channelRef struct {
 // are recorded as notes and do not fail the Analytics API sync.
 func (s *Syncer) SyncChannel(ctx context.Context, tenantID, channelID uuid.UUID) error {
 	ref := channelRef{tenant: idconv.ToPg(tenantID), channel: idconv.ToPg(channelID)}
+	// A job queued before the user disconnected the channel must not
+	// touch it: its grant is gone and the disconnect is deliberate.
+	ch, err := s.Queries.GetYouTubeChannel(ctx, dbgen.GetYouTubeChannelParams{TenantID: ref.tenant, ID: ref.channel})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && ch.Status != "connected") {
+		return ErrChannelNotConnected
+	}
+	if err != nil {
+		return fmt.Errorf("analytics: read channel: %w", err)
+	}
 	cursor, err := s.cursor(ctx, ref)
 	if err != nil {
 		return err
@@ -83,7 +99,7 @@ func (s *Syncer) SyncChannel(ctx context.Context, tenantID, channelID uuid.UUID)
 	finish := dbgen.FinishAnalyticsSyncParams{
 		TenantID: ref.tenant, ChannelID: ref.channel,
 		AnalyticsThrough: pgtype.Date{Time: res.through, Valid: true},
-		LastError:        strings.Join(res.notes, "; "),
+		LastError:        truncateText(strings.Join(res.notes, "; "), maxSyncErrorLen),
 	}
 	if res.subscribers != nil {
 		finish.SubscriberCount = pgtype.Int8{Int64: *res.subscribers, Valid: true}
@@ -92,7 +108,11 @@ func (s *Syncer) SyncChannel(ctx context.Context, tenantID, channelID uuid.UUID)
 		finish.ReachThrough = t
 	}
 	if err := s.Queries.FinishAnalyticsSync(ctx, finish); err != nil {
-		return fmt.Errorf("analytics: finish sync: %w", err)
+		// Never leave the state 'running': that would block every sync
+		// until it goes stale.
+		err = fmt.Errorf("analytics: finish sync: %w", err)
+		s.fail(ctx, ref, err)
+		return err
 	}
 	// Suggestions read the fresh totals; a failure keeps the previous
 	// suggestions and is retried by the next sync.
@@ -116,22 +136,20 @@ func (s *Syncer) cursor(ctx context.Context, ref channelRef) (*time.Time, error)
 	return &t, nil
 }
 
-// fail records a failed sync; a dead grant also flags the channel.
+// fail records a failed sync; a dead grant also flags a still-connected
+// channel (a disconnect that raced the sync is kept).
 func (s *Syncer) fail(ctx context.Context, ref channelRef, cause error) {
 	msg := cause.Error()
 	if youtube.IsKind(cause, youtube.KindAuth) {
 		msg = youtube.ReasonReconnectNeeded
-		if _, err := s.Queries.SetYouTubeChannelStatus(ctx, dbgen.SetYouTubeChannelStatusParams{
-			Status: "reconnect_needed", TenantID: ref.tenant, ID: ref.channel,
+		if _, err := s.Queries.FlagChannelReconnectNeeded(ctx, dbgen.FlagChannelReconnectNeededParams{
+			TenantID: ref.tenant, ID: ref.channel,
 		}); err != nil {
 			slog.WarnContext(ctx, "analytics: flag channel for reconnect", "error", err)
 		}
 	}
-	if len(msg) > maxReasonLen {
-		msg = msg[:maxReasonLen]
-	}
 	if err := s.Queries.FailAnalyticsSync(ctx, dbgen.FailAnalyticsSyncParams{
-		TenantID: ref.tenant, ChannelID: ref.channel, LastError: msg,
+		TenantID: ref.tenant, ChannelID: ref.channel, LastError: truncateText(msg, maxReasonLen),
 	}); err != nil {
 		slog.WarnContext(ctx, "analytics: record failed sync", "error", err)
 	}
@@ -179,9 +197,5 @@ func (s *Syncer) run(ctx context.Context, ref channelRef, cursor *time.Time, c C
 
 // noteOf shortens an error for the sync state's last_error.
 func noteOf(err error) string {
-	msg := err.Error()
-	if len(msg) > maxReasonLen {
-		msg = msg[:maxReasonLen]
-	}
-	return msg
+	return truncateText(err.Error(), maxReasonLen)
 }

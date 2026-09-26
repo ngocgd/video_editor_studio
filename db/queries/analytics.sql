@@ -9,6 +9,12 @@ SELECT id, tenant_id FROM youtube_channels
 WHERE status = 'connected'
 ORDER BY tenant_id, id;
 
+-- name: FlagChannelReconnectNeeded :execrows
+-- Only a connected channel moves to reconnect_needed, so a sync that
+-- fails after the user disconnected never overrides the disconnect.
+UPDATE youtube_channels SET status = 'reconnect_needed', updated_at = now()
+WHERE tenant_id = @tenant_id AND id = @id AND status = 'connected';
+
 -- name: UpsertTrackedVideo :one
 -- A video already tracked keeps its source when it came from a
 -- publication (a manual add never downgrades it) and gains metadata.

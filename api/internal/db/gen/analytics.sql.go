@@ -263,6 +263,26 @@ func (q *Queries) FinishAnalyticsSync(ctx context.Context, arg FinishAnalyticsSy
 	return err
 }
 
+const flagChannelReconnectNeeded = `-- name: FlagChannelReconnectNeeded :execrows
+UPDATE youtube_channels SET status = 'reconnect_needed', updated_at = now()
+WHERE tenant_id = $1 AND id = $2 AND status = 'connected'
+`
+
+type FlagChannelReconnectNeededParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	ID       pgtype.UUID `json:"id"`
+}
+
+// Only a connected channel moves to reconnect_needed, so a sync that
+// fails after the user disconnected never overrides the disconnect.
+func (q *Queries) FlagChannelReconnectNeeded(ctx context.Context, arg FlagChannelReconnectNeededParams) (int64, error) {
+	result, err := q.db.Exec(ctx, flagChannelReconnectNeeded, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getAnalyticsSyncState = `-- name: GetAnalyticsSyncState :one
 SELECT tenant_id, channel_id, analytics_through, reach_through, subscriber_count, status, last_started_at, last_finished_at, last_error, updated_at FROM analytics_sync_state
 WHERE tenant_id = $1 AND channel_id = $2
