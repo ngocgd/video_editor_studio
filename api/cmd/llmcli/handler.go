@@ -73,8 +73,18 @@ func (h *handler) handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Commit the 200 status and flush the headers before the CLI runs.
+	// Without partial messages the CLI prints its first stream-json line
+	// only when the whole reply is done, so waiting for that line would
+	// hold the headers back for the full generation and trip the
+	// caller's response-header timeout. Every failure after this point
+	// travels in-band as the final "result" line.
 	w.Header().Set("Content-Type", "application/x-ndjson")
+	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
+	if flusher != nil {
+		flusher.Flush()
+	}
 
 	result, err := h.runner.Run(r.Context(), runRequest{
 		Model:        h.model,
