@@ -28,7 +28,7 @@ Source of truth: [contract](../reports/brainstorm-260924-2128-story-video-studio
 | 8 | [Render pipeline and Library](phase-08-render-pipeline-library.md) | 28h | 3, 7 | F (with 9a→9c) | pending |
 | 9a | [Manifest, ComfyUI, image engines](phase-09a-comfyui-image-engines.md) | 26h | 1b, 4; e2e steps need 7; UI needs 5 | F | completed (criteria needing model weights pending: model downloads paused by the user) |
 | 9b | [TTS, align, Ollama LLM](phase-09b-tts-align-ollama.md) | 20h | 9a | F | completed (criteria needing model weights or engine runtime wheels pending: model downloads paused by the user) |
-| 9c | [LoRA trainer, scoring, depth, sign-off](phase-09c-lora-scoring-benchmark.md) | 22h | 9b, 7 | F | pending |
+| 9c | [LoRA trainer, scoring, depth, sign-off](phase-09c-lora-scoring-benchmark.md) | 22h | 9b, 7 | F | in progress (part 1 merged: pyworker DINOv2 scoring, depth and ai-toolkit trainer engines, manifest entries, bench vision/train/train-smoke suites; remaining: part 2 (character LoRA wiring, needs phase 7 on main), trainer packaging awaits a user decision, weight-dependent criteria pending because model downloads are paused by the user) |
 | 10 | [Review and publish to YouTube](phase-10-review-publish-youtube.md) | 24h | 8, 9a, 9c | G | pending |
 | 11 | [Analytics (Analytics + Reporting API)](phase-11-analytics.md) | 18h | 10 | H | pending |
 | 12 | [Hardening, E2E, acceptance, docs](phase-12-hardening-e2e-docs.md) | 16h | all | I | pending |
