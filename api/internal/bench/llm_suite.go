@@ -128,17 +128,7 @@ func (r *LLMRunner) generate(ctx context.Context, p llm.Provider, c LLMCase, res
 		return
 	}
 	res.FirstTokenS, res.OutTokens, res.Text = first.Seconds(), resp.Usage.Out, resp.Text
-	// A provider that answers in one chunk (the claude CLI sidecar) has
-	// no generation phase after its first token, so its throughput is
-	// taken over the whole request instead.
-	gen := res.TotalS - res.FirstTokenS
-	res.Streamed = gen > 0.05*res.TotalS
-	if !res.Streamed {
-		gen = res.TotalS
-	}
-	if gen > 0 && res.OutTokens > 0 {
-		res.TokensPerSecond = float64(res.OutTokens) / gen
-	}
+	res.TokensPerSecond, res.Streamed = throughput(res.TotalS, res.FirstTokenS, res.OutTokens)
 }
 
 func (r *LLMRunner) record(ctx context.Context, runID uuid.UUID, res LLMResult) error {
@@ -218,4 +208,20 @@ func (r *LLMRunner) logf(format string, args ...any) {
 	if r.Log != nil {
 		r.Log(format, args...)
 	}
+}
+
+// throughput is output tokens per second of generation, measured after
+// the first token. A provider that answers in one chunk (the claude CLI
+// sidecar) has no generation phase after its first token, so its
+// throughput is taken over the whole request and streamed is false.
+func throughput(totalS, firstTokenS float64, outTokens int) (tokensPerS float64, streamed bool) {
+	gen := totalS - firstTokenS
+	streamed = gen > 0.05*totalS
+	if !streamed {
+		gen = totalS
+	}
+	if gen <= 0 || outTokens <= 0 {
+		return 0, streamed
+	}
+	return float64(outTokens) / gen, streamed
 }

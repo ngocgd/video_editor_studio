@@ -399,9 +399,6 @@ func TestLLMRunnerRecordsTimingsAndWritesARatingsSheet(t *testing.T) {
 	if len(results) != 2*len(LLMCases) || len(q.rows) != len(results) {
 		t.Fatalf("results %d rows %d", len(results), len(q.rows))
 	}
-	if results[0].Streamed || results[0].TokensPerSecond <= 0 {
-		t.Fatalf("a one-chunk answer must report throughput over the whole request: %+v", results[0])
-	}
 	if !results[0].Switched || results[1].Switched || res.ensures != 1 {
 		t.Fatal("only the first Ollama case carries the residency switch")
 	}
@@ -416,5 +413,17 @@ func TestLLMRunnerRecordsTimingsAndWritesARatingsSheet(t *testing.T) {
 	}
 	if len(budgets) != 3 { // two first-token budgets and the Ollama switch
 		t.Fatalf("budgets %v", budgets)
+	}
+}
+
+func TestThroughputFallsBackToTheWholeRequestForOneChunkAnswers(t *testing.T) {
+	if tps, streamed := throughput(10, 1, 900); !streamed || tps != 100 {
+		t.Fatalf("streamed = %v %v", tps, streamed)
+	}
+	if tps, streamed := throughput(10, 9.9, 500); streamed || tps != 50 {
+		t.Fatalf("one chunk = %v %v", tps, streamed)
+	}
+	if tps, _ := throughput(0, 0, 10); tps != 0 {
+		t.Fatalf("no time = %v", tps)
 	}
 }
