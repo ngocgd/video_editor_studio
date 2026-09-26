@@ -12,11 +12,14 @@ from collections.abc import AsyncIterator, Awaitable
 from typing import Any
 
 import grpc
+import httpx
 
+from loomtale_worker import transfer
 from loomtale_worker.engines.threaded import InvalidJobError
 from loomtale_worker.model_manager import (
     EngineNotInstalledError,
     GpuOomError,
+    ModelManager,
     abort_engine_not_installed,
     abort_gpu_oom,
 )
@@ -81,3 +84,51 @@ async def finish_job(
         await abort_invalid(context, str(exc))
     except Exception as exc:  # noqa: BLE001 - surfaced to the caller as INTERNAL
         await context.abort(grpc.StatusCode.INTERNAL, f"{engine} failed: {exc}")
+
+
+async def fetch_input(context: grpc.aio.ServicerContext, url: str, max_bytes: int) -> bytes:
+    """Downloads a job input from its presigned URL. A rejected URL (4xx,
+    e.g. expired or wrong) or an oversized body is the caller's error
+    (INVALID_ARGUMENT, not retried); a network failure or 5xx is
+    UNAVAILABLE, which the pipeline retries."""
+    try:
+        return await transfer.download(url, max_bytes=max_bytes)
+    except transfer.TransferTooLargeError as exc:
+        await abort_invalid(context, str(exc))
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        status = (
+            grpc.StatusCode.INVALID_ARGUMENT if 400 <= code < 500 else grpc.StatusCode.UNAVAILABLE
+        )
+        await context.abort(status, f"input download failed with HTTP {code}")
+    except httpx.HTTPError as exc:
+        await context.abort(
+            grpc.StatusCode.UNAVAILABLE, f"input download failed: {type(exc).__name__}"
+        )
+    return b""  # unreachable: every except branch aborts
+
+
+async def push_output(
+    context: grpc.aio.ServicerContext, url: str, data: bytes, content_type: str
+) -> None:
+    """Uploads a job output to its presigned URL, with the same status
+    mapping as fetch_input."""
+    try:
+        await transfer.upload(url, data, content_type=content_type)
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        status = (
+            grpc.StatusCode.INVALID_ARGUMENT if 400 <= code < 500 else grpc.StatusCode.UNAVAILABLE
+        )
+        await context.abort(status, f"output upload failed with HTTP {code}")
+    except httpx.HTTPError as exc:
+        await context.abort(
+            grpc.StatusCode.UNAVAILABLE, f"output upload failed: {type(exc).__name__}"
+        )
+
+
+async def preload(context: grpc.aio.ServicerContext, manager: ModelManager, engine: str) -> None:
+    """Makes engine resident before any input is fetched, so a missing
+    engine or runtime fails fast as engine_not_installed instead of after
+    downloading audio it could never process."""
+    await finish_job(context, engine, manager.load(engine))

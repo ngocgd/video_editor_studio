@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 
 import grpc
+import httpx
 import numpy as np
 import pytest
 
@@ -254,3 +255,51 @@ async def test_align_rejects_an_unsupported_language(uploads):
     with pytest.raises(AbortSignal) as exc:
         await collect(servicer.Align(req, FakeContext()))
     assert exc.value.code == grpc.StatusCode.INVALID_ARGUMENT
+
+
+async def test_missing_engine_fails_before_any_input_is_downloaded(monkeypatch):
+    fetched: list[str] = []
+
+    async def fake_download(url, **_kw):
+        fetched.append(url)
+        return b""
+
+    monkeypatch.setattr(transfer, "download", fake_download)
+    req = tts_request(reference_url="http://minio/ref", consent="granted")
+    req.engine = "nope"
+    with pytest.raises(AbortSignal) as exc:
+        await collect(tts_servicer(FakeTTS()).Synthesize(req, FakeContext()))
+    assert exc.value.code == grpc.StatusCode.FAILED_PRECONDITION
+    assert fetched == []
+
+
+@pytest.mark.parametrize(
+    ("status_code", "grpc_code"),
+    [(403, grpc.StatusCode.INVALID_ARGUMENT), (503, grpc.StatusCode.UNAVAILABLE)],
+)
+async def test_input_download_failures_map_to_status_codes(monkeypatch, status_code, grpc_code):
+    async def failing_download(url, **_kw):
+        request = httpx.Request("GET", url)
+        raise httpx.HTTPStatusError(
+            "failed", request=request, response=httpx.Response(status_code, request=request)
+        )
+
+    monkeypatch.setattr(transfer, "download", failing_download)
+    with pytest.raises(AbortSignal) as exc:
+        await collect(
+            tts_servicer(FakeTTS()).Synthesize(
+                tts_request(reference_url="http://minio/ref", consent="granted"), FakeContext()
+            )
+        )
+    assert exc.value.code == grpc_code
+    assert str(status_code) in exc.value.details
+
+
+async def test_output_upload_failure_is_unavailable(monkeypatch):
+    async def failing_upload(url, data, **_kw):
+        raise httpx.ConnectError("refused")
+
+    monkeypatch.setattr(transfer, "upload", failing_upload)
+    with pytest.raises(AbortSignal) as exc:
+        await collect(tts_servicer(FakeTTS()).Synthesize(tts_request(), FakeContext()))
+    assert exc.value.code == grpc.StatusCode.UNAVAILABLE

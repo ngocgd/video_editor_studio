@@ -22,13 +22,19 @@ from pathlib import Path
 import grpc
 
 from loomtale.worker.v1 import tts_pb2, tts_pb2_grpc
-from loomtale_worker import transfer
 from loomtale_worker.engines.audio import to_wav_bytes
 from loomtale_worker.engines.jobs import SynthesisJob, SynthesisOutput
 from loomtale_worker.engines.text_chunks import count_words
 from loomtale_worker.engines.threaded import cuda_peak_mb_and_reset
 from loomtale_worker.model_manager import ModelManager
-from loomtale_worker.servicers.streaming import ProgressRelay, abort_invalid, finish_job
+from loomtale_worker.servicers.streaming import (
+    ProgressRelay,
+    abort_invalid,
+    fetch_input,
+    finish_job,
+    preload,
+    push_output,
+)
 
 LANGUAGES = ("en", "vi")
 # About three hours of narration; a longer request is a caller bug.
@@ -59,12 +65,13 @@ class TTSServicer(tts_pb2_grpc.TTSServicer):
                 "voice_consent_required: cloning a reference voice needs the preset's consent flag",
             )
 
+        await preload(context, self._manager, request.engine)
         with tempfile.TemporaryDirectory(prefix="tts-") as tmp:
             reference = None
             if reference_url:
                 reference = Path(tmp) / "reference.wav"
                 reference.write_bytes(
-                    await transfer.download(reference_url, max_bytes=MAX_REFERENCE_BYTES)
+                    await fetch_input(context, reference_url, MAX_REFERENCE_BYTES)
                 )
             relay = ProgressRelay()
             job = SynthesisJob(
@@ -86,10 +93,11 @@ class TTSServicer(tts_pb2_grpc.TTSServicer):
             elapsed = time.monotonic() - started
             vram_peak = cuda_peak_mb_and_reset()
 
-        await transfer.upload(
+        await push_output(
+            context,
             request.output_put_url,
             to_wav_bytes(out.samples, out.sample_rate),
-            content_type="audio/wav",
+            "audio/wav",
         )
         duration = out.duration_s
         yield tts_pb2.SynthesizeEvent(

@@ -18,7 +18,14 @@ from loomtale.worker.v1 import align_pb2, align_pb2_grpc
 from loomtale_worker import transfer
 from loomtale_worker.engines.jobs import AlignJob, AlignOutput
 from loomtale_worker.model_manager import ModelManager
-from loomtale_worker.servicers.streaming import ProgressRelay, abort_invalid, finish_job
+from loomtale_worker.servicers.streaming import (
+    ProgressRelay,
+    abort_invalid,
+    fetch_input,
+    finish_job,
+    preload,
+    push_output,
+)
 
 LANGUAGES = ("en", "vi")
 MAX_TEXT_CHARS = 200_000
@@ -39,9 +46,12 @@ class AlignServicer(align_pb2_grpc.AlignServicer):
         if not request.audio_get_url or not request.output_put_url:
             await abort_invalid(context, "audio_get_url and output_put_url are required")
 
+        await preload(context, self._manager, request.engine)
         with tempfile.TemporaryDirectory(prefix="align-") as tmp:
             audio = Path(tmp) / "narration.wav"
-            audio.write_bytes(await transfer.download(request.audio_get_url))
+            audio.write_bytes(
+                await fetch_input(context, request.audio_get_url, transfer.MAX_TRANSFER_BYTES)
+            )
             relay = ProgressRelay()
             job = AlignJob(audio_path=audio, text=text, language=language, progress=relay)
             started = time.monotonic()
@@ -52,7 +62,7 @@ class AlignServicer(align_pb2_grpc.AlignServicer):
             elapsed = time.monotonic() - started
 
         body = json.dumps(out.to_json_dict(), ensure_ascii=False).encode("utf-8")
-        await transfer.upload(request.output_put_url, body, content_type="application/json")
+        await push_output(context, request.output_put_url, body, "application/json")
         yield align_pb2.AlignEvent(
             result=align_pb2.AlignResult(
                 output_key=params.get("output_key", ""),
