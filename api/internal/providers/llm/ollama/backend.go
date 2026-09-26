@@ -49,6 +49,18 @@ func (b *Backend) Load(ctx context.Context, model string) (int64, error) {
 	return 0, nil
 }
 
+// Probe implements residency.Prober via /api/ps.
+func (b *Backend) Probe(ctx context.Context) (bool, []string) {
+	loaded, err := b.Provider.Loaded(ctx)
+	if err != nil {
+		return false, nil
+	}
+	if loaded && b.Provider.Model != "" {
+		return true, []string{b.Provider.Model}
+	}
+	return true, []string{}
+}
+
 func (b *Backend) Resident(ctx context.Context, model string) (bool, error) {
 	loaded, err := b.Provider.Loaded(ctx)
 	if err != nil || !loaded {

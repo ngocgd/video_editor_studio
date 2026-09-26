@@ -108,6 +108,36 @@ func (e HealthStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for ModelInfoStatus.
+const (
+	ModelInfoStatusBlocked      ModelInfoStatus = "blocked"
+	ModelInfoStatusDownloading  ModelInfoStatus = "downloading"
+	ModelInfoStatusFailed       ModelInfoStatus = "failed"
+	ModelInfoStatusInstalled    ModelInfoStatus = "installed"
+	ModelInfoStatusNotInstalled ModelInfoStatus = "not_installed"
+	ModelInfoStatusPaused       ModelInfoStatus = "paused"
+)
+
+// Valid indicates whether the value is a known member of the ModelInfoStatus enum.
+func (e ModelInfoStatus) Valid() bool {
+	switch e {
+	case ModelInfoStatusBlocked:
+		return true
+	case ModelInfoStatusDownloading:
+		return true
+	case ModelInfoStatusFailed:
+		return true
+	case ModelInfoStatusInstalled:
+		return true
+	case ModelInfoStatusNotInstalled:
+		return true
+	case ModelInfoStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PipelineRunStatus.
 const (
 	PipelineRunStatusActive     PipelineRunStatus = "active"
@@ -438,6 +468,56 @@ type Me struct {
 	UserId         openapi_types.UUID  `json:"userId"`
 }
 
+// ModelActionResult defines model for ModelActionResult.
+type ModelActionResult struct {
+	RunId  openapi_types.UUID `json:"runId"`
+	StepId openapi_types.UUID `json:"stepId"`
+}
+
+// ModelInfo defines model for ModelInfo.
+type ModelInfo struct {
+	BytesDone   int64        `json:"bytesDone"`
+	BytesTotal  int64        `json:"bytesTotal"`
+	Engine      string       `json:"engine"`
+	Error       *string      `json:"error,omitempty"`
+	InstalledAt *time.Time   `json:"installedAt,omitempty"`
+	Licence     ModelLicence `json:"licence"`
+
+	// Loaded True when the worker reports this model as the resident GPU model.
+	Loaded bool   `json:"loaded"`
+	Name   string `json:"name"`
+
+	// OverBudget True when the model's planned VRAM exceeds the measured budget.
+	OverBudget bool            `json:"overBudget"`
+	SizeBytes  int64           `json:"sizeBytes"`
+	Status     ModelInfoStatus `json:"status"`
+	Task       string          `json:"task"`
+	Title      string          `json:"title"`
+	VramMb     int64           `json:"vramMb"`
+}
+
+// ModelInfoStatus defines model for ModelInfo.Status.
+type ModelInfoStatus string
+
+// ModelLicence defines model for ModelLicence.
+type ModelLicence struct {
+	// Allowed Whether the licence is on the commercial-use allowlist.
+	Allowed bool   `json:"allowed"`
+	Spdx    string `json:"spdx"`
+	Url     string `json:"url"`
+
+	// Verified Date (YYYY-MM-DD) the licence was last checked by hand.
+	Verified string `json:"verified"`
+}
+
+// ModelList defines model for ModelList.
+type ModelList struct {
+	// BudgetMb Measured VRAM budget (free at worker boot minus the render reserve), when the worker has reported one.
+	BudgetMb     *int64      `json:"budgetMb,omitempty"`
+	Items        []ModelInfo `json:"items"`
+	WorkerOnline *bool       `json:"workerOnline,omitempty"`
+}
+
 // PipelineRun defines model for PipelineRun.
 type PipelineRun struct {
 	CreatedAt    time.Time           `json:"createdAt"`
@@ -660,6 +740,21 @@ type ServerInterface interface {
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
+	// ListModels Every manifest model with its licence, install state and residency
+	// (GET /models)
+	ListModels(w http.ResponseWriter, r *http.Request)
+	// UnloadModels Unload every resident GPU model (a models.unload step on the gpu queue)
+	// (POST /models/unload)
+	UnloadModels(w http.ResponseWriter, r *http.Request)
+	// InstallModel Download and verify a model (a models.pull step on the io queue), or resume a paused download
+	// (POST /models/{name}/install)
+	InstallModel(w http.ResponseWriter, r *http.Request, name string)
+	// LoadModel Make a model the single resident GPU model (a models.load step on the gpu queue)
+	// (POST /models/{name}/load)
+	LoadModel(w http.ResponseWriter, r *http.Request, name string)
+	// PauseModelInstall Pause a running download; partial files are kept and a later install resumes them
+	// (POST /models/{name}/pause)
+	PauseModelInstall(w http.ResponseWriter, r *http.Request, name string)
 	// GetReadyz Readiness probe (checks Postgres and MinIO)
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
@@ -782,6 +877,36 @@ func (_ Unimplemented) GetHealthz(w http.ResponseWriter, r *http.Request) {
 // ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 // (GET /jobs)
 func (_ Unimplemented) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListModels Every manifest model with its licence, install state and residency
+// (GET /models)
+func (_ Unimplemented) ListModels(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UnloadModels Unload every resident GPU model (a models.unload step on the gpu queue)
+// (POST /models/unload)
+func (_ Unimplemented) UnloadModels(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// InstallModel Download and verify a model (a models.pull step on the io queue), or resume a paused download
+// (POST /models/{name}/install)
+func (_ Unimplemented) InstallModel(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// LoadModel Make a model the single resident GPU model (a models.load step on the gpu queue)
+// (POST /models/{name}/load)
+func (_ Unimplemented) LoadModel(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PauseModelInstall Pause a running download; partial files are kept and a later install resumes them
+// (POST /models/{name}/pause)
+func (_ Unimplemented) PauseModelInstall(w http.ResponseWriter, r *http.Request, name string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1212,6 +1337,112 @@ func (siw *ServerInterfaceWrapper) ListJobs(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListJobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListModels operation middleware
+func (siw *ServerInterfaceWrapper) ListModels(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListModels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnloadModels operation middleware
+func (siw *ServerInterfaceWrapper) UnloadModels(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnloadModels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InstallModel operation middleware
+func (siw *ServerInterfaceWrapper) InstallModel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InstallModel(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LoadModel operation middleware
+func (siw *ServerInterfaceWrapper) LoadModel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LoadModel(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PauseModelInstall operation middleware
+func (siw *ServerInterfaceWrapper) PauseModelInstall(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PauseModelInstall(w, r, name)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1660,6 +1891,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/settings/llm/test", wrapper.TestLLMSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/models", wrapper.ListModels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/models/unload", wrapper.UnloadModels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/models/{name}/install", wrapper.InstallModel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/models/{name}/pause", wrapper.PauseModelInstall)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/models/{name}/load", wrapper.LoadModel)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/events", wrapper.StreamEvents)
@@ -2134,6 +2380,226 @@ func (response ListJobs400ApplicationProblemPlusJSONResponse) VisitListJobsRespo
 	return err
 }
 
+type ListModelsRequestObject struct {
+}
+
+type ListModelsResponseObject interface {
+	VisitListModelsResponse(w http.ResponseWriter) error
+}
+
+type ListModels200JSONResponse ModelList
+
+func (response ListModels200JSONResponse) VisitListModelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnloadModelsRequestObject struct {
+}
+
+type UnloadModelsResponseObject interface {
+	VisitUnloadModelsResponse(w http.ResponseWriter) error
+}
+
+type UnloadModels202JSONResponse ModelActionResult
+
+func (response UnloadModels202JSONResponse) VisitUnloadModelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InstallModelRequestObject struct {
+	Name string `json:"name"`
+}
+
+type InstallModelResponseObject interface {
+	VisitInstallModelResponse(w http.ResponseWriter) error
+}
+
+type InstallModel202JSONResponse ModelInfo
+
+func (response InstallModel202JSONResponse) VisitInstallModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InstallModel404ApplicationProblemPlusJSONResponse Problem
+
+func (response InstallModel404ApplicationProblemPlusJSONResponse) VisitInstallModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InstallModel409ApplicationProblemPlusJSONResponse Problem
+
+func (response InstallModel409ApplicationProblemPlusJSONResponse) VisitInstallModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InstallModel422ApplicationProblemPlusJSONResponse Problem
+
+func (response InstallModel422ApplicationProblemPlusJSONResponse) VisitInstallModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoadModelRequestObject struct {
+	Name string `json:"name"`
+}
+
+type LoadModelResponseObject interface {
+	VisitLoadModelResponse(w http.ResponseWriter) error
+}
+
+type LoadModel202JSONResponse ModelActionResult
+
+func (response LoadModel202JSONResponse) VisitLoadModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoadModel404ApplicationProblemPlusJSONResponse Problem
+
+func (response LoadModel404ApplicationProblemPlusJSONResponse) VisitLoadModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoadModel409ApplicationProblemPlusJSONResponse Problem
+
+func (response LoadModel409ApplicationProblemPlusJSONResponse) VisitLoadModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoadModel422ApplicationProblemPlusJSONResponse Problem
+
+func (response LoadModel422ApplicationProblemPlusJSONResponse) VisitLoadModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PauseModelInstallRequestObject struct {
+	Name string `json:"name"`
+}
+
+type PauseModelInstallResponseObject interface {
+	VisitPauseModelInstallResponse(w http.ResponseWriter) error
+}
+
+type PauseModelInstall200JSONResponse ModelInfo
+
+func (response PauseModelInstall200JSONResponse) VisitPauseModelInstallResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PauseModelInstall404ApplicationProblemPlusJSONResponse Problem
+
+func (response PauseModelInstall404ApplicationProblemPlusJSONResponse) VisitPauseModelInstallResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PauseModelInstall409ApplicationProblemPlusJSONResponse Problem
+
+func (response PauseModelInstall409ApplicationProblemPlusJSONResponse) VisitPauseModelInstallResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetReadyzRequestObject struct {
 }
 
@@ -2597,6 +3063,21 @@ type StrictServerInterface interface {
 	// ListJobs Cursor-paginated list of the tenant's steps, optionally filtered
 	// (GET /jobs)
 	ListJobs(ctx context.Context, request ListJobsRequestObject) (ListJobsResponseObject, error)
+	// ListModels Every manifest model with its licence, install state and residency
+	// (GET /models)
+	ListModels(ctx context.Context, request ListModelsRequestObject) (ListModelsResponseObject, error)
+	// UnloadModels Unload every resident GPU model (a models.unload step on the gpu queue)
+	// (POST /models/unload)
+	UnloadModels(ctx context.Context, request UnloadModelsRequestObject) (UnloadModelsResponseObject, error)
+	// InstallModel Download and verify a model (a models.pull step on the io queue), or resume a paused download
+	// (POST /models/{name}/install)
+	InstallModel(ctx context.Context, request InstallModelRequestObject) (InstallModelResponseObject, error)
+	// LoadModel Make a model the single resident GPU model (a models.load step on the gpu queue)
+	// (POST /models/{name}/load)
+	LoadModel(ctx context.Context, request LoadModelRequestObject) (LoadModelResponseObject, error)
+	// PauseModelInstall Pause a running download; partial files are kept and a later install resumes them
+	// (POST /models/{name}/pause)
+	PauseModelInstall(ctx context.Context, request PauseModelInstallRequestObject) (PauseModelInstallResponseObject, error)
 	// GetReadyz Readiness probe (checks Postgres and MinIO)
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
@@ -3040,6 +3521,132 @@ func (sh *strictHandler) ListJobs(w http.ResponseWriter, r *http.Request, params
 	}
 }
 
+// ListModels operation middleware
+func (sh *strictHandler) ListModels(w http.ResponseWriter, r *http.Request) {
+	var request ListModelsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListModels(ctx, request.(ListModelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListModels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListModelsResponseObject); ok {
+		if err := validResponse.VisitListModelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnloadModels operation middleware
+func (sh *strictHandler) UnloadModels(w http.ResponseWriter, r *http.Request) {
+	var request UnloadModelsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnloadModels(ctx, request.(UnloadModelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnloadModels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnloadModelsResponseObject); ok {
+		if err := validResponse.VisitUnloadModelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InstallModel operation middleware
+func (sh *strictHandler) InstallModel(w http.ResponseWriter, r *http.Request, name string) {
+	var request InstallModelRequestObject
+
+	request.Name = name
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InstallModel(ctx, request.(InstallModelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InstallModel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InstallModelResponseObject); ok {
+		if err := validResponse.VisitInstallModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LoadModel operation middleware
+func (sh *strictHandler) LoadModel(w http.ResponseWriter, r *http.Request, name string) {
+	var request LoadModelRequestObject
+
+	request.Name = name
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LoadModel(ctx, request.(LoadModelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LoadModel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LoadModelResponseObject); ok {
+		if err := validResponse.VisitLoadModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PauseModelInstall operation middleware
+func (sh *strictHandler) PauseModelInstall(w http.ResponseWriter, r *http.Request, name string) {
+	var request PauseModelInstallRequestObject
+
+	request.Name = name
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PauseModelInstall(ctx, request.(PauseModelInstallRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PauseModelInstall")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PauseModelInstallResponseObject); ok {
+		if err := validResponse.VisitPauseModelInstallResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetReadyz operation middleware
 func (sh *strictHandler) GetReadyz(w http.ResponseWriter, r *http.Request) {
 	var request GetReadyzRequestObject
@@ -3346,83 +3953,97 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"7Fz/b9s4lv9XHnQHNMHacdIvczst7odMr9vtbbINknSAw3YwoMVnixOJVEnKjmeQ//3AR0qWZMqxO006",
-	"XxZY7KQWKT6+93nfSf2SpKoolURpTfLyl8SkGRaM/jw1Bq37o9SqRG0F0s/TlfV/zJQumE1eJkLab54n",
-	"o8SuSvT/xDnq5G6UpBqZRX5qO+M5szi2osD1HGO1kHM3haulzBXjH3TemVRpER1eaWaFkudE0iYFGYp5",
-	"ZuPPBO+uUAkeW+JGSBr4nxpnycvkPyZrjk0CuybEq3+4gXejpHBbW6+4fpPJ2NMX38QfWWYr2gPKqkhe",
-	"/ispUXL3cJRoZHyVjJIZEzny5IcIjUvBbRbb5Z2b/qkSGrl7Ke2QNhTIbFZuC2u9gpr+hKl1K6x32KJR",
-	"FGzu3sEqLlQyShaCo/svV2lVoLRRWulNZ8JEsCUsFt0/7mW6e2NYgmnNVu7fEm/t60obpSO87nOEVoru",
-	"uOLCvpFWrzYJZakDXVSSLLVKvymYyIcffzCo3+2Gvs9QoR1xXaBlnFlG++FcuB2x/KK1T6srjDDGMj1H",
-	"6+nfeKt/eE0/38t7R1dg5b34c9L4IqhZi/XBoPOatnJZyUv8VGGM5tqobPCv1EJpYVevc2ZoJEeTalF6",
-	"vCXXGYKu5BMDlZ6jTFeQuoEjYGWZC+RgUC9Qj43gCFYBLlCvwFgsQUgQFg4MIrBSTJyJ0JLlk1KUmAuJ",
-	"UC8NqZLGMmnN4StgkOYCpYWUSZDudWDQAgPNliCrArVIm5kjWGYizUAYWGbMgrGqNMDkCpALqzTMtCqg",
-	"YPpGyDlMmU0zWCp9A0SMQ8ICgUkOxjK9cGM8/cpmqMGiZNKCkmAzBCPkPEd4e/HhKBmtLdL6Rc62pSjd",
-	"f2klpwOaCfnjFGWaRU2TSVWJOyomjf3HkBgdx3fHpMfLlcXyqsSUlJPdvvMzXxwfO1stwz9P+pjtgXJN",
-	"1no7jcnvgqumchjBDUUb+PWguHRb6kP0Nctz1OM0UwYlWHWDcgSVFJ8qhKWwmXDyEwa0140RVAY5KJmv",
-	"HGCXQiNwdN7PvJcwRbtElIRgA2rmRc8KrKcfgVMJj3pg+ZKtDMxRomYWjR9tsXzilmM5CB5FdJopZRCU",
-	"xD6Cb9CtyyBVeS6cPwbBPYpp4hTdT5Vh0xyB0UCtjBkHqOKtMBZliqA0S3N0SC3Y7RnKuXPX3zwnydb/",
-	"PInFNzUnOljqMvxUev0IG21EAzWnO/yKuoIu2vpGcdBYfSl96WF4Da4GuTFYR3Fr9OzaQW4Tsrb+efvi",
-	"fljs3W/L6juW3qDkV0201l3CBa7IO6LadJB9j8MGokWNLM0csFpPp0rlyOQG0fSS9pRRTcvARt7IVHHU",
-	"m1vIlrHlBsmM05Eth9a9ROeZZCyv8KyNsqJQHPP7V69fUU8YoGFIemH67mZ7AxAR8aasZFORi41g5V5g",
-	"4FpE9xBRC/NulHyqsMKdN0D2vSoKFg+GdEtY95DQyNVNq6R0e9pv8YVmxQ4Lfe+GuYxH6RvU76WLXHZQ",
-	"EM+X0VrGPckMQOX7QFQPKBWfoz2f7pgFzzTizoMLZKbS+wX8GiVHfYnkBXdeySrL8h1Hb9hIP7XZ22jN",
-	"k01yOpuKMfrvyHKbDanlZmqsbqLR2wK1iWdl/RipTnnrGTGizs7OTyk1eb9ArQXHCGlcs5mNKrOqbA+Z",
-	"bXEttbADJQIXsf5oylzE32uCwkQNiGbS5MwO2OnYDq/QWiHnsa3hjFX5wObaHNmmrxEeUoqjFoKj3t3Q",
-	"XoQZQ2a2J9+a9jal7WV/2M6MazR2MHGr37IZhtVEgnOCLpS1aOwrCMQY+iXDkMW4OK3S2oWhYUAkMLvb",
-	"hU4TpNQXnx2qQKibuIdv72y7/jQjR11VjFL5oeQBko8EsAEwRMlUczGco2NdxGnMo/+lE8M/e3ocMUUl",
-	"M2apNEUzrcEnx0+7If9fR/ewul6xeeGWbZhSSRPhdNqOiSNloPuYfI4bZJEfWr83RtQ5xstmC7xU+b1r",
-	"0hhfLhMLvCad2THRwMHam1e93c2OX/Yciylqk4kyFiNVu5byehwM80aNhGviYry8CCWayyqS1zxchfDB",
-	"875Y3bsp3nBFtZtQ9XbxmkzR/2mqErVBPlANXz/+brW/ZMRQvrlORncrmddSc4FuRBesxaIcaE18hkxR",
-	"a6VfKx6PK+jpuZnHH1p2FadjJqQw2eOCK1dzquzviK+6phXfQKnVXKMxg0/JkYU61sa7m2yqBue8rJzY",
-	"6f/zvGiC3WSUCBXFonb67dKh/wkFwU0qdCX30aUvpXd6T4Bta1ERoxwZde63RX3vCd33zUVEWPbdvWpb",
-	"54ANYlqaXGvjmpS+6FpY2kfxv0TLomNIHqxpceHS/flwODTc+C2EFIWDxEk0/RU5Dha5vlRztbfLbovT",
-	"U751z0OxE9vDEuFtKTSafXRqJjD3Bad4B264TLTeQ1Xu3C/vcaneXPsdDU3t/cRZp6Y5FnulHoL6Sinu",
-	"0tlfm5tI6ULYHLdwZ08++Nc1Sw7stp2BbuJkwUQ+VKwdJamSMzGvNPL4cy6ohcAvkZmBvvJeBdg1ObHN",
-	"XCLjq6GdpBmmN78SkjuWbOJlmSjFIWVoXreU5HR9W5FOHuASddS3kBVW86AgvRRvf5WtPkPRKlKs7frU",
-	"Lodu0jkYof3aaOvXhE8PFxFsObbSuOyWG2/IjDJ2KWya+Vxu0LnZ3TPMvvGoZ8bW3sggNxbWeyTDdp80",
-	"2A/+505Wo3lxZ9rIE7e5rzsy5TO1WQN7Fw4VgLFKr8ZWjf9PVdfVFIGOBoGxFRcKTi/eUbnLm/HkTKnC",
-	"shzhqnncCsReJsdHJ0fHVBcqUbJSJC+TZ/TTKCmZzYiPE3Jm9OfcH1tzXKazYY5hiYvDTv0QN0uzAi2V",
-	"IP/1SyLcIp8q1A5L3s4mqY+nRuFEXJSH8Zm5KITtTCzYrY+PnoZe/mC0dPcDdV0oGKG9PD0+JqOspA2N",
-	"GDrokdLGJj8FZ7Fe6t44iuJRkmBXciWbI6gZBDbetWvNiQ8uxyWbC+niXsiFsXU3PhzbaOqarOayZXPT",
-	"hBmkm7fjQsixh3xtst1KQXiT0odjpCXKRKQY4jV/8stjGI39TvHVF+NSLwy+6+qK1RXebcjo5MuvHgLS",
-	"mKS8jfV8hpCJ0MkKYBA4iBwu3l9dQ6lykVKO8HwrkEofzP1lX2J9CBghspKmKkvlckxwhnviQnFQGoz4",
-	"GUEtUBN2StRj9xhSVvYxRxtzW+rsV6slnRBiMNVqaVCDj13hw+UZzJQG0r17oBfChjb0fhH8btB4vEVb",
-	"Qy5mOpwRWuu/T0g7iGkbg/u8y4NbgJi4PG+bE4GEl+ePiRdPgFQWZqqSvDm64q1KDxqnHWpHNfZnGk3W",
-	"wKI+SEzAEDOoT9Hub5UcNCYzIVkufsZh2/S3MOLPgJQFajETyEkVC6ZvkAcG//agM0qeP336mAT5MAkK",
-	"YYyQ8xGcvzt/A0aK2cz9VjCbZqPaFE6cUIl4ludqiZxsGIW6Xcx/7zi+AiaDvUMOYZ1aBN4ZeyO5G9Y7",
-	"ZrDivuU8HD3RiD9t8NScP94WPLlBgNJqgffGUH5wruYk8o1ICg4oyaWDkYdtWZIY+qL0CXGQpM0mqdGz",
-	"be7stXv+gOxan8OLsKvufL++uvybPyDa49V1hq2HDX/qeQZNKNGumWKzDZ64H1FatwHkLd7kai62xJjU",
-	"TX2g4LLTcN4ptDz+0msPB5aBrYDGsmlOfZ9X/gRteJAqdSMQhKEj4AvB4Art+DX96g3/yWPaWSEXLBfc",
-	"hcDcyZnlxlv7bx+TCqsUFEyuILQQ+np/ZZm2wBomUrBCTV/4CzRt/XugXFbTXKRdDKvKbgWxe74Bp+eb",
-	"OXsjdsmx73XeSP4lNc/XIoZs0jk+pEU6x22miA4vCruKGKKUzrM/Mc0Y8rjBSBdNacd8LlMM1afCkfFh",
-	"ibbLWA9knWKVst+aker6SM+72k7VVEHKtPPA9KPEZduXHLQNmv9pyQxoZZ1YRl62XfcjDHDUYoHh5L+w",
-	"h18hzKUYMeDNl16YjadHXoxty/3E9GOLojIWpti88fAz0IuL+tZoVKOvrEZWvPGDNsLG3p0RVRRsbNAN",
-	"crFRcydJVxIEN0fJKBouWlWK1GzNovbPmizeWr+5saE9dOXXf+GmR+jPd+KiK1iBYwSeZ4+aI0mo5I1U",
-	"S+kSj5nSKOYO/qVIPfy9tiP/mg40VbLxM8Q3EyI/YaAyIbxtwTzcdHPjPWNpeAMd4njdGahvlVmENGNy",
-	"juYIfOAy7iB7FDRkPBO5RY38CC49tAww+BgA9zEBAiI0oH5Jd4S6IK6LpH0we49ae5X6VttSGjig5pvL",
-	"DeZMSGObqT/qShpgFkw1dbybIlhR4CvYJli6Y+VSxLo8+Pz42eHRR+mc2kxoE9gGzveHa4KEVmHgo790",
-	"/DFpXZcik7Fef4puNZihTTO6F2WN2wQIKVwoBkay0mTKwsHbN9cwcRvwlRS6ynVIAuHCpExzf0OQaFlm",
-	"yiB8rIv/HxOipjo+fpb+t7do4bVPzAiMAqnCRDKHzuw7M93cGqtpIOk3pAsDuTL26KO8CPAY0/Wzio6q",
-	"GmAaIVUsR5MiB6sc4wvlhCmpZBnuU3L6++mL48K8ajjoEEYHsal1Cge+DzYJXbAJVxInvgM2qftfh97D",
-	"5GLhAAdCcrEQvGJ57kMNYcI1Na5VWbrEX6/JO4J3vgyfVdMnXgJn766u3/zTqZNEOhxLE70KaAw/m1FN",
-	"cs0W7R6iWASkazQrmX5MAn+pyuAQoJFETvKu+XsEp3DywkCGTNspMku64KYR7v0lOsFzbBFlgOXkkTKt",
-	"qnnmNPVWOLU8JWWHgq0gUzlvmP9NzEAcPH/6LUxxpchtM3voI4ElTmvYmow55VVkEQjfjO7oNYVCy6bk",
-	"X2r395Oabi8LzstqWxi7vmH0gHHSepGIRX178QFM/bRXgyDuuQHhck+6GgFhlCT8/eXpeZi6tr22jjl3",
-	"5lBGFzp+3salv4chD8ijzrWSWNVGq9S5BhGg2GPWmVigdM+dx8PW9v3utuZoxKFtxbT/dQN2qqU1/e69",
-	"a2n1ebe9J/4By3cbR/K2VPH8rejH75k19QzP/j1asE3vlUgfgSr9uZ18BXUcs4/6ku/fqr2XfsQDCqx9",
-	"RikW0OZ5uCWOMhXBZ6+vv96NkhePG2E7/6I0FKq5vh4IC8ddutJ0uxNr4xICPwMXytg5xZqSw7mQ794f",
-	"7md4XJg1XENovkvxQAWEje9ePHb3vHVPIiIjF3+HfvnI90jCdwVQhuNKX0/pdSUpMgYTvgDx2FmYT0M+",
-	"VcoywNsU6XYF6dF/PWqmyqlvpiSQSgBHKZDDAR7Nj1y+cANLZlEXTN8cDp4YaCdcFEHbYBrvs4LtjliT",
-	"sWw1hKRLv+tW7/1K8xWqXU5yO54GeEufo2nLfC9f1+SlPh3bYjzp+VcTeKRyT/asPkT525IRNbhZ7o1s",
-	"fYuor69EekhDpZJjp9fCnx703ytiu0gzqrOT5gM8gyH4ZSWvgk14cHH+O9D+/QfaLHx4aydH0jYxJtyE",
-	"nuR5sc2XtO/jP2SLpbXMlo7Y2dk5mPW4flesf+rTDa+v09VX2sn3lqjH/htv0L6NX3OvWWKIg6OkrGIn",
-	"QasNfj1Au37jGvtjt8O2y6pmHhi2qJtgEm8t0CEjIedUZobKtHphzeX9r3Eo1Feqy/aXEoabV32I1ajq",
-	"QM25GQk9gMHB6eu/Hu6Csta5mbaaTmx9SyAaClyjeVz0tT9JcRcw+PCQa31gIpoxUDXYP370fEW7UJ+8",
-	"oMsOyubzgP2k4NKlAHAy9q3cUquitE17ha1xZBXQJS1dgLC+dRKKCWTFWhe4dkBVOyQhd7FPhEm3PP8g",
-	"OYW/sRoxXC7A+4qhK63fxK6dYLUOQuPBqgqNxX2C0hYCcjXfFgGEq2q/d+m3btxFy+71FYVczeHD5dlv",
-	"Q/4ZMyAV0bTCfo550dBcXzNg9ecWTaqr6dTvZlR/59T9rzm9+ZlY0Vh/ejhqLC7d4z+NrdA4bpfoviJY",
-	"PAHfPjoB9C1RA9OKPlzqyJkiOIwI5KDFPLMg1RIOKlmgXZegVwRuYY0/fWD8WXOKrDZcJfov+/qKNXWZ",
-	"g4X2CblVvlPIQyd5HMqm3Ss32yHuFqRzGx6pdJk2mbBSTBYnyd0Pd/8fAAD//w==",
+	"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",
+	"cYdU+nLPYMxKPp4/Htx+uP2/AAAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

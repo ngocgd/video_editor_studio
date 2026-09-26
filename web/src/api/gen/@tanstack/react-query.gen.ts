@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getLlmSettings, getMe, getReadyz, getRun, getStepLog, listAssets, listAudit, listJobs, listRunSteps, login, logout, type Options, presignAsset, putLlmSettings, retryStep, switchTenant, testLlmSettings } from '../sdk.gen';
-import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse } from '../types.gen';
+import { cancelRun, cancelStep, createRun, finalizeAsset, getAsset, getCsrf, getGpuStatus, getHealthz, getLlmSettings, getMe, getReadyz, getRun, getStepLog, installModel, listAssets, listAudit, listJobs, listModels, listRunSteps, loadModel, login, logout, type Options, pauseModelInstall, presignAsset, putLlmSettings, retryStep, switchTenant, testLlmSettings, unloadModels } from '../sdk.gen';
+import type { CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CreateRunData, CreateRunError, CreateRunResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GetAssetData, GetAssetError, GetAssetResponse, GetCsrfData, GetCsrfResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UnloadModelsData, UnloadModelsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -599,6 +599,92 @@ export const testLlmSettingsMutation = (options?: Partial<Options<TestLlmSetting
     const mutationOptions: UseMutationOptions<TestLlmSettingsResponse, TestLlmSettingsError, Options<TestLlmSettingsData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await testLlmSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listModelsQueryKey = (options?: Options<ListModelsData>) => createQueryKey('listModels', options);
+
+/**
+ * Every manifest model with its licence, install state and residency
+ */
+export const listModelsOptions = (options?: Options<ListModelsData>) => queryOptions<ListModelsResponse, DefaultError, ListModelsResponse, ReturnType<typeof listModelsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listModels({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listModelsQueryKey(options)
+});
+
+/**
+ * Unload every resident GPU model (a models.unload step on the gpu queue)
+ */
+export const unloadModelsMutation = (options?: Partial<Options<UnloadModelsData>>): UseMutationOptions<UnloadModelsResponse, DefaultError, Options<UnloadModelsData>> => {
+    const mutationOptions: UseMutationOptions<UnloadModelsResponse, DefaultError, Options<UnloadModelsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await unloadModels({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Download and verify a model (a models.pull step on the io queue), or resume a paused download
+ */
+export const installModelMutation = (options?: Partial<Options<InstallModelData>>): UseMutationOptions<InstallModelResponse, InstallModelError, Options<InstallModelData>> => {
+    const mutationOptions: UseMutationOptions<InstallModelResponse, InstallModelError, Options<InstallModelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await installModel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Pause a running download; partial files are kept and a later install resumes them
+ */
+export const pauseModelInstallMutation = (options?: Partial<Options<PauseModelInstallData>>): UseMutationOptions<PauseModelInstallResponse, PauseModelInstallError, Options<PauseModelInstallData>> => {
+    const mutationOptions: UseMutationOptions<PauseModelInstallResponse, PauseModelInstallError, Options<PauseModelInstallData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await pauseModelInstall({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Make a model the single resident GPU model (a models.load step on the gpu queue)
+ */
+export const loadModelMutation = (options?: Partial<Options<LoadModelData>>): UseMutationOptions<LoadModelResponse, LoadModelError, Options<LoadModelData>> => {
+    const mutationOptions: UseMutationOptions<LoadModelResponse, LoadModelError, Options<LoadModelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await loadModel({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

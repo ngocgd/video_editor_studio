@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"loomtale/api/internal/models"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/image/comfyui"
 	"loomtale/api/internal/providers/llm/ollama"
@@ -42,17 +43,23 @@ func backendHTTPClient() *http.Client {
 // The concrete *residency.Manager is also returned (nil when
 // WORKER_GPU=false) so main.go can wire OnChange for the worker_status
 // heartbeat without a type assertion.
-func buildResidency(ctx context.Context, cfg config) (pipeline.ModelResidency, pipeline.GpuProbe, *residency.Manager, error) {
+func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, gate func(context.Context, string) error) (pipeline.ModelResidency, pipeline.GpuProbe, *residency.Manager, error) {
 	if !cfg.WorkerGPU {
 		return pipeline.NoopResidency{}, nil, nil, nil
 	}
 
 	ollamaProvider := ollama.New(cfg.OllamaURL, cfg.OllamaModel, backendHTTPClient())
-	comfyClient := comfyui.New(cfg.ComfyUIURL, backendHTTPClient())
+	templates, err := models.EmbeddedTemplates()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	comfyEngine := &comfyui.Engine{Client: comfyui.New(cfg.ComfyUIURL, backendHTTPClient()), Templates: templates}
 
 	backends := map[string]residency.Backend{
-		"ollama":  &ollama.Backend{Provider: ollamaProvider},
-		"comfyui": &comfyui.Backend{Client: comfyClient},
+		"ollama": &ollama.Backend{Provider: ollamaProvider},
+		// Every ComfyUI model is loaded through its warm-up workflow,
+		// after the licence and installed-files gate.
+		"comfyui": &comfyui.Backend{Engine: comfyEngine, Warmups: manifest.Warmups(), Gate: gate},
 	}
 
 	// VRAM is read through pyworker's GpuStatus RPC (pynvml-backed), not
@@ -81,11 +88,28 @@ func buildResidency(ctx context.Context, cfg config) (pipeline.ModelResidency, p
 		probe = &pyworker.Probe{Client: pw, RenderReserveMB: cfg.RenderReserveMB}
 	}
 
-	manager, err := residency.NewManagerWithBudget(ctx, probe, backends, nil, cfg.RenderReserveMB)
+	// The manifest's VRAM ceilings make Ensure wait until that much VRAM
+	// is actually free after an unload before loading the next model.
+	manager, err := residency.NewManagerWithBudget(ctx, probe, backends, manifest.VRAMByRef(), cfg.RenderReserveMB)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	return manager, manager, manager, nil
+}
+
+// downloadHTTPClient bounds connection setup for model downloads but
+// sets no overall timeout: a 13 GB file legitimately streams for many
+// minutes, and the pull step's own job timeout bounds it.
+func downloadHTTPClient() *http.Client {
+	dialer := &net.Dialer{Timeout: 15 * time.Second}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           dialer.DialContext,
+			TLSHandshakeTimeout:   15 * time.Second,
+			ResponseHeaderTimeout: 60 * time.Second,
+		},
+	}
 }
 
 func readFileOrEmpty(path string) string {

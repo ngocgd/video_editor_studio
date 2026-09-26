@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ListChecks, PanelLeft, Search, Settings } from "lucide-react";
+import { Cpu, LayoutDashboard, ListChecks, PanelLeft, Search, Settings } from "lucide-react";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import { useShortcut } from "../../lib/shortcuts";
@@ -16,6 +16,7 @@ const ShortcutSheet = lazy(() => import("./shortcut-sheet").then((m) => ({ defau
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/jobs", label: "Render Queue", icon: ListChecks },
+  { to: "/settings/models", label: "Models", icon: Cpu },
   { to: "/settings/account", label: "Settings", icon: Settings },
 ] as const;
 

@@ -29,14 +29,34 @@ func (c *Client) Free(ctx context.Context) error {
 }
 
 // SystemStats is the app-side residency proof source (never nvidia-smi
-// per-process data): the loaded checkpoint/unet names ComfyUI itself
-// reports.
+// per-process data). vram_* is card-wide; torch_vram_* is what this
+// ComfyUI process's PyTorch allocator holds, which is how Resident tells
+// "a model is loaded here" apart from other GPU users.
 type SystemStats struct {
-	Devices []struct {
-		Name      string `json:"name"`
-		VRAMTotal int64  `json:"vram_total"`
-		VRAMFree  int64  `json:"vram_free"`
-	} `json:"devices"`
+	System struct {
+		RAMTotal int64 `json:"ram_total"`
+		RAMFree  int64 `json:"ram_free"`
+	} `json:"system"`
+	Devices []Device `json:"devices"`
+}
+
+// Device is one GPU as ComfyUI reports it.
+type Device struct {
+	Name           string `json:"name"`
+	VRAMTotal      int64  `json:"vram_total"`
+	VRAMFree       int64  `json:"vram_free"`
+	TorchVRAMTotal int64  `json:"torch_vram_total"`
+	TorchVRAMFree  int64  `json:"torch_vram_free"`
+}
+
+// GPU returns the first CUDA device, or false when ComfyUI reports none.
+func (s SystemStats) GPU() (Device, bool) {
+	for _, d := range s.Devices {
+		if d.VRAMTotal > 0 {
+			return d, true
+		}
+	}
+	return Device{}, false
 }
 
 // SystemStats fetches GET /system_stats.

@@ -24,6 +24,7 @@ import (
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
+	"loomtale/api/internal/models"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/storage"
@@ -74,13 +75,24 @@ func run() error {
 	logSink := &pipeline.AssetLogSink{Queries: queries, Storage: internalStore}
 
 	registry := pipeline.NewRegistry()
-	// Phases 6-10 register their StepHandlers here in their own
-	// cmd/worker wiring change once they exist; phase 3 ships the engine
-	// with none.
 
-	residency, probe, residencyManager, err := buildResidency(ctx, cfg)
+	manifest, err := models.Embedded()
 	if err != nil {
 		return err
+	}
+	modelStore := &models.Store{Queries: queries}
+	loadGate := &models.LoadGate{Manifest: manifest, Store: modelStore, Dir: cfg.ModelsDir}
+	residency, probe, residencyManager, err := buildResidency(ctx, cfg, manifest, loadGate.Check)
+	if err != nil {
+		return err
+	}
+	// models.* steps only run on a GPU worker: that is the one with the
+	// models volume (read-write, for pulls) and the GPU network (for
+	// load/unload). A worker without them registers nothing, so it never
+	// claims a step it cannot run.
+	if cfg.WorkerGPU && cfg.ModelsDir != "" {
+		downloader := &models.Downloader{Dir: cfg.ModelsDir, HostDiskDir: cfg.ModelsHostDiskDir, HTTP: downloadHTTPClient(), Files: modelStore}
+		models.RegisterSteps(registry, manifest, modelStore, downloader, residency)
 	}
 	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)
 

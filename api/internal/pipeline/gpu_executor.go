@@ -19,6 +19,11 @@ import (
 // table id, so every worker process agrees on it without a lookup.
 const gpuSlotLockKey int64 = 0x6c745f677075 // "lt_gpu" packed into an int64
 
+// GPUSlotLockKey exposes the GPU advisory lock key to operator tools
+// (the benchmark CLI) that drive the GPU directly: holding the same
+// session lock keeps every gpu-queue step off the GPU while they run.
+const GPUSlotLockKey = gpuSlotLockKey
+
 // gpuLockWatchdogInterval controls how often the dedicated lock
 // connection is pinged; losing it (network blip, connection killed) must
 // cancel the running job's context quickly enough that a second worker

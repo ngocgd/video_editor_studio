@@ -45,8 +45,17 @@ func startWorkerStatusHeartbeat(ctx context.Context, queries *dbgen.Queries, pro
 			if current := manager.Current(); current != nil {
 				residentRef = current.Backend + ":" + current.Model
 			}
-			for name := range manager.Backends {
-				providers[name] = workerstatus.ProviderInfo{Available: true}
+			for name, backend := range manager.Backends {
+				info := workerstatus.ProviderInfo{Available: true}
+				if prober, ok := backend.(residency.Prober); ok {
+					probeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+					info.Available, info.Loaded = prober.Probe(probeCtx)
+					cancel()
+					if !info.Available {
+						info.DisabledReason = "backend did not answer its status endpoint"
+					}
+				}
+				providers[name] = info
 			}
 		}
 		if err := store.Upsert(ctx, workerID, status, residentRef, providers); err != nil {

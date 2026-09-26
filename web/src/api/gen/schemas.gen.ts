@@ -931,3 +931,147 @@ export const LLMSettingsTestResultSchema = {
         }
     }
 } as const;
+
+export const ModelLicenceSchema = {
+    type: 'object',
+    required: [
+        'spdx',
+        'url',
+        'verified',
+        'allowed'
+    ],
+    properties: {
+        spdx: {
+            type: 'string'
+        },
+        url: {
+            type: 'string'
+        },
+        verified: {
+            type: 'string',
+            description: 'Date (YYYY-MM-DD) the licence was last checked by hand.'
+        },
+        allowed: {
+            type: 'boolean',
+            description: 'Whether the licence is on the commercial-use allowlist.'
+        }
+    }
+} as const;
+
+export const ModelInfoSchema = {
+    type: 'object',
+    required: [
+        'name',
+        'task',
+        'title',
+        'engine',
+        'licence',
+        'sizeBytes',
+        'vramMb',
+        'status',
+        'bytesDone',
+        'bytesTotal',
+        'loaded',
+        'overBudget'
+    ],
+    properties: {
+        name: {
+            type: 'string'
+        },
+        task: {
+            type: 'string'
+        },
+        title: {
+            type: 'string'
+        },
+        engine: {
+            type: 'string'
+        },
+        licence: {
+            $ref: '#/components/schemas/ModelLicence'
+        },
+        sizeBytes: {
+            type: 'integer',
+            format: 'int64'
+        },
+        vramMb: {
+            type: 'integer',
+            format: 'int64'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'not_installed',
+                'downloading',
+                'paused',
+                'installed',
+                'failed',
+                'blocked'
+            ]
+        },
+        bytesDone: {
+            type: 'integer',
+            format: 'int64'
+        },
+        bytesTotal: {
+            type: 'integer',
+            format: 'int64'
+        },
+        loaded: {
+            type: 'boolean',
+            description: 'True when the worker reports this model as the resident GPU model.'
+        },
+        overBudget: {
+            type: 'boolean',
+            description: 'True when the model\'s planned VRAM exceeds the measured budget.'
+        },
+        error: {
+            type: 'string'
+        },
+        installedAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const ModelListSchema = {
+    type: 'object',
+    required: [
+        'items'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ModelInfo'
+            }
+        },
+        budgetMb: {
+            type: 'integer',
+            format: 'int64',
+            description: 'Measured VRAM budget (free at worker boot minus the render reserve), when the worker has reported one.'
+        },
+        workerOnline: {
+            type: 'boolean'
+        }
+    }
+} as const;
+
+export const ModelActionResultSchema = {
+    type: 'object',
+    required: [
+        'runId',
+        'stepId'
+    ],
+    properties: {
+        runId: {
+            type: 'string',
+            format: 'uuid'
+        },
+        stepId: {
+            type: 'string',
+            format: 'uuid'
+        }
+    }
+} as const;

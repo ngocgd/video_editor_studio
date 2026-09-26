@@ -43,6 +43,9 @@ type GPU struct {
 type ProviderInfo struct {
 	Available      bool   `json:"available"`
 	DisabledReason string `json:"disabled_reason,omitempty"`
+	// Loaded lists the models the backend itself reports as resident
+	// (ComfyUI /system_stats, Ollama /api/ps, pyworker ListEngines).
+	Loaded []string `json:"loaded,omitempty"`
 }
 
 // Status is one worker's full reported state.
