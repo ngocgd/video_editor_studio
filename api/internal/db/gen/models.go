@@ -184,6 +184,14 @@ type Import struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type LibrarySetting struct {
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	SegmentTtlDays int32              `json:"segment_ttl_days"`
+	TakeTtlDays    int32              `json:"take_ttl_days"`
+	LastCleanupAt  pgtype.Timestamptz `json:"last_cleanup_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type LlmSetting struct {
 	TenantID        pgtype.UUID        `json:"tenant_id"`
 	DefaultProvider string             `json:"default_provider"`
@@ -306,6 +314,72 @@ type RateLimitBucket struct {
 	BucketKey string             `json:"bucket_key"`
 	Tokens    float32            `json:"tokens"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Render struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	EpisodeID      pgtype.UUID        `json:"episode_id"`
+	Lang           string             `json:"lang"`
+	ManifestID     pgtype.UUID        `json:"manifest_id"`
+	SettingsHash   string             `json:"settings_hash"`
+	AssetID        pgtype.UUID        `json:"asset_id"`
+	SrtAssetID     pgtype.UUID        `json:"srt_asset_id"`
+	PreviewAssetID pgtype.UUID        `json:"preview_asset_id"`
+	Sha256         string             `json:"sha256"`
+	DurationMs     int32              `json:"duration_ms"`
+	Encoder        string             `json:"encoder"`
+	Report         []byte             `json:"report"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type RenderManifest struct {
+	ID           pgtype.UUID        `json:"id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	EpisodeID    pgtype.UUID        `json:"episode_id"`
+	Lang         string             `json:"lang"`
+	Settings     []byte             `json:"settings"`
+	SettingsHash string             `json:"settings_hash"`
+	Scenes       []byte             `json:"scenes"`
+	Hash         string             `json:"hash"`
+	RunID        pgtype.UUID        `json:"run_id"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type RenderManifestSegment struct {
+	ManifestID pgtype.UUID `json:"manifest_id"`
+	TenantID   pgtype.UUID `json:"tenant_id"`
+	InputHash  string      `json:"input_hash"`
+}
+
+type RenderSegment struct {
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	InputHash      string             `json:"input_hash"`
+	Kind           string             `json:"kind"`
+	EpisodeID      pgtype.UUID        `json:"episode_id"`
+	Lang           string             `json:"lang"`
+	AssetID        pgtype.UUID        `json:"asset_id"`
+	DurationFrames int32              `json:"duration_frames"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	LastUsedAt     pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type RenderSetting struct {
+	EpisodeID       pgtype.UUID        `json:"episode_id"`
+	Lang            string             `json:"lang"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	Width           int32              `json:"width"`
+	Height          int32              `json:"height"`
+	Fps             int32              `json:"fps"`
+	Encoder         string             `json:"encoder"`
+	Subtitles       string             `json:"subtitles"`
+	SubtitleStyle   []byte             `json:"subtitle_style"`
+	DefaultMotion   string             `json:"default_motion"`
+	CrossfadeMs     int32              `json:"crossfade_ms"`
+	LoudnessLufsX10 int32              `json:"loudness_lufs_x10"`
+	TruePeakDbtpX10 int32              `json:"true_peak_dbtp_x10"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Scene struct {
