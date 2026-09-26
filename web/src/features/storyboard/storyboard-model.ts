@@ -1,10 +1,18 @@
 import type { PipKind, PipState, Scene, SceneCounts, SceneFilter, ScenePip } from "../../api/gen/types.gen";
 import type { PipelinePip } from "../../components/shared/pipeline-pips";
 
-/** Fixed tile height (px) so the virtual grid never measures rows. */
-export const TILE_HEIGHT = 236;
-/** Minimum tile width (px); columns are derived from the container width. */
-export const MIN_TILE_WIDTH = 200;
+/** Minimum tile width (px): wide enough for the five pipeline pips in one row. */
+export const MIN_TILE_WIDTH = 272;
+/** Everything under the 16:9 thumbnail: index row, two narration lines, pips, padding. */
+const TILE_CHROME_HEIGHT = 112;
+
+/**
+ * Tile height for a tile width: computed, never measured, so the virtual
+ * grid has no layout churn; it only changes when the container resizes.
+ */
+export function tileHeight(tileWidth: number): number {
+  return Math.ceil(((tileWidth - 12) * 9) / 16) + TILE_CHROME_HEIGHT;
+}
 export const GRID_GAP = 8;
 
 /** Columns that fit a container of `width` px, at least one. */

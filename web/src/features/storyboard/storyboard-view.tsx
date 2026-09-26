@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Scissors, Search, Sparkles } from "lucide-react";
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getEpisodeOptions,
@@ -118,22 +118,38 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
     [allScenes],
   );
 
-  const activate = (index: number) => {
-    const s = scenes[index];
+  // Stable callbacks (reading the latest state through a ref) keep the
+  // memoized tiles and timeline from re-rendering on every move.
+  const latest = useRef({ scenes, anchor });
+  latest.current = { scenes, anchor };
+  const activate = useCallback((index: number) => {
+    const s = latest.current.scenes[index];
     if (!s) return;
     setActiveId(s.id);
     setAnchor(index);
     setSelected(new Set([s.id]));
     setEditingNarration(false);
-  };
-  const onTileClick = (index: number, event: MouseEvent<HTMLButtonElement>) => {
-    if (event.shiftKey) {
-      setSelected(rangeSelection(scenes, anchor, index));
-      setActiveId(scenes[index]?.id);
-      return;
-    }
-    activate(index);
-  };
+  }, []);
+  const onTileClick = useCallback(
+    (index: number, event: MouseEvent<HTMLButtonElement>) => {
+      const { scenes: list, anchor: from } = latest.current;
+      if (event.shiftKey) {
+        setSelected(rangeSelection(list, from, index));
+        setActiveId(list[index]?.id);
+        return;
+      }
+      activate(index);
+    },
+    [activate],
+  );
+  const onTimelineSelect = useCallback(
+    (id: string) => {
+      const i = latest.current.scenes.findIndex((s) => s.id === id);
+      if (i >= 0) activate(i);
+      else setActiveId(id);
+    },
+    [activate],
+  );
 
   const stopAudio = () => {
     audioRef.current?.pause();
@@ -290,11 +306,7 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
             activeId={active?.id}
             playheadMs={playheadMs ?? active?.startMs}
             playing={playing}
-            onSelect={(id) => {
-              const i = scenes.findIndex((s) => s.id === id);
-              if (i >= 0) activate(i);
-              else setActiveId(id);
-            }}
+            onSelect={onTimelineSelect}
             onPlayToggle={togglePlay}
             onPrev={() => move(-1)}
             onNext={() => move(1)}

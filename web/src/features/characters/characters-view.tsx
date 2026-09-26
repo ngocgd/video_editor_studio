@@ -72,7 +72,7 @@ function VoiceEditor({
         <span className="font-medium">{label}</span>
         {voice ? <StatusChip state="done" label="Assigned" /> : <StatusChip state="none" label="No voice" />}
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
         <label className="flex flex-col gap-1 text-2xs text-text-2">
           Engine
           <select value={engine} onChange={(e) => setEngine(e.target.value)} className={inputClass}>
@@ -198,7 +198,7 @@ function CharacterDetail({ seriesId, character, presets }: { seriesId: string; c
 
       <div className="grid grid-cols-2 gap-4">
         <InspectorSection title="Appearance">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
             {(["orig", "en", "vi"] as const).map((k) => (
               <label key={k} className="flex flex-col gap-1 text-2xs text-text-2">
                 Name ({k === "orig" ? "original" : k.toUpperCase()})

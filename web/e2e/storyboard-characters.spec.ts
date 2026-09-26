@@ -30,10 +30,13 @@ async function login(page: Page) {
 async function api<T>(page: Page, method: string, path: string, body?: unknown): Promise<T> {
   return page.evaluate(
     async ({ method, path, body }) => {
-      const csrf = (await (await fetch("/api/v1/auth/csrf")).json()) as { token: string };
+      // One CSRF fetch per page, not per call: the stack's per-IP request
+      // budget is shared with every other spec of the run.
+      const w = window as unknown as { __ltCsrf?: string };
+      w.__ltCsrf ??= ((await (await fetch("/api/v1/auth/csrf")).json()) as { token: string }).token;
       const res = await fetch(`/api/v1${path}`, {
         method,
-        headers: { "X-CSRF-Token": csrf.token, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+        headers: { "X-CSRF-Token": w.__ltCsrf, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
@@ -115,11 +118,12 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
       const before = el.getAttribute("aria-activedescendant");
       const t0 = performance.now();
       el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
-      while (el.getAttribute("aria-activedescendant") === before && performance.now() - t0 < 200) {
-        await Promise.resolve();
-        await new Promise((r) => setTimeout(r, 0));
-      }
+      // React flushes a discrete event's update synchronously at the end
+      // of the dispatch (or in the microtask right after), so microtask
+      // polling measures the handler plus render and commit, not a timer.
+      for (let k = 0; k < 1000 && el.getAttribute("aria-activedescendant") === before; k += 1) await Promise.resolve();
       times.push(performance.now() - t0);
+      await new Promise((r) => requestAnimationFrame(r));
     }
     times.sort((a, b) => a - b);
     return { median: times[15], max: times[29] };
@@ -169,7 +173,7 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
 
   // Characters: list, profile tokens, a reference upload.
   await page.goto(`/projects/${series.id}/characters`);
-  await expect(page.getByRole("heading", { name: "Characters" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { name: "Characters" })).toBeVisible();
   await expect(page.getByRole("option", { name: /Lin Mo/ })).toBeVisible();
   await expect(page.getByText(/tok per request/)).toBeVisible();
   const png = join(tmpdir(), `ref-${Date.now()}.png`);
@@ -182,7 +186,7 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
   await page.screenshot({ path: `${SCREENSHOT_DIR}/05-characters.png` });
 
   await page.goto("/settings/voices");
-  await expect(page.getByRole("heading", { name: "Voice presets" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { name: "Voice presets" })).toBeVisible();
   await page.getByRole("button", { name: "New preset" }).click();
   await page.getByLabel("Name").fill(`Warm tenor ${Date.now()}`);
   await page.getByRole("button", { name: "Create preset" }).click();
@@ -190,7 +194,7 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
   await page.screenshot({ path: `${SCREENSHOT_DIR}/06-settings-voices.png` });
 
   await page.goto("/settings/styles");
-  await expect(page.getByRole("heading", { name: "Image styles" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { name: "Image styles" })).toBeVisible();
   await expect(page.getByText("z-image-turbo").first()).toBeVisible();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/07-settings-styles.png` });
 });

@@ -1,10 +1,10 @@
-import { type MouseEvent, useLayoutEffect, useRef, useState } from "react";
+import { memo, type MouseEvent, useLayoutEffect, useRef, useState } from "react";
 
 import type { Scene } from "../../api/gen/types.gen";
 import { SceneCard } from "../../components/shared/scene-card";
 import type { Speaker } from "../../components/shared/speaker-monogram";
 import { VirtualGrid } from "../../components/shared/virtual-grid";
-import { columnsForWidth, GRID_GAP, pipSummary, TILE_HEIGHT, toPipelinePips } from "./storyboard-model";
+import { columnsForWidth, GRID_GAP, pipSummary, tileHeight, toPipelinePips } from "./storyboard-model";
 import { assetUrl } from "./use-scenes";
 
 function srcSet(assetId: string, format: "avif" | "webp"): string {
@@ -61,42 +61,79 @@ export function SceneGrid({
       <VirtualGrid
         items={scenes}
         columns={columns}
-        rowHeight={TILE_HEIGHT}
+        rowHeight={tileHeight(tileWidth)}
         gap={GRID_GAP}
         getItemId={(s) => s.id}
         activeIndex={activeIndex}
         onActiveIndexChange={onActivate}
         ariaLabel="Scenes"
         className="h-full"
-        renderItem={(scene, index, isActive) => {
-          const speakers: Speaker[] = [];
-          for (const seg of scene.segments) {
-            const sp = seg.speakerCharacterId ? speakersById.get(seg.speakerCharacterId) : speakersById.get("narrator");
-            if (sp && !speakers.some((s) => s.id === sp.id)) speakers.push(sp);
-          }
-          return (
-            <SceneCard
-              index={scene.idx}
-              timecodeS={scene.startMs / 1000}
-              durationS={scene.durationMs / 1000}
-              narration={scene.narration}
-              variants={scene.imageAssetId && scene.imageVariants ? [
-                { srcSet: srcSet(scene.imageAssetId, "avif"), type: "image/avif" },
-                { srcSet: srcSet(scene.imageAssetId, "webp"), type: "image/webp" },
-              ] : []}
-              fallbackSrc={scene.imageAssetId ? assetUrl(scene.imageAssetId, scene.imageVariants ? "webp-320" : "original") : undefined}
-              sizes={sizes}
-              placeholder={placeholderFor(scene)}
-              pips={toPipelinePips(scene.pips)}
-              pipLabel={pipSummary(scene.pips)}
-              speakers={speakers}
-              active={isActive}
-              selected={selectedIds.has(scene.id)}
-              onSelect={(event) => onTileClick(index, event)}
-            />
-          );
-        }}
+        renderItem={(scene, index, isActive) => (
+          <SceneTile
+            scene={scene}
+            index={index}
+            active={isActive}
+            selected={selectedIds.has(scene.id)}
+            speakersById={speakersById}
+            sizes={sizes}
+            onTileClick={onTileClick}
+          />
+        )}
       />
     </div>
   );
 }
+
+/**
+ * One tile, memoized: a keyboard move re-renders only the tiles whose
+ * active/selected state changed, not every mounted tile (the <16ms move
+ * budget). Props are primitives or stable references from the view.
+ */
+const SceneTile = memo(function SceneTile({
+  scene,
+  index,
+  active,
+  selected,
+  speakersById,
+  sizes,
+  onTileClick,
+}: {
+  scene: Scene;
+  index: number;
+  active: boolean;
+  selected: boolean;
+  speakersById: Map<string, Speaker>;
+  sizes: string;
+  onTileClick: (index: number, event: MouseEvent<HTMLButtonElement>) => void;
+}) {
+  const speakers: Speaker[] = [];
+  for (const seg of scene.segments) {
+    const sp = seg.speakerCharacterId ? speakersById.get(seg.speakerCharacterId) : speakersById.get("narrator");
+    if (sp && !speakers.some((s) => s.id === sp.id)) speakers.push(sp);
+  }
+  return (
+    <SceneCard
+      index={scene.idx}
+      timecodeS={scene.startMs / 1000}
+      durationS={scene.durationMs / 1000}
+      narration={scene.narration}
+      variants={
+        scene.imageAssetId && scene.imageVariants
+          ? [
+              { srcSet: srcSet(scene.imageAssetId, "avif"), type: "image/avif" },
+              { srcSet: srcSet(scene.imageAssetId, "webp"), type: "image/webp" },
+            ]
+          : []
+      }
+      fallbackSrc={scene.imageAssetId ? assetUrl(scene.imageAssetId, scene.imageVariants ? "webp-320" : "original") : undefined}
+      sizes={sizes}
+      placeholder={placeholderFor(scene)}
+      pips={toPipelinePips(scene.pips)}
+      pipLabel={pipSummary(scene.pips)}
+      speakers={speakers}
+      active={active}
+      selected={selected}
+      onSelect={(event) => onTileClick(index, event)}
+    />
+  );
+});

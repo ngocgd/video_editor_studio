@@ -6,7 +6,7 @@ import { axe } from "vitest-axe";
 import type { SceneTake } from "../../api/gen/types.gen";
 import { VirtualGrid } from "../../components/shared/virtual-grid";
 import { SceneFilterChips } from "./scene-filter-chips";
-import { columnsForWidth, nextMotion, rangeSelection, toPipelinePips } from "./storyboard-model";
+import { columnsForWidth, nextMotion, rangeSelection, tileHeight, toPipelinePips } from "./storyboard-model";
 import { TakesStrip } from "./takes-strip";
 
 describe("grid keyboard roving", () => {
@@ -63,9 +63,10 @@ describe("grid keyboard roving", () => {
 
   it("derives columns from the container width", () => {
     expect(columnsForWidth(0)).toBe(1);
-    expect(columnsForWidth(199)).toBe(1);
-    expect(columnsForWidth(408)).toBe(2);
-    expect(columnsForWidth(1000)).toBe(4);
+    expect(columnsForWidth(271)).toBe(1);
+    expect(columnsForWidth(552)).toBe(2);
+    expect(columnsForWidth(1000)).toBe(3);
+    expect(tileHeight(272)).toBe(Math.ceil((260 * 9) / 16) + 112);
   });
 });
 
