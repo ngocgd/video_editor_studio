@@ -1,0 +1,412 @@
+seriesCharacters:
+  get:
+    operationId: listCharacters
+    summary: Characters of a series with refs, LoRA versions, voices and episode appearances
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: characters
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/CharacterList"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  post:
+    operationId: createCharacter
+    summary: Create a character
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/CharacterInput"
+    responses:
+      "201":
+        description: character created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/Character"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterItem:
+  put:
+    operationId: updateCharacter
+    summary: Replace a character's names, prompts and profile
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/CharacterInput"
+    responses:
+      "200":
+        description: character updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/Character"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: character not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  delete:
+    operationId: deleteCharacter
+    summary: Delete a character
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: deleted
+      "404":
+        description: character not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterRefs:
+  post:
+    operationId: addCharacterRef
+    summary: Attach an uploaded image as a reference; queues its image variants
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/CharacterRefCreate"
+    responses:
+      "201":
+        description: reference added
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/CharacterRef"
+      "404":
+        description: character or asset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: the asset is not a ready image
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterRefItem:
+  patch:
+    operationId: updateCharacterRef
+    summary: Change a reference's angle label or approval
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: refId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/CharacterRefUpdate"
+    responses:
+      "200":
+        description: reference updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/CharacterRef"
+      "404":
+        description: reference not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  delete:
+    operationId: deleteCharacterRef
+    summary: Remove a reference image
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: refId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: deleted
+      "404":
+        description: reference not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterSheet:
+  post:
+    operationId: regenerateCharacterSheet
+    summary: Generate a character sheet from a reference with the image-edit workflow (a gpu step)
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/CharacterSheetRequest"
+    responses:
+      "202":
+        description: sheet step queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/StepAccepted"
+      "404":
+        description: character or reference not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterLoras:
+  post:
+    operationId: trainCharacterLora
+    summary: Train a new LoRA version from approved references (a gpu step at training priority)
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/LoraTrainRequest"
+    responses:
+      "202":
+        description: training step queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/StepAccepted"
+      "404":
+        description: character not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: no approved reference images to train on
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterVoice:
+  put:
+    operationId: setCharacterVoice
+    summary: Assign a character's voice for one language
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/characters.yaml#/VoiceLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/VoiceAssignment"
+    responses:
+      "200":
+        description: voice assigned
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/CharacterVoice"
+      "404":
+        description: character or voice preset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+characterVoicePreview:
+  post:
+    operationId: previewCharacterVoice
+    summary: Synthesize a preview line with the character's voice (a TTS step)
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/characters.yaml#/VoiceLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/VoicePreviewRequest"
+    responses:
+      "202":
+        description: preview step queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/StepAccepted"
+      "404":
+        description: character not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: no voice assigned for this language
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+narratorVoice:
+  put:
+    operationId: setNarratorVoice
+    summary: Assign the narrator's voice of a series for one language
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/characters.yaml#/VoiceLanguage"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/characters.yaml#/VoiceAssignment"
+    responses:
+      "200":
+        description: voice assigned
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/CharacterVoice"
+      "404":
+        description: series or voice preset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

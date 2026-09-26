@@ -1,0 +1,142 @@
+# Voice presets and image styles (Settings > Voices, Settings > Styles).
+StringParams:
+  type: object
+  description: Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4").
+  maxProperties: 32
+  additionalProperties:
+    type: string
+    maxLength: 200
+VoicePreset:
+  type: object
+  required: [id, name, engine, params, consented]
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    engine:
+      type: string
+    refAudioAssetId:
+      type: string
+      format: uuid
+    params:
+      $ref: "#/StringParams"
+    consented:
+      type: boolean
+      description: True once someone confirmed the reference voice is their own or licensed.
+    consentedAt:
+      type: string
+      format: date-time
+VoicePresetList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/VoicePreset"
+VoicePresetInput:
+  type: object
+  required: [name, engine]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    engine:
+      type: string
+      pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+    refAudioAssetId:
+      type: string
+      format: uuid
+      description: A ready audio asset to clone. Requires consent.
+    params:
+      $ref: "#/StringParams"
+    consent:
+      type: boolean
+      description: Confirms the reference voice is the uploader's own or licensed; recorded in the audit log.
+ImageStyleLora:
+  type: object
+  required: [name, strength]
+  properties:
+    name:
+      type: string
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    strength:
+      type: number
+      minimum: -2
+      maximum: 2
+ImageStyle:
+  type: object
+  required: [id, name, stylePrompt, negativePrompt, baseModel, sampler, steps, width, height, loras]
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    stylePrompt:
+      type: string
+    negativePrompt:
+      type: string
+    baseModel:
+      type: string
+    sampler:
+      type: string
+    steps:
+      type: integer
+    width:
+      type: integer
+    height:
+      type: integer
+    loras:
+      type: array
+      items:
+        $ref: "#/ImageStyleLora"
+ImageStyleList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/ImageStyle"
+ImageStyleInput:
+  type: object
+  required: [name, baseModel]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 100
+    stylePrompt:
+      type: string
+      maxLength: 2000
+    negativePrompt:
+      type: string
+      maxLength: 2000
+    baseModel:
+      type: string
+      pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+      description: A models/manifest.yaml entry whose task is scene.
+    sampler:
+      type: string
+      maxLength: 50
+    steps:
+      type: integer
+      minimum: 1
+      maximum: 150
+    width:
+      type: integer
+      minimum: 64
+      maximum: 4096
+    height:
+      type: integer
+      minimum: 64
+      maximum: 4096
+    loras:
+      type: array
+      maxItems: 4
+      items:
+        $ref: "#/ImageStyleLora"

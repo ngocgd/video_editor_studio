@@ -1,0 +1,366 @@
+storyboardSettings:
+  get:
+    operationId: getStoryboardSettings
+    summary: Storyboard defaults of a series (image style, cadence, segment gap)
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/StoryboardSettings"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  put:
+    operationId: putStoryboardSettings
+    summary: Replace the storyboard defaults of a series
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/scenes.yaml#/StoryboardSettings"
+    responses:
+      "200":
+        description: settings
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/StoryboardSettings"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: series or image style not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+episodeScenes:
+  get:
+    operationId: listScenes
+    summary: Every scene of an episode language with its pipeline pips (one rollup query), filter counts and stage progress
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: query
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneLanguage"
+      - name: filter
+        in: query
+        schema:
+          $ref: "../schemas/scenes.yaml#/SceneFilter"
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 20
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    responses:
+      "200":
+        description: scenes
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/SceneList"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+episodeSceneSplit:
+  post:
+    operationId: splitScenes
+    summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/scenes.yaml#/SceneSplitRequest"
+    responses:
+      "200":
+        description: paragraph split applied
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/SceneSplitResult"
+      "202":
+        description: LLM split step queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/SceneSplitResult"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: no draft for this language, or it is empty
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+generateMissing:
+  post:
+    operationId: generateMissing
+    summary: Queue every missing or stale image, voice and align step of an episode as one batch run
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/scenes.yaml#/GenerateMissingRequest"
+    responses:
+      "202":
+        description: batch queued (queued counts may all be zero)
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/GenerateMissingResponse"
+      "404":
+        description: episode not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+sceneItem:
+  patch:
+    operationId: updateScene
+    summary: Edit a scene's narration, segments, prompt, characters, motion or style
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/scenes.yaml#/ScenePatch"
+    responses:
+      "200":
+        description: scene updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/Scene"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: scene not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: the scene changed since expectedVersion
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+sceneRegenerate:
+  post:
+    operationId: regenerateScene
+    summary: Queue exactly one step to regenerate one kind of take for one scene
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/scenes.yaml#/SceneRegenerateRequest"
+    responses:
+      "202":
+        description: step queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/characters.yaml#/StepAccepted"
+      "404":
+        description: scene not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: the scene has no voice take to align
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+sceneTakes:
+  get:
+    operationId: listSceneTakes
+    summary: Every take of a scene, for the takes strip and A/B compare
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: takes
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/SceneTakeList"
+      "404":
+        description: scene not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+sceneTakeSelect:
+  post:
+    operationId: selectSceneTake
+    summary: Select a take (also how a revert works)
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: takeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: scene with the take selected
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/Scene"
+      "404":
+        description: scene or take not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+scenePeaks:
+  get:
+    operationId: getScenePeaks
+    summary: Waveform peaks of the scene's selected voice take, optionally for a window only
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startMs
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+      - name: endMs
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+    responses:
+      "200":
+        description: peaks
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/Peaks"
+      "404":
+        description: scene or peaks not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

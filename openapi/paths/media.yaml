@@ -1,0 +1,45 @@
+assetVariant:
+  get:
+    operationId: getAssetVariant
+    summary: Redirect to a short-lived URL of an asset or one of its image variants
+    tags: [storyboard]
+    x-min-role: viewer
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: variant
+        in: path
+        required: true
+        schema:
+          $ref: "../schemas/scenes.yaml#/AssetVariantName"
+    responses:
+      "302":
+        description: redirect to the object
+        headers:
+          Location:
+            required: true
+            schema:
+              type: string
+      "404":
+        description: asset or variant not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+mediaBackfill:
+  post:
+    operationId: backfillMedia
+    summary: Queue image variants and waveform peaks for every ready asset that lacks them
+    tags: [storyboard]
+    x-min-role: owner
+    responses:
+      "202":
+        description: derivative steps queued
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/MediaBackfillResponse"

@@ -621,6 +621,380 @@ export const zModelActionResult = z.object({
 });
 
 /**
+ * Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4").
+ */
+export const zStringParams = z.record(z.string().max(200));
+
+export const zVoicePreset = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    engine: z.string(),
+    refAudioAssetId: z.string().uuid().optional(),
+    params: zStringParams,
+    consented: z.boolean(),
+    consentedAt: z.string().datetime().optional()
+});
+
+export const zVoicePresetList = z.object({
+    items: z.array(zVoicePreset)
+});
+
+export const zVoicePresetInput = z.object({
+    name: z.string().min(1).max(100),
+    engine: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/),
+    refAudioAssetId: z.string().uuid().optional(),
+    params: zStringParams.optional(),
+    consent: z.boolean().optional()
+});
+
+export const zImageStyleLora = z.object({
+    name: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/),
+    strength: z.number().gte(-2).lte(2)
+});
+
+export const zImageStyle = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    stylePrompt: z.string(),
+    negativePrompt: z.string(),
+    baseModel: z.string(),
+    sampler: z.string(),
+    steps: z.number().int(),
+    width: z.number().int(),
+    height: z.number().int(),
+    loras: z.array(zImageStyleLora)
+});
+
+export const zImageStyleList = z.object({
+    items: z.array(zImageStyle)
+});
+
+export const zImageStyleInput = z.object({
+    name: z.string().min(1).max(100),
+    stylePrompt: z.string().max(2000).optional(),
+    negativePrompt: z.string().max(2000).optional(),
+    baseModel: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/),
+    sampler: z.string().max(50).optional(),
+    steps: z.number().int().gte(1).lte(150).optional(),
+    width: z.number().int().gte(64).lte(4096).optional(),
+    height: z.number().int().gte(64).lte(4096).optional(),
+    loras: z.array(zImageStyleLora).max(4).optional()
+});
+
+export const zCharacterNames = z.object({
+    orig: z.string().max(100),
+    en: z.string().max(100),
+    vi: z.string().max(100)
+});
+
+export const zCharacterRef = z.object({
+    id: z.string().uuid(),
+    assetId: z.string().uuid(),
+    angle: z.string(),
+    approved: z.boolean(),
+    origin: z.enum(['upload', 'generated'])
+});
+
+export const zCharacterLora = z.object({
+    id: z.string().uuid(),
+    version: z.number().int(),
+    status: z.enum([
+        'queued',
+        'training',
+        'ready',
+        'failed'
+    ]),
+    datasetSize: z.number().int(),
+    trainerParams: zStringParams,
+    weightsFile: z.string().optional(),
+    stepId: z.string().uuid().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zVoiceLanguage = z.enum(['en', 'vi']);
+
+export const zCharacterVoice = z.object({
+    lang: zVoiceLanguage,
+    engine: z.string(),
+    voicePresetId: z.string().uuid().optional(),
+    params: zStringParams
+});
+
+export const zCharacterAppearance = z.object({
+    episodeId: z.string().uuid(),
+    episodeIdx: z.number().int(),
+    sceneCount: z.number().int()
+});
+
+export const zCharacter = z.object({
+    id: z.string().uuid(),
+    seriesId: z.string().uuid(),
+    names: zCharacterNames,
+    role: z.string(),
+    appearancePrompt: z.string(),
+    negativePrompt: z.string(),
+    triggerToken: z.string(),
+    profile: z.string(),
+    profileTokens: z.number().int(),
+    pinned: z.boolean(),
+    refs: z.array(zCharacterRef),
+    loras: z.array(zCharacterLora),
+    voices: z.array(zCharacterVoice),
+    appearances: z.array(zCharacterAppearance)
+});
+
+export const zCharacterList = z.object({
+    items: z.array(zCharacter),
+    narratorVoices: z.array(zCharacterVoice),
+    pinnedTokens: z.number().int()
+});
+
+export const zCharacterInput = z.object({
+    names: zCharacterNames,
+    role: z.string().max(100).optional(),
+    appearancePrompt: z.string().max(2000).optional(),
+    negativePrompt: z.string().max(1000).optional(),
+    triggerToken: z.string().regex(/^[A-Za-z0-9_]{0,40}$/).optional(),
+    profile: z.string().max(8000).optional(),
+    pinned: z.boolean().optional()
+});
+
+export const zVoiceAssignment = z.object({
+    engine: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,62}$/),
+    voicePresetId: z.string().uuid().optional(),
+    params: zStringParams.optional()
+});
+
+export const zCharacterRefCreate = z.object({
+    assetId: z.string().uuid(),
+    angle: z.string().max(40).optional(),
+    approved: z.boolean().optional()
+});
+
+export const zCharacterRefUpdate = z.object({
+    angle: z.string().max(40).optional(),
+    approved: z.boolean().optional()
+});
+
+export const zCharacterSheetRequest = z.object({
+    refId: z.string().uuid(),
+    prompt: z.string().max(1000).optional()
+});
+
+export const zStepAccepted = z.object({
+    runId: z.string().uuid(),
+    stepIds: z.array(z.string().uuid())
+});
+
+export const zLoraTrainRequest = z.object({
+    datasetAssetIds: z.array(z.string().uuid()).max(200).optional(),
+    steps: z.number().int().gte(100).lte(10000).optional(),
+    rank: z.number().int().gte(4).lte(128).optional()
+});
+
+export const zVoicePreviewRequest = z.object({
+    text: z.string().min(1).max(500)
+});
+
+export const zStoryboardSettings = z.object({
+    imageStyleId: z.string().uuid().optional(),
+    cadenceMinS: z.number().int().gte(5).lte(300),
+    cadenceMaxS: z.number().int().gte(5).lte(600),
+    segmentGapMs: z.number().int().gte(0).lte(5000)
+});
+
+export const zSceneLanguage = z.enum(['en', 'vi']);
+
+export const zSceneFilter = z.enum([
+    'all',
+    'stale',
+    'failed',
+    'missing',
+    'in_queue'
+]);
+
+export const zSceneSegment = z.object({
+    speakerCharacterId: z.string().uuid().optional(),
+    text: z.string().min(1).max(20000),
+    unrecognisedName: z.string().optional()
+});
+
+export const zMotionPreset = z.enum([
+    'ken_burns',
+    'parallax',
+    'static'
+]);
+
+export const zPipKind = z.enum([
+    'text',
+    'image',
+    'voice',
+    'align',
+    'motion'
+]);
+
+export const zPipState = z.enum([
+    'done',
+    'running',
+    'queued',
+    'failed',
+    'stale',
+    'none'
+]);
+
+export const zScenePip = z.object({
+    kind: zPipKind,
+    state: zPipState,
+    stepId: z.string().uuid().optional(),
+    runId: z.string().uuid().optional(),
+    progress: z.number().int().optional(),
+    errorCode: z.string().optional(),
+    errorMessage: z.string().optional(),
+    staleReason: z.string().optional()
+});
+
+export const zScene = z.object({
+    id: z.string().uuid(),
+    episodeId: z.string().uuid(),
+    lang: zSceneLanguage,
+    idx: z.number().int(),
+    paragraphIds: z.array(z.string()),
+    narration: z.string(),
+    segments: z.array(zSceneSegment),
+    imagePrompt: z.string(),
+    characterIds: z.array(z.string().uuid()),
+    motionPreset: zMotionPreset,
+    imageStyleId: z.string().uuid().optional(),
+    durationMs: z.number().int(),
+    durationMeasured: z.boolean(),
+    startMs: z.number().int(),
+    tainted: z.boolean(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    pips: z.array(zScenePip),
+    worstState: zPipState,
+    imageAssetId: z.string().uuid().optional(),
+    imageVariants: z.boolean().optional(),
+    voiceAssetId: z.string().uuid().optional(),
+    alignAssetId: z.string().uuid().optional(),
+    peaks: z.boolean()
+});
+
+export const zSceneCounts = z.object({
+    all: z.number().int(),
+    stale: z.number().int(),
+    failed: z.number().int(),
+    missing: z.number().int(),
+    inQueue: z.number().int()
+});
+
+export const zStageProgress = z.object({
+    kind: zPipKind,
+    done: z.number().int(),
+    total: z.number().int()
+});
+
+export const zSceneList = z.object({
+    items: z.array(zScene),
+    counts: zSceneCounts,
+    stages: z.array(zStageProgress),
+    totalDurationMs: z.number().int(),
+    activeRunIds: z.array(z.string().uuid()),
+    missingCount: z.number().int(),
+    nextCursor: z.string().optional()
+});
+
+export const zSceneSplitRequest = z.object({
+    lang: zSceneLanguage,
+    mode: z.enum(['paragraphs', 'llm']),
+    cadenceMinS: z.number().int().gte(5).lte(300).optional(),
+    cadenceMaxS: z.number().int().gte(5).lte(600).optional()
+});
+
+export const zSceneSplitResult = z.object({
+    mode: z.enum(['paragraphs', 'llm']),
+    sceneCount: z.number().int(),
+    keptCount: z.number().int(),
+    unrecognisedSpeakers: z.number().int().optional(),
+    runId: z.string().uuid().optional(),
+    stepId: z.string().uuid().optional()
+});
+
+export const zTakeKind = z.enum([
+    'image',
+    'voice',
+    'align'
+]);
+
+export const zGenerateMissingRequest = z.object({
+    lang: zSceneLanguage,
+    kinds: z.array(zTakeKind).optional()
+});
+
+export const zGenerateMissingResponse = z.object({
+    runId: z.string().uuid().optional(),
+    queued: z.object({
+        image: z.number().int(),
+        voice: z.number().int(),
+        align: z.number().int()
+    })
+});
+
+export const zScenePatch = z.object({
+    expectedVersion: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    narration: z.string().min(1).max(20000).optional(),
+    segments: z.array(zSceneSegment).min(1).max(200).optional(),
+    imagePrompt: z.string().max(4000).optional(),
+    characterIds: z.array(z.string().uuid()).max(20).optional(),
+    motionPreset: zMotionPreset.optional(),
+    imageStyleId: z.string().uuid().optional(),
+    clearImageStyle: z.boolean().optional()
+});
+
+export const zSceneRegenerateRequest = z.object({
+    kind: zTakeKind
+});
+
+export const zSceneTake = z.object({
+    id: z.string().uuid(),
+    kind: zTakeKind,
+    assetId: z.string().uuid(),
+    selected: z.boolean(),
+    stale: z.boolean(),
+    durationMs: z.number().int().optional(),
+    variants: z.boolean(),
+    createdAt: z.string().datetime(),
+    params: z.record(z.unknown())
+});
+
+export const zSceneTakeList = z.object({
+    items: z.array(zSceneTake)
+});
+
+export const zPeaks = z.object({
+    peaksPerSecond: z.number().int(),
+    startMs: z.number().int(),
+    durationMs: z.number().int(),
+    min: z.array(z.number().int()),
+    max: z.array(z.number().int())
+});
+
+export const zAssetVariantName = z.enum([
+    'original',
+    'webp-320',
+    'webp-640',
+    'webp-1280',
+    'avif-320',
+    'avif-640',
+    'avif-1280'
+]);
+
+export const zMediaBackfillResponse = z.object({
+    runId: z.string().uuid().optional(),
+    variants: z.number().int(),
+    peaks: z.number().int()
+});
+
+/**
  * process is alive
  */
 export const zGetHealthzResponse = zHealthStatus;
@@ -1079,6 +1453,325 @@ export const zLoadModelPath = z.object({
  * load queued
  */
 export const zLoadModelResponse = zModelActionResult;
+
+/**
+ * voice presets
+ */
+export const zListVoicePresetsResponse = zVoicePresetList;
+
+export const zCreateVoicePresetBody = zVoicePresetInput;
+
+/**
+ * voice preset created
+ */
+export const zCreateVoicePresetResponse = zVoicePreset;
+
+export const zDeleteVoicePresetPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * deleted
+ */
+export const zDeleteVoicePresetResponse = z.void();
+
+export const zUpdateVoicePresetBody = zVoicePresetInput;
+
+export const zUpdateVoicePresetPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * voice preset updated
+ */
+export const zUpdateVoicePresetResponse = zVoicePreset;
+
+/**
+ * image styles
+ */
+export const zListImageStylesResponse = zImageStyleList;
+
+export const zCreateImageStyleBody = zImageStyleInput;
+
+/**
+ * image style created
+ */
+export const zCreateImageStyleResponse = zImageStyle;
+
+export const zDeleteImageStylePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * deleted
+ */
+export const zDeleteImageStyleResponse = z.void();
+
+export const zUpdateImageStyleBody = zImageStyleInput;
+
+export const zUpdateImageStylePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * image style updated
+ */
+export const zUpdateImageStyleResponse = zImageStyle;
+
+export const zListCharactersPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * characters
+ */
+export const zListCharactersResponse = zCharacterList;
+
+export const zCreateCharacterBody = zCharacterInput;
+
+export const zCreateCharacterPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * character created
+ */
+export const zCreateCharacterResponse = zCharacter;
+
+export const zSetNarratorVoiceBody = zVoiceAssignment;
+
+export const zSetNarratorVoicePath = z.object({
+    id: z.string().uuid(),
+    lang: zVoiceLanguage
+});
+
+/**
+ * voice assigned
+ */
+export const zSetNarratorVoiceResponse = zCharacterVoice;
+
+export const zDeleteCharacterPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * deleted
+ */
+export const zDeleteCharacterResponse = z.void();
+
+export const zUpdateCharacterBody = zCharacterInput;
+
+export const zUpdateCharacterPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * character updated
+ */
+export const zUpdateCharacterResponse = zCharacter;
+
+export const zAddCharacterRefBody = zCharacterRefCreate;
+
+export const zAddCharacterRefPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * reference added
+ */
+export const zAddCharacterRefResponse = zCharacterRef;
+
+export const zDeleteCharacterRefPath = z.object({
+    id: z.string().uuid(),
+    refId: z.string().uuid()
+});
+
+/**
+ * deleted
+ */
+export const zDeleteCharacterRefResponse = z.void();
+
+export const zUpdateCharacterRefBody = zCharacterRefUpdate;
+
+export const zUpdateCharacterRefPath = z.object({
+    id: z.string().uuid(),
+    refId: z.string().uuid()
+});
+
+/**
+ * reference updated
+ */
+export const zUpdateCharacterRefResponse = zCharacterRef;
+
+export const zRegenerateCharacterSheetBody = zCharacterSheetRequest;
+
+export const zRegenerateCharacterSheetPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * sheet step queued
+ */
+export const zRegenerateCharacterSheetResponse = zStepAccepted;
+
+export const zTrainCharacterLoraBody = zLoraTrainRequest;
+
+export const zTrainCharacterLoraPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * training step queued
+ */
+export const zTrainCharacterLoraResponse = zStepAccepted;
+
+export const zSetCharacterVoiceBody = zVoiceAssignment;
+
+export const zSetCharacterVoicePath = z.object({
+    id: z.string().uuid(),
+    lang: zVoiceLanguage
+});
+
+/**
+ * voice assigned
+ */
+export const zSetCharacterVoiceResponse = zCharacterVoice;
+
+export const zPreviewCharacterVoiceBody = zVoicePreviewRequest;
+
+export const zPreviewCharacterVoicePath = z.object({
+    id: z.string().uuid(),
+    lang: zVoiceLanguage
+});
+
+/**
+ * preview step queued
+ */
+export const zPreviewCharacterVoiceResponse = zStepAccepted;
+
+export const zGetStoryboardSettingsPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * settings
+ */
+export const zGetStoryboardSettingsResponse = zStoryboardSettings;
+
+export const zPutStoryboardSettingsBody = zStoryboardSettings;
+
+export const zPutStoryboardSettingsPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * settings
+ */
+export const zPutStoryboardSettingsResponse = zStoryboardSettings;
+
+export const zListScenesPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zListScenesQuery = z.object({
+    lang: zSceneLanguage,
+    filter: zSceneFilter.optional(),
+    q: z.string().max(200).optional(),
+    cursor: z.string().max(20).optional(),
+    limit: z.number().int().gte(1).lte(1000).optional()
+});
+
+/**
+ * scenes
+ */
+export const zListScenesResponse = zSceneList;
+
+export const zSplitScenesBody = zSceneSplitRequest;
+
+export const zSplitScenesPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * paragraph split applied
+ */
+export const zSplitScenesResponse = zSceneSplitResult;
+
+export const zGenerateMissingBody = zGenerateMissingRequest;
+
+export const zGenerateMissingPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * batch queued (queued counts may all be zero)
+ */
+export const zGenerateMissingResponse2 = zGenerateMissingResponse;
+
+export const zUpdateSceneBody = zScenePatch;
+
+export const zUpdateScenePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * scene updated
+ */
+export const zUpdateSceneResponse = zScene;
+
+export const zRegenerateSceneBody = zSceneRegenerateRequest;
+
+export const zRegenerateScenePath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * step queued
+ */
+export const zRegenerateSceneResponse = zStepAccepted;
+
+export const zListSceneTakesPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * takes
+ */
+export const zListSceneTakesResponse = zSceneTakeList;
+
+export const zSelectSceneTakePath = z.object({
+    id: z.string().uuid(),
+    takeId: z.string().uuid()
+});
+
+/**
+ * scene with the take selected
+ */
+export const zSelectSceneTakeResponse = zScene;
+
+export const zGetScenePeaksPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zGetScenePeaksQuery = z.object({
+    startMs: z.number().int().gte(0).optional(),
+    endMs: z.number().int().gte(0).optional()
+});
+
+/**
+ * peaks
+ */
+export const zGetScenePeaksResponse = zPeaks;
+
+export const zGetAssetVariantPath = z.object({
+    id: z.string().uuid(),
+    variant: zAssetVariantName
+});
+
+/**
+ * derivative steps queued
+ */
+export const zBackfillMediaResponse = zMediaBackfillResponse;
 
 export const zStreamEventsQuery = z.object({
     topics: z.string()

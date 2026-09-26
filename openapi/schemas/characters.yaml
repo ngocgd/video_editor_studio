@@ -1,0 +1,246 @@
+# Characters of a series: names per language, prompts, reference images,
+# LoRA versions and voices.
+CharacterNames:
+  type: object
+  required: [orig, en, vi]
+  properties:
+    orig:
+      type: string
+      maxLength: 100
+    en:
+      type: string
+      maxLength: 100
+    vi:
+      type: string
+      maxLength: 100
+CharacterRef:
+  type: object
+  required: [id, assetId, angle, approved, origin]
+  properties:
+    id:
+      type: string
+      format: uuid
+    assetId:
+      type: string
+      format: uuid
+    angle:
+      type: string
+    approved:
+      type: boolean
+    origin:
+      type: string
+      enum: [upload, generated]
+CharacterLora:
+  type: object
+  required: [id, version, status, datasetSize, trainerParams, createdAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    version:
+      type: integer
+    status:
+      type: string
+      enum: [queued, training, ready, failed]
+    datasetSize:
+      type: integer
+    trainerParams:
+      $ref: "presets.yaml#/StringParams"
+    weightsFile:
+      type: string
+    stepId:
+      type: string
+      format: uuid
+    createdAt:
+      type: string
+      format: date-time
+VoiceLanguage:
+  type: string
+  enum: [en, vi]
+CharacterVoice:
+  type: object
+  required: [lang, engine, params]
+  properties:
+    lang:
+      $ref: "#/VoiceLanguage"
+    engine:
+      type: string
+    voicePresetId:
+      type: string
+      format: uuid
+    params:
+      $ref: "presets.yaml#/StringParams"
+VoiceAssignment:
+  type: object
+  required: [engine]
+  properties:
+    engine:
+      type: string
+      pattern: "^[a-z0-9][a-z0-9.-]{1,62}$"
+    voicePresetId:
+      type: string
+      format: uuid
+    params:
+      $ref: "presets.yaml#/StringParams"
+CharacterAppearance:
+  type: object
+  required: [episodeId, episodeIdx, sceneCount]
+  properties:
+    episodeId:
+      type: string
+      format: uuid
+    episodeIdx:
+      type: integer
+    sceneCount:
+      type: integer
+Character:
+  type: object
+  required: [id, seriesId, names, role, appearancePrompt, negativePrompt, triggerToken, profile, profileTokens, pinned, refs, loras, voices, appearances]
+  properties:
+    id:
+      type: string
+      format: uuid
+    seriesId:
+      type: string
+      format: uuid
+    names:
+      $ref: "#/CharacterNames"
+    role:
+      type: string
+    appearancePrompt:
+      type: string
+    negativePrompt:
+      type: string
+    triggerToken:
+      type: string
+    profile:
+      type: string
+      description: Sent to the LLM with every request for this series while pinned.
+    profileTokens:
+      type: integer
+      description: Estimated LLM tokens of the profile.
+    pinned:
+      type: boolean
+    refs:
+      type: array
+      items:
+        $ref: "#/CharacterRef"
+    loras:
+      type: array
+      items:
+        $ref: "#/CharacterLora"
+    voices:
+      type: array
+      items:
+        $ref: "#/CharacterVoice"
+    appearances:
+      type: array
+      items:
+        $ref: "#/CharacterAppearance"
+CharacterList:
+  type: object
+  required: [items, narratorVoices, pinnedTokens]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Character"
+    narratorVoices:
+      type: array
+      items:
+        $ref: "#/CharacterVoice"
+    pinnedTokens:
+      type: integer
+      description: Estimated LLM tokens every request for this series spends on pinned character profiles.
+CharacterInput:
+  type: object
+  required: [names]
+  properties:
+    names:
+      $ref: "#/CharacterNames"
+    role:
+      type: string
+      maxLength: 100
+    appearancePrompt:
+      type: string
+      maxLength: 2000
+    negativePrompt:
+      type: string
+      maxLength: 1000
+    triggerToken:
+      type: string
+      pattern: "^[A-Za-z0-9_]{0,40}$"
+    profile:
+      type: string
+      maxLength: 8000
+    pinned:
+      type: boolean
+CharacterRefCreate:
+  type: object
+  required: [assetId]
+  properties:
+    assetId:
+      type: string
+      format: uuid
+    angle:
+      type: string
+      maxLength: 40
+    approved:
+      type: boolean
+CharacterRefUpdate:
+  type: object
+  properties:
+    angle:
+      type: string
+      maxLength: 40
+    approved:
+      type: boolean
+CharacterSheetRequest:
+  type: object
+  required: [refId]
+  properties:
+    refId:
+      type: string
+      format: uuid
+      description: The reference image the sheet is edited from.
+    prompt:
+      type: string
+      maxLength: 1000
+LoraTrainRequest:
+  type: object
+  properties:
+    datasetAssetIds:
+      type: array
+      maxItems: 200
+      items:
+        type: string
+        format: uuid
+      description: Defaults to every approved reference image.
+    steps:
+      type: integer
+      minimum: 100
+      maximum: 10000
+    rank:
+      type: integer
+      minimum: 4
+      maximum: 128
+VoicePreviewRequest:
+  type: object
+  required: [text]
+  properties:
+    text:
+      type: string
+      minLength: 1
+      maxLength: 500
+StepAccepted:
+  type: object
+  required: [runId, stepIds]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    stepIds:
+      type: array
+      items:
+        type: string
+        format: uuid

@@ -1,0 +1,222 @@
+voicePresets:
+  get:
+    operationId: listVoicePresets
+    summary: Voice presets of this tenant
+    tags: [storyboard]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: voice presets
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/VoicePresetList"
+  post:
+    operationId: createVoicePreset
+    summary: Create a voice preset; a reference voice needs the consent flag, which is audited
+    tags: [storyboard]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/presets.yaml#/VoicePresetInput"
+    responses:
+      "201":
+        description: voice preset created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/VoicePreset"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: reference audio missing, not audio, or no consent
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+voicePresetItem:
+  put:
+    operationId: updateVoicePreset
+    summary: Replace a voice preset
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/presets.yaml#/VoicePresetInput"
+    responses:
+      "200":
+        description: voice preset updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/VoicePreset"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: voice preset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: reference audio missing, not audio, or no consent
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  delete:
+    operationId: deleteVoicePreset
+    summary: Delete a voice preset that no voice uses
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: deleted
+      "404":
+        description: voice preset not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: a character or narrator voice still uses it
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+imageStyles:
+  get:
+    operationId: listImageStyles
+    summary: Image styles of this tenant
+    tags: [storyboard]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: image styles
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/ImageStyleList"
+  post:
+    operationId: createImageStyle
+    summary: Create an image style
+    tags: [storyboard]
+    x-min-role: editor
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/presets.yaml#/ImageStyleInput"
+    responses:
+      "201":
+        description: image style created
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/ImageStyle"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: base model is not a scene model in the manifest
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+imageStyleItem:
+  put:
+    operationId: updateImageStyle
+    summary: Replace an image style
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/presets.yaml#/ImageStyleInput"
+    responses:
+      "200":
+        description: image style updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/presets.yaml#/ImageStyle"
+      "400":
+        description: invalid request
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "404":
+        description: image style not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+      "422":
+        description: base model is not a scene model in the manifest
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  delete:
+    operationId: deleteImageStyle
+    summary: Delete an image style (scenes using it fall back to the series default)
+    tags: [storyboard]
+    x-min-role: editor
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: deleted
+      "404":
+        description: image style not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
