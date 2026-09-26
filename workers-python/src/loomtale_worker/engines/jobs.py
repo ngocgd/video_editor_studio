@@ -145,3 +145,41 @@ class DepthOutput:
     png: bytes
     width: int
     height: int
+
+
+# Train callbacks: (step, total_steps) and one scrubbed log line. Like
+# ProgressFn they are called from the engine's worker thread.
+StepFn = Callable[[int, int], None]
+LogFn = Callable[[str], None]
+
+
+def _no_step(_step: int, _total: int) -> None:
+    return None
+
+
+def _no_log(_line: str) -> None:
+    return None
+
+
+@dataclass
+class TrainJob:
+    """Trains one character LoRA on the images (and optional same-named
+    .txt captions) in dataset_dir, writing the weights under work_dir.
+    cancelled is a threading.Event-like flag the engine polls so an
+    abandoned RPC stops the trainer instead of holding the GPU."""
+
+    dataset_dir: Path
+    work_dir: Path
+    base_model: str
+    params: dict[str, str] = field(default_factory=dict)
+    step: StepFn = _no_step
+    log: LogFn = _no_log
+    cancelled: Callable[[], bool] = lambda: False
+
+
+@dataclass
+class TrainOutput:
+    """weights is the trained LoRA (a single .safetensors file)."""
+
+    weights: Path
+    metadata: dict[str, str] = field(default_factory=dict)

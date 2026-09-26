@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from loomtale_worker.engines.aitoolkit_train import AiToolkitTrainEngine
 from loomtale_worker.engines.chatterbox import ChatterboxEngine
 from loomtale_worker.engines.depth_small import DepthSmallEngine
 from loomtale_worker.engines.dinov2_score import Dinov2ScoreEngine
@@ -25,6 +26,7 @@ def build_registry(models_root: Path) -> EngineRegistry:
         WhisperAlignEngine(models_root),
         Dinov2ScoreEngine(models_root),
         DepthSmallEngine(models_root),
+        AiToolkitTrainEngine(models_root),
     ):
         registry.register(engine)
     return registry

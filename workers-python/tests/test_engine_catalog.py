@@ -11,7 +11,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from loomtale_worker.engines import chatterbox, depth_small, dinov2_score, vieneu, whisper_align
+from loomtale_worker.engines import (
+    aitoolkit_train,
+    chatterbox,
+    depth_small,
+    dinov2_score,
+    vieneu,
+    whisper_align,
+)
 from loomtale_worker.engines.catalog import build_registry
 from loomtale_worker.engines.hf_cache_view import build_view
 from loomtale_worker.model_manager import EngineNotInstalledError, ModelManager
@@ -24,6 +31,7 @@ ENGINE_FILES = {
     "whisper-align": whisper_align.FILES,
     "dinov2-base": dinov2_score.FILES,
     "depth-anything-v2-small": depth_small.FILES,
+    "z-image-turbo-trainer": aitoolkit_train.FILES,
 }
 
 
@@ -57,7 +65,7 @@ def test_registry_lists_every_engine_not_installed_on_an_empty_volume(tmp_path):
     registry = build_registry(tmp_path)
     engines = {e.name: e for e in registry.list()}
     assert set(engines) == set(ENGINE_FILES)
-    assert {e.task for e in engines.values()} == {"tts", "align", "vision"}
+    assert {e.task for e in engines.values()} == {"tts", "align", "vision", "train"}
     assert not any(e.installed() for e in engines.values())
 
 
