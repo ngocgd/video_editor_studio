@@ -47,7 +47,8 @@ VALUES (@id, @tenant_id, @draft_id, @version, @paragraphs, @word_count, @created
 -- name: TrimDraftRevisions :exec
 -- Keeps only the newest 50 revisions per draft; called after each insert.
 DELETE FROM episode_draft_revisions AS outer_rev
-WHERE outer_rev.draft_id = @draft_id
+WHERE outer_rev.tenant_id = @tenant_id
+  AND outer_rev.draft_id = @draft_id
   AND outer_rev.id NOT IN (
     SELECT inner_rev.id FROM episode_draft_revisions AS inner_rev
     WHERE inner_rev.draft_id = @draft_id
