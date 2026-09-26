@@ -63,6 +63,8 @@ ORDER BY bytes DESC;
 -- Cached render segments unused for ttl_days and not pinned: a segment is
 -- pinned while the latest manifest of its episode/lang, or any manifest
 -- that produced a render, needs it, or while a render row points at it.
+-- input_hashes, when set, limits the result to those entries (a manual
+-- cleanup deletes only what its dry run showed and is still expired).
 WITH pinned AS (
     SELECT m.id FROM render_manifests m
     WHERE m.tenant_id = @tenant_id AND (
@@ -74,10 +76,11 @@ WITH pinned AS (
         )
     )
 )
-SELECT g.input_hash, g.kind, g.asset_id, a.storage_key, COALESCE(a.bytes, 0)::bigint AS bytes, g.last_used_at
+SELECT g.input_hash, g.kind, g.asset_id, a.storage_key, a.storage_version_id, a.variants, COALESCE(a.bytes, 0)::bigint AS bytes, g.last_used_at
 FROM render_segments g
 JOIN assets a ON a.tenant_id = g.tenant_id AND a.id = g.asset_id
 WHERE g.tenant_id = @tenant_id
+  AND (sqlc.narg(input_hashes)::text[] IS NULL OR g.input_hash = ANY(sqlc.narg(input_hashes)::text[]))
   AND g.last_used_at < now() - make_interval(days => @ttl_days::int)
   AND NOT EXISTS (
       SELECT 1 FROM render_manifest_segments ms JOIN pinned p ON p.id = ms.manifest_id
@@ -92,7 +95,9 @@ LIMIT @max_rows;
 
 -- name: ListExpiredTakes :many
 -- Unselected takes older than ttl_days that no pinned manifest (see
--- ListExpiredSegments) froze into a render.
+-- ListExpiredSegments) froze into a render and whose asset nothing else
+-- uses (a selected take, a character reference, a voice preset, a LoRA,
+-- a character voice preview). take_ids, when set, limits the result.
 WITH pinned AS (
     SELECT m.id, m.scenes FROM render_manifests m
     WHERE m.tenant_id = @tenant_id AND (
@@ -104,18 +109,40 @@ WITH pinned AS (
         )
     )
 )
-SELECT t.id AS take_id, t.kind, t.asset_id, a.storage_key, COALESCE(a.bytes, 0)::bigint AS bytes, t.created_at
+SELECT t.id AS take_id, t.kind, t.asset_id, a.storage_key, a.storage_version_id, a.variants, COALESCE(a.bytes, 0)::bigint AS bytes, t.created_at
 FROM scene_takes t
 JOIN assets a ON a.tenant_id = t.tenant_id AND a.id = t.asset_id
 WHERE t.tenant_id = @tenant_id
+  AND (sqlc.narg(take_ids)::uuid[] IS NULL OR t.id = ANY(sqlc.narg(take_ids)::uuid[]))
   AND NOT t.selected
   AND t.created_at < now() - make_interval(days => @ttl_days::int)
+  AND NOT EXISTS (SELECT 1 FROM scene_takes o WHERE o.tenant_id = t.tenant_id AND o.asset_id = t.asset_id AND o.selected)
+  AND NOT EXISTS (SELECT 1 FROM character_refs c WHERE c.tenant_id = t.tenant_id AND c.asset_id = t.asset_id)
+  AND NOT EXISTS (SELECT 1 FROM voice_presets v WHERE v.tenant_id = t.tenant_id AND v.ref_audio_asset_id = t.asset_id)
+  AND NOT EXISTS (
+      SELECT 1 FROM character_loras l
+      WHERE l.tenant_id = t.tenant_id AND (l.weights_asset_id = t.asset_id OR t.asset_id = ANY(l.dataset_asset_ids))
+  )
+  AND NOT EXISTS (SELECT 1 FROM character_voices cv WHERE cv.tenant_id = t.tenant_id AND cv.preview_asset_id = t.asset_id)
   AND NOT EXISTS (
       SELECT 1 FROM pinned p CROSS JOIN LATERAL jsonb_array_elements(p.scenes) e
       WHERE t.asset_id::text IN (e->>'imageAssetId', e->>'voiceAssetId', e->>'alignAssetId')
   )
 ORDER BY t.created_at, t.id
 LIMIT @max_rows;
+
+-- name: DeleteLibraryAssets :many
+-- Deletes the assets a cleanup just listed (their cache rows and takes go
+-- with them by cascade), re-checking in the same statement that no
+-- selected take or render gained a reference to one in the meantime.
+DELETE FROM assets a
+WHERE a.tenant_id = @tenant_id AND a.id = ANY(@asset_ids::uuid[])
+  AND NOT EXISTS (SELECT 1 FROM scene_takes t WHERE t.tenant_id = a.tenant_id AND t.asset_id = a.id AND t.selected)
+  AND NOT EXISTS (
+      SELECT 1 FROM renders r
+      WHERE r.tenant_id = a.tenant_id AND a.id IN (r.asset_id, r.srt_asset_id, r.preview_asset_id)
+  )
+RETURNING a.id, a.storage_key, a.storage_version_id, a.variants, COALESCE(a.bytes, 0)::bigint AS bytes;
 
 -- name: GetLibrarySettings :one
 SELECT * FROM library_settings WHERE tenant_id = @tenant_id;

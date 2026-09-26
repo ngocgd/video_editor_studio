@@ -88,6 +88,10 @@ type Querier interface {
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
 	DeleteImageStyle(ctx context.Context, arg DeleteImageStyleParams) (int64, error)
+	// Deletes the assets a cleanup just listed (their cache rows and takes go
+	// with them by cascade), re-checking in the same statement that no
+	// selected take or render gained a reference to one in the meantime.
+	DeleteLibraryAssets(ctx context.Context, arg DeleteLibraryAssetsParams) ([]DeleteLibraryAssetsRow, error)
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
 	// Removes a manifest whose run could not be enqueued.
@@ -218,9 +222,13 @@ type Querier interface {
 	// Cached render segments unused for ttl_days and not pinned: a segment is
 	// pinned while the latest manifest of its episode/lang, or any manifest
 	// that produced a render, needs it, or while a render row points at it.
+	// input_hashes, when set, limits the result to those entries (a manual
+	// cleanup deletes only what its dry run showed and is still expired).
 	ListExpiredSegments(ctx context.Context, arg ListExpiredSegmentsParams) ([]ListExpiredSegmentsRow, error)
 	// Unselected takes older than ttl_days that no pinned manifest (see
-	// ListExpiredSegments) froze into a render.
+	// ListExpiredSegments) froze into a render and whose asset nothing else
+	// uses (a selected take, a character reference, a voice preset, a LoRA,
+	// a character voice preview). take_ids, when set, limits the result.
 	ListExpiredTakes(ctx context.Context, arg ListExpiredTakesParams) ([]ListExpiredTakesRow, error)
 	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
 	ListImageStyles(ctx context.Context, tenantID pgtype.UUID) ([]ImageStyle, error)
