@@ -46,6 +46,7 @@ func (h *StoryAPI) ListEpisodes(ctx context.Context, req gen.ListEpisodesRequest
 		}
 		if drafts, ok := r.Drafts.(map[string]any); ok {
 			dto.Drafts = draftStatusMap(drafts)
+			dto.DurationEstimateMinutes = durationEstimates(*dto.Drafts)
 		}
 		items = append(items, dto)
 	}

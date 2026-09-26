@@ -5,6 +5,7 @@ import (
 
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
+	"loomtale/api/internal/duration"
 	"loomtale/api/internal/httpapi/gen"
 )
 
@@ -134,6 +135,9 @@ func draftToDTO(d dbgen.EpisodeDraft) (gen.EpisodeDraft, error) {
 	for _, p := range paragraphs {
 		dto.Paragraphs = append(dto.Paragraphs, gen.DraftParagraph{Id: p.ID, Text: p.Text, Origin: gen.Origin(p.Origin), Tainted: p.Tainted})
 	}
+	if minutes, ok := estimateMinutes(int(d.WordCount), d.Lang); ok {
+		dto.DurationEstimateMinutes = &minutes
+	}
 	if d.Summary != "" {
 		dto.Summary = &d.Summary
 		tainted := d.SummaryTainted
@@ -147,4 +151,33 @@ func encodeParagraphs(paragraphs []Paragraph) ([]byte, error) {
 		paragraphs = []Paragraph{}
 	}
 	return json.Marshal(paragraphs)
+}
+
+// estimateMinutes is the spoken-duration estimate for a draft, from
+// duration.Estimate. Only the narrated languages (en, vi) get one: a zh
+// source draft counts characters, so a words-per-minute rate means
+// nothing for it.
+func estimateMinutes(words int, lang string) (float32, bool) {
+	if lang != "en" && lang != "vi" {
+		return 0, false
+	}
+	return float32(duration.Estimate(words, lang, "").Minutes), true
+}
+
+// durationEstimates maps each narrated draft language to its estimate,
+// for the episode list.
+func durationEstimates(drafts map[string]gen.DraftStatus) *map[string]float32 {
+	out := map[string]float32{}
+	for lang, status := range drafts {
+		if status.WordCount == nil {
+			continue
+		}
+		if minutes, ok := estimateMinutes(*status.WordCount, lang); ok {
+			out[lang] = minutes
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return &out
 }
