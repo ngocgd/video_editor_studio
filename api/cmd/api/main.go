@@ -23,6 +23,7 @@ import (
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
 	"loomtale/api/internal/authapi"
+	"loomtale/api/internal/characters"
 	"loomtale/api/internal/crypto/envelope"
 	"loomtale/api/internal/csrf"
 	dbgen "loomtale/api/internal/db/gen"
@@ -30,18 +31,21 @@ import (
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
+	"loomtale/api/internal/media"
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/ops"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
+	"loomtale/api/internal/presets"
 	"loomtale/api/internal/providers/bootstrap"
 	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
+	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secheaders"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
@@ -179,12 +183,28 @@ func run() error {
 	// refuse to Run (only the worker has the models volume and the GPU).
 	models.RegisterSteps(stepRegistry, manifest, modelStore, nil, nil)
 	for _, handler := range story.Handlers(llmRegistry, queries) {
+		handler.PinCharacters = cfg.PinCharacters
 		stepRegistry.Register(handler)
 	}
 	for _, handler := range llmcheck.Handlers(llmRegistry) {
 		stepRegistry.Register(handler)
 	}
-	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
+	// The scene, character and media steps are registered so Enqueue can
+	// resolve their queue, input hash and model; with no engine clients
+	// here they never run in this process (only the worker claims them).
+	sceneHooks := &scenes.Hooks{}
+	sceneService := &scenes.Service{Pool: pool.Pool, Queries: queries, Hooks: sceneHooks}
+	for _, handler := range scenes.Handlers(scenes.StepDeps{Service: sceneService, LLM: llmRegistry}) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range characters.Handlers(characters.StepDeps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
+	for _, handler := range media.Handlers(media.Deps{Queries: queries}) {
+		stepRegistry.Register(handler)
+	}
+	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, scenes.Estimate)
+	sceneService.Engine = engine
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
 	defer stopHub()
@@ -271,6 +291,10 @@ func run() error {
 			Registry: llmRegistry,
 			Internal: internalStore,
 		},
+		PresetsAPI:    &presets.PresetsAPI{Pool: pool.Pool, Queries: queries, IsSceneModel: scenes.IsSceneModel(manifest)},
+		CharactersAPI: &characters.CharactersAPI{Queries: queries, Engine: engine},
+		ScenesAPI:     &scenes.ScenesAPI{Service: sceneService, Storage: internalStore},
+		MediaAPI:      &media.MediaAPI{Queries: queries, Engine: engine, Browser: browserStore},
 		ModelsAPI: &modelsapi.ModelsAPI{
 			Manifest:     manifest,
 			Store:        modelStore,

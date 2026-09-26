@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"loomtale/api/internal/models"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/image/comfyui"
@@ -37,23 +39,34 @@ func backendHTTPClient() *http.Client {
 	}
 }
 
+// gpuClients are the engine clients the scene and character steps call
+// directly (the residency manager only loads and unloads models): the
+// ComfyUI engine, and the gRPC connection to the Python worker the TTS,
+// align and train clients share. Both are nil when WORKER_GPU=false.
+type gpuClients struct {
+	Comfy    *comfyui.Engine
+	Pyworker *grpc.ClientConn
+}
+
 // buildResidency constructs the real residency manager when WORKER_GPU is
 // true: this process joins gpu_net (see compose.gpu.yml) and so is the
 // only one able to reach comfyui/ollama/pyworker directly, unlike cmd/api.
 // The concrete *residency.Manager is also returned (nil when
 // WORKER_GPU=false) so main.go can wire OnChange for the worker_status
 // heartbeat without a type assertion.
-func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, gate func(context.Context, string) error) (pipeline.ModelResidency, pipeline.GpuProbe, *residency.Manager, error) {
+func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, gate func(context.Context, string) error) (pipeline.ModelResidency, pipeline.GpuProbe, *residency.Manager, gpuClients, error) {
+	var clients gpuClients
 	if !cfg.WorkerGPU {
-		return pipeline.NoopResidency{}, nil, nil, nil
+		return pipeline.NoopResidency{}, nil, nil, clients, nil
 	}
 
 	ollamaProvider := ollama.New(cfg.OllamaURL, cfg.OllamaModel, backendHTTPClient())
 	templates, err := models.EmbeddedTemplates()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, clients, err
 	}
 	comfyEngine := &comfyui.Engine{Client: comfyui.New(cfg.ComfyUIURL, backendHTTPClient()), Templates: templates}
+	clients.Comfy = comfyEngine
 
 	backends := map[string]residency.Backend{
 		"ollama": &ollama.Backend{Provider: ollamaProvider},
@@ -75,8 +88,9 @@ func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, 
 	if token := readFileOrEmpty(cfg.PyworkerTokenPath); token != "" {
 		conn, err := workerconn.Dial(cfg.PyworkerAddr, secretstr.String(token))
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, clients, err
 		}
+		clients.Pyworker = conn
 		pw := pyworker.New(workerv1.NewWorkerClient(conn))
 		// A single generic "pyworker" slot (empty engine name): the
 		// worker.proto contract reports and unloads whichever one engine
@@ -92,9 +106,9 @@ func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, 
 	// is actually free after an unload before loading the next model.
 	manager, err := residency.NewManagerWithBudget(ctx, probe, backends, manifest.VRAMByRef(), cfg.RenderReserveMB)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, clients, err
 	}
-	return manager, manager, manager, nil
+	return manager, manager, manager, clients, nil
 }
 
 // downloadHTTPClient bounds connection setup for model downloads but

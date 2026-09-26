@@ -63,4 +63,8 @@ type config struct {
 	AnthropicModel      string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-5"`
 	GeminiAPIKeyPath    string `env:"GEMINI_API_KEY_PATH" envDefault:""`
 	GeminiModel         string `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
+
+	// PinCharacters adds a series' pinned character profiles to every
+	// story LLM request; false is the rollback switch for the pinning.
+	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
 }
