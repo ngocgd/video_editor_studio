@@ -120,6 +120,20 @@ func TestTenantIsolationOnSeriesEpisodeDraft(t *testing.T) {
 	requireStatus(t, sessB.do(http.MethodGet, "/series/"+seriesID+"/bible", nil), http.StatusNotFound)
 	requireStatus(t, sessB.do(http.MethodGet, "/episodes/"+episode.Id, nil), http.StatusNotFound)
 	requireStatus(t, sessB.do(http.MethodGet, "/episodes/"+episode.Id+"/drafts/en", nil), http.StatusNotFound)
+
+	// Writes into another tenant's series are refused the same way as an
+	// unknown series id, so the response doesn't reveal that it exists.
+	requireStatus(t, sessB.do(http.MethodPost, "/episodes?seriesId="+seriesID, nil), http.StatusNotFound)
+	requireStatus(t, sessB.do(http.MethodPost, "/episodes?seriesId="+uuid.NewString(), nil), http.StatusNotFound)
+
+	// The schema refuses a cross-tenant parent even if a handler forgets to check.
+	_, err := pool.Exec(context.Background(),
+		`INSERT INTO episodes (id, tenant_id, series_id, idx, title, outline, status)
+		 VALUES ($1, $2, $3, 999, 'foreign', '[]'::jsonb, 'planned')`,
+		uuid.New(), tenantB.TenantID, seriesID)
+	if err == nil {
+		t.Fatal("expected a foreign key violation for an episode referencing another tenant's series")
+	}
 }
 
 // uploadTextAsset drives a real presign -> upload -> finalize round trip

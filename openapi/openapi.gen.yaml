@@ -900,6 +900,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Episode'
+        '404':
+          description: series not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /episodes/{id}:
     get:
       operationId: getEpisode

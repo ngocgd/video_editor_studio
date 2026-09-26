@@ -60,6 +60,15 @@ func (h *StoryAPI) ListEpisodes(ctx context.Context, req gen.ListEpisodesRequest
 // (not LLM-outlined) episode, starting with an empty outline.
 func (h *StoryAPI) CreateEpisode(ctx context.Context, req gen.CreateEpisodeRequestObject) (gen.CreateEpisodeResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
+	// The series must belong to the caller's tenant: episode (series_id,
+	// idx) is unique across tenants, so a foreign episode would take index
+	// slots in someone else's series.
+	if _, err := h.requireSeries(ctx, info.ID, req.Params.SeriesId); err != nil {
+		if isNoRows(err) {
+			return gen.CreateEpisode404ApplicationProblemPlusJSONResponse{Title: "series not found", Status: http.StatusNotFound}, nil
+		}
+		return nil, err
+	}
 	idx, err := h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(info.ID), SeriesID: idconv.ToPg(req.Params.SeriesId)})
 	if err != nil {
 		return nil, err

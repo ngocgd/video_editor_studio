@@ -47,6 +47,12 @@ episodesCollection:
           application/json:
             schema:
               $ref: "../schemas/story.yaml#/Episode"
+      "404":
+        description: series not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
 episodeItem:
   get:
     operationId: getEpisode

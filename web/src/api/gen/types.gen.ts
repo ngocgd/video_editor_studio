@@ -1333,6 +1333,15 @@ export type CreateEpisodeData = {
     url: '/episodes';
 };
 
+export type CreateEpisodeErrors = {
+    /**
+     * series not found in this tenant
+     */
+    404: Problem;
+};
+
+export type CreateEpisodeError = CreateEpisodeErrors[keyof CreateEpisodeErrors];
+
 export type CreateEpisodeResponses = {
     /**
      * episode created
