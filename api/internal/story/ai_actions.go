@@ -154,9 +154,18 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 	if err != nil {
 		return nil, err
 	}
-	idx, err := h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
-	if err != nil {
-		return nil, err
+	// The run planned this step's episode number at enqueue; a step without
+	// one (enqueued before numbers were planned) takes the next free number.
+	var in OutlineInput
+	if err := sc.Input(&in); err != nil {
+		return nil, fmt.Errorf("story: decode outline input: %w", err)
+	}
+	idx := in.EpisodeIdx
+	if idx < 1 {
+		idx, err = h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	built := storyctx.Build(h.templateKey, storyctx.BuildRequest{
@@ -184,15 +193,7 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 		return nil, err
 	}
 
-	episode, err := h.Queries.CreateEpisode(ctx, dbgen.CreateEpisodeParams{
-		ID:       idconv.ToPg(idconv.NewV7()),
-		TenantID: idconv.ToPg(tenantID),
-		SeriesID: idconv.ToPg(seriesID),
-		Idx:      idx,
-		Title:    fmt.Sprintf("Episode %d", idx),
-		Outline:  outlineJSON,
-		Status:   "outlined",
-	})
+	episode, err := insertOutlinedEpisode(ctx, h.Queries, tenantID, seriesID, idx, outlineJSON)
 	if err != nil {
 		return nil, err
 	}
