@@ -61,7 +61,8 @@ WITH gone AS (
     RETURNING *
 )
 SELECT * FROM gone
-WHERE session_id = @session_id AND expires_at > now();
+WHERE tenant_id = @tenant_id AND session_id = @session_id AND expires_at > now();
 
 -- name: DeleteExpiredYouTubeOAuthStates :exec
+-- lint-tenant-queries:allow: housekeeping of expired handshakes across all tenants; returns nothing
 DELETE FROM youtube_oauth_states WHERE expires_at <= now();
