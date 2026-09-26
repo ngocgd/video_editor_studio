@@ -19,6 +19,7 @@ import { Timeline, type TimelineClip } from "../timeline/timeline";
 import { SceneGrid } from "./scene-grid";
 import { SceneInspector } from "./scene-inspector";
 import { SceneFilterChips } from "./scene-filter-chips";
+import { StoryboardSettingsPanel } from "./storyboard-settings";
 import { nextMotion, PIP_LABELS, rangeSelection } from "./storyboard-model";
 import { assetUrl, useGenerateMissing, useRegenerate, useScenes, useSplitScenes, useUpdateScene } from "./use-scenes";
 
@@ -228,6 +229,7 @@ export function StoryboardView({ seriesId, episodeId }: { seriesId: string; epis
               </button>
             ))}
           </div>
+          <StoryboardSettingsPanel seriesId={seriesId} styles={styles.data?.items ?? []} />
           <button type="button" className={buttonClass} disabled={split.isPending} onClick={() => split.mutate({ lang, mode: "paragraphs" })}>
             <Scissors size={14} aria-hidden="true" /> Split by paragraphs
           </button>

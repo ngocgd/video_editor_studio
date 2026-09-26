@@ -88,6 +88,15 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
   await expect(page.getByRole("button", { name: /Generate missing \(\d+\)/ })).toBeEnabled();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/01-storyboard-grid.png` });
 
+  // Scene settings: the cadence the split used and the speaker gap.
+  await page.getByText("Scene settings").click();
+  await expect(page.getByLabel("Cadence minimum seconds")).toHaveValue("20");
+  await expect(page.getByLabel("Cadence maximum seconds")).toHaveValue("40");
+  await page.getByLabel("Segment gap milliseconds").fill("200");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  await page.getByText("Scene settings").click();
+
   // Grid: scroll through the whole grid, one step per frame.
   const scroll = await grid.evaluate(async (el) => {
     const deltas: number[] = [];
