@@ -32,6 +32,20 @@ Docker was down for the whole run (`docker info` fails). The host toolchain mirr
 - "Videos awaiting review" on the Dashboard: **not built**. It needs the publications from phase 10 part 2, which have no API yet.
 - Performance budgets: the 100k-row CSV parse is a unit test, and the endpoint latencies and the 200-video sync time need the stack and real data (**pending**).
 
+## Review fixes (verify round 1)
+
+The independent review (`plans/reports/code-reviewer-260927-0100-analytics-review.md`) found one High and two Medium items. All three are fixed on `feat/analytics` with tests.
+
+- **High: the integration suite failed with 'reports.query exceeded 200 pages'.** Fixed. The fake `reports.query` in `api/internal/integration/analytics_test.go` returned every day of the window on every page, so the client, which pages 200 rows at a time and stops at a short page, never saw one within the 365-day channel window. The fake now slices rows by `startIndex` (1-based) and `maxResults`, as the real API does. The client was already correct and did not change. The suite now reaches every check that the failure had hidden: reach report idempotency, reporting job reuse, the look-back upsert, video detail with retention, the explain enqueue, and the 404 for another tenant on every endpoint. All of them pass.
+- **Medium: a sync could stay 'running' when the `last_error` CHECK failed.** Fixed. The joined notes are now capped at 500 characters, the bound of the `last_error` CHECK. Every cap now counts characters, not bytes, through the new `truncateText` helper, which never splits a UTF-8 sequence. Before, byte slicing could also produce invalid UTF-8, which Postgres rejects. If the finish write still fails, the sync is now recorded as failed instead of being left 'running'. Tests: the unit test `TestTruncateTextCountsCharactersNotBytes`, and the integration test `TestAnalyticsLongNotesFitTheSyncState`, in which two 400-character multibyte side failures still finish the sync as idle, advance the through date and store exactly 500 characters.
+- **Medium: a queued or running sync overwrote a user's disconnect with reconnect_needed.** Fixed in two places. First, `SyncChannel` now reads the channel before it starts, and it returns `ErrChannelNotConnected` without touching the sync state when the channel is disconnected, needs a reconnect or is gone. The River worker completes such a job without a retry. Second, a dead grant now flags the channel through the new query `FlagChannelReconnectNeeded` in `db/queries/analytics.sql`, which only moves a channel whose status is still `connected`. So a disconnect that lands during a sync is kept. Tests: `TestJobOutcome` gains the new error, and there are two new integration tests. `TestAnalyticsSyncSkipsADisconnectedChannel` checks that no sync state is written and no API is called. `TestAnalyticsDisconnectDuringSyncIsKept` disconnects the channel inside the client factory, then checks that the channel stays disconnected and the sync is recorded as failed.
+
+Checks after the fixes (Docker is back):
+
+- `scripts/tb.sh gen lint test` passes: no generated-code drift, lint is green, `go test -race` passes, and pytest gives 108 passed and 5 skipped.
+- The integration suite ran under the heavy lock on compose project `loomtale-c` against a fresh stack, so the migrations were applied to a real Postgres. All 82 top-level tests passed, none failed and none were skipped. That count includes all six analytics tests. The stack was torn down with `down -v`.
+- The web code and the Playwright spec did not change in this round, so they were not re-run. The verifier's round 1 run (5 of 5 passed) still stands.
+
 ## Unresolved questions
 
 - The netguard HTTP client has a 30s timeout (a review finding on the phase 10 part 1 branch). A large reach report download could hit it, so the integration or live run should confirm this, or the fix on that branch should cover downloads.
