@@ -3,8 +3,9 @@
 // Render tests: an episode whose scenes were generated on the test
 // doubles is rendered end to end by the live worker container's ffmpeg
 // (segments, loudness-normalised audio, subtitles, compose, QC and the
-// preview proxy), re-rendered from the segment cache, restarted after a
-// scene edit, and refused below the disk watermark.
+// preview proxy), re-rendered from the segment cache (re-encoding a
+// segment whose checksum no longer matches), restarted after a scene
+// edit, and refused below the disk watermark.
 package integration
 
 import (
@@ -172,6 +173,18 @@ func TestRenderEpisodeCacheReuseAndRestartAfterEdit(t *testing.T) {
 		t.Fatalf("GET /renders/{id} = %+v", one)
 	}
 
+	// Tamper with one cached body segment's recorded checksum: compose
+	// must encode it again rather than reuse it.
+	owner := ownerPool(t)
+	var tamperedHash string
+	var tamperedAsset uuid.UUID
+	if err := owner.QueryRow(ctx, `SELECT input_hash, asset_id FROM render_segments WHERE episode_id = $1 AND kind = 'body' ORDER BY input_hash LIMIT 1`, episodeID).Scan(&tamperedHash, &tamperedAsset); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(ctx, `UPDATE assets SET sha256 = repeat('0', 64) WHERE id = $1`, tamperedAsset); err != nil {
+		t.Fatal(err)
+	}
+
 	// Second render of the unchanged episode: every cacheable output is
 	// reused, only compose and the preview run.
 	var second renderStartedDTO
@@ -187,6 +200,17 @@ func TestRenderEpisodeCacheReuseAndRestartAfterEdit(t *testing.T) {
 		t.Fatalf("expected two renders, got %d", len(renders))
 	}
 	requireQCPassed(t, renders[0])
+	var reencoded uuid.UUID
+	if err := owner.QueryRow(ctx, `SELECT asset_id FROM render_segments WHERE episode_id = $1 AND input_hash = $2`, episodeID, tamperedHash).Scan(&reencoded); err != nil {
+		t.Fatalf("the tampered segment must be cached again: %v", err)
+	}
+	var stale int
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM assets WHERE id = $1`, tamperedAsset).Scan(&stale); err != nil {
+		t.Fatal(err)
+	}
+	if reencoded == tamperedAsset || stale != 0 {
+		t.Fatalf("the tampered segment was reused (asset %s, old row left %d)", reencoded, stale)
+	}
 
 	// A render held in the queue is superseded by a scene edit: after the
 	// debounce the api freezes a new manifest that re-encodes only the
@@ -220,7 +244,7 @@ func TestRenderEpisodeCacheReuseAndRestartAfterEdit(t *testing.T) {
 	})
 	restarted := *old.SupersededBy
 	kinds := stepKindCounts(t, f.pool, restarted)
-	if kinds[render.KindSceneBody] != 1 || kinds[render.KindTransition] > 2 || kinds[render.KindAudioMaster] != 0 || kinds[render.KindSubtitles] != 0 {
+	if kinds[render.KindSceneBody] != 1 || kinds[render.KindTransition] < 1 || kinds[render.KindTransition] > 2 || kinds[render.KindAudioMaster] != 0 || kinds[render.KindSubtitles] != 0 {
 		t.Fatalf("an edit of one scene's motion must re-encode only that scene and its transitions, got %v", kinds)
 	}
 	st = renderStatus(t, f)
