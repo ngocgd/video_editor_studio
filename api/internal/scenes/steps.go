@@ -20,6 +20,7 @@ import (
 	"loomtale/api/internal/providers/image/comfyui"
 	"loomtale/api/internal/providers/registry"
 	"loomtale/api/internal/providers/tts"
+	"loomtale/api/internal/providers/vision"
 	"loomtale/api/internal/storage"
 )
 
@@ -39,16 +40,21 @@ type StepDeps struct {
 	Comfy   *comfyui.Engine
 	TTS     *tts.Client
 	Align   *align.Client
+	Vision  *vision.Client
 	Runner  *ffmpeg.Runner
 	LLM     *registry.Registry
 	// SceneWorkflow maps a scene model (manifest entry) to its txt2img
 	// workflow; ok is false for a model without one.
 	SceneWorkflow func(model string) (string, bool)
+	// VisionInstalled reports whether a vision model (manifest entry) is
+	// installed and may load; nil means none is, so no image take queues
+	// a score or depth step.
+	VisionInstalled func(ctx context.Context, model string) error
 }
 
 // Handlers returns every scene step handler.
 func Handlers(d StepDeps) []pipeline.StepHandler {
-	return []pipeline.StepHandler{&ImageHandler{d}, &VoiceHandler{d}, &AlignHandler{d}, &SplitHandler{d}}
+	return []pipeline.StepHandler{&ImageHandler{d}, &VoiceHandler{d}, &AlignHandler{d}, &SplitHandler{d}, &ScoreHandler{d}, &DepthHandler{d}}
 }
 
 // Estimate is the per-kind duration estimate the engine chunks batches
@@ -61,7 +67,7 @@ func Estimate(kind string) time.Duration {
 		return 30 * time.Second
 	case KindAlign:
 		return 10 * time.Second
-	case media.KindVariants, media.KindPeaks:
+	case KindScore, KindDepth, media.KindVariants, media.KindPeaks:
 		return 5 * time.Second
 	default:
 		return pipeline.DefaultStepEstimate(kind)

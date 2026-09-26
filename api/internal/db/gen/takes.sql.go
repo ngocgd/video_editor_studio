@@ -201,6 +201,28 @@ func (q *Queries) MarkTakeSelected(ctx context.Context, arg MarkTakeSelectedPara
 	return i, err
 }
 
+const mergeTakeParams = `-- name: MergeTakeParams :execrows
+UPDATE scene_takes SET params = params || $1::jsonb
+WHERE tenant_id = $2 AND id = $3
+`
+
+type MergeTakeParamsParams struct {
+	Patch    []byte      `json:"patch"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+	ID       pgtype.UUID `json:"id"`
+}
+
+// Adds analysis results (score, depth asset) to a take's params; a merge
+// in one statement, so the score and depth steps never overwrite each
+// other's keys.
+func (q *Queries) MergeTakeParams(ctx context.Context, arg MergeTakeParamsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, mergeTakeParams, arg.Patch, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const unselectTakes = `-- name: UnselectTakes :exec
 UPDATE scene_takes SET selected = false
 WHERE tenant_id = $1 AND scene_id = $2 AND kind = $3 AND selected
