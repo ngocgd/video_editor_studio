@@ -281,6 +281,76 @@ export type ClaudeCliStatus = {
     detail?: string;
 };
 
+/**
+ * A YouTube channel connected through Google OAuth. Tokens never appear here.
+ */
+export type YouTubeChannel = {
+    id: string;
+    youtubeChannelId: string;
+    title: string;
+    thumbnailUrl: string;
+    /**
+     * OAuth scopes Google actually granted.
+     */
+    scopes: Array<string>;
+    /**
+     * True when the channel is connected and the upload scope was granted.
+     */
+    canUpload: boolean;
+    /**
+     * Manual toggle, set once the Google API project passed YouTube's audit. Until then every upload stays private.
+     */
+    apiProjectAudited: boolean;
+    /**
+     * Date the audit form was submitted, if recorded.
+     */
+    auditFormDate?: string;
+    auditNote: string;
+    /**
+     * Whether the channel may upload videos longer than 15 minutes (channel verification).
+     */
+    longUploadsStatus: 'allowed' | 'eligible' | 'disallowed' | 'unknown';
+    eligibilityCheckedAt?: string;
+    customThumbnailsOk: boolean;
+    status: 'connected' | 'reconnect_needed' | 'disconnected';
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Today's Data API units spent from the Google project's daily pool.
+ */
+export type YouTubeQuota = {
+    used: number;
+    limit: number;
+    /**
+     * Next reset, midnight America/Los_Angeles.
+     */
+    resetsAt: string;
+};
+
+export type YouTubeChannelList = {
+    items: Array<YouTubeChannel>;
+    /**
+     * False when the server has no Google OAuth client configured, so connecting is unavailable.
+     */
+    oauthConfigured: boolean;
+    quota: YouTubeQuota;
+};
+
+export type YouTubeConnectStart = {
+    /**
+     * Google consent page to navigate the browser to. Valid for 10 minutes, once.
+     */
+    authorizationUrl: string;
+};
+
+export type YouTubeChannelAuditUpdate = {
+    apiProjectAudited: boolean;
+    auditFormDate?: string;
+    auditNote?: string;
+};
+
 export type TargetLanguage = 'en' | 'vi';
 
 export type Series = {
@@ -1194,6 +1264,112 @@ export type GetClaudeCliStatusResponses = {
 };
 
 export type GetClaudeCliStatusResponse = GetClaudeCliStatusResponses[keyof GetClaudeCliStatusResponses];
+
+export type ListYouTubeChannelsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/channels';
+};
+
+export type ListYouTubeChannelsResponses = {
+    /**
+     * channels, connected ones first
+     */
+    200: YouTubeChannelList;
+};
+
+export type ListYouTubeChannelsResponse = ListYouTubeChannelsResponses[keyof ListYouTubeChannelsResponses];
+
+export type StartYouTubeConnectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/channels/connect';
+};
+
+export type StartYouTubeConnectErrors = {
+    /**
+     * no Google OAuth client is configured on this server
+     */
+    503: Problem;
+};
+
+export type StartYouTubeConnectError = StartYouTubeConnectErrors[keyof StartYouTubeConnectErrors];
+
+export type StartYouTubeConnectResponses = {
+    /**
+     * consent URL to navigate to
+     */
+    200: YouTubeConnectStart;
+};
+
+export type StartYouTubeConnectResponse = StartYouTubeConnectResponses[keyof StartYouTubeConnectResponses];
+
+export type YouTubeOAuthCallbackData = {
+    body?: never;
+    path?: never;
+    query?: {
+        code?: string;
+        state?: string;
+        error?: string;
+    };
+    url: '/channels/oauth/callback';
+};
+
+export type DisconnectYouTubeChannelData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/channels/{id}';
+};
+
+export type DisconnectYouTubeChannelErrors = {
+    /**
+     * channel not found in this tenant
+     */
+    404: Problem;
+};
+
+export type DisconnectYouTubeChannelError = DisconnectYouTubeChannelErrors[keyof DisconnectYouTubeChannelErrors];
+
+export type DisconnectYouTubeChannelResponses = {
+    /**
+     * disconnected
+     */
+    204: void;
+};
+
+export type DisconnectYouTubeChannelResponse = DisconnectYouTubeChannelResponses[keyof DisconnectYouTubeChannelResponses];
+
+export type UpdateYouTubeChannelAuditData = {
+    body: YouTubeChannelAuditUpdate;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/channels/{id}';
+};
+
+export type UpdateYouTubeChannelAuditErrors = {
+    /**
+     * channel not found in this tenant
+     */
+    404: Problem;
+};
+
+export type UpdateYouTubeChannelAuditError = UpdateYouTubeChannelAuditErrors[keyof UpdateYouTubeChannelAuditErrors];
+
+export type UpdateYouTubeChannelAuditResponses = {
+    /**
+     * channel updated
+     */
+    200: YouTubeChannel;
+};
+
+export type UpdateYouTubeChannelAuditResponse = UpdateYouTubeChannelAuditResponses[keyof UpdateYouTubeChannelAuditResponses];
 
 export type ListSeriesData = {
     body?: never;

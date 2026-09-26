@@ -977,6 +977,177 @@ export const ClaudeCliStatusSchema = {
     }
 } as const;
 
+export const YouTubeChannelSchema = {
+    type: 'object',
+    description: 'A YouTube channel connected through Google OAuth. Tokens never appear here.',
+    required: [
+        'id',
+        'youtubeChannelId',
+        'title',
+        'thumbnailUrl',
+        'scopes',
+        'canUpload',
+        'apiProjectAudited',
+        'auditNote',
+        'longUploadsStatus',
+        'customThumbnailsOk',
+        'status',
+        'createdAt',
+        'updatedAt'
+    ],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid'
+        },
+        youtubeChannelId: {
+            type: 'string'
+        },
+        title: {
+            type: 'string'
+        },
+        thumbnailUrl: {
+            type: 'string'
+        },
+        scopes: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'OAuth scopes Google actually granted.'
+        },
+        canUpload: {
+            type: 'boolean',
+            description: 'True when the channel is connected and the upload scope was granted.'
+        },
+        apiProjectAudited: {
+            type: 'boolean',
+            description: 'Manual toggle, set once the Google API project passed YouTube\'s audit. Until then every upload stays private.'
+        },
+        auditFormDate: {
+            type: 'string',
+            format: 'date',
+            description: 'Date the audit form was submitted, if recorded.'
+        },
+        auditNote: {
+            type: 'string'
+        },
+        longUploadsStatus: {
+            type: 'string',
+            enum: [
+                'allowed',
+                'eligible',
+                'disallowed',
+                'unknown'
+            ],
+            description: 'Whether the channel may upload videos longer than 15 minutes (channel verification).'
+        },
+        eligibilityCheckedAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        customThumbnailsOk: {
+            type: 'boolean'
+        },
+        status: {
+            type: 'string',
+            enum: [
+                'connected',
+                'reconnect_needed',
+                'disconnected'
+            ]
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    }
+} as const;
+
+export const YouTubeQuotaSchema = {
+    type: 'object',
+    description: 'Today\'s Data API units spent from the Google project\'s daily pool.',
+    required: [
+        'used',
+        'limit',
+        'resetsAt'
+    ],
+    properties: {
+        used: {
+            type: 'integer'
+        },
+        limit: {
+            type: 'integer'
+        },
+        resetsAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Next reset, midnight America/Los_Angeles.'
+        }
+    }
+} as const;
+
+export const YouTubeChannelListSchema = {
+    type: 'object',
+    required: [
+        'items',
+        'oauthConfigured',
+        'quota'
+    ],
+    properties: {
+        items: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/YouTubeChannel'
+            }
+        },
+        oauthConfigured: {
+            type: 'boolean',
+            description: 'False when the server has no Google OAuth client configured, so connecting is unavailable.'
+        },
+        quota: {
+            $ref: '#/components/schemas/YouTubeQuota'
+        }
+    }
+} as const;
+
+export const YouTubeConnectStartSchema = {
+    type: 'object',
+    required: [
+        'authorizationUrl'
+    ],
+    properties: {
+        authorizationUrl: {
+            type: 'string',
+            description: 'Google consent page to navigate the browser to. Valid for 10 minutes, once.'
+        }
+    }
+} as const;
+
+export const YouTubeChannelAuditUpdateSchema = {
+    type: 'object',
+    required: [
+        'apiProjectAudited'
+    ],
+    properties: {
+        apiProjectAudited: {
+            type: 'boolean'
+        },
+        auditFormDate: {
+            type: 'string',
+            format: 'date'
+        },
+        auditNote: {
+            type: 'string',
+            maxLength: 2000
+        }
+    }
+} as const;
+
 export const TargetLanguageSchema = {
     type: 'string',
     enum: [

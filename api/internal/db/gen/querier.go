@@ -41,6 +41,9 @@ type Querier interface {
 	// Consumes one token if at least one is available; the caller checks the
 	// returned row count (1 = allowed, 0 = the bucket was already empty).
 	ConsumeRateLimitBucket(ctx context.Context, bucketKey string) (int64, error)
+	// Single use: the row is deleted whether or not it is still valid, and is
+	// only returned when it belongs to this session and has not expired.
+	ConsumeYouTubeOAuthState(ctx context.Context, arg ConsumeYouTubeOAuthStateParams) (ConsumeYouTubeOAuthStateRow, error)
 	// Counts pending steps too: a run made mostly of fan-in-blocked
 	// "pending" steps still reserves the capacity they will need once
 	// unblocked, so it must count against the same quota queued/running
@@ -66,13 +69,17 @@ type Querier interface {
 	CreateStoryBible(ctx context.Context, arg CreateStoryBibleParams) (StoryBible, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateYouTubeOAuthState(ctx context.Context, arg CreateYouTubeOAuthStateParams) error
 	DecrementRemainingDeps(ctx context.Context, arg DecrementRemainingDepsParams) ([]PipelineStep, error)
 	DeleteEpisode(ctx context.Context, arg DeleteEpisodeParams) error
 	// Best-effort housekeeping, called opportunistically (not on a schedule)
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
+	// lint-tenant-queries:allow: housekeeping of expired handshakes across all tenants; returns nothing
+	DeleteExpiredYouTubeOAuthStates(ctx context.Context) error
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
+	DeleteSecret(ctx context.Context, arg DeleteSecretParams) error
 	DeleteSeries(ctx context.Context, arg DeleteSeriesParams) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
 	// Called on login so a fresh login revokes any session(s) left over from
@@ -103,6 +110,7 @@ type Querier interface {
 	// another tenant's resources gets the same "not found" as a real 404.
 	GetMembership(ctx context.Context, arg GetMembershipParams) (Membership, error)
 	GetModelInstall(ctx context.Context, name string) (ModelInstall, error)
+	GetQuotaUnits(ctx context.Context, arg GetQuotaUnitsParams) (int32, error)
 	GetRun(ctx context.Context, arg GetRunParams) (PipelineRun, error)
 	// Batch existence check for SSE topic authorization: one query for every
 	// requested topic instead of one round trip each.
@@ -121,6 +129,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetVoiceRateCalibration(ctx context.Context, voiceKey string) (VoiceRateCalibration, error)
+	GetYouTubeChannel(ctx context.Context, arg GetYouTubeChannelParams) (YoutubeChannel, error)
 	HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error)
 	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
 	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
@@ -161,6 +170,7 @@ type Querier interface {
 	ListModelInstalls(ctx context.Context) ([]ModelInstall, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
+	ListYouTubeChannels(ctx context.Context, tenantID pgtype.UUID) ([]YoutubeChannel, error)
 	// Serializes concurrent Enqueue calls for the same tenant so the
 	// quota check-then-insert in Engine.Enqueue cannot race: every caller
 	// must hold this lock (acquired inside the same transaction as the
@@ -179,6 +189,9 @@ type Querier interface {
 	// Unconditional on purpose: the files are verified on disk, which is the
 	// fact this row reports, whatever state a concurrent pause left it in.
 	MarkModelInstalled(ctx context.Context, arg MarkModelInstalledParams) error
+	// Google answered quotaExceeded: raise the bucket to at least daily_limit
+	// so every later pre-check for the same day fails without calling Google.
+	MarkQuotaExhausted(ctx context.Context, arg MarkQuotaExhaustedParams) error
 	// Guards against a cancel/rollup racing an already-terminal run (done,
 	// failed, canceled or superseded): only a run still "active" can change
 	// status through this path.
@@ -213,6 +226,10 @@ type Querier interface {
 	RefillRateLimitBucket(ctx context.Context, arg RefillRateLimitBucketParams) (float32, error)
 	// lint-tenant-queries:allow: internal retry-requeue fenced by id+attempt, not caller input
 	RequeueStep(ctx context.Context, arg RequeueStepParams) (PipelineStep, error)
+	// Atomically adds units to today's bucket only if the total stays within
+	// daily_limit. No row returned means the reservation would exceed the
+	// limit and nothing was recorded.
+	ReserveQuotaUnits(ctx context.Context, arg ReserveQuotaUnitsParams) (int32, error)
 	// Bounded (LIMIT + FOR UPDATE SKIP LOCKED) so the reconciler never holds
 	// one giant transaction; the caller loops until fewer than page_limit
 	// rows come back.
@@ -234,6 +251,7 @@ type Querier interface {
 	// regenerating the bible never overwrites user edits.
 	SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
+	SetYouTubeChannelStatus(ctx context.Context, arg SetYouTubeChannelStatusParams) (YoutubeChannel, error)
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
 	// itself never passes through an intermediate "canceled" state that a
@@ -262,6 +280,8 @@ type Querier interface {
 	// the same section finds no row and is reported as a conflict.
 	UpdateStoryBibleSection(ctx context.Context, arg UpdateStoryBibleSectionParams) (StoryBible, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpdateYouTubeChannelAudit(ctx context.Context, arg UpdateYouTubeChannelAuditParams) (YoutubeChannel, error)
+	UpdateYouTubeChannelEligibility(ctx context.Context, arg UpdateYouTubeChannelEligibilityParams) (YoutubeChannel, error)
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
@@ -269,6 +289,9 @@ type Querier interface {
 	// migration). Not tenant-scoped.
 	UpsertVoiceRateCalibration(ctx context.Context, arg UpsertVoiceRateCalibrationParams) error
 	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
+	// Connect or reconnect: a channel already known to the tenant keeps its id
+	// (and so its secret owner_ref and any publications) and becomes connected.
+	UpsertYouTubeChannel(ctx context.Context, arg UpsertYouTubeChannelParams) (YoutubeChannel, error)
 }
 
 var _ Querier = (*Queries)(nil)

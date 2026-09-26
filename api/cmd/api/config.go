@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"loomtale/api/internal/youtube"
+)
 
 // config holds the API process settings, loaded via caarlos0/env.
 type config struct {
@@ -63,4 +67,13 @@ type config struct {
 	AnthropicModel      string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-5"`
 	GeminiAPIKeyPath    string `env:"GEMINI_API_KEY_PATH" envDefault:""`
 	GeminiModel         string `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
+
+	// Google OAuth client for connecting YouTube channels. Empty client
+	// id disables connecting; the secret lives in a mounted file.
+	GoogleClientID         string `env:"GOOGLE_CLIENT_ID" envDefault:""`
+	GoogleClientSecretPath string `env:"GOOGLE_CLIENT_SECRET_PATH" envDefault:""`
+	GoogleOAuthRedirectURL string `env:"GOOGLE_OAUTH_REDIRECT_URL" envDefault:""`
+
+	// YouTubeQuota is the Data API quota ledger (YOUTUBE_QUOTA_* vars).
+	YouTubeQuota youtube.QuotaConfig
 }

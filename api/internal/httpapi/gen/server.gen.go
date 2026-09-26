@@ -612,6 +612,51 @@ func (e TargetLanguage) Valid() bool {
 	}
 }
 
+// Defines values for YouTubeChannelLongUploadsStatus.
+const (
+	Allowed    YouTubeChannelLongUploadsStatus = "allowed"
+	Disallowed YouTubeChannelLongUploadsStatus = "disallowed"
+	Eligible   YouTubeChannelLongUploadsStatus = "eligible"
+	Unknown    YouTubeChannelLongUploadsStatus = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the YouTubeChannelLongUploadsStatus enum.
+func (e YouTubeChannelLongUploadsStatus) Valid() bool {
+	switch e {
+	case Allowed:
+		return true
+	case Disallowed:
+		return true
+	case Eligible:
+		return true
+	case Unknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for YouTubeChannelStatus.
+const (
+	Connected       YouTubeChannelStatus = "connected"
+	Disconnected    YouTubeChannelStatus = "disconnected"
+	ReconnectNeeded YouTubeChannelStatus = "reconnect_needed"
+)
+
+// Valid indicates whether the value is a known member of the YouTubeChannelStatus enum.
+func (e YouTubeChannelStatus) Valid() bool {
+	switch e {
+	case Connected:
+		return true
+	case Disconnected:
+		return true
+	case ReconnectNeeded:
+		return true
+	default:
+		return false
+	}
+}
+
 // AiActionRequest defines model for AiActionRequest.
 type AiActionRequest struct {
 	Action AiActionRequestAction `json:"action"`
@@ -1268,6 +1313,73 @@ type TenantMembership struct {
 	TenantName string             `json:"tenantName"`
 }
 
+// YouTubeChannel A YouTube channel connected through Google OAuth. Tokens never appear here.
+type YouTubeChannel struct {
+	// ApiProjectAudited Manual toggle, set once the Google API project passed YouTube's audit. Until then every upload stays private.
+	ApiProjectAudited bool `json:"apiProjectAudited"`
+
+	// AuditFormDate Date the audit form was submitted, if recorded.
+	AuditFormDate *openapi_types.Date `json:"auditFormDate,omitempty"`
+	AuditNote     string              `json:"auditNote"`
+
+	// CanUpload True when the channel is connected and the upload scope was granted.
+	CanUpload            bool               `json:"canUpload"`
+	CreatedAt            time.Time          `json:"createdAt"`
+	CustomThumbnailsOk   bool               `json:"customThumbnailsOk"`
+	EligibilityCheckedAt *time.Time         `json:"eligibilityCheckedAt,omitempty"`
+	Id                   openapi_types.UUID `json:"id"`
+
+	// LongUploadsStatus Whether the channel may upload videos longer than 15 minutes (channel verification).
+	LongUploadsStatus YouTubeChannelLongUploadsStatus `json:"longUploadsStatus"`
+
+	// Scopes OAuth scopes Google actually granted.
+	Scopes           []string             `json:"scopes"`
+	Status           YouTubeChannelStatus `json:"status"`
+	ThumbnailUrl     string               `json:"thumbnailUrl"`
+	Title            string               `json:"title"`
+	UpdatedAt        time.Time            `json:"updatedAt"`
+	YoutubeChannelId string               `json:"youtubeChannelId"`
+}
+
+// YouTubeChannelLongUploadsStatus Whether the channel may upload videos longer than 15 minutes (channel verification).
+type YouTubeChannelLongUploadsStatus string
+
+// YouTubeChannelStatus defines model for YouTubeChannel.Status.
+type YouTubeChannelStatus string
+
+// YouTubeChannelAuditUpdate defines model for YouTubeChannelAuditUpdate.
+type YouTubeChannelAuditUpdate struct {
+	ApiProjectAudited bool                `json:"apiProjectAudited"`
+	AuditFormDate     *openapi_types.Date `json:"auditFormDate,omitempty"`
+	AuditNote         *string             `json:"auditNote,omitempty"`
+}
+
+// YouTubeChannelList defines model for YouTubeChannelList.
+type YouTubeChannelList struct {
+	Items []YouTubeChannel `json:"items"`
+
+	// OauthConfigured False when the server has no Google OAuth client configured, so connecting is unavailable.
+	OauthConfigured bool `json:"oauthConfigured"`
+
+	// Quota Today's Data API units spent from the Google project's daily pool.
+	Quota YouTubeQuota `json:"quota"`
+}
+
+// YouTubeConnectStart defines model for YouTubeConnectStart.
+type YouTubeConnectStart struct {
+	// AuthorizationUrl Google consent page to navigate the browser to. Valid for 10 minutes, once.
+	AuthorizationUrl string `json:"authorizationUrl"`
+}
+
+// YouTubeQuota Today's Data API units spent from the Google project's daily pool.
+type YouTubeQuota struct {
+	Limit int `json:"limit"`
+
+	// ResetsAt Next reset, midnight America/Los_Angeles.
+	ResetsAt time.Time `json:"resetsAt"`
+	Used     int       `json:"used"`
+}
+
 // ListAssetsParams defines parameters for ListAssets.
 type ListAssetsParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -1278,6 +1390,13 @@ type ListAssetsParams struct {
 type ListAuditParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// YouTubeOAuthCallbackParams defines parameters for YouTubeOAuthCallback.
+type YouTubeOAuthCallbackParams struct {
+	Code  *string `form:"code,omitempty" json:"code,omitempty"`
+	State *string `form:"state,omitempty" json:"state,omitempty"`
+	Error *string `form:"error,omitempty" json:"error,omitempty"`
 }
 
 // ListEpisodesParams defines parameters for ListEpisodes.
@@ -1332,6 +1451,9 @@ type LoginJSONRequestBody = LoginRequest
 
 // SwitchTenantJSONRequestBody defines body for SwitchTenant for application/json ContentType.
 type SwitchTenantJSONRequestBody = SwitchTenantRequest
+
+// UpdateYouTubeChannelAuditJSONRequestBody defines body for UpdateYouTubeChannelAudit for application/json ContentType.
+type UpdateYouTubeChannelAuditJSONRequestBody = YouTubeChannelAuditUpdate
 
 // UpdateEpisodeJSONRequestBody defines body for UpdateEpisode for application/json ContentType.
 type UpdateEpisodeJSONRequestBody = EpisodeUpdateRequest
@@ -1410,6 +1532,21 @@ type ServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(w http.ResponseWriter, r *http.Request)
+	// ListYouTubeChannels The tenant's connected YouTube channels and today's quota usage
+	// (GET /channels)
+	ListYouTubeChannels(w http.ResponseWriter, r *http.Request)
+	// StartYouTubeConnect Start the Google OAuth flow (PKCE, single-use state bound to this session)
+	// (POST /channels/connect)
+	StartYouTubeConnect(w http.ResponseWriter, r *http.Request)
+	// YouTubeOAuthCallback Google redirects here after consent; stores the channel and redirects back to Settings
+	// (GET /channels/oauth/callback)
+	YouTubeOAuthCallback(w http.ResponseWriter, r *http.Request, params YouTubeOAuthCallbackParams)
+	// DisconnectYouTubeChannel Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+	// (DELETE /channels/{id})
+	DisconnectYouTubeChannel(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// UpdateYouTubeChannelAudit Record whether the Google API project passed YouTube's audit (audited)
+	// (PATCH /channels/{id})
+	UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
 	// (GET /episodes)
 	ListEpisodes(w http.ResponseWriter, r *http.Request, params ListEpisodesParams)
@@ -1607,6 +1744,36 @@ func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
 // SwitchTenant Switch the session's active tenant (must be a member)
 // (POST /auth/switch-tenant)
 func (_ Unimplemented) SwitchTenant(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListYouTubeChannels The tenant's connected YouTube channels and today's quota usage
+// (GET /channels)
+func (_ Unimplemented) ListYouTubeChannels(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// StartYouTubeConnect Start the Google OAuth flow (PKCE, single-use state bound to this session)
+// (POST /channels/connect)
+func (_ Unimplemented) StartYouTubeConnect(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// YouTubeOAuthCallback Google redirects here after consent; stores the channel and redirects back to Settings
+// (GET /channels/oauth/callback)
+func (_ Unimplemented) YouTubeOAuthCallback(w http.ResponseWriter, r *http.Request, params YouTubeOAuthCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DisconnectYouTubeChannel Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+// (DELETE /channels/{id})
+func (_ Unimplemented) DisconnectYouTubeChannel(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateYouTubeChannelAudit Record whether the Google API project passed YouTube's audit (audited)
+// (PATCH /channels/{id})
+func (_ Unimplemented) UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2104,6 +2271,145 @@ func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SwitchTenant(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListYouTubeChannels operation middleware
+func (siw *ServerInterfaceWrapper) ListYouTubeChannels(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListYouTubeChannels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartYouTubeConnect operation middleware
+func (siw *ServerInterfaceWrapper) StartYouTubeConnect(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartYouTubeConnect(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// YouTubeOAuthCallback operation middleware
+func (siw *ServerInterfaceWrapper) YouTubeOAuthCallback(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params YouTubeOAuthCallbackParams
+
+	// ------------- Optional query parameter "code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "code", r.URL.Query(), &params.Code, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "code"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "error" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "error", r.URL.Query(), &params.Error, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "error"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "error", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.YouTubeOAuthCallback(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisconnectYouTubeChannel operation middleware
+func (siw *ServerInterfaceWrapper) DisconnectYouTubeChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisconnectYouTubeChannel(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateYouTubeChannelAudit operation middleware
+func (siw *ServerInterfaceWrapper) UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateYouTubeChannelAudit(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3512,6 +3818,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/settings/llm/cli-status", wrapper.GetClaudeCliStatus)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/channels", wrapper.ListYouTubeChannels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/channels/connect", wrapper.StartYouTubeConnect)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/channels/oauth/callback", wrapper.YouTubeOAuthCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/channels/{id}", wrapper.DisconnectYouTubeChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/channels/{id}", wrapper.UpdateYouTubeChannelAudit)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/series", wrapper.ListSeries)
 	})
 	r.Group(func(r chi.Router) {
@@ -3897,6 +4218,151 @@ func (response SwitchTenant200JSONResponse) VisitSwitchTenantResponse(w http.Res
 type SwitchTenant404ApplicationProblemPlusJSONResponse Problem
 
 func (response SwitchTenant404ApplicationProblemPlusJSONResponse) VisitSwitchTenantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListYouTubeChannelsRequestObject struct {
+}
+
+type ListYouTubeChannelsResponseObject interface {
+	VisitListYouTubeChannelsResponse(w http.ResponseWriter) error
+}
+
+type ListYouTubeChannels200JSONResponse YouTubeChannelList
+
+func (response ListYouTubeChannels200JSONResponse) VisitListYouTubeChannelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartYouTubeConnectRequestObject struct {
+}
+
+type StartYouTubeConnectResponseObject interface {
+	VisitStartYouTubeConnectResponse(w http.ResponseWriter) error
+}
+
+type StartYouTubeConnect200JSONResponse YouTubeConnectStart
+
+func (response StartYouTubeConnect200JSONResponse) VisitStartYouTubeConnectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartYouTubeConnect503ApplicationProblemPlusJSONResponse Problem
+
+func (response StartYouTubeConnect503ApplicationProblemPlusJSONResponse) VisitStartYouTubeConnectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type YouTubeOAuthCallbackRequestObject struct {
+	Params YouTubeOAuthCallbackParams
+}
+
+type YouTubeOAuthCallbackResponseObject interface {
+	VisitYouTubeOAuthCallbackResponse(w http.ResponseWriter) error
+}
+
+type YouTubeOAuthCallback302ResponseHeaders struct {
+	Location string
+}
+
+type YouTubeOAuthCallback302Response struct {
+	Headers YouTubeOAuthCallback302ResponseHeaders
+}
+
+func (response YouTubeOAuthCallback302Response) VisitYouTubeOAuthCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(302)
+	return nil
+}
+
+type DisconnectYouTubeChannelRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type DisconnectYouTubeChannelResponseObject interface {
+	VisitDisconnectYouTubeChannelResponse(w http.ResponseWriter) error
+}
+
+type DisconnectYouTubeChannel204Response struct {
+}
+
+func (response DisconnectYouTubeChannel204Response) VisitDisconnectYouTubeChannelResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisconnectYouTubeChannel404ApplicationProblemPlusJSONResponse Problem
+
+func (response DisconnectYouTubeChannel404ApplicationProblemPlusJSONResponse) VisitDisconnectYouTubeChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateYouTubeChannelAuditRequestObject struct {
+	Id   openapi_types.UUID `json:"id"`
+	Body *UpdateYouTubeChannelAuditJSONRequestBody
+}
+
+type UpdateYouTubeChannelAuditResponseObject interface {
+	VisitUpdateYouTubeChannelAuditResponse(w http.ResponseWriter) error
+}
+
+type UpdateYouTubeChannelAudit200JSONResponse YouTubeChannel
+
+func (response UpdateYouTubeChannelAudit200JSONResponse) VisitUpdateYouTubeChannelAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateYouTubeChannelAudit404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateYouTubeChannelAudit404ApplicationProblemPlusJSONResponse) VisitUpdateYouTubeChannelAuditResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -5606,6 +6072,21 @@ type StrictServerInterface interface {
 	// SwitchTenant Switch the session's active tenant (must be a member)
 	// (POST /auth/switch-tenant)
 	SwitchTenant(ctx context.Context, request SwitchTenantRequestObject) (SwitchTenantResponseObject, error)
+	// ListYouTubeChannels The tenant's connected YouTube channels and today's quota usage
+	// (GET /channels)
+	ListYouTubeChannels(ctx context.Context, request ListYouTubeChannelsRequestObject) (ListYouTubeChannelsResponseObject, error)
+	// StartYouTubeConnect Start the Google OAuth flow (PKCE, single-use state bound to this session)
+	// (POST /channels/connect)
+	StartYouTubeConnect(ctx context.Context, request StartYouTubeConnectRequestObject) (StartYouTubeConnectResponseObject, error)
+	// YouTubeOAuthCallback Google redirects here after consent; stores the channel and redirects back to Settings
+	// (GET /channels/oauth/callback)
+	YouTubeOAuthCallback(ctx context.Context, request YouTubeOAuthCallbackRequestObject) (YouTubeOAuthCallbackResponseObject, error)
+	// DisconnectYouTubeChannel Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+	// (DELETE /channels/{id})
+	DisconnectYouTubeChannel(ctx context.Context, request DisconnectYouTubeChannelRequestObject) (DisconnectYouTubeChannelResponseObject, error)
+	// UpdateYouTubeChannelAudit Record whether the Google API project passed YouTube's audit (audited)
+	// (PATCH /channels/{id})
+	UpdateYouTubeChannelAudit(ctx context.Context, request UpdateYouTubeChannelAuditRequestObject) (UpdateYouTubeChannelAuditResponseObject, error)
 	// ListEpisodes Cursor-paginated list of a series' episodes, with aggregated draft status (no N+1)
 	// (GET /episodes)
 	ListEpisodes(ctx context.Context, request ListEpisodesRequestObject) (ListEpisodesResponseObject, error)
@@ -6043,6 +6524,139 @@ func (sh *strictHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SwitchTenantResponseObject); ok {
 		if err := validResponse.VisitSwitchTenantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListYouTubeChannels operation middleware
+func (sh *strictHandler) ListYouTubeChannels(w http.ResponseWriter, r *http.Request) {
+	var request ListYouTubeChannelsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListYouTubeChannels(ctx, request.(ListYouTubeChannelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListYouTubeChannels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListYouTubeChannelsResponseObject); ok {
+		if err := validResponse.VisitListYouTubeChannelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartYouTubeConnect operation middleware
+func (sh *strictHandler) StartYouTubeConnect(w http.ResponseWriter, r *http.Request) {
+	var request StartYouTubeConnectRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartYouTubeConnect(ctx, request.(StartYouTubeConnectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartYouTubeConnect")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartYouTubeConnectResponseObject); ok {
+		if err := validResponse.VisitStartYouTubeConnectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// YouTubeOAuthCallback operation middleware
+func (sh *strictHandler) YouTubeOAuthCallback(w http.ResponseWriter, r *http.Request, params YouTubeOAuthCallbackParams) {
+	var request YouTubeOAuthCallbackRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.YouTubeOAuthCallback(ctx, request.(YouTubeOAuthCallbackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "YouTubeOAuthCallback")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(YouTubeOAuthCallbackResponseObject); ok {
+		if err := validResponse.VisitYouTubeOAuthCallbackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisconnectYouTubeChannel operation middleware
+func (sh *strictHandler) DisconnectYouTubeChannel(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request DisconnectYouTubeChannelRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisconnectYouTubeChannel(ctx, request.(DisconnectYouTubeChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisconnectYouTubeChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisconnectYouTubeChannelResponseObject); ok {
+		if err := validResponse.VisitDisconnectYouTubeChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateYouTubeChannelAudit operation middleware
+func (sh *strictHandler) UpdateYouTubeChannelAudit(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request UpdateYouTubeChannelAuditRequestObject
+
+	request.Id = id
+
+	var body UpdateYouTubeChannelAuditJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateYouTubeChannelAudit(ctx, request.(UpdateYouTubeChannelAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateYouTubeChannelAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateYouTubeChannelAuditResponseObject); ok {
+		if err := validResponse.VisitUpdateYouTubeChannelAuditResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7295,159 +7909,178 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"ai6TybPJnGZsfvV4cvP+5v8HAAD//w==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

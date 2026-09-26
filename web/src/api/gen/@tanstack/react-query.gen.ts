@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, installModel, listAssets, listAudit, listEpisodes, listImports, listJobs, listModels, listRunSteps, listSeries, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, switchTenant, testLlmSettings, unloadModels, updateBibleSection, updateEpisode, updateSeries } from '../sdk.gen';
-import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse } from '../types.gen';
+import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, disconnectYouTubeChannel, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, installModel, listAssets, listAudit, listEpisodes, listImports, listJobs, listModels, listRunSteps, listSeries, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, startYouTubeConnect, switchTenant, testLlmSettings, unloadModels, updateBibleSection, updateEpisode, updateSeries, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
+import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -643,6 +643,95 @@ export const getClaudeCliStatusOptions = (options?: Options<GetClaudeCliStatusDa
     },
     queryKey: getClaudeCliStatusQueryKey(options)
 });
+
+export const listYouTubeChannelsQueryKey = (options?: Options<ListYouTubeChannelsData>) => createQueryKey('listYouTubeChannels', options);
+
+/**
+ * The tenant's connected YouTube channels and today's quota usage
+ */
+export const listYouTubeChannelsOptions = (options?: Options<ListYouTubeChannelsData>) => queryOptions<ListYouTubeChannelsResponse, DefaultError, ListYouTubeChannelsResponse, ReturnType<typeof listYouTubeChannelsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listYouTubeChannels({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listYouTubeChannelsQueryKey(options)
+});
+
+/**
+ * Start the Google OAuth flow (PKCE, single-use state bound to this session)
+ */
+export const startYouTubeConnectMutation = (options?: Partial<Options<StartYouTubeConnectData>>): UseMutationOptions<StartYouTubeConnectResponse, StartYouTubeConnectError, Options<StartYouTubeConnectData>> => {
+    const mutationOptions: UseMutationOptions<StartYouTubeConnectResponse, StartYouTubeConnectError, Options<StartYouTubeConnectData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startYouTubeConnect({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const youTubeOAuthCallbackQueryKey = (options?: Options<YouTubeOAuthCallbackData>) => createQueryKey('youTubeOAuthCallback', options);
+
+/**
+ * Google redirects here after consent; stores the channel and redirects back to Settings
+ *
+ * Always answers with a redirect to /settings/youtube carrying connect=ok or connect=error plus a short reason code. Tokens are exchanged server side and never reach the browser.
+ */
+export const youTubeOAuthCallbackOptions = (options?: Options<YouTubeOAuthCallbackData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof youTubeOAuthCallbackQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await youTubeOAuthCallback({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: youTubeOAuthCallbackQueryKey(options)
+});
+
+/**
+ * Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+ */
+export const disconnectYouTubeChannelMutation = (options?: Partial<Options<DisconnectYouTubeChannelData>>): UseMutationOptions<DisconnectYouTubeChannelResponse, DisconnectYouTubeChannelError, Options<DisconnectYouTubeChannelData>> => {
+    const mutationOptions: UseMutationOptions<DisconnectYouTubeChannelResponse, DisconnectYouTubeChannelError, Options<DisconnectYouTubeChannelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await disconnectYouTubeChannel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Record whether the Google API project passed YouTube's audit (audited)
+ */
+export const updateYouTubeChannelAuditMutation = (options?: Partial<Options<UpdateYouTubeChannelAuditData>>): UseMutationOptions<UpdateYouTubeChannelAuditResponse, UpdateYouTubeChannelAuditError, Options<UpdateYouTubeChannelAuditData>> => {
+    const mutationOptions: UseMutationOptions<UpdateYouTubeChannelAuditResponse, UpdateYouTubeChannelAuditError, Options<UpdateYouTubeChannelAuditData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateYouTubeChannelAudit({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const listSeriesQueryKey = (options?: Options<ListSeriesData>) => createQueryKey('listSeries', options);
 
