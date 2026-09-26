@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	authpkg "loomtale/api/internal/auth"
+	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/pipeline"
@@ -98,4 +99,55 @@ func (h *StoryAPI) CreateAiAction(ctx context.Context, req gen.CreateAiActionReq
 	}
 
 	return gen.CreateAiAction202JSONResponse{RunId: runID, StepId: stepID}, nil
+}
+
+// aiActionOutput mirrors what ai_actions.go's runEpisodeAction stores as
+// its step Output (pipeline.Output is a map[string]any, decoded here
+// into a typed shape).
+type aiActionOutput struct {
+	Provider string `json:"provider"`
+	Lang     string `json:"lang"`
+	Text     string `json:"text"`
+	Tainted  bool   `json:"tainted"`
+}
+
+// GetAiActionResult implements gen.StrictServerInterface: the client
+// polls this (or refetches on the step's SSE transition-to-terminal
+// event) rather than receiving incremental token deltas, since no
+// per-token text-streaming write path exists yet (see ai_actions.go's
+// deltaFlushInterval doc comment).
+func (h *StoryAPI) GetAiActionResult(ctx context.Context, req gen.GetAiActionResultRequestObject) (gen.GetAiActionResultResponseObject, error) {
+	info := tenant.MustFromCtx(ctx)
+	if _, err := h.requireEpisode(ctx, info.ID, req.Id); err != nil {
+		if isNoRows(err) {
+			return gen.GetAiActionResult404ApplicationProblemPlusJSONResponse{Title: "episode not found", Status: http.StatusNotFound}, nil
+		}
+		return nil, err
+	}
+
+	step, err := h.Queries.GetStepByID(ctx, dbgen.GetStepByIDParams{TenantID: idconv.ToPg(info.ID), ID: idconv.ToPg(req.StepId)})
+	if err != nil {
+		if isNoRows(err) {
+			return gen.GetAiActionResult404ApplicationProblemPlusJSONResponse{Title: "step not found", Status: http.StatusNotFound}, nil
+		}
+		return nil, err
+	}
+
+	result := gen.AiActionResult{Status: gen.AiActionResultStatus(step.Status)}
+	if step.ErrorMsg.Valid && step.ErrorMsg.String != "" {
+		detail := step.ErrorMsg.String
+		result.ErrorDetail = &detail
+	}
+	if step.Status == "done" && len(step.Output) > 0 {
+		var out aiActionOutput
+		if err := json.Unmarshal(step.Output, &out); err == nil && out.Text != "" {
+			result.Provider = &out.Provider
+			lang := gen.TargetLanguage(out.Lang)
+			result.Lang = &lang
+			result.Text = &out.Text
+			tainted := out.Tainted
+			result.Tainted = &tainted
+		}
+	}
+	return gen.GetAiActionResult200JSONResponse(result), nil
 }

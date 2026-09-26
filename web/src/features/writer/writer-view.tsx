@@ -51,7 +51,9 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
   );
 
   const acceptProposal = useCallback(() => {
-    if (!ai.proposal) return;
+    // Only a finished proposal with text may replace the selection; Tab while
+    // the step is still generating (or after it failed) must not blank it.
+    if (!ai.proposal?.done) return;
     const { paragraphIds, text } = ai.proposal;
     // Simplification (see phase report): a multi-paragraph selection is
     // replaced as one joined paragraph rather than re-split per original

@@ -45,18 +45,35 @@ export function AiToolbar({
 }) {
   const [instruction, setInstruction] = useState("");
 
-  if (proposal) {
+  if (proposal?.error) {
     return (
-      <div className="flex flex-col gap-2">
-        <DiffProposal
-          segments={proposal.segments}
-          costLabel={proposal.done ? undefined : "streaming…"}
-          onAccept={onAccept}
-          onReject={onReject}
-          onRetry={onRetry}
-        />
+      <div role="alert" className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-3 text-sm">
+        <span className="text-destructive">{proposal.error}</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onReject}>
+            Dismiss <Kbd>Esc</Kbd>
+          </Button>
+        </div>
       </div>
     );
+  }
+
+  if (proposal && !proposal.done) {
+    return (
+      <div role="status" className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-3 text-sm text-text-2">
+        <span>Generating…</span>
+        <Button variant="ghost" size="sm" onClick={onReject}>
+          Dismiss <Kbd>Esc</Kbd>
+        </Button>
+      </div>
+    );
+  }
+
+  if (proposal) {
+    return <DiffProposal segments={proposal.segments} provider={proposal.provider} onAccept={onAccept} onReject={onReject} onRetry={onRetry} />;
   }
 
   return (

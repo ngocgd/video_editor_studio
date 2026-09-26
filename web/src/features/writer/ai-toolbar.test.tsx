@@ -48,8 +48,23 @@ describe("AiToolbar", () => {
     expect(onReject).toHaveBeenCalledOnce();
   });
 
-  it("shows a streaming cost label while the proposal is not yet done", () => {
-    render(<AiToolbar disabled={false} onAction={vi.fn()} proposal={{ ...baseProposal, done: false }} onAccept={vi.fn()} onReject={vi.fn()} onRetry={vi.fn()} />);
-    expect(screen.getByText(/streaming/i)).toBeInTheDocument();
+  it("shows a generating state without Accept while the proposal is not yet done", () => {
+    const onReject = vi.fn();
+    render(<AiToolbar disabled={false} onAction={vi.fn()} proposal={{ ...baseProposal, text: "", segments: [], done: false }} onAccept={vi.fn()} onReject={onReject} onRetry={vi.fn()} />);
+    expect(screen.getByRole("status")).toHaveTextContent(/generating/i);
+    expect(screen.queryByRole("button", { name: /^accept/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^dismiss/i }));
+    expect(onReject).toHaveBeenCalledOnce();
+  });
+
+  it("shows the step error with Retry instead of a diff when the action failed", () => {
+    const onRetry = vi.fn();
+    render(
+      <AiToolbar disabled={false} onAction={vi.fn()} proposal={{ ...baseProposal, done: false, error: "provider unavailable" }} onAccept={vi.fn()} onReject={vi.fn()} onRetry={onRetry} />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("provider unavailable");
+    expect(screen.queryByRole("button", { name: /^accept/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^retry/i }));
+    expect(onRetry).toHaveBeenCalledOnce();
   });
 });

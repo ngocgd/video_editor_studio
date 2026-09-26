@@ -1,12 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 
-import { createAiActionMutation } from "../../api/gen/@tanstack/react-query.gen";
-import type { AiActionRequest } from "../../api/gen/types.gen";
+import { createAiActionMutation, getAiActionResultOptions } from "../../api/gen/@tanstack/react-query.gen";
+import type { AiActionRequest, AiActionResult } from "../../api/gen/types.gen";
 import type { DiffSegment } from "../../components/shared/diff-proposal";
-import { getSseBridge } from "../../api/sse-bridge";
-import { useSseTopics } from "../../api/use-sse-topics";
 import { diffText } from "./text-diff";
+
+/** How often a pending/queued/running AI action step is re-polled. */
+export const AI_ACTION_POLL_MS = 400;
+
+const TERMINAL: ReadonlySet<AiActionResult["status"]> = new Set(["done", "failed", "canceled"]);
 
 export interface AiProposal {
   action: AiActionRequest["action"];
@@ -14,65 +17,74 @@ export interface AiProposal {
   originalText: string;
   text: string;
   segments: DiffSegment[];
+  /** True once the step finished with text; only then may the proposal be accepted. */
   done: boolean;
+  /** Set when the step failed or was canceled (or finished without text). */
+  error?: string;
+  provider?: string;
+  stepId: string;
+}
+
+interface PendingAction {
+  action: AiActionRequest["action"];
+  paragraphIds: string[];
+  originalText: string;
   stepId: string;
 }
 
 /**
- * Runs one AI action (phase 6: Outline/Continue/Rewrite/Expand/Shorten/Tone/
- * Translate/Summarise) and accumulates its `llm.delta` token stream (see
- * ../../api/sse-ai-delta for the assumed payload shape) into a reviewable
+ * Runs one AI action (Continue/Rewrite/Expand/Shorten/Tone/Translate/
+ * Summarise) and polls its step result until it reaches a terminal status.
+ * The server returns the full generated text once the step is done (there
+ * is no incremental token stream), which becomes a reviewable
  * `DiffProposal`. Nothing is applied until the caller calls the writer's
  * `applyOpsNow` on Accept.
  */
 export function useAiAction(episodeId: string) {
-  const queryClient = useQueryClient();
   const create = useMutation(createAiActionMutation());
-  const [proposal, setProposal] = useState<AiProposal | null>(null);
-  const [runId, setRunId] = useState<string | null>(null);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const [pending, setPending] = useState<PendingAction | null>(null);
 
-  // Keeps the shared SSE bridge subscribed to this run for the life of the streaming proposal.
-  useSseTopics(runId ? [runId] : []);
+  const result = useQuery({
+    ...getAiActionResultOptions({ path: { id: episodeId, stepId: pending?.stepId ?? "" } }),
+    enabled: pending !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && TERMINAL.has(status) ? false : AI_ACTION_POLL_MS;
+    },
+    // Each run has a fresh step id, so a cached result is never reused.
+    gcTime: 0,
+  });
 
   const run = useCallback(
     (body: AiActionRequest, originalText: string) => {
-      unsubscribeRef.current?.();
+      setPending(null);
       create.mutate(
         { path: { id: episodeId }, body },
         {
           onSuccess: (res) => {
             if (!res) return;
-            setRunId(res.runId);
-            setProposal({
-              action: body.action,
-              paragraphIds: body.paragraphIds ?? [],
-              originalText,
-              text: "",
-              segments: [],
-              done: false,
-              stepId: res.stepId,
-            });
-            unsubscribeRef.current = getSseBridge(queryClient).onAiDelta(res.stepId, (evt) => {
-              setProposal((current) => {
-                if (!current || current.stepId !== evt.stepId) return current;
-                const text = current.text + evt.text;
-                return { ...current, text, segments: diffText(current.originalText, text), done: evt.done };
-              });
-            });
+            setPending({ action: body.action, paragraphIds: body.paragraphIds ?? [], originalText, stepId: res.stepId });
           },
         },
       );
     },
-    [episodeId, create, queryClient],
+    [episodeId, create],
   );
 
-  const clear = useCallback(() => {
-    unsubscribeRef.current?.();
-    unsubscribeRef.current = null;
-    setProposal(null);
-    setRunId(null);
-  }, []);
+  const clear = useCallback(() => setPending(null), []);
+
+  const proposal = useMemo<AiProposal | null>(() => {
+    if (!pending) return null;
+    const data = result.data;
+    const base = { ...pending, text: "", segments: [] as DiffSegment[], done: false };
+    if (result.error) return { ...base, error: "Could not load the AI result." };
+    if (!data || !TERMINAL.has(data.status)) return base;
+    if (data.status === "done" && data.text) {
+      return { ...base, text: data.text, segments: diffText(pending.originalText, data.text), done: true, provider: data.provider };
+    }
+    const fallback = data.status === "canceled" ? "The AI action was canceled." : "The AI action failed.";
+    return { ...base, error: data.errorDetail || fallback };
+  }, [pending, result.data, result.error]);
 
   return { proposal, run, clear, isStarting: create.isPending, error: create.error as Error | null };
 }

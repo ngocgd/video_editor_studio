@@ -1422,6 +1422,42 @@ export const AiActionResponseSchema = {
     }
 } as const;
 
+export const AiActionResultSchema = {
+    type: 'object',
+    description: 'The step\'s current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step\'s SSE transition and then fetches this once the step reaches a terminal status.',
+    required: [
+        'status'
+    ],
+    properties: {
+        status: {
+            type: 'string',
+            enum: [
+                'pending',
+                'queued',
+                'running',
+                'done',
+                'failed',
+                'canceled'
+            ]
+        },
+        provider: {
+            type: 'string'
+        },
+        lang: {
+            $ref: '#/components/schemas/TargetLanguage'
+        },
+        text: {
+            type: 'string'
+        },
+        tainted: {
+            type: 'boolean'
+        },
+        errorDetail: {
+            type: 'string'
+        }
+    }
+} as const;
+
 export const DraftParagraphSchema = {
     type: 'object',
     required: [

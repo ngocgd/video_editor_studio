@@ -70,6 +70,8 @@ paths:
     $ref: paths/episodes.yaml#/episodeItem
   /episodes/{id}/ai-actions:
     $ref: paths/episodes.yaml#/createAiAction
+  /episodes/{id}/ai-actions/{stepId}:
+    $ref: paths/episodes.yaml#/getAiActionResult
   /episodes/{id}/drafts/{lang}:
     $ref: paths/episodes.yaml#/episodeDraft
   /imports:

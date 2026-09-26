@@ -453,6 +453,25 @@ export const zAiActionResponse = z.object({
     runId: z.string().uuid()
 });
 
+/**
+ * The step's current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step's SSE transition and then fetches this once the step reaches a terminal status.
+ */
+export const zAiActionResult = z.object({
+    status: z.enum([
+        'pending',
+        'queued',
+        'running',
+        'done',
+        'failed',
+        'canceled'
+    ]),
+    provider: z.string().optional(),
+    lang: zTargetLanguage.optional(),
+    text: z.string().optional(),
+    tainted: z.boolean().optional(),
+    errorDetail: z.string().optional()
+});
+
 export const zDraftParagraph = z.object({
     id: z.string(),
     text: z.string(),
@@ -857,9 +876,19 @@ export const zCreateAiActionPath = z.object({
 });
 
 /**
- * AI action step created; tokens stream over SSE as llm.delta events
+ * AI action step created; poll getAiActionResult with the returned stepId for the result
  */
 export const zCreateAiActionResponse = zAiActionResponse;
+
+export const zGetAiActionResultPath = z.object({
+    id: z.string().uuid(),
+    stepId: z.string().uuid()
+});
+
+/**
+ * current step status, with text once done
+ */
+export const zGetAiActionResultResponse = zAiActionResult;
 
 export const zGetDraftPath = z.object({
     id: z.string().uuid(),

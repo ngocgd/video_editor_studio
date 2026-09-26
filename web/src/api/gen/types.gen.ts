@@ -406,6 +406,18 @@ export type AiActionResponse = {
     runId: string;
 };
 
+/**
+ * The step's current status and, once done, its full generated text. There is no incremental token payload today: a client polls or subscribes to the step's SSE transition and then fetches this once the step reaches a terminal status.
+ */
+export type AiActionResult = {
+    status: 'pending' | 'queued' | 'running' | 'done' | 'failed' | 'canceled';
+    provider?: string;
+    lang?: TargetLanguage;
+    text?: string;
+    tainted?: boolean;
+    errorDetail?: string;
+};
+
 export type DraftParagraph = {
     id: string;
     text: string;
@@ -1408,12 +1420,40 @@ export type CreateAiActionError = CreateAiActionErrors[keyof CreateAiActionError
 
 export type CreateAiActionResponses = {
     /**
-     * AI action step created; tokens stream over SSE as llm.delta events
+     * AI action step created; poll getAiActionResult with the returned stepId for the result
      */
     202: AiActionResponse;
 };
 
 export type CreateAiActionResponse = CreateAiActionResponses[keyof CreateAiActionResponses];
+
+export type GetAiActionResultData = {
+    body?: never;
+    path: {
+        id: string;
+        stepId: string;
+    };
+    query?: never;
+    url: '/episodes/{id}/ai-actions/{stepId}';
+};
+
+export type GetAiActionResultErrors = {
+    /**
+     * episode or step not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetAiActionResultError = GetAiActionResultErrors[keyof GetAiActionResultErrors];
+
+export type GetAiActionResultResponses = {
+    /**
+     * current step status, with text once done
+     */
+    200: AiActionResult;
+};
+
+export type GetAiActionResultResponse = GetAiActionResultResponses[keyof GetAiActionResultResponses];
 
 export type GetDraftData = {
     body?: never;
