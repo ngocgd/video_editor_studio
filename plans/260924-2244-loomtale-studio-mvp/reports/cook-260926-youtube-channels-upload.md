@@ -1,0 +1,50 @@
+# Phase 10 part 1 — YouTube channel connection, quota ledger and upload client
+
+Branch `feat/youtube-channels-upload` (lane c). This is the first part of phase 10: everything that does not need phase 8 renders or phase 9c scores. The review page, publications, pre-publish checks, thumbnails and scheduling are deferred to the second part.
+
+## What shipped
+
+- **Schema.** Migration `20260927300000_youtube_channels.sql` adds `youtube_channels`, `youtube_oauth_states` and `quota_ledger`. Queries live in `db/queries/channels.sql` and `db/queries/quota.sql`; `db/queries/secrets.sql` gained `DeleteSecret`. `scripts/lint-tenant-queries.sh` now covers the two tenant tables, and the OAuth state consumption is tenant-filtered.
+- **Sealed secrets.** `api/internal/secrets` has kind-generic `Put`, `Open` and `Delete`, and the kind `youtube_refresh` (owner ref is the channel row id). The LLM wrappers are unchanged.
+- **Google OAuth** (`api/internal/oauthgoogle`). The authorization code flow uses PKCE (S256), `access_type=offline` and `prompt=consent`, and requests `youtube.upload`, `youtube.readonly` and `yt-analytics.readonly` once. It also covers code exchange, refresh with rotation, dead-grant detection, revoke, a `TokenSource` and an authorising `Transport`. The state is stored as its sha256, is bound to the session and tenant, expires after 10 minutes and is consumed by `DELETE ... RETURNING`, so it is single use even when the wrong session presents it.
+- **Channels API** (`api/internal/channelsapi`, routes `/api/v1/channels`, `/channels/connect`, `/channels/oauth/callback`, `/channels/{id}`). The routes cover connect, list, the manual API-audit toggle (date and note) and disconnect. The callback always redirects to a relative `/settings/youtube?connect=ok|error&reason=<fixed code>`, so nothing from Google or the query string is reflected. A grant that lacks the upload scope or has no channel is revoked. Disconnect revokes at Google (best effort, recorded in the audit metadata), deletes the secret and marks the row disconnected; a second disconnect returns 204. Connect, audit changes and disconnect are audited. Tokens never reach the browser.
+- **YouTube client** (`api/internal/youtube`). It covers `channels.list` (mine, with `status.longUploadsStatus` read at connect for eligibility), `playlistItems.list` and `videos.list` for nonce dedupe, and error classification (quota, auth, permanent, transient). The resumable upload persists the session URI through a callback before the first byte. It streams 16MB chunks by default (256KB multiples, capped at 64MB, one buffer) through per-chunk ranged reads (`storage.Internal.ReadRange`), with no temp file. It resumes with `Content-Range: bytes */N`: a 308 resumes from the reported offset, a 200/201 adopts the finished video, and a 404/410 dedupes by the `lt-<nonce>` tag before opening a new session. A running sha256 is checked against the approved hash before the final chunk is sent, so a changed render aborts.
+- **Quota ledger.** The ledger is kept per Google Cloud project with Pacific-time days and resets at PT midnight. Costs are env config with conservative defaults: insert 1600, write 50, read 1, daily limit 10000. Reservations never overspend under concurrency, and a `quotaExceeded` answer marks the rest of the day exhausted.
+- **Wiring.** `api/cmd/api` reads `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET_PATH`, `GOOGLE_OAUTH_REDIRECT_URL` and `YOUTUBE_QUOTA_*`. `deploy/compose.yml` passes them to the api and `.env.example` documents them. Without a client id and secret the feature reports "not configured" and the rest of the app is unaffected.
+- **Web.** Settings > YouTube (`/settings/youtube`) lists the connected channels with their eligibility, audit state and status. It offers connect (disabled with the reason when OAuth is not configured), an audit form and disconnect with confirmation, and it shows the callback outcome. The page is linked from the account settings, the command palette and the top bar titles.
+
+## Verification
+
+Docker was down for this whole run: the engine answers HTTP 500 and `docker_data.vhdx` is still attached to Windows as a read-only disk (Get-Disk disk 1). The host toolchain was used instead, mirroring the Makefile targets.
+
+- gen: sqlc, oapi-codegen, the redocly bundle and the web client were regenerated on the host, and `git diff --exit-code` shows no drift. The generated files are LF.
+- lint: `go vet ./...` (also with `-tags=integration`) passes and `golangci-lint run ./...` reports 0 issues (also with the integration build tag). tenantctx, `scripts/lint-tenant-queries.sh` and the models lint pass.
+- test: `go test ./... -count=1` passes in api and tools. It ran without `-race` because the host has no C compiler. The fakes guard their state with a mutex for the toolbox's `-race` run.
+- Unit tests against a fake YouTube server cover a chunked upload that persists the session first, a resume from the reported offset, a crash after the final chunk (no second video), a gone session deduped to the existing video, a hash mismatch that aborts before the final chunk, partial chunk acceptance, quota refusal, request validation, PT-date and reset math, and ledger exhaustion. The OAuth tests cover the PKCE URL, verifier matching, refresh rotation and dead-grant detection.
+- web: `npm run typecheck`, `npm run lint`, `npm test` (17 files, 89 tests), `npx vite` bundle and `npm run budget-check` pass.
+- **Pending (Docker down):** `scripts/tb.sh gen lint test` (with `-race`), the integration suite (`api/internal/integration/youtube_channels_test.go`: single-use, session-bound state; the connect, list, audit and disconnect lifecycle against a Google double; refusal of unusable grants; the unconfigured state; a ledger that never overspends under concurrency) and the Playwright spec `web/e2e/youtube-settings.spec.ts`. None of these has run yet. They must run under the heavy lock with compose project `loomtale-c` before merge.
+
+## Success criteria
+
+- A rendered episode passes review and uploads as private with thumbnail, title, description, tags, chapters and the synthetic-content flag, verified in Studio: **pending**, deferred to the second part of this phase (needs phase 8 renders and phase 9c scores). The live half also needs a real Google OAuth app and a real test channel, which are external.
+- A scheduled upload sets `publishAt` when audited, and the option is disabled with the reason otherwise: **pending**, deferred to the second part of this phase (needs phase 8 renders for publications). The audit toggle it depends on is built.
+- A killed upload resumes without restarting from byte 0, and no crash point produces a duplicate video: **met at the client level** by the fake-server unit tests (resume from the reported offset, 200 on query after the final chunk, gone session deduped by nonce). The publication CAS and the pipeline step that drive it are deferred to the second part (needs phase 8 renders).
+- Upload memory is at most 64MB with no temp files: **met by construction.** There is one chunk buffer, capped at `MaxChunkSize` = 64MB, and each chunk is a fresh ranged read.
+- Manual live test (connect, eligibility, observed quota): **pending, external.** It needs a real Google OAuth app and a real channel.
+
+## Deviations
+
+- No `golang.org/x/oauth2` or `google.golang.org/api` dependency. OAuth and the few Data API calls are hand-written with `net/http`, which keeps the dependency surface small and makes the Google double straightforward. The phase file's wording assumed the libraries.
+- The client secret is read only from the file at `GOOGLE_CLIENT_SECRET_PATH`, which an operator compose override mounts. No compose `secrets:` entry was added, because a missing secrets file would break `compose up` for everyone who does not use YouTube.
+- The PKCE code verifier is stored in plaintext in the state row for at most 10 minutes. It is useless without the authorization code and the client secret.
+- Channel eligibility is read at connect only. The per-publish precheck belongs with publications in the second part.
+
+## Merge notes
+
+- `scripts/lint-tenant-queries.sh` `TENANT_TABLES` is edited by lanes a, c and d. The merge takes the union.
+- `openapi/root.yaml`, `api/cmd/api/*`, `deploy/compose.yml`, `.env.example` and the web route tree were changed as announced on the board. Regenerate the generated code after merging; never hand-merge it.
+
+## Unresolved questions
+
+- When will Docker be restored? The toolbox, integration and e2e runs, and therefore the merge, wait on it.
+- Which Google Cloud project and OAuth consent screen (testing or published) will the live check use? In testing mode refresh tokens expire after 7 days, and the UI then shows the reconnect state.
