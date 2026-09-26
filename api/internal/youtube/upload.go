@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 // Upload chunk sizes. Google requires every chunk but the last to be a
@@ -254,14 +255,28 @@ var rangeHeader = regexp.MustCompile(`^bytes=0-(\d+)$`)
 // (404/410) is a permanent upload_session_gone: the caller dedupes by
 // nonce tag before opening a new one.
 func (c *Client) sendRange(ctx context.Context, sessionURI, contentRange string, chunk []byte) (next int64, videoID string, err error) {
-	hr, err := http.NewRequestWithContext(ctx, http.MethodPut, sessionURI, bytes.NewReader(chunk))
+	hc, reqCtx, cancel := c.HTTP, ctx, context.CancelFunc(func() {})
+	if len(chunk) > 0 {
+		// A data chunk can take far longer than the base client's
+		// whole-request timeout on a slow uplink: bound it by a deadline
+		// sized to the chunk instead.
+		hc = withoutRequestTimeout(c.HTTP)
+		reqCtx, cancel = context.WithTimeout(ctx, c.chunkTimeout(len(chunk)))
+	}
+	defer cancel()
+	hr, err := http.NewRequestWithContext(reqCtx, http.MethodPut, sessionURI, bytes.NewReader(chunk))
 	if err != nil {
-		return 0, "", err
+		return 0, "", redactURL(err)
 	}
 	hr.ContentLength = int64(len(chunk))
 	hr.Header.Set("Content-Range", contentRange)
-	resp, err := c.HTTP.Do(hr)
+	resp, err := hc.Do(hr)
 	if err != nil {
+		if ctx.Err() == nil && errors.Is(err, context.DeadlineExceeded) {
+			// Only this chunk's deadline passed: the session is intact
+			// and a retry resumes from what Google holds.
+			return 0, "", &APIError{Kind: KindTransient, Reason: ReasonChunkTimeout, Message: "a chunk did not finish within its deadline"}
+		}
 		return 0, "", transportError(OpVideosInsert, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -291,6 +306,34 @@ func (c *Client) sendRange(ctx context.Context, sessionURI, contentRange string,
 	}
 }
 
+// Chunk deadlines assume at least minChunkBytesPerSecond (about 1 Mbit/s)
+// plus a fixed allowance for connection setup and Google's answer.
+const (
+	minChunkBytesPerSecond = 128 << 10
+	chunkDeadlineSlack     = 2 * time.Minute
+)
+
+// chunkTimeout is the deadline for sending one n-byte chunk and reading
+// Google's answer.
+func (c *Client) chunkTimeout(n int) time.Duration {
+	if c.chunkDeadline != nil {
+		return c.chunkDeadline(n)
+	}
+	return chunkDeadlineSlack + time.Duration(n/minChunkBytesPerSecond)*time.Second
+}
+
+// withoutRequestTimeout returns a copy of base with no whole-request
+// timeout, sharing its transport (dialing, TLS and host allowlist) and
+// redirect policy. The caller bounds each request with its context.
+func withoutRequestTimeout(base *http.Client) *http.Client {
+	if base == nil {
+		return &http.Client{}
+	}
+	cp := *base
+	cp.Timeout = 0
+	return &cp
+}
+
 // cancelSession asks Google to drop the session. It is best effort: a
 // session that survives expires on its own, and nothing was published.
 func (c *Client) cancelSession(ctx context.Context, sessionURI string) {
@@ -298,6 +341,8 @@ func (c *Client) cancelSession(ctx context.Context, sessionURI string) {
 	if err != nil {
 		return
 	}
+	// The base client's whole-request timeout bounds this call, since it
+	// ignores the caller's cancellation.
 	if resp, err := c.HTTP.Do(hr); err == nil {
 		_ = resp.Body.Close()
 	}
