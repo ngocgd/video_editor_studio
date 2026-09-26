@@ -1,8 +1,9 @@
 // Package secrets is the write-through layer over the envelope-encrypted
 // secrets table: it is the only place that ever seals a plaintext secret
-// (e.g. a BYOK LLM API key) for storage, or opens one back to plaintext
-// for a caller that genuinely needs it (never an HTTP handler — see
-// Configured, which is the only method exposed to settingsapi).
+// (a BYOK LLM API key, a YouTube refresh token) for storage, or opens one
+// back to plaintext for server-side code that genuinely needs it (to call
+// or revoke at Google, for instance). A plaintext secret is never returned
+// to an HTTP client.
 package secrets
 
 import (
@@ -52,11 +53,30 @@ func (s *Store) Configured(ctx context.Context, tenantID, provider string) (bool
 // key; secrets.owner_ref holds the provider name.
 const KindLLMAPIKey = "llm_api_key"
 
+// KindYouTubeRefresh is the secrets.kind value for a connected YouTube
+// channel's Google refresh token; secrets.owner_ref holds the
+// youtube_channels row id.
+const KindYouTubeRefresh = "youtube_refresh"
+
 // PutLLMAPIKey seals plaintext under kind=llm_api_key, owner_ref=provider
 // for tenantID and upserts it. The plaintext is never logged or returned;
 // callers must not retain it after this call.
 func (s *Store) PutLLMAPIKey(ctx context.Context, tenantID uuid.UUID, provider, plaintext string) error {
-	aad := envelope.AAD(tenantID.String(), KindLLMAPIKey, provider)
+	return s.Put(ctx, tenantID, KindLLMAPIKey, provider, plaintext)
+}
+
+// Get opens and returns the plaintext LLM API key for tenantID+provider.
+// It exists for a future per-tenant BYOK provider constructor (no HTTP
+// handler calls it; they only ever call Configured).
+func (s *Store) Get(ctx context.Context, tenantID uuid.UUID, provider string) (string, error) {
+	return s.Open(ctx, tenantID, KindLLMAPIKey, provider)
+}
+
+// Put seals plaintext under kind+ownerRef for tenantID and upserts it.
+// The tenant, kind and owner are bound into the ciphertext as AAD, so a
+// row copied to another owner cannot be opened.
+func (s *Store) Put(ctx context.Context, tenantID uuid.UUID, kind, ownerRef, plaintext string) error {
+	aad := envelope.AAD(tenantID.String(), kind, ownerRef)
 	sealed, err := s.Sealer.Seal(aad, []byte(plaintext))
 	if err != nil {
 		return fmt.Errorf("secrets: seal: %w", err)
@@ -64,8 +84,8 @@ func (s *Store) PutLLMAPIKey(ctx context.Context, tenantID uuid.UUID, provider, 
 	err = s.Queries.UpsertSecret(ctx, dbgen.UpsertSecretParams{
 		ID:         idconv.ToPg(idconv.NewV7()),
 		TenantID:   idconv.ToPg(tenantID),
-		Kind:       KindLLMAPIKey,
-		OwnerRef:   provider,
+		Kind:       kind,
+		OwnerRef:   ownerRef,
 		KeyID:      sealed.KeyID,
 		WrappedDek: sealed.WrappedDEK,
 		Nonce:      sealed.Nonce,
@@ -77,20 +97,24 @@ func (s *Store) PutLLMAPIKey(ctx context.Context, tenantID uuid.UUID, provider, 
 	return nil
 }
 
-// Get opens and returns the plaintext secret for tenantID+provider. It
-// exists for a future per-tenant BYOK provider constructor (not called by
-// any phase 6 HTTP handler, which only ever calls Configured); kept here
-// rather than duplicated so the seal/open pair stays in one place.
-func (s *Store) Get(ctx context.Context, tenantID uuid.UUID, provider string) (string, error) {
+// ErrNotFound is returned by Open when no secret exists.
+var ErrNotFound = errors.New("secrets: not found")
+
+// Open returns the plaintext secret stored under kind+ownerRef, or an
+// error wrapping ErrNotFound when there is none.
+func (s *Store) Open(ctx context.Context, tenantID uuid.UUID, kind, ownerRef string) (string, error) {
 	row, err := s.Queries.GetSecret(ctx, dbgen.GetSecretParams{
 		TenantID: idconv.ToPg(tenantID),
-		Kind:     KindLLMAPIKey,
-		OwnerRef: provider,
+		Kind:     kind,
+		OwnerRef: ownerRef,
 	})
+	if isNoRows(err) {
+		return "", fmt.Errorf("secrets: get %s: %w", kind, ErrNotFound)
+	}
 	if err != nil {
 		return "", fmt.Errorf("secrets: get: %w", err)
 	}
-	aad := envelope.AAD(tenantID.String(), KindLLMAPIKey, provider)
+	aad := envelope.AAD(tenantID.String(), kind, ownerRef)
 	plaintext, err := s.Sealer.Open(envelope.Sealed{
 		KeyID:      row.KeyID,
 		WrappedDEK: row.WrappedDek,
@@ -101,6 +125,19 @@ func (s *Store) Get(ctx context.Context, tenantID uuid.UUID, provider string) (s
 		return "", fmt.Errorf("secrets: open: %w", err)
 	}
 	return string(plaintext), nil
+}
+
+// Delete removes the secret stored under kind+ownerRef; deleting a
+// missing secret is not an error.
+func (s *Store) Delete(ctx context.Context, tenantID uuid.UUID, kind, ownerRef string) error {
+	if err := s.Queries.DeleteSecret(ctx, dbgen.DeleteSecretParams{
+		TenantID: idconv.ToPg(tenantID),
+		Kind:     kind,
+		OwnerRef: ownerRef,
+	}); err != nil {
+		return fmt.Errorf("secrets: delete: %w", err)
+	}
+	return nil
 }
 
 func isNoRows(err error) bool {

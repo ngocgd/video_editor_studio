@@ -27,6 +27,12 @@ type TokenSource struct {
 	expiry time.Time
 }
 
+// NewTokenSource returns a source seeded with tok's access token, so the
+// first call after a code exchange needs no refresh round trip.
+func NewTokenSource(cfg *Config, tok Token) *TokenSource {
+	return &TokenSource{Config: cfg, RefreshToken: tok.RefreshToken, access: tok.AccessToken, expiry: tok.Expiry}
+}
+
 // Token returns a valid access token.
 func (s *TokenSource) Token(ctx context.Context) (string, error) {
 	s.mu.Lock()
