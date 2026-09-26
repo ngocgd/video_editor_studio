@@ -36,7 +36,7 @@ test("login, app shell, command palette, logout", async ({ page }) => {
   await page.waitForURL("**/");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByText("GPU")).toBeVisible();
+  await expect(page.getByText("GPU", { exact: true })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Render Queue" }).click();
   await expect(page.getByRole("heading", { name: "Render Queue" })).toBeVisible();
