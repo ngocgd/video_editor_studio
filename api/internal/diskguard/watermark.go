@@ -53,7 +53,9 @@ func (s Status) Message() string {
 
 // Watermark measures free space on the filesystem holding Path, which
 // should be a mount on the Docker data disk (for example the object
-// store's volume) so image layers and VHD growth are counted too.
+// store's volume) so image layers and VHD growth are counted too. Path
+// may list several comma-separated mounts (the data disk and the host
+// drive holding it); the one with the least free space counts.
 type Watermark struct {
 	Path     string
 	MinFree  uint64
@@ -85,9 +87,19 @@ func (w *Watermark) Status(context.Context) (Status, error) {
 	if read == nil {
 		read = freeBytes
 	}
-	free, err := read(w.Path)
-	if err != nil {
-		return Status{}, fmt.Errorf("diskguard: measure free space on %s: %w", w.Path, err)
+	// Path may list several comma-separated mounts; the tightest one
+	// counts (on Docker Desktop a volume reports its virtual disk, which
+	// can have room while the host drive under it is full).
+	var free uint64
+	for i, path := range strings.Split(w.Path, ",") {
+		path = strings.TrimSpace(path)
+		f, err := read(path)
+		if err != nil {
+			return Status{}, fmt.Errorf("diskguard: measure free space on %s: %w", path, err)
+		}
+		if i == 0 || f < free {
+			free = f
+		}
 	}
 	s := Status{FreeBytes: free, MinFree: w.MinFree, WarnFree: w.WarnFree, Level: LevelOK}
 	switch {

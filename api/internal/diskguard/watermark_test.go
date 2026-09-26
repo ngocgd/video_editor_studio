@@ -94,3 +94,36 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("unreadable disk must refuse: %v", err)
 	}
 }
+
+func TestStatusTakesTightestPath(t *testing.T) {
+	w := New("/data, /host-disk", 0, 0)
+	w.FreeBytes = func(path string) (uint64, error) {
+		if path == "/host-disk" {
+			return 30 * GB, nil
+		}
+		return 900 * GB, nil
+	}
+	s, err := w.Status(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.FreeBytes != 30*GB || s.Level != LevelBlocked {
+		t.Fatalf("status %+v, want 30 GB blocked", s)
+	}
+}
+
+func TestAPIStatus(t *testing.T) {
+	if got := APIStatus(context.Background(), nil); got.Level != "unknown" {
+		t.Fatalf("nil watermark: level %s", got.Level)
+	}
+	w := New("/data", 0, 0)
+	w.FreeBytes = fixed(0, errors.New("statfs failed"))
+	if got := APIStatus(context.Background(), w); got.Level != "unknown" || got.Message == "" {
+		t.Fatalf("unreadable disk: %+v", got)
+	}
+	w.FreeBytes = fixed(50*GB, nil)
+	got := APIStatus(context.Background(), w)
+	if got.Level != "warning" || got.FreeBytes != int64(50*GB) || got.MinFreeBytes != int64(40*GB) {
+		t.Fatalf("warning disk: %+v", got)
+	}
+}
