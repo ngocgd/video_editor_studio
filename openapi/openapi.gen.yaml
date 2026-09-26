@@ -2460,6 +2460,8 @@ components:
           type: array
           items:
             type: string
+            maxLength: 64
+          maxItems: 5000
         beatId:
           type: string
         instruction:
@@ -2568,10 +2570,14 @@ components:
             - move
         paragraphId:
           type: string
+          minLength: 1
+          maxLength: 64
         text:
           type: string
+          maxLength: 20000
         afterParagraphId:
           type: string
+          maxLength: 64
           description: For op=move, the paragraph id to place this one after (empty string means first).
     DraftPatchRequest:
       type: object
@@ -2600,9 +2606,12 @@ components:
           type: array
           items:
             type: string
+            maxLength: 64
+          maxItems: 5000
           description: The paragraphs the action was run against (its selection).
         afterParagraphId:
           type: string
+          maxLength: 64
           description: For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.
     ChapterPreview:
       type: object
