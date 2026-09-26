@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -32,6 +33,7 @@ type session struct {
 
 func login(t *testing.T, email, password string) *session {
 	t.Helper()
+	resetLoginIPBucket(t)
 	client := &http.Client{Timeout: httpTimeout}
 
 	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
@@ -167,5 +169,18 @@ func skipIfAPIUnreachable(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		missingEnv(t, "API_BASE_URL", "API healthz returned an unexpected status")
+	}
+}
+
+// resetLoginIPBucket clears the per-IP login bucket (20/hour) before a
+// fixture login. Every test in this package logs in from the same client
+// IP, so the suite as a whole would otherwise exhaust that bucket and fail
+// unrelated tests with 429. Only the IP bucket is cleared: the per-user
+// and per-account buckets still apply, and TestLoginRateLimitReturns429
+// still proves the limiter trips.
+func resetLoginIPBucket(t *testing.T) {
+	t.Helper()
+	if _, err := ownerPool(t).Exec(context.Background(), `DELETE FROM rate_limit_buckets WHERE bucket_key LIKE 'login:ip:%'`); err != nil {
+		t.Fatalf("reset login ip bucket: %v", err)
 	}
 }
