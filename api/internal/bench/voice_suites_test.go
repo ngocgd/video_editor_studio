@@ -399,6 +399,9 @@ func TestLLMRunnerRecordsTimingsAndWritesARatingsSheet(t *testing.T) {
 	if len(results) != 2*len(LLMCases) || len(q.rows) != len(results) {
 		t.Fatalf("results %d rows %d", len(results), len(q.rows))
 	}
+	if results[0].Streamed || results[0].TokensPerSecond <= 0 {
+		t.Fatalf("a one-chunk answer must report throughput over the whole request: %+v", results[0])
+	}
 	if !results[0].Switched || results[1].Switched || res.ensures != 1 {
 		t.Fatal("only the first Ollama case carries the residency switch")
 	}

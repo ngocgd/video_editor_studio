@@ -54,10 +54,12 @@ type LLMResult struct {
 	TotalS          float64
 	OutTokens       int
 	TokensPerSecond float64
-	SwitchSeconds   float64
-	Switched        bool
-	Text            string
-	Err             error
+	// Streamed is false when the whole answer arrived in one chunk.
+	Streamed      bool
+	SwitchSeconds float64
+	Switched      bool
+	Text          string
+	Err           error
 }
 
 // LLMRunner runs the llm suite.
@@ -126,7 +128,15 @@ func (r *LLMRunner) generate(ctx context.Context, p llm.Provider, c LLMCase, res
 		return
 	}
 	res.FirstTokenS, res.OutTokens, res.Text = first.Seconds(), resp.Usage.Out, resp.Text
-	if gen := res.TotalS - res.FirstTokenS; gen > 0 && res.OutTokens > 0 {
+	// A provider that answers in one chunk (the claude CLI sidecar) has
+	// no generation phase after its first token, so its throughput is
+	// taken over the whole request instead.
+	gen := res.TotalS - res.FirstTokenS
+	res.Streamed = gen > 0.05*res.TotalS
+	if !res.Streamed {
+		gen = res.TotalS
+	}
+	if gen > 0 && res.OutTokens > 0 {
 		res.TokensPerSecond = float64(res.OutTokens) / gen
 	}
 }
@@ -140,7 +150,7 @@ func (r *LLMRunner) record(ctx context.Context, runID uuid.UUID, res LLMResult) 
 	return recordRow(ctx, r.Queries, runID, row{
 		Suite: "llm", Case: res.Case, Model: res.Target, Seconds: res.TotalS,
 		SwitchSeconds: res.SwitchSeconds, Switched: res.Switched, Err: res.Err,
-		Meta: map[string]any{"first_token_s": res.FirstTokenS, "tokens_per_s": res.TokensPerSecond, "out_tokens": res.OutTokens},
+		Meta: map[string]any{"first_token_s": res.FirstTokenS, "tokens_per_s": res.TokensPerSecond, "out_tokens": res.OutTokens, "streamed": res.Streamed},
 	})
 }
 
