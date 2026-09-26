@@ -1,4 +1,4 @@
-"""Request and result shapes the TTS and align engines exchange with the
+"""Request and result shapes the engines exchange with the
 gRPC servicers. Engines never see gRPC types or URLs: the servicers
 download inputs to local files, hand engines a job, and upload whatever
 the engine returns.
@@ -108,3 +108,40 @@ class AlignOutput:
                 for s in self.segments
             ],
         }
+
+
+@dataclass
+class ScoreJob:
+    """Scores how closely image_path shows the same character as the
+    reference images (the character's approved refs)."""
+
+    image_path: Path
+    reference_paths: list[Path]
+    params: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class ScoreOutput:
+    """score is the mean cosine similarity to the references, in [-1, 1];
+    metadata carries the spread (min/max) and the reference count."""
+
+    score: float
+    metadata: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class DepthJob:
+    """Estimates a relative depth map for one image."""
+
+    image_path: Path
+    params: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class DepthOutput:
+    """A 16-bit grayscale PNG the size of the input image (brighter is
+    nearer: Depth Anything predicts relative inverse depth)."""
+
+    png: bytes
+    width: int
+    height: int
