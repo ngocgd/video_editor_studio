@@ -64,11 +64,13 @@ secrets:
   # process that ever holds this credential.
   claude_oauth_token:
     file: ../secrets/claude_oauth_token.txt
-  # Shared only between llm-cli and worker, authenticating POST /v1/run;
+  # Shared only between llm-cli and worker (plus the on-demand operator
+  # CLI's llm benchmark, compose.gpu.yml), authenticating POST /v1/run;
   # never a compose-project-wide secret.
   llmcli_bearer_token:
     file: ../secrets/llmcli_bearer_token.txt
-  # Shared only between the Python worker and the Go worker process,
+  # Shared only between the Python worker and the Go worker process (plus
+  # the on-demand operator CLI's voice benchmarks, compose.gpu.yml),
   # authenticating every gRPC call (worker/tts/align/train/vision.proto).
   pyworker_bearer_token:
     file: ../secrets/pyworker_bearer_token.txt

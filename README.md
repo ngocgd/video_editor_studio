@@ -54,6 +54,24 @@ docker compose -p loomtale-dev -f deploy/compose.yml -f deploy/compose.integrati
 points the api service's presigned-URL MinIO endpoint at MinIO's container hostname, since the
 test-runner container can't reach the host's published `127.0.0.1:9000`.
 
+## Local engines (voice, subtitles, local LLM)
+
+`deploy/compose.gpu.yml` adds the GPU services. Every model is a pinned entry in
+[`models/manifest.yaml`](models/manifest.yaml), installed from the Model manager page (or
+`loomtale models pull`) and loaded offline:
+
+- Voice: `chatterbox` (EN, clones a voice preset's reference audio when its consent flag is set)
+  and `vieneu-v3-turbo` (VI). Subtitles: `whisper-align` (EN word level, VI segment level). They
+  run in the Python worker, whose image carries their runtimes only when built with
+  `PYWORKER_EXTRAS="tts-en tts-vi align"` in `.env` (several GB of CUDA PyTorch wheels).
+- Local LLM: set `OLLAMA_MODEL` to a manifest LLM (`qwen3.5-9b` or `gemma-4-12b`). Ollama has no
+  egress, so the worker imports the pinned GGUF with its `models/ollama/<name>.Modelfile` on first
+  load.
+
+Benchmarks run against a GPU stack through the `cli` service:
+`PROJECT=<project> scripts/bench-voice.sh voice-smoke|tts|align|llm` (the `tts` suite also stores
+each voice's measured words per minute) and `scripts/bench-image.sh` for the image suites.
+
 ## Repository layout
 
 ```

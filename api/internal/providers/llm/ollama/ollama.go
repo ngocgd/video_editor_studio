@@ -184,7 +184,11 @@ func (p *Provider) Stream(ctx context.Context, req llm.Request, onDelta func(llm
 // VRAM, used by the residency manager's Ensure before loading a different
 // backend.
 func (p *Provider) Unload(ctx context.Context) error {
-	payload, err := json.Marshal(chatRequest{Model: p.Model, Messages: nil, Stream: false, KeepAlive: "0"})
+	return p.unloadModel(ctx, p.Model)
+}
+
+func (p *Provider) unloadModel(ctx context.Context, model string) error {
+	payload, err := json.Marshal(chatRequest{Model: model, Messages: nil, Stream: false, KeepAlive: "0"})
 	if err != nil {
 		return err
 	}
@@ -204,17 +208,31 @@ func (p *Provider) Unload(ctx context.Context) error {
 // Loaded queries /api/ps and reports whether p.Model is currently
 // resident, used by the residency manager's app-side proof step.
 func (p *Provider) Loaded(ctx context.Context) (bool, error) {
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, p.BaseURL+"/api/ps", nil)
+	running, err := p.Running(ctx)
 	if err != nil {
 		return false, err
 	}
+	for _, name := range running {
+		if normalizeModelTag(name) == normalizeModelTag(p.Model) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Running lists every model /api/ps reports as resident.
+func (p *Provider) Running(ctx context.Context) ([]string, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, p.BaseURL+"/api/ps", nil)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := p.Client.Do(httpReq)
 	if err != nil {
-		return false, fmt.Errorf("ollama: /api/ps request failed: %w", err)
+		return nil, fmt.Errorf("ollama: /api/ps request failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("ollama: /api/ps unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf("ollama: /api/ps unexpected status %d", resp.StatusCode)
 	}
 	var out struct {
 		Models []struct {
@@ -222,14 +240,13 @@ func (p *Provider) Loaded(ctx context.Context) (bool, error) {
 		} `json:"models"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return false, fmt.Errorf("ollama: decode /api/ps: %w", err)
+		return nil, fmt.Errorf("ollama: decode /api/ps: %w", err)
 	}
+	names := make([]string, 0, len(out.Models))
 	for _, m := range out.Models {
-		if normalizeModelTag(m.Name) == normalizeModelTag(p.Model) {
-			return true, nil
-		}
+		names = append(names, m.Name)
 	}
-	return false, nil
+	return names, nil
 }
 
 // normalizeModelTag strips Ollama's implicit ":latest" tag so a

@@ -11,6 +11,33 @@ dependencies = [
   # pynvml gives aggregate (not per-process) VRAM stats; gpu.py degrades
   # to "no GPU" if this or the driver is unavailable.
   "nvidia-ml-py>=12.560.0",
+  # Audio buffers and the forced-alignment trellis. Chatterbox needs
+  # numpy 1.x, so the whole environment stays on it.
+  "numpy>=1.26,<2.0",
+]
+
+# Engine runtimes, each built into the worker image only when asked for
+# (deploy/docker/pyworker.Dockerfile PYWORKER_EXTRAS). Engines import them
+# lazily, so an image without an extra still lists the engine and answers
+# engine_not_installed for it.
+[project.optional-dependencies]
+# English narration (Chatterbox) on CUDA 12.8 PyTorch, which sm_120
+# (RTX 50xx) needs; chatterbox-tts itself pins torch 2.6, overridden below.
+tts-en = [
+  "chatterbox-tts==0.1.7",
+  "torch==2.9.1",
+  "torchaudio==2.9.1",
+]
+# Vietnamese narration (VieNeu-TTS v3 Turbo) on ONNX Runtime, torch-free.
+tts-vi = [
+  "vieneu==3.8.3",
+]
+# Subtitle alignment: faster-whisper (CTranslate2) plus wav2vec2 through
+# transformers on the same PyTorch build.
+align = [
+  "faster-whisper==1.2.1",
+  "transformers==5.2.0",
+  "torch==2.9.1",
 ]
 
 [dependency-groups]
@@ -19,7 +46,30 @@ dev = [
   "pytest>=8.3.0",
   "pytest-asyncio>=0.25.0",
   "pip-audit>=2.7.0",
+  # tests cross-check each engine's file list against models/manifest.yaml
+  "pyyaml>=6.0",
 ]
+
+[tool.uv]
+# chatterbox-tts pins torch/torchaudio 2.6.0, which has no sm_120 kernels.
+# It (and vieneu) also pull in gradio for their demo UIs, which no engine
+# imports; its pinned release and its starlette have published
+# vulnerabilities, so both are raised to fixed releases.
+override-dependencies = [
+  "torch==2.9.1",
+  "torchaudio==2.9.1",
+  "gradio>=6.16.0",
+  "starlette>=1.3.1",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+torchaudio = [{ index = "pytorch-cu128" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [tool.ruff]
 line-length = 100
@@ -33,6 +83,9 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+  "gpu: needs the engine extras, the pinned weights under MODELS_DIR and a CUDA GPU",
+]
 
 [build-system]
 requires = ["hatchling"]

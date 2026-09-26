@@ -19,10 +19,11 @@ gen-migrations-sync:
 ## The model manifest and ComfyUI workflow templates are embedded into
 ## the Go binaries (api/internal/models/assets); edit the originals.
 gen-models-sync:
-	rm -f api/internal/models/assets/manifest.yaml api/internal/models/assets/workflows/*.json
-	mkdir -p api/internal/models/assets/workflows
+	rm -f api/internal/models/assets/manifest.yaml api/internal/models/assets/workflows/*.json api/internal/models/assets/ollama/*.Modelfile
+	mkdir -p api/internal/models/assets/workflows api/internal/models/assets/ollama
 	cp models/manifest.yaml api/internal/models/assets/manifest.yaml
 	cp comfyui/workflows/*.json api/internal/models/assets/workflows/
+	cp models/ollama/*.Modelfile api/internal/models/assets/ollama/
 
 gen-openapi:
 	redocly bundle openapi/root.yaml -o openapi/openapi.gen.yaml
@@ -45,7 +46,7 @@ lint:
 	cd tools && go build -o ../api/bin/tenantctx ./tenantctx/cmd/tenantctx
 	cd api && ./bin/tenantctx ./...
 	bash scripts/lint-tenant-queries.sh
-	cd api && go run ./cmd/loomtale models lint -manifest ../models/manifest.yaml -workflows ../comfyui/workflows
+	cd api && go run ./cmd/loomtale models lint -manifest ../models/manifest.yaml -workflows ../comfyui/workflows -modelfiles ../models/ollama
 	cd workers-python && uv run ruff check .
 	cd web && npm run lint
 

@@ -1,7 +1,5 @@
-"""Engine registry: maps an engine name to its Engine instance. Empty
-until phases 9a-9c register real engines; every lookup against an empty
-(or simply unknown-name) registry is the intended, honest
-engine_not_installed path documented in the phase 4 contract.
+"""Engine registry: maps an engine name to its Engine instance. A lookup
+of an unknown name is the intended, honest engine_not_installed path.
 """
 
 from __future__ import annotations
@@ -10,9 +8,8 @@ from loomtale_worker.engines.base import Engine
 
 
 class EngineRegistry:
-    """A process-wide, in-memory map of engine name -> Engine. No engine
-    is registered by this phase; ModelManager and the RPC servicers only
-    ever see EngineNotInstalledError for a name absent here.
+    """A process-wide, in-memory map of engine name -> Engine, filled
+    once at startup by catalog.build_registry.
     """
 
     def __init__(self) -> None:

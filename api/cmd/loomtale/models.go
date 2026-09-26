@@ -57,6 +57,7 @@ func runModelsLint(args []string) error {
 	fs := flag.NewFlagSet("models lint", flag.ExitOnError)
 	manifestPath := fs.String("manifest", "models/manifest.yaml", "manifest to lint")
 	workflowsDir := fs.String("workflows", "comfyui/workflows", "workflow template directory")
+	modelfilesDir := fs.String("modelfiles", "models/ollama", "Ollama Modelfile directory")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -72,14 +73,18 @@ func runModelsLint(args []string) error {
 	if err != nil {
 		return err
 	}
-	problems := models.Lint(m, templates)
+	modelfiles, err := models.LoadModelfiles(os.DirFS(*modelfilesDir), ".")
+	if err != nil {
+		return err
+	}
+	problems := models.Lint(m, templates, modelfiles)
 	for _, p := range problems {
 		fmt.Fprintln(os.Stderr, "manifest:", p)
 	}
 	if len(problems) > 0 {
 		return fmt.Errorf("manifest lint failed with %d problem(s)", len(problems))
 	}
-	fmt.Printf("manifest lint: OK (%d models, %d workflows)\n", len(m.Models), len(templates))
+	fmt.Printf("manifest lint: OK (%d models, %d workflows, %d Modelfiles)\n", len(m.Models), len(templates), len(modelfiles))
 	return nil
 }
 

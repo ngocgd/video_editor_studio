@@ -146,7 +146,7 @@ type ModelBenchmark struct {
 
 type ModelFile struct {
 	Path       string             `json:"path"`
-	Sha256     string             `json:"sha256"`
+	Digest     string             `json:"digest"`
 	SizeBytes  int64              `json:"size_bytes"`
 	VerifiedAt pgtype.Timestamptz `json:"verified_at"`
 }
@@ -295,6 +295,18 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VoiceRateCalibration struct {
+	VoiceKey   string             `json:"voice_key"`
+	Engine     string             `json:"engine"`
+	Language   string             `json:"language"`
+	Words      int64              `json:"words"`
+	Seconds    float64            `json:"seconds"`
+	Wpm        float64            `json:"wpm"`
+	Samples    int32              `json:"samples"`
+	RunID      pgtype.UUID        `json:"run_id"`
+	MeasuredAt pgtype.Timestamptz `json:"measured_at"`
 }
 
 type WorkerStatus struct {

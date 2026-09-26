@@ -53,10 +53,20 @@ func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, 
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	modelfiles, err := models.EmbeddedModelfiles()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	comfyEngine := &comfyui.Engine{Client: comfyui.New(cfg.ComfyUIURL, backendHTTPClient()), Templates: templates}
+	// Ollama has no egress: a manifest LLM is imported from its pinned,
+	// verified GGUF on first load, after the same gate every engine runs.
+	ollamaPreparer := &models.OllamaPreparer{
+		Manifest: manifest, Modelfiles: modelfiles, Gate: gate, Dir: cfg.ModelsDir,
+		Importer: &ollama.Importer{BaseURL: cfg.OllamaURL, Client: importHTTPClient()},
+	}
 
 	backends := map[string]residency.Backend{
-		"ollama": &ollama.Backend{Provider: ollamaProvider},
+		"ollama": &ollama.Backend{Provider: ollamaProvider, Prepare: ollamaPreparer.Prepare},
 		// Every ComfyUI model is loaded through its warm-up workflow,
 		// after the licence and installed-files gate.
 		"comfyui": &comfyui.Backend{Engine: comfyEngine, Warmups: manifest.Warmups(), Gate: gate},
@@ -79,12 +89,11 @@ func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, 
 		}
 		pw := pyworker.New(workerv1.NewWorkerClient(conn))
 		// A single generic "pyworker" slot (empty engine name): the
-		// worker.proto contract reports and unloads whichever one engine
-		// is resident at a time, so UnloadAll can release Python-side
-		// VRAM on an Ollama switch or a gpu_oom unload without needing
-		// per-engine backend entries — phases 9a-9c add those once real
-		// engines and their own ModelRef.Backend values exist.
-		backends["pyworker"] = &pyworker.Backend{Client: pw, Engine: ""}
+		// Python worker holds one engine at a time, a ModelRef's model
+		// names the engine to load (manifest entry names are engine
+		// names), and UnloadAll releases whichever engine is resident on
+		// an Ollama or ComfyUI switch or a gpu_oom unload.
+		backends["pyworker"] = &pyworker.Backend{Client: pw, Gate: gate}
 		probe = &pyworker.Probe{Client: pw, RenderReserveMB: cfg.RenderReserveMB}
 	}
 
@@ -95,6 +104,19 @@ func buildResidency(ctx context.Context, cfg config, manifest *models.Manifest, 
 		return nil, nil, nil, err
 	}
 	return manager, manager, manager, nil
+}
+
+// importHTTPClient streams a GGUF of several gigabytes into Ollama's
+// blob store: connection setup is bounded, the upload itself is bounded
+// only by the load's context.
+func importHTTPClient() *http.Client {
+	dialer := &net.Dialer{Timeout: backendDialTimeout}
+	return &http.Client{
+		Transport: &http.Transport{
+			DialContext:           dialer.DialContext,
+			ResponseHeaderTimeout: 10 * time.Minute,
+		},
+	}
 }
 
 // downloadHTTPClient bounds connection setup for model downloads but
