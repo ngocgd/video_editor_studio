@@ -182,9 +182,23 @@ The fifth review (`plans/reports/code-reviewer-260926-1807-phase-07-characters-s
 
 The fifth review's new Low finding (PATCH on a scene accepts segments and narration that disagree) is not blocking. It is left for a follow-up and is outside this run's scope.
 
+## Review round 7: fixes
+
+The seventh review (`plans/reports/code-reviewer-260926-2152-phase-07-characters-storyboard-review.md`) was the first with a working Docker engine. Its one blocking item was the 429s in the default e2e suite. Its outcome follows.
+
+| Item | Outcome | Commits |
+|---|---|---|
+| 1. The default e2e suite fails with 429s from the per-IP general API budget | **Fixed.** The root cause was the size of the budget, not a request loop in one page. The API log of the failing run shows about 230 general requests in one minute from a single user. Most of them are shell traffic: every full page load re-fetches `/auth/me`, `/auth/csrf`, `/gpu`, `/jobs` and `/readyz`, and an open tab polls `/gpu` every 4 s, `/jobs` every 15 s and `/readyz` every minute. An active storyboard run adds scene polling every 5 s and run polling every 2 s. A budget of 100 per minute therefore starved one ordinary user, not only the test suite. The general per-IP default is now 600 per minute (burst 600, refill 10 per second) in `api/cmd/api/config.go` and in `deploy/compose.yml`. It stays a flood guard, and login keeps its own buckets in Postgres (20 per hour per IP, 5 per minute per IP and user name, 10 per hour per account). The limiter construction moved into `newRequestLimiters`. New tests in `api/cmd/api/request_limiters_test.go` check that the shipped default admits a 230-request single-user minute as one burst, that a flood of twice the budget is still refused, and that a non-positive budget is rejected. | `0f13cf6` |
+
+### Checks in round 7
+
+- `scripts/tb.sh lint test` passed: golangci-lint, the tenant lints, `go test -race ./...` (the new `cmd/api` tests included) and pytest (66 passed, 2 skipped).
+- The default Playwright command (`deploy/compose.yml` only, no rate-limit override in `.env`, `--workers=1`) was run under the heavy lock on two fresh stacks, each started after `down -v`. Both runs passed 4 of 4: models, smoke, storyboard-characters and writer-import-settings, in 18.3 s and 18.1 s. The storyboard spec's own budgets held: grid scroll 60.0 fps with p95 18.2-18.3 ms, keyboard move median 1.7-1.8 ms, timeline 60.0 fps with p95 17.7-18.0 ms. Both stacks were torn down with `down -v`.
+- Code generation is unaffected: only Go code, its comments and one compose default changed.
+
 ## Unresolved questions
 
-- Verification cannot finish until the user detaches `docker_data.vhdx` in an elevated PowerShell. Freeing disk space and restarting Docker did not help. Five rounds are now blocked on it.
 - The re-split guard asks for confirmation instead of keeping edited scenes. Is a confirmation enough, or should edited scenes be kept and flagged?
 - Should the rollup's `pipeline_steps_scope_latest_idx` index stay in this phase's migration, since the pipeline tables are owned by phase 3? It is needed for the 60 ms budget.
 - Is 166.76 KB for the authenticated shell acceptable, or should the generated client be split per domain?
+- Is 600 requests per minute per IP the right general budget for a studio where several users share one public IP? It is configurable through `API_RATE_LIMIT_PER_MINUTE`.
