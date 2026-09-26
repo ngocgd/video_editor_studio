@@ -57,3 +57,7 @@ SELECT e.id, e.series_id, e.idx, e.title, s.title AS series_title, s.target_lang
 FROM episodes e
 JOIN series s ON s.tenant_id = e.tenant_id AND s.id = e.series_id
 WHERE e.tenant_id = @tenant_id AND e.id = @id;
+
+-- name: DeleteRenderManifest :exec
+-- Removes a manifest whose run could not be enqueued.
+DELETE FROM render_manifests WHERE tenant_id = @tenant_id AND id = @id AND run_id IS NULL;

@@ -56,8 +56,11 @@ ON CONFLICT (manifest_id) DO UPDATE SET
 WHERE renders.tenant_id = EXCLUDED.tenant_id
 RETURNING *;
 
--- name: SetRenderPreview :one
-UPDATE renders SET preview_asset_id = @preview_asset_id
+-- name: SetRenderPreviews :one
+-- Records the episode preview proxy and the per-scene proxies (scene id
+-- -> asset id) in the render's report.
+UPDATE renders SET preview_asset_id = @preview_asset_id,
+    report = report || jsonb_build_object('scenePreviews', @scene_previews::jsonb)
 WHERE tenant_id = @tenant_id AND id = @id
 RETURNING *;
 
@@ -72,3 +75,9 @@ SELECT * FROM renders
 WHERE tenant_id = @tenant_id AND episode_id = @episode_id AND lang = @lang
 ORDER BY created_at DESC, id DESC
 LIMIT @max_rows;
+
+-- name: ListCachedSegmentHashes :many
+-- Which of the given input hashes already have a cache entry; freezing
+-- a manifest creates no step for those.
+SELECT input_hash FROM render_segments
+WHERE tenant_id = @tenant_id AND input_hash = ANY(@input_hashes::text[]);

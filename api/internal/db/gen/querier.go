@@ -90,6 +90,8 @@ type Querier interface {
 	DeleteImageStyle(ctx context.Context, arg DeleteImageStyleParams) (int64, error)
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
+	// Removes a manifest whose run could not be enqueued.
+	DeleteRenderManifest(ctx context.Context, arg DeleteRenderManifestParams) error
 	// Drops the scenes a re-split did not keep (their takes cascade).
 	DeleteScenesExcept(ctx context.Context, arg DeleteScenesExceptParams) ([]pgtype.UUID, error)
 	DeleteSeries(ctx context.Context, arg DeleteSeriesParams) error
@@ -201,6 +203,9 @@ type Querier interface {
 	// waveform peaks.
 	ListAssetsMissingDerivatives(ctx context.Context, arg ListAssetsMissingDerivativesParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	// Which of the given input hashes already have a cache entry; freezing
+	// a manifest creates no step for those.
+	ListCachedSegmentHashes(ctx context.Context, arg ListCachedSegmentHashesParams) ([]string, error)
 	ListCharacterLorasBySeries(ctx context.Context, arg ListCharacterLorasBySeriesParams) ([]CharacterLora, error)
 	ListCharacterRefsBySeries(ctx context.Context, arg ListCharacterRefsBySeriesParams) ([]CharacterRef, error)
 	ListCharacterVoicesBySeries(ctx context.Context, arg ListCharacterVoicesBySeriesParams) ([]CharacterVoice, error)
@@ -344,7 +349,9 @@ type Querier interface {
 	SetCharacterVoicePreview(ctx context.Context, arg SetCharacterVoicePreviewParams) error
 	SetManifestRun(ctx context.Context, arg SetManifestRunParams) (RenderManifest, error)
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
-	SetRenderPreview(ctx context.Context, arg SetRenderPreviewParams) (Render, error)
+	// Records the episode preview proxy and the per-scene proxies (scene id
+	// -> asset id) in the render's report.
+	SetRenderPreviews(ctx context.Context, arg SetRenderPreviewsParams) (Render, error)
 	SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeasuredDurationParams) (Scene, error)
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row

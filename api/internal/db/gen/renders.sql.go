@@ -241,6 +241,38 @@ func (q *Queries) InsertRender(ctx context.Context, arg InsertRenderParams) (Ren
 	return i, err
 }
 
+const listCachedSegmentHashes = `-- name: ListCachedSegmentHashes :many
+SELECT input_hash FROM render_segments
+WHERE tenant_id = $1 AND input_hash = ANY($2::text[])
+`
+
+type ListCachedSegmentHashesParams struct {
+	TenantID    pgtype.UUID `json:"tenant_id"`
+	InputHashes []string    `json:"input_hashes"`
+}
+
+// Which of the given input hashes already have a cache entry; freezing
+// a manifest creates no step for those.
+func (q *Queries) ListCachedSegmentHashes(ctx context.Context, arg ListCachedSegmentHashesParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCachedSegmentHashes, arg.TenantID, arg.InputHashes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var input_hash string
+		if err := rows.Scan(&input_hash); err != nil {
+			return nil, err
+		}
+		items = append(items, input_hash)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRenders = `-- name: ListRenders :many
 SELECT id, tenant_id, episode_id, lang, manifest_id, settings_hash, asset_id, srt_asset_id, preview_asset_id, sha256, duration_ms, encoder, report, created_at FROM renders
 WHERE tenant_id = $1 AND episode_id = $2 AND lang = $3
@@ -295,20 +327,29 @@ func (q *Queries) ListRenders(ctx context.Context, arg ListRendersParams) ([]Ren
 	return items, nil
 }
 
-const setRenderPreview = `-- name: SetRenderPreview :one
-UPDATE renders SET preview_asset_id = $1
-WHERE tenant_id = $2 AND id = $3
+const setRenderPreviews = `-- name: SetRenderPreviews :one
+UPDATE renders SET preview_asset_id = $1,
+    report = report || jsonb_build_object('scenePreviews', $2::jsonb)
+WHERE tenant_id = $3 AND id = $4
 RETURNING id, tenant_id, episode_id, lang, manifest_id, settings_hash, asset_id, srt_asset_id, preview_asset_id, sha256, duration_ms, encoder, report, created_at
 `
 
-type SetRenderPreviewParams struct {
+type SetRenderPreviewsParams struct {
 	PreviewAssetID pgtype.UUID `json:"preview_asset_id"`
+	ScenePreviews  []byte      `json:"scene_previews"`
 	TenantID       pgtype.UUID `json:"tenant_id"`
 	ID             pgtype.UUID `json:"id"`
 }
 
-func (q *Queries) SetRenderPreview(ctx context.Context, arg SetRenderPreviewParams) (Render, error) {
-	row := q.db.QueryRow(ctx, setRenderPreview, arg.PreviewAssetID, arg.TenantID, arg.ID)
+// Records the episode preview proxy and the per-scene proxies (scene id
+// -> asset id) in the render's report.
+func (q *Queries) SetRenderPreviews(ctx context.Context, arg SetRenderPreviewsParams) (Render, error) {
+	row := q.db.QueryRow(ctx, setRenderPreviews,
+		arg.PreviewAssetID,
+		arg.ScenePreviews,
+		arg.TenantID,
+		arg.ID,
+	)
 	var i Render
 	err := row.Scan(
 		&i.ID,

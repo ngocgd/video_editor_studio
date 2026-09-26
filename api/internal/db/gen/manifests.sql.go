@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteRenderManifest = `-- name: DeleteRenderManifest :exec
+DELETE FROM render_manifests WHERE tenant_id = $1 AND id = $2 AND run_id IS NULL
+`
+
+type DeleteRenderManifestParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	ID       pgtype.UUID `json:"id"`
+}
+
+// Removes a manifest whose run could not be enqueued.
+func (q *Queries) DeleteRenderManifest(ctx context.Context, arg DeleteRenderManifestParams) error {
+	_, err := q.db.Exec(ctx, deleteRenderManifest, arg.TenantID, arg.ID)
+	return err
+}
+
 const getActiveRenderRun = `-- name: GetActiveRenderRun :one
 SELECT m.id AS manifest_id, m.run_id, m.hash
 FROM render_manifests m
