@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses } from './types.gen';
+import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, DisconnectYouTubeChannelData, DisconnectYouTubeChannelErrors, DisconnectYouTubeChannelResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, ListYouTubeChannelsData, ListYouTubeChannelsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StartYouTubeConnectData, StartYouTubeConnectErrors, StartYouTubeConnectResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditErrors, UpdateYouTubeChannelAuditResponses, YouTubeOAuthCallbackData } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -196,6 +196,40 @@ export const putLlmApiKey = <ThrowOnError extends boolean = false>(options: Opti
  * claude CLI version and auth state, as reported by the llm-cli sidecar
  */
 export const getClaudeCliStatus = <ThrowOnError extends boolean = false>(options?: Options<GetClaudeCliStatusData, ThrowOnError>): RequestResult<GetClaudeCliStatusResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetClaudeCliStatusResponses, unknown, ThrowOnError>({ url: '/settings/llm/cli-status', ...options });
+
+/**
+ * The tenant's connected YouTube channels and today's quota usage
+ */
+export const listYouTubeChannels = <ThrowOnError extends boolean = false>(options?: Options<ListYouTubeChannelsData, ThrowOnError>): RequestResult<ListYouTubeChannelsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListYouTubeChannelsResponses, unknown, ThrowOnError>({ url: '/channels', ...options });
+
+/**
+ * Start the Google OAuth flow (PKCE, single-use state bound to this session)
+ */
+export const startYouTubeConnect = <ThrowOnError extends boolean = false>(options?: Options<StartYouTubeConnectData, ThrowOnError>): RequestResult<StartYouTubeConnectResponses, StartYouTubeConnectErrors, ThrowOnError> => (options?.client ?? client).post<StartYouTubeConnectResponses, StartYouTubeConnectErrors, ThrowOnError>({ url: '/channels/connect', ...options });
+
+/**
+ * Google redirects here after consent; stores the channel and redirects back to Settings
+ *
+ * Always answers with a redirect to /settings/youtube carrying connect=ok or connect=error plus a short reason code. Tokens are exchanged server side and never reach the browser.
+ */
+export const youTubeOAuthCallback = <ThrowOnError extends boolean = false>(options?: Options<YouTubeOAuthCallbackData, ThrowOnError>): RequestResult<unknown, unknown, ThrowOnError> => (options?.client ?? client).get<unknown, unknown, ThrowOnError>({ url: '/channels/oauth/callback', ...options });
+
+/**
+ * Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+ */
+export const disconnectYouTubeChannel = <ThrowOnError extends boolean = false>(options: Options<DisconnectYouTubeChannelData, ThrowOnError>): RequestResult<DisconnectYouTubeChannelResponses, DisconnectYouTubeChannelErrors, ThrowOnError> => (options.client ?? client).delete<DisconnectYouTubeChannelResponses, DisconnectYouTubeChannelErrors, ThrowOnError>({ url: '/channels/{id}', ...options });
+
+/**
+ * Record whether the Google API project passed YouTube's audit (audited)
+ */
+export const updateYouTubeChannelAudit = <ThrowOnError extends boolean = false>(options: Options<UpdateYouTubeChannelAuditData, ThrowOnError>): RequestResult<UpdateYouTubeChannelAuditResponses, UpdateYouTubeChannelAuditErrors, ThrowOnError> => (options.client ?? client).patch<UpdateYouTubeChannelAuditResponses, UpdateYouTubeChannelAuditErrors, ThrowOnError>({
+    url: '/channels/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Cursor-paginated list of the active tenant's series

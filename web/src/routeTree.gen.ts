@@ -18,6 +18,7 @@ import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/ind
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppSettingsLlmRouteImport } from './routes/_app/settings/llm'
 import { Route as AppSettingsModelsRouteImport } from './routes/_app/settings/models'
+import { Route as AppSettingsYoutubeRouteImport } from './routes/_app/settings/youtube'
 import { Route as AppProjectsSeriesIdIndexRouteImport } from './routes/_app/projects/$seriesId/index'
 import { Route as AppProjectsSeriesIdBibleRouteImport } from './routes/_app/projects/$seriesId/bible'
 import { Route as AppProjectsSeriesIdEpisodesEpisodeIdRouteImport } from './routes/_app/projects/$seriesId/episodes/$episodeId'
@@ -66,6 +67,11 @@ const AppSettingsModelsRoute = AppSettingsModelsRouteImport.update({
   path: '/settings/models',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsYoutubeRoute = AppSettingsYoutubeRouteImport.update({
+  id: '/settings/youtube',
+  path: '/settings/youtube',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsSeriesIdIndexRoute =
   AppProjectsSeriesIdIndexRouteImport.update({
     id: '/projects/$seriesId/',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/settings/youtube': typeof AppSettingsYoutubeRoute
   '/projects/': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/llm': typeof AppSettingsLlmRoute
   '/settings/models': typeof AppSettingsModelsRoute
+  '/settings/youtube': typeof AppSettingsYoutubeRoute
   '/projects': typeof AppProjectsIndexRoute
   '/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/projects/$seriesId': typeof AppProjectsSeriesIdIndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/llm': typeof AppSettingsLlmRoute
   '/_app/settings/models': typeof AppSettingsModelsRoute
+  '/_app/settings/youtube': typeof AppSettingsYoutubeRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
   '/_app/projects/$seriesId/bible': typeof AppProjectsSeriesIdBibleRoute
   '/_app/projects/$seriesId/': typeof AppProjectsSeriesIdIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/llm'
     | '/settings/models'
+    | '/settings/youtube'
     | '/projects/'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId/'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/llm'
     | '/settings/models'
+    | '/settings/youtube'
     | '/projects'
     | '/projects/$seriesId/bible'
     | '/projects/$seriesId'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_app/settings/account'
     | '/_app/settings/llm'
     | '/_app/settings/models'
+    | '/_app/settings/youtube'
     | '/_app/projects/'
     | '/_app/projects/$seriesId/bible'
     | '/_app/projects/$seriesId/'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsModelsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/youtube': {
+      id: '/_app/settings/youtube'
+      path: '/settings/youtube'
+      fullPath: '/settings/youtube'
+      preLoaderRoute: typeof AppSettingsYoutubeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$seriesId/': {
       id: '/_app/projects/$seriesId/'
       path: '/projects/$seriesId'
@@ -270,6 +289,7 @@ interface AppRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
   AppSettingsLlmRoute: typeof AppSettingsLlmRoute
   AppSettingsModelsRoute: typeof AppSettingsModelsRoute
+  AppSettingsYoutubeRoute: typeof AppSettingsYoutubeRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppProjectsSeriesIdBibleRoute: typeof AppProjectsSeriesIdBibleRoute
   AppProjectsSeriesIdIndexRoute: typeof AppProjectsSeriesIdIndexRoute
@@ -283,6 +303,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsAccountRoute: AppSettingsAccountRoute,
   AppSettingsLlmRoute: AppSettingsLlmRoute,
   AppSettingsModelsRoute: AppSettingsModelsRoute,
+  AppSettingsYoutubeRoute: AppSettingsYoutubeRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppProjectsSeriesIdBibleRoute: AppProjectsSeriesIdBibleRoute,
   AppProjectsSeriesIdIndexRoute: AppProjectsSeriesIdIndexRoute,
