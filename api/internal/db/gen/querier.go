@@ -20,6 +20,9 @@ type Querier interface {
 	CancelRunSteps(ctx context.Context, arg CancelRunStepsParams) ([]PipelineStep, error)
 	CancelScopeSteps(ctx context.Context, arg CancelScopeStepsParams) ([]PipelineStep, error)
 	CancelStep(ctx context.Context, arg CancelStepParams) (PipelineStep, error)
+	// Which episodes each character of a series appears in, and in how many
+	// scenes, aggregated from scenes.character_ids in one query.
+	CharacterEpisodeAppearances(ctx context.Context, arg CharacterEpisodeAppearancesParams) ([]CharacterEpisodeAppearancesRow, error)
 	// Model installs, verified files and benchmarks. Not tenant-scoped (see
 	// the models migration): one GPU and one models volume per deployment.
 	// Moves a model into "downloading" unless a pull is already running for
@@ -47,8 +50,16 @@ type Querier interface {
 	CountNonTerminalStepsInRun(ctx context.Context, arg CountNonTerminalStepsInRunParams) (int64, error)
 	// lint-tenant-queries:allow: cross-tenant GPU scheduling decision, there is only one physical GPU
 	CountQueuedGpuStepsForModel(ctx context.Context, arg CountQueuedGpuStepsForModelParams) (int64, error)
+	CountVoicePresetUses(ctx context.Context, arg CountVoicePresetUsesParams) (int32, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateBackupRun(ctx context.Context, arg CreateBackupRunParams) (BackupRun, error)
+	CreateCharacter(ctx context.Context, arg CreateCharacterParams) (Character, error)
+	CreateCharacterLora(ctx context.Context, arg CreateCharacterLoraParams) (CharacterLora, error)
+	CreateCharacterRef(ctx context.Context, arg CreateCharacterRefParams) (CharacterRef, error)
+	// An asset produced server-side (a generated image, a voice track, a
+	// subtitle alignment, waveform peaks): the bytes are already in object
+	// storage, so it is created ready.
+	CreateDerivedAsset(ctx context.Context, arg CreateDerivedAssetParams) (Asset, error)
 	CreateDraft(ctx context.Context, arg CreateDraftParams) (EpisodeDraft, error)
 	// Used by the create-draft endpoint and by any AI action that needs a
 	// draft to write into (continue, expand_beat) but tolerates one already
@@ -56,6 +67,7 @@ type Querier interface {
 	// the caller should GetDraft instead of failing.
 	CreateDraftIfAbsent(ctx context.Context, arg CreateDraftIfAbsentParams) (EpisodeDraft, error)
 	CreateEpisode(ctx context.Context, arg CreateEpisodeParams) (Episode, error)
+	CreateImageStyle(ctx context.Context, arg CreateImageStyleParams) (ImageStyle, error)
 	CreateImport(ctx context.Context, arg CreateImportParams) (Import, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
 	CreateRun(ctx context.Context, arg CreateRunParams) (PipelineRun, error)
@@ -64,13 +76,19 @@ type Querier interface {
 	CreateStoryBible(ctx context.Context, arg CreateStoryBibleParams) (StoryBible, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateVoicePreset(ctx context.Context, arg CreateVoicePresetParams) (VoicePreset, error)
 	DecrementRemainingDeps(ctx context.Context, arg DecrementRemainingDepsParams) ([]PipelineStep, error)
+	DeleteCharacter(ctx context.Context, arg DeleteCharacterParams) (int64, error)
+	DeleteCharacterRef(ctx context.Context, arg DeleteCharacterRefParams) (int64, error)
 	DeleteEpisode(ctx context.Context, arg DeleteEpisodeParams) error
 	// Best-effort housekeeping, called opportunistically (not on a schedule)
 	// so the table does not grow unbounded; safe to run concurrently.
 	DeleteExpiredSessions(ctx context.Context) error
+	DeleteImageStyle(ctx context.Context, arg DeleteImageStyleParams) (int64, error)
 	DeleteModelFile(ctx context.Context, path string) error
 	DeleteModelInstall(ctx context.Context, name string) error
+	// Drops the scenes a re-split did not keep (their takes cascade).
+	DeleteScenesExcept(ctx context.Context, arg DeleteScenesExceptParams) ([]pgtype.UUID, error)
 	DeleteSeries(ctx context.Context, arg DeleteSeriesParams) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
 	// Called on login so a fresh login revokes any session(s) left over from
@@ -78,14 +96,21 @@ type Querier interface {
 	DeleteSessionsForUser(ctx context.Context, userID pgtype.UUID) error
 	// Best-effort housekeeping for the same reason as DeleteExpiredSessions.
 	DeleteStaleRateLimitBuckets(ctx context.Context) error
+	DeleteVoicePreset(ctx context.Context, arg DeleteVoicePresetParams) (int64, error)
 	// Used by the reconciler when a "queued" step has exceeded its stranded
 	// re-enqueue budget: unlike CommitStepFailed this fences on status =
 	// 'queued', not 'running', since a stranded step was never re-claimed.
 	// lint-tenant-queries:allow: internal reconciler write, not caller input
 	FailQueuedStep(ctx context.Context, arg FailQueuedStepParams) (PipelineStep, error)
+	// The tenant-wide fallback when neither the scene nor the series names a
+	// style: the oldest one.
+	FirstImageStyle(ctx context.Context, tenantID pgtype.UUID) (ImageStyle, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	// Used to check ownership of a key before signing or finalizing it.
 	GetAssetByStorageKey(ctx context.Context, arg GetAssetByStorageKeyParams) (Asset, error)
+	GetCharacter(ctx context.Context, arg GetCharacterParams) (Character, error)
+	GetCharacterLora(ctx context.Context, arg GetCharacterLoraParams) (CharacterLora, error)
+	GetCharacterRef(ctx context.Context, arg GetCharacterRefParams) (CharacterRef, error)
 	// The reverse of GetDependents: every step ids' own upstream steps,
 	// tenant-scoped (unlike the version this replaces).
 	GetDependencies(ctx context.Context, arg GetDependenciesParams) ([]GetDependenciesRow, error)
@@ -93,6 +118,7 @@ type Querier interface {
 	GetDraft(ctx context.Context, arg GetDraftParams) (EpisodeDraft, error)
 	GetDraftByID(ctx context.Context, arg GetDraftByIDParams) (EpisodeDraft, error)
 	GetEpisodeByID(ctx context.Context, arg GetEpisodeByIDParams) (Episode, error)
+	GetImageStyle(ctx context.Context, arg GetImageStyleParams) (ImageStyle, error)
 	GetImportByID(ctx context.Context, arg GetImportByIDParams) (Import, error)
 	GetLLMSettings(ctx context.Context, tenantID pgtype.UUID) (LlmSetting, error)
 	GetLatestBackupRun(ctx context.Context) (BackupRun, error)
@@ -106,18 +132,25 @@ type Querier interface {
 	// requested topic instead of one round trip each.
 	GetRunIDsForTenant(ctx context.Context, arg GetRunIDsForTenantParams) ([]pgtype.UUID, error)
 	GetRunningGpuStepForTenant(ctx context.Context, tenantID pgtype.UUID) (PipelineStep, error)
+	GetScene(ctx context.Context, arg GetSceneParams) (Scene, error)
+	GetScenesByIDs(ctx context.Context, arg GetScenesByIDsParams) ([]Scene, error)
 	// Placeholder query proving the sqlc -> pgx/v5 pipeline against goose's own
 	// version table. Later phases add domain queries here and in sibling files.
 	GetSchemaVersion(ctx context.Context) (GetSchemaVersionRow, error)
 	GetSecret(ctx context.Context, arg GetSecretParams) (Secret, error)
+	GetSelectedTake(ctx context.Context, arg GetSelectedTakeParams) (SceneTake, error)
 	GetSeriesByID(ctx context.Context, arg GetSeriesByIDParams) (Series, error)
 	GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error)
 	GetStepByID(ctx context.Context, arg GetStepByIDParams) (PipelineStep, error)
 	GetStoryBible(ctx context.Context, arg GetStoryBibleParams) (StoryBible, error)
+	GetStoryboardSettings(ctx context.Context, arg GetStoryboardSettingsParams) (SeriesStoryboardSetting, error)
+	GetTake(ctx context.Context, arg GetTakeParams) (SceneTake, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (Tenant, error)
 	GetTenantQuota(ctx context.Context, tenantID pgtype.UUID) (TenantQuota, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetVoicePreset(ctx context.Context, arg GetVoicePresetParams) (VoicePreset, error)
+	GetVoicePresetsByIDs(ctx context.Context, arg GetVoicePresetsByIDsParams) ([]VoicePreset, error)
 	HasFailedStepsInRun(ctx context.Context, arg HasFailedStepsInRunParams) (bool, error)
 	// lint-tenant-queries:allow: internal heartbeat fenced by id+attempt, not caller input
 	HeartbeatStep(ctx context.Context, arg HeartbeatStepParams) (int64, error)
@@ -131,18 +164,30 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDraftRevision(ctx context.Context, arg InsertDraftRevisionParams) error
 	InsertModelBenchmark(ctx context.Context, arg InsertModelBenchmarkParams) error
+	InsertScene(ctx context.Context, arg InsertSceneParams) (Scene, error)
 	// Batched (pgx pipelining) so enqueueing hundreds of steps in one
 	// transaction stays within the enqueue latency budget.
 	InsertStepBatch(ctx context.Context, arg []InsertStepBatchParams) *InsertStepBatchBatchResults
 	InsertStepDepBatch(ctx context.Context, arg []InsertStepDepBatchParams) *InsertStepDepBatchBatchResults
+	InsertTake(ctx context.Context, arg InsertTakeParams) (SceneTake, error)
+	// The newest ready LoRA of each given character: what an image step uses.
+	LatestReadyLoras(ctx context.Context, arg LatestReadyLorasParams) ([]CharacterLora, error)
 	ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset, error)
+	// Backfill: ready images without image variants and ready audio without
+	// waveform peaks.
+	ListAssetsMissingDerivatives(ctx context.Context, arg ListAssetsMissingDerivativesParams) ([]Asset, error)
 	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]AuditLog, error)
+	ListCharacterLorasBySeries(ctx context.Context, arg ListCharacterLorasBySeriesParams) ([]CharacterLora, error)
+	ListCharacterRefsBySeries(ctx context.Context, arg ListCharacterRefsBySeriesParams) ([]CharacterRef, error)
+	ListCharacterVoicesBySeries(ctx context.Context, arg ListCharacterVoicesBySeriesParams) ([]CharacterVoice, error)
+	ListCharactersBySeries(ctx context.Context, arg ListCharactersBySeriesParams) ([]Character, error)
 	ListDraftRevisions(ctx context.Context, arg ListDraftRevisionsParams) ([]EpisodeDraftRevision, error)
 	ListEpisodesBySeries(ctx context.Context, arg ListEpisodesBySeriesParams) ([]Episode, error)
 	// One query for the episode list: word count and draft presence per
 	// language are aggregated here instead of a per-row N+1 lookup.
 	ListEpisodesWithDraftStatus(ctx context.Context, arg ListEpisodesWithDraftStatusParams) ([]ListEpisodesWithDraftStatusRow, error)
 	ListGpuQueueForTenant(ctx context.Context, arg ListGpuQueueForTenantParams) ([]PipelineStep, error)
+	ListImageStyles(ctx context.Context, tenantID pgtype.UUID) ([]ImageStyle, error)
 	ListImports(ctx context.Context, arg ListImportsParams) ([]Import, error)
 	// No filter: the (tenant_id, id) index.
 	ListJobs(ctx context.Context, arg ListJobsParams) ([]PipelineStep, error)
@@ -156,8 +201,14 @@ type Querier interface {
 	ListModelBenchmarksByRun(ctx context.Context, runID pgtype.UUID) ([]ModelBenchmark, error)
 	ListModelFiles(ctx context.Context) ([]ModelFile, error)
 	ListModelInstalls(ctx context.Context) ([]ModelInstall, error)
+	ListNarratorVoicesBySeries(ctx context.Context, arg ListNarratorVoicesBySeriesParams) ([]NarratorVoice, error)
+	// Everything storyctx pins into a series' LLM requests.
+	ListPinnedCharacterProfiles(ctx context.Context, arg ListPinnedCharacterProfilesParams) ([]ListPinnedCharacterProfilesRow, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
+	ListScenes(ctx context.Context, arg ListScenesParams) ([]Scene, error)
 	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
+	ListTakes(ctx context.Context, arg ListTakesParams) ([]ListTakesRow, error)
+	ListVoicePresets(ctx context.Context, tenantID pgtype.UUID) ([]VoicePreset, error)
 	// Serializes concurrent Enqueue calls for the same tenant so the
 	// quota check-then-insert in Engine.Enqueue cannot race: every caller
 	// must hold this lock (acquired inside the same transaction as the
@@ -185,6 +236,8 @@ type Querier interface {
 	// done step's dependents permanently skipped.
 	MarkStepsPending(ctx context.Context, arg MarkStepsPendingParams) ([]PipelineStep, error)
 	MarkStepsQueued(ctx context.Context, arg MarkStepsQueuedParams) ([]PipelineStep, error)
+	MarkTakeSelected(ctx context.Context, arg MarkTakeSelectedParams) (SceneTake, error)
+	NextCharacterLoraVersion(ctx context.Context, arg NextCharacterLoraVersionParams) (int32, error)
 	NextEpisodeIdx(ctx context.Context, arg NextEpisodeIdxParams) (int32, error)
 	// Candidate "queued" steps under their stranded-requeue budget, for the
 	// reconciler to check against River's own job table (not visible to
@@ -215,6 +268,9 @@ type Querier interface {
 	// rows come back.
 	// lint-tenant-queries:allow: system-wide reconciler sweep, not scoped to a caller's tenant
 	ResetStaleHeartbeatsBatch(ctx context.Context, arg ResetStaleHeartbeatsBatchParams) ([]PipelineStep, error)
+	// A re-split kept this scene because its narration hash is unchanged:
+	// only its position and paragraph ids move, so every take stays valid.
+	ResplitKeepScene(ctx context.Context, arg ResplitKeepSceneParams) (Scene, error)
 	// Only revives a step whose run is still active (never canceled or
 	// superseded) and whose own dependencies are already satisfied
 	// (remaining_deps <= 0); otherwise this returns no rows and the caller
@@ -227,19 +283,34 @@ type Querier interface {
 	// 7-day absolute lifetime, or repeatedly switching tenants would keep a
 	// session alive forever.
 	RotateSession(ctx context.Context, arg RotateSessionParams) (Session, error)
+	// The storyboard's one query per episode: every scene with the latest
+	// pipeline step of each per-scene kind and the selected take of each
+	// kind (with its asset), read through LATERAL joins instead of one query
+	// per scene.
+	SceneRollup(ctx context.Context, arg SceneRollupParams) ([]SceneRollupRow, error)
 	// Writes a generated section unless a person has written that section:
 	// regenerating the bible never overwrites user edits.
 	SeedStoryBibleSection(ctx context.Context, arg SeedStoryBibleSectionParams) error
+	SetAssetDimensions(ctx context.Context, arg SetAssetDimensionsParams) error
+	// Merges new derivative keys (image variants, waveform peaks) into the
+	// asset's variants map without dropping keys another step wrote.
+	SetAssetVariants(ctx context.Context, arg SetAssetVariantsParams) (Asset, error)
 	SetModelInstallStep(ctx context.Context, arg SetModelInstallStepParams) error
+	SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeasuredDurationParams) (Scene, error)
 	// Cancels and links a run to its replacement in a single statement (the
 	// caller wraps this with CancelRunSteps in one transaction): the run row
 	// itself never passes through an intermediate "canceled" state that a
 	// concurrent reader could observe, and newRunID must already exist
 	// (insert it before calling this, never after).
 	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
+	TouchScene(ctx context.Context, arg TouchSceneParams) (Scene, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	// Keeps only the newest 50 revisions per draft; called after each insert.
 	TrimDraftRevisions(ctx context.Context, draftID pgtype.UUID) error
+	UnselectTakes(ctx context.Context, arg UnselectTakesParams) error
+	UpdateCharacter(ctx context.Context, arg UpdateCharacterParams) (Character, error)
+	UpdateCharacterLoraStatus(ctx context.Context, arg UpdateCharacterLoraStatusParams) (CharacterLora, error)
+	UpdateCharacterRef(ctx context.Context, arg UpdateCharacterRefParams) (CharacterRef, error)
 	// version = current_version + 1 is computed by the caller (story.Store)
 	// after loading and CAS-checking the row inside the same transaction, so
 	// the WHERE clause below is the actual optimistic-concurrency fence: a
@@ -248,8 +319,11 @@ type Querier interface {
 	UpdateDraftSummary(ctx context.Context, arg UpdateDraftSummaryParams) (EpisodeDraft, error)
 	UpdateEpisodeMeta(ctx context.Context, arg UpdateEpisodeMetaParams) (Episode, error)
 	UpdateEpisodeOutline(ctx context.Context, arg UpdateEpisodeOutlineParams) (Episode, error)
+	UpdateImageStyle(ctx context.Context, arg UpdateImageStyleParams) (ImageStyle, error)
 	UpdateImportPreview(ctx context.Context, arg UpdateImportPreviewParams) (Import, error)
 	UpdateModelInstallProgress(ctx context.Context, arg UpdateModelInstallProgressParams) error
+	// Optimistic concurrency: a stale expected_version updates nothing.
+	UpdateSceneEdit(ctx context.Context, arg UpdateSceneEditParams) (Scene, error)
 	UpdateSeries(ctx context.Context, arg UpdateSeriesParams) (Series, error)
 	// lint-tenant-queries:allow: internal progress write fenced by id+attempt, not caller input
 	UpdateStepProgress(ctx context.Context, arg UpdateStepProgressParams) (PipelineStep, error)
@@ -259,9 +333,13 @@ type Querier interface {
 	// the same section finds no row and is reported as a conflict.
 	UpdateStoryBibleSection(ctx context.Context, arg UpdateStoryBibleSectionParams) (StoryBible, error)
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpdateVoicePreset(ctx context.Context, arg UpdateVoicePresetParams) (VoicePreset, error)
+	UpsertCharacterVoice(ctx context.Context, arg UpsertCharacterVoiceParams) (CharacterVoice, error)
 	UpsertLLMSettings(ctx context.Context, arg UpsertLLMSettingsParams) (LlmSetting, error)
 	UpsertModelFile(ctx context.Context, arg UpsertModelFileParams) error
+	UpsertNarratorVoice(ctx context.Context, arg UpsertNarratorVoiceParams) (NarratorVoice, error)
 	UpsertSecret(ctx context.Context, arg UpsertSecretParams) error
+	UpsertStoryboardSettings(ctx context.Context, arg UpsertStoryboardSettingsParams) (SeriesStoryboardSetting, error)
 	UpsertWorkerStatus(ctx context.Context, arg UpsertWorkerStatusParams) error
 }
 

@@ -52,6 +52,61 @@ type BackupRun struct {
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
+type Character struct {
+	ID               pgtype.UUID        `json:"id"`
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	SeriesID         pgtype.UUID        `json:"series_id"`
+	NameOrig         string             `json:"name_orig"`
+	NameEn           string             `json:"name_en"`
+	NameVi           string             `json:"name_vi"`
+	Role             string             `json:"role"`
+	AppearancePrompt string             `json:"appearance_prompt"`
+	NegativePrompt   string             `json:"negative_prompt"`
+	TriggerToken     string             `json:"trigger_token"`
+	Profile          string             `json:"profile"`
+	Pinned           bool               `json:"pinned"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type CharacterLora struct {
+	ID              pgtype.UUID        `json:"id"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	CharacterID     pgtype.UUID        `json:"character_id"`
+	Version         int32              `json:"version"`
+	DatasetAssetIds []pgtype.UUID      `json:"dataset_asset_ids"`
+	TrainerParams   []byte             `json:"trainer_params"`
+	Status          string             `json:"status"`
+	WeightsAssetID  pgtype.UUID        `json:"weights_asset_id"`
+	WeightsFile     string             `json:"weights_file"`
+	StepID          pgtype.UUID        `json:"step_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type CharacterRef struct {
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	CharacterID pgtype.UUID        `json:"character_id"`
+	AssetID     pgtype.UUID        `json:"asset_id"`
+	Angle       string             `json:"angle"`
+	Approved    bool               `json:"approved"`
+	Origin      string             `json:"origin"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type CharacterVoice struct {
+	ID            pgtype.UUID        `json:"id"`
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	CharacterID   pgtype.UUID        `json:"character_id"`
+	Lang          string             `json:"lang"`
+	Engine        string             `json:"engine"`
+	VoicePresetID pgtype.UUID        `json:"voice_preset_id"`
+	Params        []byte             `json:"params"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Episode struct {
 	ID                       pgtype.UUID        `json:"id"`
 	TenantID                 pgtype.UUID        `json:"tenant_id"`
@@ -95,6 +150,22 @@ type GooseDbVersion struct {
 	VersionID int64            `json:"version_id"`
 	IsApplied bool             `json:"is_applied"`
 	Tstamp    pgtype.Timestamp `json:"tstamp"`
+}
+
+type ImageStyle struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	Name           string             `json:"name"`
+	StylePrompt    string             `json:"style_prompt"`
+	NegativePrompt string             `json:"negative_prompt"`
+	BaseModel      string             `json:"base_model"`
+	Sampler        string             `json:"sampler"`
+	Steps          int32              `json:"steps"`
+	Width          int32              `json:"width"`
+	Height         int32              `json:"height"`
+	Loras          []byte             `json:"loras"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Import struct {
@@ -168,6 +239,17 @@ type ModelInstall struct {
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
+type NarratorVoice struct {
+	ID            pgtype.UUID        `json:"id"`
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	SeriesID      pgtype.UUID        `json:"series_id"`
+	Lang          string             `json:"lang"`
+	Engine        string             `json:"engine"`
+	VoicePresetID pgtype.UUID        `json:"voice_preset_id"`
+	Params        []byte             `json:"params"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PipelineRun struct {
 	ID           pgtype.UUID        `json:"id"`
 	TenantID     pgtype.UUID        `json:"tenant_id"`
@@ -225,6 +307,41 @@ type RateLimitBucket struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Scene struct {
+	ID               pgtype.UUID        `json:"id"`
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	EpisodeID        pgtype.UUID        `json:"episode_id"`
+	Lang             string             `json:"lang"`
+	Idx              int32              `json:"idx"`
+	ParagraphIds     []string           `json:"paragraph_ids"`
+	Narration        string             `json:"narration"`
+	Segments         []byte             `json:"segments"`
+	ImagePrompt      string             `json:"image_prompt"`
+	CharacterIds     []pgtype.UUID      `json:"character_ids"`
+	MotionPreset     string             `json:"motion_preset"`
+	ImageStyleID     pgtype.UUID        `json:"image_style_id"`
+	DurationMs       int32              `json:"duration_ms"`
+	DurationMeasured bool               `json:"duration_measured"`
+	TextHash         string             `json:"text_hash"`
+	Tainted          bool               `json:"tainted"`
+	Version          int64              `json:"version"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SceneTake struct {
+	ID        pgtype.UUID        `json:"id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	SceneID   pgtype.UUID        `json:"scene_id"`
+	Kind      string             `json:"kind"`
+	AssetID   pgtype.UUID        `json:"asset_id"`
+	Params    []byte             `json:"params"`
+	InputHash string             `json:"input_hash"`
+	Selected  bool               `json:"selected"`
+	StepID    pgtype.UUID        `json:"step_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Secret struct {
 	ID         pgtype.UUID        `json:"id"`
 	TenantID   pgtype.UUID        `json:"tenant_id"`
@@ -251,6 +368,16 @@ type Series struct {
 	CreatedBy            pgtype.UUID        `json:"created_by"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SeriesStoryboardSetting struct {
+	SeriesID     pgtype.UUID        `json:"series_id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ImageStyleID pgtype.UUID        `json:"image_style_id"`
+	CadenceMinS  int32              `json:"cadence_min_s"`
+	CadenceMaxS  int32              `json:"cadence_max_s"`
+	SegmentGapMs int32              `json:"segment_gap_ms"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Session struct {
@@ -295,6 +422,19 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VoicePreset struct {
+	ID              pgtype.UUID        `json:"id"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	Name            string             `json:"name"`
+	Engine          string             `json:"engine"`
+	RefAudioAssetID pgtype.UUID        `json:"ref_audio_asset_id"`
+	Params          []byte             `json:"params"`
+	ConsentedAt     pgtype.Timestamptz `json:"consented_at"`
+	ConsentedBy     pgtype.UUID        `json:"consented_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
 type WorkerStatus struct {
