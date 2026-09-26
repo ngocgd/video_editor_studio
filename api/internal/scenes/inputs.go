@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"loomtale/api/internal/pipeline"
+	"loomtale/api/internal/voiceparams"
 )
 
 // Take kinds and the step kind that produces each.
@@ -66,14 +67,13 @@ type Voice struct {
 	Params       map[string]string
 }
 
-// MergedParams is the engine parameters of a voice: preset params
-// overridden by the assignment's own.
+// MergedParams is the engine tuning parameters of a voice: preset params
+// overridden by the assignment's own. Control keys (reference_url,
+// consent, output_key, language) and the built-in voice name are never
+// copied from stored params; the TTS caller sets its own.
 func (v Voice) MergedParams() map[string]string {
-	out := map[string]string{}
-	for k, val := range v.PresetParams {
-		out[k] = val
-	}
-	for k, val := range v.Params {
+	out := voiceparams.Tuning(v.PresetParams)
+	for k, val := range voiceparams.Tuning(v.Params) {
 		out[k] = val
 	}
 	return out

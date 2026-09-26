@@ -575,7 +575,7 @@ export type ModelActionResult = {
 };
 
 /**
- * Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4").
+ * Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
  */
 export type StringParams = {
     [key: string]: string;
@@ -2347,7 +2347,7 @@ export type CreateVoicePresetErrors = {
      */
     400: Problem;
     /**
-     * reference audio missing, not audio, or no consent
+     * reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
      */
     422: Problem;
 };
@@ -2413,7 +2413,7 @@ export type UpdateVoicePresetErrors = {
      */
     404: Problem;
     /**
-     * reference audio missing, not audio, or no consent
+     * reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
      */
     422: Problem;
 };
@@ -2609,6 +2609,10 @@ export type SetNarratorVoiceErrors = {
      * series or voice preset not found in this tenant
      */
     404: Problem;
+    /**
+     * a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
 };
 
 export type SetNarratorVoiceError = SetNarratorVoiceErrors[keyof SetNarratorVoiceErrors];
@@ -2840,6 +2844,10 @@ export type SetCharacterVoiceErrors = {
      * character or voice preset not found in this tenant
      */
     404: Problem;
+    /**
+     * a parameter is a server-set control key, unknown, or malformed
+     */
+    422: Problem;
 };
 
 export type SetCharacterVoiceError = SetCharacterVoiceErrors[keyof SetCharacterVoiceErrors];

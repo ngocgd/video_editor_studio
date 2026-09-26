@@ -36,7 +36,7 @@ voicePresets:
             schema:
               $ref: "../schemas/problem.yaml#/Problem"
       "422":
-        description: reference audio missing, not audio, or no consent
+        description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
         content:
           application/problem+json:
             schema:
@@ -80,7 +80,7 @@ voicePresetItem:
             schema:
               $ref: "../schemas/problem.yaml#/Problem"
       "422":
-        description: reference audio missing, not audio, or no consent
+        description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
         content:
           application/problem+json:
             schema:

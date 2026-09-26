@@ -1923,7 +1923,7 @@ export const ModelActionResultSchema = {
 
 export const StringParamsSchema = {
     type: 'object',
-    description: 'Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4").',
+    description: 'Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine\'s built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.',
     maxProperties: 32,
     additionalProperties: {
         type: 'string',

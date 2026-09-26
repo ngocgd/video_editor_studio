@@ -23,6 +23,7 @@ import (
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/storyctx"
 	"loomtale/api/internal/tenant"
+	"loomtale/api/internal/voiceparams"
 )
 
 // CharactersAPI implements the characters slice of gen.StrictServerInterface.
@@ -45,6 +46,18 @@ func decodeParams(raw []byte) gen.StringParams {
 	m := gen.StringParams{}
 	_ = json.Unmarshal(raw, &m)
 	return m
+}
+
+// refusedParams reports why voice params cannot be stored: a control key
+// the server sets itself, an unknown key or a malformed tuning value.
+func refusedParams(p *gen.StringParams) (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	if err := voiceparams.Validate(*p); err != nil {
+		return err.Error(), true
+	}
+	return "", false
 }
 
 func encodeParams(p *gen.StringParams) []byte {
@@ -459,6 +472,9 @@ func (h *CharactersAPI) SetCharacterVoice(ctx context.Context, req gen.SetCharac
 	if err != nil || !h.checkPreset(ctx, tid, req.Body.VoicePresetId) {
 		return gen.SetCharacterVoice404ApplicationProblemPlusJSONResponse(problem(http.StatusNotFound, "character or voice preset not found")), nil
 	}
+	if detail, bad := refusedParams(req.Body.Params); bad {
+		return gen.SetCharacterVoice422ApplicationProblemPlusJSONResponse{Title: "voice parameters refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+	}
 	v, err := h.Queries.UpsertCharacterVoice(ctx, dbgen.UpsertCharacterVoiceParams{
 		ID: idconv.ToPg(idconv.NewV7()), TenantID: tid, CharacterID: c.ID, Lang: string(req.Lang), Engine: req.Body.Engine,
 		VoicePresetID: idconv.ToPgPtr(req.Body.VoicePresetId), Params: encodeParams(req.Body.Params),
@@ -475,6 +491,9 @@ func (h *CharactersAPI) SetNarratorVoice(ctx context.Context, req gen.SetNarrato
 	tid := idconv.ToPg(info.ID)
 	if _, err := h.Queries.GetSeriesByID(ctx, dbgen.GetSeriesByIDParams{TenantID: tid, ID: idconv.ToPg(req.Id)}); err != nil || !h.checkPreset(ctx, tid, req.Body.VoicePresetId) {
 		return gen.SetNarratorVoice404ApplicationProblemPlusJSONResponse(problem(http.StatusNotFound, "series or voice preset not found")), nil
+	}
+	if detail, bad := refusedParams(req.Body.Params); bad {
+		return gen.SetNarratorVoice422ApplicationProblemPlusJSONResponse{Title: "voice parameters refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
 	}
 	v, err := h.Queries.UpsertNarratorVoice(ctx, dbgen.UpsertNarratorVoiceParams{
 		ID: idconv.ToPg(idconv.NewV7()), TenantID: tid, SeriesID: idconv.ToPg(req.Id), Lang: string(req.Lang), Engine: req.Body.Engine,

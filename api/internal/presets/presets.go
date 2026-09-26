@@ -23,6 +23,7 @@ import (
 	"loomtale/api/internal/httpapi/gen"
 	"loomtale/api/internal/httpx"
 	"loomtale/api/internal/tenant"
+	"loomtale/api/internal/voiceparams"
 )
 
 // SceneModels reports whether a manifest model can render scenes.
@@ -75,7 +76,8 @@ func (h *PresetsAPI) ListVoicePresets(ctx context.Context, _ gen.ListVoicePreset
 	return out, nil
 }
 
-// errConsent is a reference voice that cannot be stored as given.
+// errConsent is a reference voice or a parameter that cannot be stored
+// as given.
 type errConsent struct{ msg string }
 
 func (e errConsent) Error() string { return e.msg }
@@ -96,6 +98,11 @@ func (h *PresetsAPI) saveVoicePreset(ctx context.Context, id *uuid.UUID, body ge
 			return dbgen.VoicePreset{}, err
 		}
 		existing = &row
+	}
+	if body.Params != nil {
+		if err := voiceparams.Validate(*body.Params); err != nil {
+			return dbgen.VoicePreset{}, errConsent{err.Error()}
+		}
 	}
 	newConsent := false
 	if body.RefAudioAssetId != nil {
@@ -158,7 +165,7 @@ func (h *PresetsAPI) CreateVoicePreset(ctx context.Context, req gen.CreateVoiceP
 	var ce errConsent
 	if errors.As(err, &ce) {
 		detail := ce.msg
-		return gen.CreateVoicePreset422ApplicationProblemPlusJSONResponse{Title: "reference voice refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+		return gen.CreateVoicePreset422ApplicationProblemPlusJSONResponse{Title: "voice preset refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -175,7 +182,7 @@ func (h *PresetsAPI) UpdateVoicePreset(ctx context.Context, req gen.UpdateVoiceP
 		return gen.UpdateVoicePreset404ApplicationProblemPlusJSONResponse(problem(http.StatusNotFound, "voice preset not found")), nil
 	case errors.As(err, &ce):
 		detail := ce.msg
-		return gen.UpdateVoicePreset422ApplicationProblemPlusJSONResponse{Title: "reference voice refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
+		return gen.UpdateVoicePreset422ApplicationProblemPlusJSONResponse{Title: "voice preset refused", Status: http.StatusUnprocessableEntity, Detail: &detail}, nil
 	case err != nil:
 		return nil, err
 	}

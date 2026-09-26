@@ -649,3 +649,35 @@ func TestVoiceCloneNeedsAuditedConsentAndScenesStayInTheirTenant(t *testing.T) {
 	scene := listScenes(t, sess, f.episodeID, "all").Items[0]
 	requireStatus(t, sess.do(http.MethodPatch, "/scenes/"+sceneID, map[string]any{"expectedVersion": scene.Version, "characterIds": []string{foreignChar.ID}}), http.StatusBadRequest)
 }
+
+// A voice preset or assignment cannot carry the TTS control keys: a
+// stored reference_url with consent would clone any voice without the
+// audited consent and make the worker fetch any URL.
+func TestVoiceParamsCannotCarryServerControlKeys(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	f := newStoryboardFixture(t, dialogueDraft)
+	sess := f.sess
+	for _, params := range []map[string]string{
+		{"reference_url": "http://pyworker:50051/clip.wav", "consent": "granted"},
+		{"consent": "granted"},
+		{"output_key": "other-tenant/x.wav"},
+		{"language": "vi"},
+		{"not_a_tuning_key": "1"},
+	} {
+		requireStatus(t, sess.do(http.MethodPost, "/settings/voice-presets", map[string]any{"name": "Forged", "engine": "chatterbox", "params": params}), http.StatusUnprocessableEntity)
+		requireStatus(t, sess.do(http.MethodPut, "/characters/"+f.linMo+"/voices/en", map[string]any{"engine": "chatterbox", "params": params}), http.StatusUnprocessableEntity)
+		requireStatus(t, sess.do(http.MethodPut, "/series/"+f.seriesID+"/narrator-voices/en", map[string]any{"engine": "chatterbox", "params": params}), http.StatusUnprocessableEntity)
+	}
+	var preset struct{ ID string `json:"id"` }
+	sessionJSON(t, sess.do(http.MethodPost, "/settings/voice-presets", map[string]any{"name": "Tuned", "engine": "vieneu-v3-turbo", "params": map[string]string{"temperature": "0.7", "voice": "Ly"}}), http.StatusCreated, &preset)
+	requireStatus(t, sess.do(http.MethodPut, "/settings/voice-presets/"+preset.ID, map[string]any{"name": "Tuned", "engine": "vieneu-v3-turbo", "params": map[string]string{"reference_url": "http://x"}}), http.StatusUnprocessableEntity)
+	var audits int
+	if err := ownerPool(t).QueryRow(context.Background(),
+		`SELECT count(*) FROM audit_log WHERE action = 'voice_reference_consented' AND tenant_id = $1`, f.fx.TenantID,
+	).Scan(&audits); err != nil {
+		t.Fatal(err)
+	}
+	if audits != 0 {
+		t.Fatalf("a refused preset must not record a consent, got %d audit entries", audits)
+	}
+}

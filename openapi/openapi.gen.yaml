@@ -1508,7 +1508,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: reference audio missing, not audio, or no consent
+          description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
           content:
             application/problem+json:
               schema:
@@ -1553,7 +1553,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: reference audio missing, not audio, or no consent
+          description: reference audio missing, not audio, or no consent; or a parameter is a server-set control key, unknown, or malformed
           content:
             application/problem+json:
               schema:
@@ -1797,6 +1797,12 @@ paths:
                 $ref: '#/components/schemas/CharacterVoice'
         '404':
           description: series or voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: a parameter is a server-set control key, unknown, or malformed
           content:
             application/problem+json:
               schema:
@@ -2074,6 +2080,12 @@ paths:
                 $ref: '#/components/schemas/CharacterVoice'
         '404':
           description: character or voice preset not found in this tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: a parameter is a server-set control key, unknown, or malformed
           content:
             application/problem+json:
               schema:
@@ -3897,7 +3909,7 @@ components:
           format: uuid
     StringParams:
       type: object
-      description: Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4").
+      description: Engine tuning parameters, passed to the engine as strings (e.g. exaggeration "0.4"). On a voice preset or voice assignment only exaggeration, cfg_weight, temperature, seed and voice (an engine's built-in voice name) are accepted; reference_url, consent, output_key and language are set by the server and refused with 422.
       maxProperties: 32
       additionalProperties:
         type: string
