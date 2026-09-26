@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import {
   getScenePeaksOptions,
@@ -10,6 +10,7 @@ import {
 import { generateMissing, regenerateScene, selectSceneTake, splitScenes, updateScene } from "../../api/gen/sdk.gen";
 import type { Scene, SceneFilter, SceneLanguage, ScenePatch, SceneSplitRequest, TakeKind } from "../../api/gen/types.gen";
 import { getSseBridge } from "../../api/sse-bridge";
+import { useSettledValue } from "../../lib/use-settled-value";
 import { useSseTopics } from "../../api/use-sse-topics";
 
 /** The browser URL of an asset or one of its variants (a same-origin redirect to a short-lived object URL). */
@@ -97,14 +98,31 @@ export function useRegenerate(episodeId: string) {
   });
 }
 
+/**
+ * How long the selection must rest on a scene before its takes load.
+ * Holding J/K or an arrow key walks the grid at key-repeat speed, and each
+ * scene passed would otherwise cost one request of the per-IP API budget.
+ */
+export const TAKES_SETTLE_MS = 250;
+
+/** How long a loaded takes strip is reused when the selection comes back to its scene. */
+const TAKES_STALE_MS = 60_000;
+
 export function useTakes(sceneId: string | undefined, version: number | undefined) {
   const queryClient = useQueryClient();
+  const settledId = useSettledValue(sceneId, TAKES_SETTLE_MS);
   const options = listSceneTakesOptions({ path: { id: sceneId ?? "" } });
-  // A new take bumps the scene's version: refetch the strip then.
+  // A new take bumps the scene's version: refetch a strip whose scene
+  // changed since it was last shown, not merely because the selection moved.
+  const seen = useRef(new Map<string, number | undefined>());
   useEffect(() => {
-    if (sceneId) void queryClient.invalidateQueries({ queryKey: options.queryKey });
+    if (!sceneId) return;
+    const known = seen.current.has(sceneId);
+    const changed = known && seen.current.get(sceneId) !== version;
+    seen.current.set(sceneId, version);
+    if (changed) void queryClient.invalidateQueries({ queryKey: options.queryKey });
   }, [sceneId, version]); // eslint-disable-line react-hooks/exhaustive-deps
-  return useQuery({ ...options, enabled: Boolean(sceneId) });
+  return useQuery({ ...options, enabled: Boolean(sceneId) && settledId === sceneId, staleTime: TAKES_STALE_MS });
 }
 
 export function useSelectTake(episodeId: string) {
