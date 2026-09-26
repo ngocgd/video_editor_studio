@@ -7,10 +7,12 @@ import (
 	"loomtale/api/internal/characters"
 	"loomtale/api/internal/health"
 	"loomtale/api/internal/httpapi/gen"
+	"loomtale/api/internal/library"
 	"loomtale/api/internal/media"
 	"loomtale/api/internal/modelsapi"
 	"loomtale/api/internal/pipelineapi"
 	"loomtale/api/internal/presets"
+	"loomtale/api/internal/render"
 	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/settingsapi"
 	"loomtale/api/internal/story"
@@ -33,6 +35,8 @@ type server struct {
 	*characters.CharactersAPI
 	*scenes.ScenesAPI
 	*media.MediaAPI
+	*render.RenderAPI
+	*library.LibraryAPI
 }
 
 var _ gen.StrictServerInterface = (*server)(nil)

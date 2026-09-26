@@ -105,6 +105,9 @@ func applyWorkerStatus(ctx context.Context, status *gen.GpuStatus, store workerS
 			status.Resident = &gen.GpuResident{Backend: backend, Model: model}
 		}
 	}
+	if ws.GPU.Encoder != nil && status.Encoder == nil {
+		status.Encoder = &gen.GpuEncoder{Name: ws.GPU.Encoder.Codec, Hw: ws.GPU.Encoder.NVENC}
+	}
 	backends := make([]gen.GpuBackendStatus, 0, len(ws.Providers))
 	for name, info := range ws.Providers {
 		loaded := info.Loaded

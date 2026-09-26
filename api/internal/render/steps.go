@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,17 @@ func Handlers(d Deps) []pipeline.StepHandler {
 	return []pipeline.StepHandler{
 		&segmentHandler{Deps: d, kind: KindSceneBody}, &segmentHandler{Deps: d, kind: KindTransition},
 		&AudioHandler{Deps: d}, &SubtitlesHandler{Deps: d}, &ComposeHandler{Deps: d}, &PreviewHandler{Deps: d},
+	}
+}
+
+// EstimateWith answers for this package's step kinds and asks next
+// for every other kind, so one engine estimator covers all domains.
+func EstimateWith(next pipeline.StepEstimator) pipeline.StepEstimator {
+	return func(kind string) time.Duration {
+		if strings.HasPrefix(kind, "render.") {
+			return Estimate(kind)
+		}
+		return next(kind)
 	}
 }
 

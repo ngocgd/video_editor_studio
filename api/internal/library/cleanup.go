@@ -70,6 +70,17 @@ func Handlers(d Deps) []pipeline.StepHandler {
 	return []pipeline.StepHandler{&cleanupHandler{Deps: d, kind: KindCleanup}, &cleanupHandler{Deps: d, kind: KindTTLCleanup}}
 }
 
+// EstimateWith answers for this package's step kinds and asks next
+// for every other kind, so one engine estimator covers all domains.
+func EstimateWith(next pipeline.StepEstimator) pipeline.StepEstimator {
+	return func(kind string) time.Duration {
+		if kind == KindCleanup || kind == KindTTLCleanup {
+			return Estimate(kind)
+		}
+		return next(kind)
+	}
+}
+
 // Estimate is the per-kind duration estimate.
 func Estimate(kind string) time.Duration {
 	switch kind {

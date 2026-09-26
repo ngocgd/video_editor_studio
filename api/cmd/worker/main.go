@@ -27,6 +27,8 @@ import (
 	"loomtale/api/internal/crypto/envelope"
 	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/dbpool"
+	"loomtale/api/internal/diskguard"
+	"loomtale/api/internal/library"
 	"loomtale/api/internal/media"
 	"loomtale/api/internal/media/ffmpeg"
 	"loomtale/api/internal/models"
@@ -38,6 +40,7 @@ import (
 	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/providers/tts"
 	"loomtale/api/internal/providers/workerstatus"
+	"loomtale/api/internal/render"
 	"loomtale/api/internal/scenes"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/storage"
@@ -162,6 +165,18 @@ func run() error {
 	for _, h := range media.Handlers(media.Deps{Queries: queries, Storage: internalStore, Runner: ffmpegRunner}) {
 		registry.Register(h)
 	}
+	// Render steps run on the render queue of every worker (CPU filters,
+	// NVENC only as the encoder); the library cleanups on its cpu queue.
+	encoderProbe := &render.EncoderProbe{Prober: ffmpegRunner}
+	for _, h := range render.Handlers(render.Deps{
+		Queries: queries, Storage: internalStore, Runner: ffmpegRunner,
+		Prober: &ffmpeg.Prober{Binary: cfg.FFprobePath}, Encoder: encoderProbe,
+	}) {
+		registry.Register(h)
+	}
+	for _, h := range library.Handlers(library.Deps{Queries: queries, Storage: internalStore}) {
+		registry.Register(h)
+	}
 	// models.* steps only run on a GPU worker: that is the one with the
 	// models volume (read-write, for pulls) and the GPU network (for
 	// load/unload). A worker without them registers nothing, so it never
@@ -174,6 +189,8 @@ func run() error {
 	saasMode := strings.EqualFold(cfg.AppMode, "saas")
 	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager, func(ctx context.Context) map[string]workerstatus.ProviderInfo {
 		return llmProviderStatus(ctx, llmRegistry.Providers, saasMode)
+	}, func(ctx context.Context) *workerstatus.Encoder {
+		return render.HeartbeatInfo(encoderProbe.Info(ctx))
 	})
 
 	// A worker must never enable a queue no registered handler actually
@@ -195,6 +212,8 @@ func run() error {
 			pipeline.QueueLLM: {MaxWorkers: cfg.LLMWorkers},
 			// media.variants / media.peaks (ffmpeg on the worker image).
 			pipeline.QueueCPU: {MaxWorkers: cfg.CPUWorkers},
+			// render.* (ffmpeg segments, compose, preview).
+			pipeline.QueueRender: {MaxWorkers: cfg.RenderWorkers},
 		}
 		if cfg.WorkerGPU {
 			queueConfig[pipeline.QueueGPU] = river.QueueConfig{MaxWorkers: 1}
@@ -208,8 +227,19 @@ func run() error {
 	// worker bundle (needed to construct the client) holds a StepWorker
 	// that references this same Engine by pointer, so the dependency
 	// only resolves one way at a time.
-	engine := pipeline.NewEngine(pool.Pool, queries, nil, registry, nil, scenes.Estimate)
+	var admission []pipeline.AdmissionCheck
+	if cfg.DiskGuardPath != "" {
+		admission = append(admission, diskguard.New(cfg.DiskGuardPath, cfg.DiskMinFreeGB, cfg.DiskWarnFreeGB).Check)
+	}
+	engine := pipeline.NewEngine(pool.Pool, queries, nil, registry, admission, library.EstimateWith(render.EstimateWith(scenes.Estimate)))
 	sceneService.Engine = engine
+	// Recording a take here emits scenes.Changed too, so a running render
+	// of that episode restarts from this process as well.
+	superseder := &render.Superseder{Freezer: &render.Freezer{
+		Pool: pool.Pool, Queries: queries, Engine: engine, Encoder: render.ProbeEncoder{Probe: encoderProbe},
+	}}
+	defer superseder.Stop()
+	sceneService.Hooks.Register(superseder.Handle)
 	gpuExecutor := pipeline.NewGPUExecutor(engine, residency, cfg.RenderReserveMB)
 
 	workers := river.NewWorkers()

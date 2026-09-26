@@ -74,4 +74,11 @@ type config struct {
 	// PinCharacters adds a series' pinned character profiles to every
 	// story LLM request; false is the rollback switch for the pinning.
 	PinCharacters bool `env:"STORY_PIN_CHARACTERS" envDefault:"true"`
+
+	// DiskGuardPath is a mount on the Docker data disk (the object
+	// store's volume, read-only); the render and model-pull admission
+	// check measures free space there. Empty disables the check.
+	DiskGuardPath  string `env:"DISK_GUARD_PATH" envDefault:""`
+	DiskMinFreeGB  uint64 `env:"DISK_MIN_FREE_GB" envDefault:"40"`
+	DiskWarnFreeGB uint64 `env:"DISK_WARN_FREE_GB" envDefault:"60"`
 }
