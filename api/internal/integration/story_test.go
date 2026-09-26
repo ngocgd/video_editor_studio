@@ -248,6 +248,102 @@ func TestImportUTF8RoundTripsThroughPreviewAndCommit(t *testing.T) {
 			t.Fatalf("expected every imported paragraph tainted with origin=import, got %+v", p)
 		}
 	}
+
+	// A committed import can't be committed again or reopened by a new preview.
+	requireStatus(t, sess.do(http.MethodPost, "/imports/"+imp.Id+"/commit", map[string]any{"seriesId": seriesID}), http.StatusConflict)
+	requireStatus(t, sess.do(http.MethodPost, "/imports/"+imp.Id+"/preview", map[string]any{"splitPreset": "en_chapter"}), http.StatusUnprocessableEntity)
+}
+
+func TestImportConcurrentCommitsCreateEpisodesOnce(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "story-import-once", uniqueEmail("import-once"), "editor")
+	sess := login(t, fx.Email, fx.Password)
+	seriesID := createSeries(t, sess)
+
+	assetID := uploadTextAsset(t, sess, []byte("Chapter 1\nFirst.\n\nChapter 2\nSecond.\n\nChapter 3\nThird."), "text/plain")
+	createResp := sess.do(http.MethodPost, "/imports", map[string]any{"assetId": assetID, "seriesId": seriesID})
+	requireStatus(t, createResp, http.StatusCreated)
+	var imp struct {
+		Id string `json:"id"`
+	}
+	decodeJSON(t, createResp, &imp)
+	requireStatus(t, sess.do(http.MethodPost, "/imports/"+imp.Id+"/preview", map[string]any{"splitPreset": "en_chapter"}), http.StatusOK)
+
+	// A double-click: both requests race for the same import.
+	statuses := make(chan int, 2)
+	for range 2 {
+		go func() {
+			resp := sess.do(http.MethodPost, "/imports/"+imp.Id+"/commit", map[string]any{"seriesId": seriesID})
+			_ = resp.Body.Close()
+			statuses <- resp.StatusCode
+		}()
+	}
+	got := map[int]int{}
+	for range 2 {
+		got[<-statuses]++
+	}
+	if got[http.StatusOK] != 1 || got[http.StatusConflict] != 1 {
+		t.Fatalf("expected one 200 and one 409, got %v", got)
+	}
+
+	listResp := sess.do(http.MethodGet, "/episodes?seriesId="+seriesID, nil)
+	requireStatus(t, listResp, http.StatusOK)
+	var list struct {
+		Items []struct {
+			Id string `json:"id"`
+		} `json:"items"`
+	}
+	decodeJSON(t, listResp, &list)
+	if len(list.Items) != 3 {
+		t.Fatalf("expected 3 episodes after two commits of one import, got %d", len(list.Items))
+	}
+}
+
+func TestBibleSectionEditsDoNotOverwriteEachOther(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	pool := ownerPool(t)
+	q := gen.New(pool)
+	fx := createFixtureUser(t, q, "story-bible-cas", uniqueEmail("bible-cas"), "editor")
+	sess := login(t, fx.Email, fx.Password)
+	seriesID := createSeries(t, sess)
+
+	patch := func(section, content string, expected int) int {
+		resp := sess.do(http.MethodPatch, "/series/"+seriesID+"/bible", map[string]any{
+			"section": section, "content": content, "expectedVersion": expected,
+		})
+		_ = resp.Body.Close()
+		return resp.StatusCode
+	}
+
+	// Two editors, each saving a different section from the same starting point.
+	if s := patch("world", "A floating continent.", 0); s != http.StatusOK {
+		t.Fatalf("world: status %d", s)
+	}
+	if s := patch("glossary", "Qi: life energy.", 0); s != http.StatusOK {
+		t.Fatalf("glossary: status %d", s)
+	}
+	// A second save of the same section from the stale version is refused.
+	if s := patch("world", "An overwrite.", 0); s != http.StatusConflict {
+		t.Fatalf("stale world save: status %d, want 409", s)
+	}
+
+	bibleResp := sess.do(http.MethodGet, "/series/"+seriesID+"/bible", nil)
+	requireStatus(t, bibleResp, http.StatusOK)
+	var bible struct {
+		Sections map[string]struct {
+			Content string `json:"content"`
+			Version int    `json:"version"`
+		} `json:"sections"`
+	}
+	decodeJSON(t, bibleResp, &bible)
+	if bible.Sections["world"].Content != "A floating continent." || bible.Sections["world"].Version != 1 {
+		t.Fatalf("world section = %+v", bible.Sections["world"])
+	}
+	if bible.Sections["glossary"].Content != "Qi: life energy." {
+		t.Fatalf("glossary section lost: %+v", bible.Sections["glossary"])
+	}
 }
 
 // TestImportRejectsOversizedAsset covers the 10MB import-path cap. The
