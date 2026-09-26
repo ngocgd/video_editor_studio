@@ -99,6 +99,32 @@ func TestApplyParagraphOpsSequential(t *testing.T) {
 	}
 }
 
+func TestApplyParagraphOpsRejectsDuplicateID(t *testing.T) {
+	current := []Paragraph{{ID: "p1", Text: "Hello world"}}
+	// What a paragraph split that copied its id would send.
+	ops := []ParagraphOp{
+		{Op: "upsert", ParagraphID: "p1", Text: strPtr("Hello")},
+		{Op: "upsert", ParagraphID: "p2", Text: strPtr(" world")},
+		{Op: "upsert", ParagraphID: "p2", Text: strPtr(" again")},
+	}
+	if _, err := ApplyParagraphOps(current, ops); err != nil {
+		t.Fatalf("re-upserting one id should edit it in place, got %v", err)
+	}
+
+	// A draft already holding a duplicate id can't be saved as-is.
+	dup := []Paragraph{{ID: "p1", Text: "a"}, {ID: "p1", Text: "b"}}
+	if _, err := ApplyParagraphOps(dup, []ParagraphOp{{Op: "upsert", ParagraphID: "p1", Text: strPtr("c")}}); err != ErrDuplicateParagraph {
+		t.Fatalf("expected ErrDuplicateParagraph, got %v", err)
+	}
+}
+
+func TestApplyParagraphOpsRejectsEmptyID(t *testing.T) {
+	ops := []ParagraphOp{{Op: "upsert", ParagraphID: "", Text: strPtr("x")}}
+	if _, err := ApplyParagraphOps(nil, ops); err != ErrInvalidOp {
+		t.Fatalf("expected ErrInvalidOp, got %v", err)
+	}
+}
+
 func TestWordCount(t *testing.T) {
 	got := WordCount([]Paragraph{{Text: "hello world"}, {Text: "one two three"}})
 	if got != 5 {

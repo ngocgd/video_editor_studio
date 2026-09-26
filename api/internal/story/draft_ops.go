@@ -28,6 +28,10 @@ type ParagraphOp struct {
 // with AfterParagraphId set, whose "after" target is not present.
 var ErrUnknownParagraph = errors.New("story: paragraph op references an unknown paragraph id")
 
+// ErrDuplicateParagraph is returned when applying the ops would leave two
+// paragraphs sharing one id.
+var ErrDuplicateParagraph = errors.New("story: paragraph ops would duplicate a paragraph id")
+
 // ErrInvalidOp is returned for an op with an unrecognized Op value or
 // missing required fields (upsert without Text, move without
 // AfterParagraphId).
@@ -57,6 +61,18 @@ func ApplyParagraphOps(current []Paragraph, ops []ParagraphOp) ([]Paragraph, err
 		if err != nil {
 			return nil, err
 		}
+	}
+	// Every op addresses paragraphs by id, so a draft with an empty or
+	// repeated id could never be edited reliably again.
+	seen := make(map[string]struct{}, len(result))
+	for _, p := range result {
+		if p.ID == "" {
+			return nil, ErrInvalidOp
+		}
+		if _, dup := seen[p.ID]; dup {
+			return nil, ErrDuplicateParagraph
+		}
+		seen[p.ID] = struct{}{}
 	}
 	return result, nil
 }

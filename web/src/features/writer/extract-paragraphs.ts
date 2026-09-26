@@ -15,20 +15,26 @@ export function extractParagraphs(editor: Editor): DiffParagraph[] {
 }
 
 /**
- * Assigns a fresh id to any paragraph node missing one (e.g. created by
- * paste, not just Enter) in a single transaction. Safe to call from
- * `onUpdate`: once every paragraph has an id this is a no-op, so it cannot
- * loop.
+ * Assigns a fresh id to any paragraph node missing one (Enter) or reusing
+ * an id already seen earlier in the doc (paste of copied paragraphs), in a
+ * single transaction. Ids must be unique: the server rejects a draft with
+ * duplicates. Safe to call from `onUpdate`: once every id is present and
+ * unique this is a no-op, so it cannot loop.
  */
 export function backfillParagraphIds(editor: Editor): void {
   const { state } = editor;
   let tr = state.tr;
   let changed = false;
+  const seen = new Set<string>();
   state.doc.forEach((node, offset) => {
-    if (node.type.name === "paragraph" && !node.attrs.id) {
-      tr = tr.setNodeMarkup(offset, undefined, { ...node.attrs, id: newParagraphId() });
-      changed = true;
+    if (node.type.name !== "paragraph") return;
+    const id = node.attrs.id as string | null;
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      return;
     }
+    tr = tr.setNodeMarkup(offset, undefined, { ...node.attrs, id: newParagraphId() });
+    changed = true;
   });
   if (changed) editor.view.dispatch(tr);
 }

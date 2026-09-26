@@ -5,9 +5,11 @@ import { Node, mergeAttributes } from "@tiptap/core";
  * `StarterKit.configure({ paragraph: false })`) with one that carries an
  * `id` attribute matching the API's `DraftParagraph.id` (phase 6: "a
  * ProseMirror paragraph node must carry the paragraph's id attribute").
- * New paragraphs (Enter, paste) get a fresh client-generated id; the
- * autosave diff (see ./paragraph-diff) treats any id not in the last-saved
- * draft as new and emits `upsert` + `move` for it.
+ * The id is not copied on split (`keepOnSplit: false`), so Enter leaves
+ * the new paragraph without one and `backfillParagraphIds` gives it a
+ * fresh id; that also re-ids duplicates from paste. The autosave diff (see
+ * ./paragraph-diff) treats any id not in the last-saved draft as new and
+ * emits `upsert` + `move` for it.
  */
 export const ParagraphWithId = Node.create({
   name: "paragraph",
@@ -19,6 +21,7 @@ export const ParagraphWithId = Node.create({
     return {
       id: {
         default: null,
+        keepOnSplit: false,
         parseHTML: (element) => element.getAttribute("data-paragraph-id"),
         renderHTML: (attributes) => (attributes.id ? { "data-paragraph-id": attributes.id } : {}),
       },
@@ -31,19 +34,6 @@ export const ParagraphWithId = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["p", mergeAttributes(HTMLAttributes), 0];
-  },
-
-  addKeyboardShortcuts() {
-    return {
-      Enter: () =>
-        this.editor.commands.first(({ commands }) => [
-          () => commands.splitBlock(),
-          () =>
-            commands.updateAttributes(this.name, {
-              id: `p_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
-            }),
-        ]),
-    };
   },
 });
 
