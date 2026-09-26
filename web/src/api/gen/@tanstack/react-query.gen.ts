@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addCharacterRef, applyDraftStep, backfillMedia, cancelRun, cancelStep, commitImport, createAiAction, createCharacter, createDraft, createEpisode, createImageStyle, createImport, createRun, createSeries, createVoicePreset, deleteCharacter, deleteCharacterRef, deleteImageStyle, deleteVoicePreset, finalizeAsset, generateMissing, generateSeries, getAiActionResult, getAsset, getAssetVariant, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getScenePeaks, getSeries, getStepLog, getStoryboardSettings, installModel, listAssets, listAudit, listCharacters, listEpisodes, listImageStyles, listImports, listJobs, listModels, listRunSteps, listScenes, listSceneTakes, listSeries, listVoicePresets, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewCharacterVoice, previewImport, putLlmApiKey, putLlmSettings, putStoryboardSettings, regenerateCharacterSheet, regenerateScene, retryStep, selectSceneTake, setCharacterVoice, setNarratorVoice, splitScenes, switchTenant, testLlmSettings, trainCharacterLora, unloadModels, updateBibleSection, updateCharacter, updateCharacterRef, updateEpisode, updateImageStyle, updateScene, updateSeries, updateVoicePreset } from '../sdk.gen';
-import type { AddCharacterRefData, AddCharacterRefError, AddCharacterRefResponse, ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, BackfillMediaData, BackfillMediaResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateCharacterData, CreateCharacterError, CreateCharacterResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImageStyleData, CreateImageStyleError, CreateImageStyleResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, CreateVoicePresetData, CreateVoicePresetError, CreateVoicePresetResponse, DeleteCharacterData, DeleteCharacterError, DeleteCharacterRefData, DeleteCharacterRefError, DeleteCharacterRefResponse, DeleteCharacterResponse, DeleteImageStyleData, DeleteImageStyleError, DeleteImageStyleResponse, DeleteVoicePresetData, DeleteVoicePresetError, DeleteVoicePresetResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateMissingData, GenerateMissingError, GenerateMissingResponse2, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetAssetVariantData, GetAssetVariantError, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetScenePeaksData, GetScenePeaksError, GetScenePeaksResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, GetStoryboardSettingsData, GetStoryboardSettingsError, GetStoryboardSettingsResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListCharactersData, ListCharactersError, ListCharactersResponse, ListEpisodesData, ListEpisodesResponse, ListImageStylesData, ListImageStylesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListScenesData, ListScenesError, ListScenesResponse, ListSceneTakesData, ListSceneTakesError, ListSceneTakesResponse, ListSeriesData, ListSeriesResponse, ListVoicePresetsData, ListVoicePresetsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewCharacterVoiceData, PreviewCharacterVoiceError, PreviewCharacterVoiceResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, PutStoryboardSettingsData, PutStoryboardSettingsError, PutStoryboardSettingsResponse, RegenerateCharacterSheetData, RegenerateCharacterSheetError, RegenerateCharacterSheetResponse, RegenerateSceneData, RegenerateSceneError, RegenerateSceneResponse, RetryStepData, RetryStepError, RetryStepResponse, SelectSceneTakeData, SelectSceneTakeError, SelectSceneTakeResponse, SetCharacterVoiceData, SetCharacterVoiceError, SetCharacterVoiceResponse, SetNarratorVoiceData, SetNarratorVoiceError, SetNarratorVoiceResponse, SplitScenesData, SplitScenesError, SplitScenesResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrainCharacterLoraData, TrainCharacterLoraError, TrainCharacterLoraResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateCharacterData, UpdateCharacterError, UpdateCharacterRefData, UpdateCharacterRefError, UpdateCharacterRefResponse, UpdateCharacterResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateImageStyleData, UpdateImageStyleError, UpdateImageStyleResponse, UpdateSceneData, UpdateSceneError, UpdateSceneResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateVoicePresetData, UpdateVoicePresetError, UpdateVoicePresetResponse } from '../types.gen';
+import { addCharacterRef, applyDraftStep, backfillMedia, cancelRun, cancelStep, commitImport, confirmLibraryCleanup, createAiAction, createCharacter, createDraft, createEpisode, createImageStyle, createImport, createRun, createSeries, createVoicePreset, deleteCharacter, deleteCharacterRef, deleteImageStyle, deleteVoicePreset, finalizeAsset, generateMissing, generateSeries, getAiActionResult, getAsset, getAssetVariant, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLibrarySettings, getLibraryUsage, getLlmSettings, getMe, getReadyz, getRender, getRenderSettings, getRenderStatus, getRun, getScenePeaks, getSeries, getStepLog, getStoryboardSettings, installModel, listAssets, listAudit, listCharacters, listEpisodes, listImageStyles, listImports, listJobs, listLibraryAssets, listModels, listRenders, listRunSteps, listScenes, listSceneTakes, listSeries, listVoicePresets, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewCharacterVoice, previewImport, previewLibraryCleanup, putLibrarySettings, putLlmApiKey, putLlmSettings, putRenderSettings, putStoryboardSettings, regenerateCharacterSheet, regenerateScene, retryStep, selectSceneTake, setCharacterVoice, setNarratorVoice, splitScenes, startRender, switchTenant, testLlmSettings, trainCharacterLora, unloadModels, updateBibleSection, updateCharacter, updateCharacterRef, updateEpisode, updateImageStyle, updateScene, updateSeries, updateVoicePreset } from '../sdk.gen';
+import type { AddCharacterRefData, AddCharacterRefError, AddCharacterRefResponse, ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, BackfillMediaData, BackfillMediaResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, ConfirmLibraryCleanupData, ConfirmLibraryCleanupError, ConfirmLibraryCleanupResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateCharacterData, CreateCharacterError, CreateCharacterResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImageStyleData, CreateImageStyleError, CreateImageStyleResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, CreateVoicePresetData, CreateVoicePresetError, CreateVoicePresetResponse, DeleteCharacterData, DeleteCharacterError, DeleteCharacterRefData, DeleteCharacterRefError, DeleteCharacterRefResponse, DeleteCharacterResponse, DeleteImageStyleData, DeleteImageStyleError, DeleteImageStyleResponse, DeleteVoicePresetData, DeleteVoicePresetError, DeleteVoicePresetResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateMissingData, GenerateMissingError, GenerateMissingResponse2, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetAssetVariantData, GetAssetVariantError, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLibrarySettingsData, GetLibrarySettingsResponse, GetLibraryUsageData, GetLibraryUsageResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRenderData, GetRenderError, GetRenderResponse, GetRenderSettingsData, GetRenderSettingsError, GetRenderSettingsResponse, GetRenderStatusData, GetRenderStatusError, GetRenderStatusResponse, GetRunData, GetRunError, GetRunResponse, GetScenePeaksData, GetScenePeaksError, GetScenePeaksResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, GetStoryboardSettingsData, GetStoryboardSettingsError, GetStoryboardSettingsResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListCharactersData, ListCharactersError, ListCharactersResponse, ListEpisodesData, ListEpisodesResponse, ListImageStylesData, ListImageStylesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListLibraryAssetsData, ListLibraryAssetsResponse, ListModelsData, ListModelsResponse, ListRendersData, ListRendersError, ListRendersResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListScenesData, ListScenesError, ListScenesResponse, ListSceneTakesData, ListSceneTakesError, ListSceneTakesResponse, ListSeriesData, ListSeriesResponse, ListVoicePresetsData, ListVoicePresetsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewCharacterVoiceData, PreviewCharacterVoiceError, PreviewCharacterVoiceResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PreviewLibraryCleanupData, PreviewLibraryCleanupResponse, PutLibrarySettingsData, PutLibrarySettingsError, PutLibrarySettingsResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, PutRenderSettingsData, PutRenderSettingsError, PutRenderSettingsResponse, PutStoryboardSettingsData, PutStoryboardSettingsError, PutStoryboardSettingsResponse, RegenerateCharacterSheetData, RegenerateCharacterSheetError, RegenerateCharacterSheetResponse, RegenerateSceneData, RegenerateSceneError, RegenerateSceneResponse, RetryStepData, RetryStepError, RetryStepResponse, SelectSceneTakeData, SelectSceneTakeError, SelectSceneTakeResponse, SetCharacterVoiceData, SetCharacterVoiceError, SetCharacterVoiceResponse, SetNarratorVoiceData, SetNarratorVoiceError, SetNarratorVoiceResponse, SplitScenesData, SplitScenesError, SplitScenesResponse, StartRenderData, StartRenderError, StartRenderResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrainCharacterLoraData, TrainCharacterLoraError, TrainCharacterLoraResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateCharacterData, UpdateCharacterError, UpdateCharacterRefData, UpdateCharacterRefError, UpdateCharacterRefResponse, UpdateCharacterResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateImageStyleData, UpdateImageStyleError, UpdateImageStyleResponse, UpdateSceneData, UpdateSceneError, UpdateSceneResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateVoicePresetData, UpdateVoicePresetError, UpdateVoicePresetResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1775,6 +1775,247 @@ export const backfillMediaMutation = (options?: Partial<Options<BackfillMediaDat
     const mutationOptions: UseMutationOptions<BackfillMediaResponse, DefaultError, Options<BackfillMediaData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await backfillMedia({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRenderSettingsQueryKey = (options: Options<GetRenderSettingsData>) => createQueryKey('getRenderSettings', options);
+
+/**
+ * Render settings of an episode language (defaults when never saved)
+ */
+export const getRenderSettingsOptions = (options: Options<GetRenderSettingsData>) => queryOptions<GetRenderSettingsResponse, GetRenderSettingsError, GetRenderSettingsResponse, ReturnType<typeof getRenderSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRenderSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRenderSettingsQueryKey(options)
+});
+
+/**
+ * Replace the render settings of an episode language
+ */
+export const putRenderSettingsMutation = (options?: Partial<Options<PutRenderSettingsData>>): UseMutationOptions<PutRenderSettingsResponse, PutRenderSettingsError, Options<PutRenderSettingsData>> => {
+    const mutationOptions: UseMutationOptions<PutRenderSettingsResponse, PutRenderSettingsError, Options<PutRenderSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putRenderSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRenderStatusQueryKey = (options: Options<GetRenderStatusData>) => createQueryKey('getRenderStatus', options);
+
+/**
+ * Stage summary, readiness with the reasons a render is disabled, disk watermark, estimate and the latest render run of an episode language
+ */
+export const getRenderStatusOptions = (options: Options<GetRenderStatusData>) => queryOptions<GetRenderStatusResponse, GetRenderStatusError, GetRenderStatusResponse, ReturnType<typeof getRenderStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRenderStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRenderStatusQueryKey(options)
+});
+
+export const listRendersQueryKey = (options: Options<ListRendersData>) => createQueryKey('listRenders', options);
+
+/**
+ * Finished renders of an episode language, newest first, with their QC reports
+ */
+export const listRendersOptions = (options: Options<ListRendersData>) => queryOptions<ListRendersResponse, ListRendersError, ListRendersResponse, ReturnType<typeof listRendersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRenders({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRendersQueryKey(options)
+});
+
+/**
+ * Freeze a render manifest of the episode language and start its run; unchanged segments are reused from the cache
+ */
+export const startRenderMutation = (options?: Partial<Options<StartRenderData>>): UseMutationOptions<StartRenderResponse, StartRenderError, Options<StartRenderData>> => {
+    const mutationOptions: UseMutationOptions<StartRenderResponse, StartRenderError, Options<StartRenderData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startRender({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRenderQueryKey = (options: Options<GetRenderData>) => createQueryKey('getRender', options);
+
+/**
+ * One finished render with its QC report and preview assets
+ */
+export const getRenderOptions = (options: Options<GetRenderData>) => queryOptions<GetRenderResponse, GetRenderError, GetRenderResponse, ReturnType<typeof getRenderQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRender({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRenderQueryKey(options)
+});
+
+export const listLibraryAssetsQueryKey = (options?: Options<ListLibraryAssetsData>) => createQueryKey('listLibraryAssets', options);
+
+/**
+ * One page of the tenant's assets, newest first, with the project and what references each one
+ */
+export const listLibraryAssetsOptions = (options?: Options<ListLibraryAssetsData>) => queryOptions<ListLibraryAssetsResponse, DefaultError, ListLibraryAssetsResponse, ReturnType<typeof listLibraryAssetsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listLibraryAssets({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listLibraryAssetsQueryKey(options)
+});
+
+export const listLibraryAssetsInfiniteQueryKey = (options?: Options<ListLibraryAssetsData>): QueryKey<Options<ListLibraryAssetsData>> => createQueryKey('listLibraryAssets', options, true);
+
+/**
+ * One page of the tenant's assets, newest first, with the project and what references each one
+ */
+export const listLibraryAssetsInfiniteOptions = (options?: Options<ListLibraryAssetsData>) => {
+    const opts = infiniteQueryOptions<ListLibraryAssetsResponse, DefaultError, InfiniteData<ListLibraryAssetsResponse>, QueryKey<Options<ListLibraryAssetsData>>, string | Pick<QueryKey<Options<ListLibraryAssetsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListLibraryAssetsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listLibraryAssets({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listLibraryAssetsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getLibraryUsageQueryKey = (options?: Options<GetLibraryUsageData>) => createQueryKey('getLibraryUsage', options);
+
+/**
+ * Storage use per project and the data disk's free space against the watermark
+ */
+export const getLibraryUsageOptions = (options?: Options<GetLibraryUsageData>) => queryOptions<GetLibraryUsageResponse, DefaultError, GetLibraryUsageResponse, ReturnType<typeof getLibraryUsageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLibraryUsage({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLibraryUsageQueryKey(options)
+});
+
+export const getLibrarySettingsQueryKey = (options?: Options<GetLibrarySettingsData>) => createQueryKey('getLibrarySettings', options);
+
+/**
+ * Retention of unreferenced segments and unselected takes
+ */
+export const getLibrarySettingsOptions = (options?: Options<GetLibrarySettingsData>) => queryOptions<GetLibrarySettingsResponse, DefaultError, GetLibrarySettingsResponse, ReturnType<typeof getLibrarySettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLibrarySettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLibrarySettingsQueryKey(options)
+});
+
+/**
+ * Change the retention used by the daily and manual cleanups
+ */
+export const putLibrarySettingsMutation = (options?: Partial<Options<PutLibrarySettingsData>>): UseMutationOptions<PutLibrarySettingsResponse, PutLibrarySettingsError, Options<PutLibrarySettingsData>> => {
+    const mutationOptions: UseMutationOptions<PutLibrarySettingsResponse, PutLibrarySettingsError, Options<PutLibrarySettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putLibrarySettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Dry run of a cleanup; lists what would be deleted now and a token that confirms exactly that set
+ */
+export const previewLibraryCleanupMutation = (options?: Partial<Options<PreviewLibraryCleanupData>>): UseMutationOptions<PreviewLibraryCleanupResponse, DefaultError, Options<PreviewLibraryCleanupData>> => {
+    const mutationOptions: UseMutationOptions<PreviewLibraryCleanupResponse, DefaultError, Options<PreviewLibraryCleanupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewLibraryCleanup({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Start the cleanup a dry run showed, as an audited step
+ */
+export const confirmLibraryCleanupMutation = (options?: Partial<Options<ConfirmLibraryCleanupData>>): UseMutationOptions<ConfirmLibraryCleanupResponse, ConfirmLibraryCleanupError, Options<ConfirmLibraryCleanupData>> => {
+    const mutationOptions: UseMutationOptions<ConfirmLibraryCleanupResponse, ConfirmLibraryCleanupError, Options<ConfirmLibraryCleanupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await confirmLibraryCleanup({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

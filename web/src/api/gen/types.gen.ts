@@ -996,6 +996,263 @@ export type MediaBackfillResponse = {
     peaks: number;
 };
 
+export type RenderSubtitleStyle = {
+    font: string;
+    sizePx: number;
+    position: 'bottom' | 'top' | 'middle';
+    shadowPx: number;
+};
+
+export type RenderSettings = {
+    width: number;
+    height: number;
+    fps: 24 | 25 | 30 | 60;
+    /**
+     * auto, h264_nvenc or libx264 (a pattern, not an enum, so the generated constants of other enums sharing "auto" keep their names).
+     */
+    encoder: string;
+    subtitles: 'burn' | 'srt' | 'both';
+    subtitleStyle: RenderSubtitleStyle;
+    defaultMotion: MotionPreset;
+    crossfadeMs: number;
+    /**
+     * Integrated loudness target in LUFS, one decimal.
+     */
+    loudnessLufs: number;
+    /**
+     * True-peak ceiling in dBTP, one decimal.
+     */
+    truePeakDbtp: number;
+};
+
+export type RenderStage = {
+    key: 'script' | 'scenes' | 'images' | 'voice' | 'subtitles' | 'compose' | 'encode';
+    label: string;
+    done: number;
+    total: number;
+    state: 'done' | 'partial' | 'missing' | 'running' | 'idle';
+};
+
+export type DiskStatus = {
+    level: 'ok' | 'warning' | 'blocked' | 'unknown';
+    freeBytes: number;
+    minFreeBytes: number;
+    warnFreeBytes: number;
+    message: string;
+};
+
+export type RenderEstimate = {
+    /**
+     * Length of the finished video.
+     */
+    durationMs: number;
+    scenes: number;
+    /**
+     * Body and transition segments on the timeline.
+     */
+    segments: number;
+    /**
+     * Cache entries (segments, audio, subtitles) already encoded and reused.
+     */
+    cachedSegments: number;
+    /**
+     * Rough wall time of the render on the render queue.
+     */
+    encodeSeconds: number;
+    /**
+     * The concrete encoder a render would use now.
+     */
+    encoder: string;
+};
+
+export type RenderRestart = {
+    manifestId: string;
+    runId?: string;
+    restartedAfterEdit: boolean;
+    reusedSegments: number;
+    createdAt: string;
+};
+
+export type RenderStatus = {
+    lang: SceneLanguage;
+    /**
+     * True when "Render episode" can be pressed.
+     */
+    ready: boolean;
+    /**
+     * Why the render button is disabled, one sentence each.
+     */
+    reasons: Array<string>;
+    stages: Array<RenderStage>;
+    disk: DiskStatus;
+    settings: RenderSettings;
+    estimate?: RenderEstimate;
+    activeRunId?: string;
+    latest?: RenderRestart;
+};
+
+export type QcSceneScore = {
+    sceneId: string;
+    idx: number;
+    score?: number;
+};
+
+export type QcReport = {
+    passed: boolean;
+    failures: Array<string>;
+    integratedLufs: number;
+    truePeakDbtp: number;
+    targetLufs?: number;
+    targetTruePeakDbtp?: number;
+    durationMs: number;
+    expectedDurationMs: number;
+    avDriftMs: number;
+    maxSubtitleDriftMs: number;
+    missingScenes: Array<number>;
+    placeholderScenes: Array<number>;
+    streams: {
+        video: number;
+        audio: number;
+        subtitle: number;
+    };
+    missingKeyframes: Array<number>;
+    sceneScores: Array<QcSceneScore>;
+    encoder: string;
+    sha256: string;
+    /**
+     * Scene id to its 540p preview asset id.
+     */
+    scenePreviews?: {
+        [key: string]: string;
+    };
+};
+
+export type Render = {
+    id: string;
+    episodeId: string;
+    lang: SceneLanguage;
+    manifestId: string;
+    assetId: string;
+    srtAssetId?: string;
+    previewAssetId?: string;
+    durationMs: number;
+    encoder: string;
+    report: QcReport;
+    createdAt: string;
+};
+
+export type RenderList = {
+    items: Array<Render>;
+};
+
+export type StartRenderRequest = {
+    lang: SceneLanguage;
+};
+
+export type RenderStarted = {
+    runId: string;
+    manifestId: string;
+    hash: string;
+    /**
+     * Cacheable steps enqueued (segments, audio, subtitles).
+     */
+    steps: number;
+    /**
+     * Cache entries reused without a step.
+     */
+    reused: number;
+};
+
+export type RenderNotReady = {
+    title: string;
+    status: number;
+    detail?: string;
+    reasons: Array<string>;
+};
+
+export type LibraryAsset = {
+    id: string;
+    kind: AssetKind;
+    mime: string;
+    bytes: number;
+    status: string;
+    createdAt: string;
+    seriesId?: string;
+    seriesTitle?: string;
+    /**
+     * What uses the asset (for example selected-take, render, manifest).
+     */
+    referencedBy: Array<string>;
+};
+
+export type LibraryAssetPage = {
+    items: Array<LibraryAsset>;
+    nextCursor?: string;
+};
+
+export type LibrarySeriesUsage = {
+    /**
+     * Absent for assets no project references.
+     */
+    seriesId?: string;
+    seriesTitle?: string;
+    assets: number;
+    bytes: number;
+};
+
+export type LibraryUsage = {
+    series: Array<LibrarySeriesUsage>;
+    totalBytes: number;
+    assets: number;
+    disk: DiskStatus;
+};
+
+export type LibrarySettings = {
+    /**
+     * Days an unreferenced render segment is kept after its last use.
+     */
+    segmentTtlDays: number;
+    /**
+     * Days an unselected take is kept.
+     */
+    takeTtlDays: number;
+    lastCleanupAt?: string;
+};
+
+export type CleanupCandidate = {
+    /**
+     * The segment's input hash or the take's id.
+     */
+    id: string;
+    kind: string;
+    assetId: string;
+    bytes: number;
+    since: string;
+};
+
+export type CleanupPreview = {
+    settings: LibrarySettings;
+    segments: Array<CleanupCandidate>;
+    takes: Array<CleanupCandidate>;
+    bytes: number;
+    truncated: boolean;
+    /**
+     * Confirms exactly this candidate set.
+     */
+    token: string;
+};
+
+export type ConfirmCleanupRequest = {
+    token: string;
+};
+
+export type CleanupStarted = {
+    runId: string;
+    segments: number;
+    takes: number;
+    bytes: number;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -3255,6 +3512,322 @@ export type BackfillMediaResponses = {
 };
 
 export type BackfillMediaResponse = BackfillMediaResponses[keyof BackfillMediaResponses];
+
+export type GetRenderSettingsData = {
+    body?: never;
+    path: {
+        id: string;
+        lang: SceneLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/render-settings/{lang}';
+};
+
+export type GetRenderSettingsErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetRenderSettingsError = GetRenderSettingsErrors[keyof GetRenderSettingsErrors];
+
+export type GetRenderSettingsResponses = {
+    /**
+     * settings
+     */
+    200: RenderSettings;
+};
+
+export type GetRenderSettingsResponse = GetRenderSettingsResponses[keyof GetRenderSettingsResponses];
+
+export type PutRenderSettingsData = {
+    body: RenderSettings;
+    path: {
+        id: string;
+        lang: SceneLanguage;
+    };
+    query?: never;
+    url: '/episodes/{id}/render-settings/{lang}';
+};
+
+export type PutRenderSettingsErrors = {
+    /**
+     * invalid settings
+     */
+    400: Problem;
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type PutRenderSettingsError = PutRenderSettingsErrors[keyof PutRenderSettingsErrors];
+
+export type PutRenderSettingsResponses = {
+    /**
+     * settings
+     */
+    200: RenderSettings;
+};
+
+export type PutRenderSettingsResponse = PutRenderSettingsResponses[keyof PutRenderSettingsResponses];
+
+export type GetRenderStatusData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        lang: SceneLanguage;
+    };
+    url: '/episodes/{id}/render-status';
+};
+
+export type GetRenderStatusErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetRenderStatusError = GetRenderStatusErrors[keyof GetRenderStatusErrors];
+
+export type GetRenderStatusResponses = {
+    /**
+     * status
+     */
+    200: RenderStatus;
+};
+
+export type GetRenderStatusResponse = GetRenderStatusResponses[keyof GetRenderStatusResponses];
+
+export type ListRendersData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        lang: SceneLanguage;
+        limit?: number;
+    };
+    url: '/episodes/{id}/renders';
+};
+
+export type ListRendersErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+};
+
+export type ListRendersError = ListRendersErrors[keyof ListRendersErrors];
+
+export type ListRendersResponses = {
+    /**
+     * renders
+     */
+    200: RenderList;
+};
+
+export type ListRendersResponse = ListRendersResponses[keyof ListRendersResponses];
+
+export type StartRenderData = {
+    body: StartRenderRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/episodes/{id}/renders';
+};
+
+export type StartRenderErrors = {
+    /**
+     * episode not found in this tenant
+     */
+    404: Problem;
+    /**
+     * a render of this episode language is already running
+     */
+    409: Problem;
+    /**
+     * the episode is not ready to render; reasons lists why
+     */
+    422: RenderNotReady;
+    /**
+     * tenant quota exceeded
+     */
+    429: Problem;
+    /**
+     * refused by the disk watermark
+     */
+    507: Problem;
+};
+
+export type StartRenderError = StartRenderErrors[keyof StartRenderErrors];
+
+export type StartRenderResponses = {
+    /**
+     * render run queued
+     */
+    202: RenderStarted;
+};
+
+export type StartRenderResponse = StartRenderResponses[keyof StartRenderResponses];
+
+export type GetRenderData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/renders/{id}';
+};
+
+export type GetRenderErrors = {
+    /**
+     * render not found in this tenant
+     */
+    404: Problem;
+};
+
+export type GetRenderError = GetRenderErrors[keyof GetRenderErrors];
+
+export type GetRenderResponses = {
+    /**
+     * render
+     */
+    200: Render;
+};
+
+export type GetRenderResponse = GetRenderResponses[keyof GetRenderResponses];
+
+export type ListLibraryAssetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        kind?: AssetKind;
+        seriesId?: string;
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/library/assets';
+};
+
+export type ListLibraryAssetsResponses = {
+    /**
+     * assets
+     */
+    200: LibraryAssetPage;
+};
+
+export type ListLibraryAssetsResponse = ListLibraryAssetsResponses[keyof ListLibraryAssetsResponses];
+
+export type GetLibraryUsageData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/library/usage';
+};
+
+export type GetLibraryUsageResponses = {
+    /**
+     * usage
+     */
+    200: LibraryUsage;
+};
+
+export type GetLibraryUsageResponse = GetLibraryUsageResponses[keyof GetLibraryUsageResponses];
+
+export type GetLibrarySettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/library/settings';
+};
+
+export type GetLibrarySettingsResponses = {
+    /**
+     * settings
+     */
+    200: LibrarySettings;
+};
+
+export type GetLibrarySettingsResponse = GetLibrarySettingsResponses[keyof GetLibrarySettingsResponses];
+
+export type PutLibrarySettingsData = {
+    body: LibrarySettings;
+    path?: never;
+    query?: never;
+    url: '/library/settings';
+};
+
+export type PutLibrarySettingsErrors = {
+    /**
+     * invalid settings
+     */
+    400: Problem;
+};
+
+export type PutLibrarySettingsError = PutLibrarySettingsErrors[keyof PutLibrarySettingsErrors];
+
+export type PutLibrarySettingsResponses = {
+    /**
+     * settings
+     */
+    200: LibrarySettings;
+};
+
+export type PutLibrarySettingsResponse = PutLibrarySettingsResponses[keyof PutLibrarySettingsResponses];
+
+export type PreviewLibraryCleanupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/library/cleanup/preview';
+};
+
+export type PreviewLibraryCleanupResponses = {
+    /**
+     * preview
+     */
+    200: CleanupPreview;
+};
+
+export type PreviewLibraryCleanupResponse = PreviewLibraryCleanupResponses[keyof PreviewLibraryCleanupResponses];
+
+export type ConfirmLibraryCleanupData = {
+    body: ConfirmCleanupRequest;
+    path?: never;
+    query?: never;
+    url: '/library/cleanup';
+};
+
+export type ConfirmLibraryCleanupErrors = {
+    /**
+     * the candidates changed since the preview; preview again
+     */
+    409: Problem;
+    /**
+     * nothing to clean up
+     */
+    422: Problem;
+    /**
+     * tenant quota exceeded
+     */
+    429: Problem;
+};
+
+export type ConfirmLibraryCleanupError = ConfirmLibraryCleanupErrors[keyof ConfirmLibraryCleanupErrors];
+
+export type ConfirmLibraryCleanupResponses = {
+    /**
+     * cleanup run queued
+     */
+    202: CleanupStarted;
+};
+
+export type ConfirmLibraryCleanupResponse = ConfirmLibraryCleanupResponses[keyof ConfirmLibraryCleanupResponses];
 
 export type StreamEventsData = {
     body?: never;
