@@ -130,16 +130,13 @@ func (d *Downloader) Install(ctx context.Context, e Entry, progress Progress) er
 			continue
 		}
 		base := done - st.partial
-		err := d.downloadFile(ctx, st.file, e.Source, func(fileDone int64) {
+		err := d.downloadExclusive(ctx, st.file, e.Source, func(fileDone int64) {
 			report(progress, base+fileDone, total)
 		})
 		if err != nil {
 			return err
 		}
 		done = base + st.file.Size
-		if err := d.Files.MarkFileVerified(ctx, st.file.Path, st.file.Digest(), st.file.Size); err != nil {
-			return err
-		}
 	}
 	report(progress, total, total)
 	return nil
@@ -231,6 +228,37 @@ func (d *Downloader) preflight(plan []fileState) error {
 		return fmt.Errorf("%w: need %d bytes plus %d headroom, %d free on the host disk, %d free on the models volume", ErrInsufficientDisk, need, headroom, hostFree, volumeFree)
 	}
 	return nil
+}
+
+// stagingLockPoll is how often a pull waiting for another pull of the
+// same file retries the lock.
+const stagingLockPoll = 200 * time.Millisecond
+
+// downloadExclusive downloads f while holding the lock on its staging
+// file. Entries share files (and a resume can start before a paused pull
+// has stopped), so without it two pulls would write one .part through
+// separate handles. After waiting, f is inspected again: the other pull
+// may have finished and verified it already.
+func (d *Downloader) downloadExclusive(ctx context.Context, f File, src Source, progress func(int64)) error {
+	unlock, err := lockStaging(ctx, d.lockPath(f))
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	st, err := d.inspect(ctx, f)
+	if err != nil {
+		return err
+	}
+	if st.verified {
+		progress(f.Size)
+		return nil
+	}
+	if err := d.downloadFile(ctx, f, src, progress); err != nil {
+		return err
+	}
+	// Record the file before releasing the lock, so a waiting pull
+	// finds it verified instead of hashing it again.
+	return d.Files.MarkFileVerified(ctx, f.Path, f.Digest(), f.Size)
 }
 
 // downloadFile fetches f into its .part file, resuming from whatever is
@@ -445,6 +473,11 @@ func (d *Downloader) finalPath(f File) string {
 // one.
 func (d *Downloader) partPath(f File) string {
 	return filepath.Join(d.Dir, stagingDir, strings.ReplaceAll(f.Digest(), ":", "-")+".part")
+}
+
+// lockPath is the lock guarding f's .part file.
+func (d *Downloader) lockPath(f File) string {
+	return strings.TrimSuffix(d.partPath(f), ".part") + ".lock"
 }
 
 // hashFile computes the digest of the file at path the way f is pinned.

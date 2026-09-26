@@ -218,6 +218,9 @@ func TestTestLLMSettingsProbesAvailableProviderInTheWorker(t *testing.T) {
 	if prober.calls != 1 || prober.provider != "claude-cli" {
 		t.Fatalf("probe calls=%d provider=%q", prober.calls, prober.provider)
 	}
+	if result.LatencyMs == nil || *result.LatencyMs < 0 {
+		t.Fatalf("a probed provider reports its latency, got %v", result.LatencyMs)
+	}
 }
 
 func TestTestLLMSettingsReportsProbeFailure(t *testing.T) {
@@ -232,6 +235,9 @@ func TestTestLLMSettingsReportsProbeFailure(t *testing.T) {
 	result := resp.(gen.TestLLMSettings200JSONResponse)
 	if result.Ok || result.Detail == nil || *result.Detail != "claudecli: not logged in" {
 		t.Fatalf("unexpected result: %+v", result)
+	}
+	if result.LatencyMs == nil {
+		t.Fatal("a reached but failing provider still reports its latency")
 	}
 }
 

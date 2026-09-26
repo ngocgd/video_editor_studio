@@ -20,7 +20,9 @@ const outlineSchema = `{
 }`
 
 // bibleSeedSchema constrains llm.bible_seed's structured JSON output: a
-// map of section name to plain-text content, one entry per bible section.
+// map of section name to content, one entry per bible section. Prose
+// sections are plain text; the glossary is an array of term renderings,
+// the same shape the bible editor's glossary table reads and writes.
 const bibleSeedSchema = `{
   "type": "object",
   "required": ["world", "cultivation_realms", "arcs", "style_guide", "running_summary", "glossary"],
@@ -30,7 +32,19 @@ const bibleSeedSchema = `{
     "arcs": {"type": "string"},
     "style_guide": {"type": "string"},
     "running_summary": {"type": "string"},
-    "glossary": {"type": "string"}
+    "glossary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["termZh", "en", "vi"],
+        "properties": {
+          "termZh": {"type": "string", "minLength": 1},
+          "en": {"type": "string"},
+          "vi": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
   },
   "additionalProperties": false
 }`

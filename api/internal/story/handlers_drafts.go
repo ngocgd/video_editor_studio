@@ -184,31 +184,15 @@ func (h *StoryAPI) ApplyDraftStep(ctx context.Context, req gen.ApplyDraftStepReq
 		updated = replaceParagraphs(paragraphs, ids, newParagraphs)
 	}
 
-	paragraphsJSON, err := encodeParagraphs(updated)
-	if err != nil {
-		return nil, err
-	}
-	wordCount := int32(WordCount(updated))
-	nextVersion := current.Version + 1
-
-	saved, err := h.Queries.UpdateDraftParagraphs(ctx, dbgen.UpdateDraftParagraphsParams{
-		Paragraphs: paragraphsJSON, WordCount: wordCount, NextVersion: nextVersion,
-		TenantID: idconv.ToPg(info.ID), ID: current.ID, ExpectedVersion: current.Version,
+	stepID := req.Body.StepId
+	saved, err := h.commitDraftWrite(ctx, draftWrite{
+		tenantID: info.ID, current: current, paragraphs: updated, userID: userIDPtr(sess), stepID: &stepID,
 	})
 	if err != nil {
-		if isNoRows(err) {
-			detail := "the draft was changed by someone else; reload and retry"
-			return gen.ApplyDraftStep409ApplicationProblemPlusJSONResponse{Title: "version conflict", Status: http.StatusConflict, Detail: &detail}, nil
+		if title := draftWriteConflictTitle(err); title != "" {
+			detail := err.Error()
+			return gen.ApplyDraftStep409ApplicationProblemPlusJSONResponse{Title: title, Status: http.StatusConflict, Detail: &detail}, nil
 		}
-		return nil, err
-	}
-	if err := h.Queries.InsertDraftRevision(ctx, dbgen.InsertDraftRevisionParams{
-		ID: idconv.ToPg(idconv.NewV7()), TenantID: idconv.ToPg(info.ID), DraftID: current.ID,
-		Version: nextVersion, Paragraphs: paragraphsJSON, WordCount: wordCount, CreatedBy: idconv.ToPgPtr(userIDPtr(sess)),
-	}); err != nil {
-		return nil, err
-	}
-	if err := h.Queries.TrimDraftRevisions(ctx, current.ID); err != nil {
 		return nil, err
 	}
 
@@ -225,8 +209,8 @@ func (h *StoryAPI) ApplyDraftStep(ctx context.Context, req gen.ApplyDraftStepReq
 // UpdateDraftParagraphs' own WHERE version=expectedVersion fence, which
 // is the actual optimistic-concurrency check — a concurrent writer's
 // UPDATE affects zero rows and is reported here as 409. A revision row is
-// inserted (and old ones trimmed to 50) in the same request, after a
-// successful write.
+// inserted (and old ones trimmed to 50) in the same transaction as the
+// write (see commitDraftWrite).
 func (h *StoryAPI) PatchDraft(ctx context.Context, req gen.PatchDraftRequestObject) (gen.PatchDraftResponseObject, error) {
 	info := tenant.MustFromCtx(ctx)
 	sess, _ := authpkg.FromCtx(ctx)
@@ -268,32 +252,14 @@ func (h *StoryAPI) PatchDraft(ctx context.Context, req gen.PatchDraftRequestObje
 		return gen.PatchDraft409ApplicationProblemPlusJSONResponse{Title: "invalid paragraph op", Status: http.StatusConflict, Detail: &detail}, nil
 	}
 
-	paragraphsJSON, err := encodeParagraphs(updated)
-	if err != nil {
-		return nil, err
-	}
-	wordCount := int32(WordCount(updated))
-	nextVersion := current.Version + 1
-
-	saved, err := h.Queries.UpdateDraftParagraphs(ctx, dbgen.UpdateDraftParagraphsParams{
-		Paragraphs: paragraphsJSON, WordCount: wordCount, NextVersion: nextVersion,
-		TenantID: idconv.ToPg(info.ID), ID: current.ID, ExpectedVersion: current.Version,
+	saved, err := h.commitDraftWrite(ctx, draftWrite{
+		tenantID: info.ID, current: current, paragraphs: updated, userID: userIDPtr(sess), stepID: nil,
 	})
 	if err != nil {
-		if isNoRows(err) {
-			detail := "the draft was changed by someone else; reload and retry"
-			return gen.PatchDraft409ApplicationProblemPlusJSONResponse{Title: "version conflict", Status: http.StatusConflict, Detail: &detail}, nil
+		if title := draftWriteConflictTitle(err); title != "" {
+			detail := err.Error()
+			return gen.PatchDraft409ApplicationProblemPlusJSONResponse{Title: title, Status: http.StatusConflict, Detail: &detail}, nil
 		}
-		return nil, err
-	}
-
-	if err := h.Queries.InsertDraftRevision(ctx, dbgen.InsertDraftRevisionParams{
-		ID: idconv.ToPg(idconv.NewV7()), TenantID: idconv.ToPg(info.ID), DraftID: current.ID,
-		Version: nextVersion, Paragraphs: paragraphsJSON, WordCount: wordCount, CreatedBy: idconv.ToPgPtr(userIDPtr(sess)),
-	}); err != nil {
-		return nil, err
-	}
-	if err := h.Queries.TrimDraftRevisions(ctx, current.ID); err != nil {
 		return nil, err
 	}
 

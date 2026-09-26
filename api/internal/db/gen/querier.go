@@ -23,6 +23,8 @@ type Querier interface {
 	// Which episodes each character of a series appears in, and in how many
 	// scenes, aggregated from scenes.character_ids in one query.
 	CharacterEpisodeAppearances(ctx context.Context, arg CharacterEpisodeAppearancesParams) ([]CharacterEpisodeAppearancesRow, error)
+	// Records that a step's result was applied; 0 rows means it already was.
+	ClaimDraftStepApplication(ctx context.Context, arg ClaimDraftStepApplicationParams) (int64, error)
 	// Model installs, verified files and benchmarks. Not tenant-scoped (see
 	// the models migration): one GPU and one models volume per deployment.
 	// Moves a model into "downloading" unless a pull is already running for
@@ -311,7 +313,7 @@ type Querier interface {
 	TouchScene(ctx context.Context, arg TouchSceneParams) (Scene, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	// Keeps only the newest 50 revisions per draft; called after each insert.
-	TrimDraftRevisions(ctx context.Context, draftID pgtype.UUID) error
+	TrimDraftRevisions(ctx context.Context, arg TrimDraftRevisionsParams) error
 	UnselectTakes(ctx context.Context, arg UnselectTakesParams) error
 	UpdateCharacter(ctx context.Context, arg UpdateCharacterParams) (Character, error)
 	UpdateCharacterLoraStatus(ctx context.Context, arg UpdateCharacterLoraStatusParams) (CharacterLora, error)

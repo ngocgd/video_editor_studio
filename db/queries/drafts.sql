@@ -47,7 +47,8 @@ VALUES (@id, @tenant_id, @draft_id, @version, @paragraphs, @word_count, @created
 -- name: TrimDraftRevisions :exec
 -- Keeps only the newest 50 revisions per draft; called after each insert.
 DELETE FROM episode_draft_revisions AS outer_rev
-WHERE outer_rev.draft_id = @draft_id
+WHERE outer_rev.tenant_id = @tenant_id
+  AND outer_rev.draft_id = @draft_id
   AND outer_rev.id NOT IN (
     SELECT inner_rev.id FROM episode_draft_revisions AS inner_rev
     WHERE inner_rev.draft_id = @draft_id
@@ -60,3 +61,9 @@ SELECT * FROM episode_draft_revisions
 WHERE tenant_id = @tenant_id AND draft_id = @draft_id
 ORDER BY version DESC
 LIMIT @page_limit;
+
+-- name: ClaimDraftStepApplication :execrows
+-- Records that a step's result was applied; 0 rows means it already was.
+INSERT INTO draft_step_applications (step_id, tenant_id, draft_id, draft_version, applied_by)
+VALUES (@step_id, @tenant_id, @draft_id, @draft_version, @applied_by)
+ON CONFLICT (step_id) DO NOTHING;

@@ -108,6 +108,15 @@ type CharacterVoice struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type DraftStepApplication struct {
+	StepID       pgtype.UUID        `json:"step_id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	DraftID      pgtype.UUID        `json:"draft_id"`
+	DraftVersion int64              `json:"draft_version"`
+	AppliedBy    pgtype.UUID        `json:"applied_by"`
+	AppliedAt    pgtype.Timestamptz `json:"applied_at"`
+}
+
 type Episode struct {
 	ID                       pgtype.UUID        `json:"id"`
 	TenantID                 pgtype.UUID        `json:"tenant_id"`

@@ -1394,8 +1394,10 @@ export const AiActionRequestSchema = {
         paragraphIds: {
             type: 'array',
             items: {
-                type: 'string'
-            }
+                type: 'string',
+                maxLength: 64
+            },
+            maxItems: 5000
         },
         beatId: {
             type: 'string'
@@ -1553,13 +1555,17 @@ export const ParagraphOpSchema = {
             ]
         },
         paragraphId: {
-            type: 'string'
+            type: 'string',
+            minLength: 1,
+            maxLength: 64
         },
         text: {
-            type: 'string'
+            type: 'string',
+            maxLength: 20000
         },
         afterParagraphId: {
             type: 'string',
+            maxLength: 64,
             description: 'For op=move, the paragraph id to place this one after (empty string means first).'
         }
     }
@@ -1600,12 +1606,15 @@ export const ApplyDraftStepRequestSchema = {
         paragraphIds: {
             type: 'array',
             items: {
-                type: 'string'
+                type: 'string',
+                maxLength: 64
             },
+            maxItems: 5000,
             description: 'The paragraphs the action was run against (its selection).'
         },
         afterParagraphId: {
             type: 'string',
+            maxLength: 64,
             description: 'For an inserting action (continue, expand_beat), the paragraph to insert after; empty string means the front of the draft.'
         }
     }

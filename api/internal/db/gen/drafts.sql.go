@@ -11,6 +11,35 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimDraftStepApplication = `-- name: ClaimDraftStepApplication :execrows
+INSERT INTO draft_step_applications (step_id, tenant_id, draft_id, draft_version, applied_by)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (step_id) DO NOTHING
+`
+
+type ClaimDraftStepApplicationParams struct {
+	StepID       pgtype.UUID `json:"step_id"`
+	TenantID     pgtype.UUID `json:"tenant_id"`
+	DraftID      pgtype.UUID `json:"draft_id"`
+	DraftVersion int64       `json:"draft_version"`
+	AppliedBy    pgtype.UUID `json:"applied_by"`
+}
+
+// Records that a step's result was applied; 0 rows means it already was.
+func (q *Queries) ClaimDraftStepApplication(ctx context.Context, arg ClaimDraftStepApplicationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, claimDraftStepApplication,
+		arg.StepID,
+		arg.TenantID,
+		arg.DraftID,
+		arg.DraftVersion,
+		arg.AppliedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createDraft = `-- name: CreateDraft :one
 INSERT INTO episode_drafts (id, tenant_id, episode_id, lang, paragraphs, word_count)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -227,18 +256,24 @@ func (q *Queries) ListDraftRevisions(ctx context.Context, arg ListDraftRevisions
 
 const trimDraftRevisions = `-- name: TrimDraftRevisions :exec
 DELETE FROM episode_draft_revisions AS outer_rev
-WHERE outer_rev.draft_id = $1
+WHERE outer_rev.tenant_id = $1
+  AND outer_rev.draft_id = $2
   AND outer_rev.id NOT IN (
     SELECT inner_rev.id FROM episode_draft_revisions AS inner_rev
-    WHERE inner_rev.draft_id = $1
+    WHERE inner_rev.draft_id = $2
     ORDER BY inner_rev.version DESC
     LIMIT 50
   )
 `
 
+type TrimDraftRevisionsParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	DraftID  pgtype.UUID `json:"draft_id"`
+}
+
 // Keeps only the newest 50 revisions per draft; called after each insert.
-func (q *Queries) TrimDraftRevisions(ctx context.Context, draftID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, trimDraftRevisions, draftID)
+func (q *Queries) TrimDraftRevisions(ctx context.Context, arg TrimDraftRevisionsParams) error {
+	_, err := q.db.Exec(ctx, trimDraftRevisions, arg.TenantID, arg.DraftID)
 	return err
 }
 
