@@ -46,23 +46,8 @@ func resetModelInstall(t *testing.T, name string) {
 	})
 }
 
-// refundLoginIPBudget runs after each test here and resets the per-IP
-// login bucket: every test in this package logs in from the same client
-// IP, whose bucket holds only 20 logins an hour, so the logins these
-// tests make would otherwise starve the tests that run after them.
-func refundLoginIPBudget(t *testing.T) {
-	t.Helper()
-	pool := ownerPool(t)
-	t.Cleanup(func() {
-		if _, err := pool.Exec(context.Background(), "DELETE FROM rate_limit_buckets WHERE bucket_key LIKE 'login:ip:%'"); err != nil {
-			t.Errorf("refund login budget: %v", err)
-		}
-	})
-}
-
 func TestModelsListShowsManifestAndBlockedLicences(t *testing.T) {
 	skipIfAPIUnreachable(t)
-	refundLoginIPBudget(t)
 	q := gen.New(ownerPool(t))
 	viewer := createFixtureUser(t, q, "models-viewer", uniqueEmail("models-viewer"), "viewer")
 	sess := login(t, viewer.Email, viewer.Password)
@@ -86,7 +71,6 @@ func TestModelsListShowsManifestAndBlockedLicences(t *testing.T) {
 
 func TestModelInstallIsOwnerOnlyAndRefusesBlockedLicences(t *testing.T) {
 	skipIfAPIUnreachable(t)
-	refundLoginIPBudget(t)
 	q := gen.New(ownerPool(t))
 	owner := createFixtureUser(t, q, "models-owner-gate", uniqueEmail("models-owner"), "owner")
 	editor := createFixtureUser(t, q, "models-editor-gate", uniqueEmail("models-editor"), "editor")
@@ -101,7 +85,6 @@ func TestModelInstallIsOwnerOnlyAndRefusesBlockedLicences(t *testing.T) {
 
 func TestModelInstallQueuesPullStepAndPauseCancelsIt(t *testing.T) {
 	skipIfAPIUnreachable(t)
-	refundLoginIPBudget(t)
 	resetModelInstall(t, "qwen-image")
 	pool := ownerPool(t)
 	q := gen.New(pool)
@@ -152,7 +135,6 @@ func TestModelInstallQueuesPullStepAndPauseCancelsIt(t *testing.T) {
 
 func TestModelLoadNeedsInstallAndUnloadQueuesGPUStep(t *testing.T) {
 	skipIfAPIUnreachable(t)
-	refundLoginIPBudget(t)
 	resetModelInstall(t, "z-image-turbo")
 	pool := ownerPool(t)
 	q := gen.New(pool)

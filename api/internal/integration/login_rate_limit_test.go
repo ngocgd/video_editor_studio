@@ -1,14 +1,5 @@
 //go:build integration
 
-// This file is named to sort alphabetically last among this package's test
-// files: Go runs a package's tests in the order they appear across its
-// compiled test files, which (for `go test`, absent explicit ordering) is
-// the lexical order of the source file names. TestLoginRateLimitReturns429
-// below deliberately exhausts the server's per-IP login-rate-limit bucket
-// (every test in this package logs in from the same client IP against the
-// same live server, since there is no way to make a real server see
-// per-test-isolated source IPs), which would otherwise starve every other
-// test's login calls of tokens for the rest of the run.
 package integration
 
 import (
@@ -16,8 +7,13 @@ import (
 	"testing"
 )
 
+// TestLoginRateLimitReturns429 deliberately exhausts login buckets from the
+// suite's single client IP. isolateLoginIPBudget refunds the IP bucket when
+// the test ends, so it can run in any order relative to the tests that log
+// in, and the per-account bucket it trips belongs to a unique email.
 func TestLoginRateLimitReturns429(t *testing.T) {
 	skipIfAPIUnreachable(t)
+	isolateLoginIPBudget(t)
 	email := uniqueEmail("ratelimit")
 	body := map[string]string{"email": email, "password": "whatever-wrong-password"}
 

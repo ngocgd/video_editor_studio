@@ -72,7 +72,7 @@ class ModelManager:
             held_mb = await engine.load()
         except ImportError as exc:
             # The weights are on disk but this worker image was built
-            # without the engine's extra (tts-en, tts-vi or align).
+            # without the engine's extra (tts-en, tts-vi, align, vision or train).
             raise EngineNotInstalledError(
                 f"{name}: this worker image lacks the engine's runtime ({exc.name or exc})"
             ) from exc

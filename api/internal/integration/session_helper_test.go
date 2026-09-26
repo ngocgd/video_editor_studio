@@ -33,7 +33,7 @@ type session struct {
 
 func login(t *testing.T, email, password string) *session {
 	t.Helper()
-	resetLoginIPBucket(t)
+	isolateLoginIPBudget(t)
 	client := &http.Client{Timeout: httpTimeout}
 
 	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
@@ -96,6 +96,19 @@ func doUnauthenticated(t *testing.T, method, path string, body any) *http.Respon
 
 func (s *session) do(method, path string, body any) *http.Response {
 	s.t.Helper()
+	return s.doWith(s.client, method, path, body)
+}
+
+// doWithin is do with a client timeout other than httpTimeout, for routes
+// that legitimately answer slower than it (for example a synchronous
+// provider test bounded server-side by a longer deadline).
+func (s *session) doWithin(timeout time.Duration, method, path string, body any) *http.Response {
+	s.t.Helper()
+	return s.doWith(&http.Client{Timeout: timeout}, method, path, body)
+}
+
+func (s *session) doWith(client *http.Client, method, path string, body any) *http.Response {
+	s.t.Helper()
 	var reader *bytes.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -118,7 +131,7 @@ func (s *session) do(method, path string, body any) *http.Response {
 		req.Header.Set("Origin", originHeader())
 		req.Header.Set("X-CSRF-Token", s.csrfToken)
 	}
-	resp, err := s.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		s.t.Fatalf("%s %s: %v", method, path, err)
 	}
@@ -172,15 +185,28 @@ func skipIfAPIUnreachable(t *testing.T) {
 	}
 }
 
-// resetLoginIPBucket clears the per-IP login bucket (20/hour) before a
-// fixture login. Every test in this package logs in from the same client
-// IP, so the suite as a whole would otherwise exhaust that bucket and fail
-// unrelated tests with 429. Only the IP bucket is cleared: the per-user
-// and per-account buckets still apply, and TestLoginRateLimitReturns429
-// still proves the limiter trips.
-func resetLoginIPBucket(t *testing.T) {
+// isolateLoginIPBudget is the one place the suite manages the server's
+// per-IP login bucket (20/hour). Every test in this package reaches the API
+// from the same client IP, so without it the suite as a whole would exhaust
+// that bucket and fail unrelated tests with 429. Call it before any request
+// to /auth/login: it clears the IP bucket now, so this test starts with a
+// full budget, and again when the test ends, so whatever this test spent
+// (including deliberately exhausting it) never leaks into later tests.
+// Only the IP bucket is touched: the per-user and per-account buckets still
+// apply, and TestLoginRateLimitReturns429 still proves the limiter trips.
+func isolateLoginIPBudget(t *testing.T) {
 	t.Helper()
-	if _, err := ownerPool(t).Exec(context.Background(), `DELETE FROM rate_limit_buckets WHERE bucket_key LIKE 'login:ip:%'`); err != nil {
+	pool := ownerPool(t)
+	reset := func() error {
+		_, err := pool.Exec(context.Background(), `DELETE FROM rate_limit_buckets WHERE bucket_key LIKE 'login:ip:%'`)
+		return err
+	}
+	if err := reset(); err != nil {
 		t.Fatalf("reset login ip bucket: %v", err)
 	}
+	t.Cleanup(func() {
+		if err := reset(); err != nil {
+			t.Errorf("refund login ip bucket: %v", err)
+		}
+	})
 }

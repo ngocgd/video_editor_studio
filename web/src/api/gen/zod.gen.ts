@@ -499,7 +499,7 @@ export const zAiActionRequest = z.object({
         'summarise'
     ]),
     lang: zTargetLanguage,
-    paragraphIds: z.array(z.string()).optional(),
+    paragraphIds: z.array(z.string().max(64)).max(5000).optional(),
     beatId: z.string().optional(),
     instruction: z.string().max(500).optional()
 });
@@ -561,9 +561,9 @@ export const zParagraphOp = z.object({
         'delete',
         'move'
     ]),
-    paragraphId: z.string(),
-    text: z.string().optional(),
-    afterParagraphId: z.string().optional()
+    paragraphId: z.string().min(1).max(64),
+    text: z.string().max(20000).optional(),
+    afterParagraphId: z.string().max(64).optional()
 });
 
 export const zDraftPatchRequest = z.object({
@@ -576,8 +576,8 @@ export const zDraftPatchRequest = z.object({
  */
 export const zApplyDraftStepRequest = z.object({
     stepId: z.string().uuid(),
-    paragraphIds: z.array(z.string()).optional(),
-    afterParagraphId: z.string().optional()
+    paragraphIds: z.array(z.string().max(64)).max(5000).optional(),
+    afterParagraphId: z.string().max(64).optional()
 });
 
 export const zChapterPreview = z.object({

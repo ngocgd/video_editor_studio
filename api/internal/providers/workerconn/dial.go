@@ -54,7 +54,10 @@ func (b bearerCreds) RequireTransportSecurity() bool { return false }
 // 3 pipeline sentinels (pipeline.ErrGPUOOM, pipeline.ErrEngineNotInstalled)
 // so every worker client package (pyworker, tts, align, train, vision)
 // reports errors a StepHandler.Run can pass straight to
-// pipeline.Classify.
+// pipeline.Classify. Every other code, UNAVAILABLE included, stays
+// transient: the worker answers UNAVAILABLE when a presigned input or
+// output URL was refused as expired (HTTP 403), so a step handler must
+// presign its URLs inside Run for the retry to carry fresh ones.
 func TranslateErr(err error) error {
 	if err == nil {
 		return nil
