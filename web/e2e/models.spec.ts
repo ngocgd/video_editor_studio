@@ -7,8 +7,6 @@ import { expect, test } from "@playwright/test";
  * the real API and database, not the download itself (the GPU stack's
  * benchmark run covers that).
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 
 test("model manager lists models, blocks licences, installs and pauses", async ({ page }) => {
   const consoleErrors: string[] = [];
@@ -16,11 +14,7 @@ test("model manager lists models, blocks licences, installs and pauses", async (
     if (msg.type() === "error") consoleErrors.push(msg.text());
   });
 
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
+  await page.goto("/");
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Models" }).click();
   await expect(page.getByRole("heading", { name: "Models & providers" })).toBeVisible();

@@ -12,20 +12,10 @@ import { fileURLToPath } from "node:url";
  * need a configured provider (Ollama or claude CLI) this environment does
  * not have.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 const SCREENSHOT_DIR = "../plans/260924-2244-loomtale-studio-mvp/reports/phase-06-screens";
 
-async function login(page: import("@playwright/test").Page) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
-}
-
 test("series -> writer -> import -> settings/llm", async ({ page }) => {
-  await login(page);
+  await page.goto("/");
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Projects" }).click();
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { OWNER_EMAIL as EMAIL, OWNER_PASSWORD as PASSWORD } from "./owner-session";
 
 /**
  * A real end-to-end smoke test against a live compose stack (not mocks).
@@ -15,8 +16,9 @@ import { expect, test } from "@playwright/test";
  * seeded database row instead and is not re-tested here to keep this file
  * runnable against any stack, not just one with test fixtures pre-loaded.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
+// Starts signed out (not from global-setup's session): this spec is the
+// one that exercises the login form, and its logout ends only this session.
+test.use({ storageState: { cookies: [], origins: [] } });
 
 test("login, app shell, command palette, logout", async ({ page }) => {
   const response = await page.goto("/login");

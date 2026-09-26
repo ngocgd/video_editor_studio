@@ -8,19 +8,10 @@ import { mkdirSync } from "node:fs";
  * stays disabled and lists why, which is exactly what is checked here.
  * The rendering itself is covered by the api integration tests.
  */
-const EMAIL = process.env.LT_E2E_EMAIL ?? "owner@loomtale.local";
-const PASSWORD = process.env.LT_E2E_PASSWORD ?? "LoomtaleDemo!2026";
 const SCREENSHOT_DIR = "../plans/260924-2244-loomtale-studio-mvp/reports/phase-08-screens";
 
 test.setTimeout(120_000);
 
-async function login(page: Page) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(EMAIL);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/");
-}
 
 /** Calls the API from the page (same origin, session cookie, CSRF token). */
 async function api<T>(page: Page, method: string, path: string, body?: unknown): Promise<T> {
@@ -44,7 +35,7 @@ const FILLER = "The mist rolled over the nine peaks while the bells of the sect 
 
 test("render page explains why it cannot start, library previews a cleanup", async ({ page }) => {
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
-  await login(page);
+  await page.goto("/");
 
   const series = await api<{ id: string }>(page, "POST", "/series", { title: `Render E2E ${Date.now()}`, targetLanguages: ["en"], targetEpisodeMinutes: 60, plannedEpisodeCount: 1 });
   const style = await api<{ id: string }>(page, "POST", "/settings/image-styles", { name: `Ink wash ${Date.now()}`, baseModel: "z-image-turbo", stylePrompt: "ink wash painting" });
