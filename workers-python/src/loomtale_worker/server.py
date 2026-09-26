@@ -1,8 +1,9 @@
 """Main entrypoint for the Python worker: a grpc.aio server hosting
 worker.proto (control plane), tts/align/train/vision.proto (media RPCs)
-and health.proto (liveness), all bearer-token authenticated. No engine is
-registered before phases 9a-9c, so every media RPC honestly fails
-engine_not_installed until then.
+and health.proto (liveness), all bearer-token authenticated. The TTS and
+align engines are registered at startup (engines/catalog.py); each one
+reports installed only when its pinned weights are on the models volume,
+so a media RPC for a missing engine honestly fails engine_not_installed.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ import grpc
 
 from loomtale.worker.v1 import health_pb2_grpc
 from loomtale_worker.auth import BearerTokenInterceptor
-from loomtale_worker.engines.registry import EngineRegistry
+from loomtale_worker.engines.catalog import build_registry
+from loomtale_worker.engines.local_files import models_dir
 from loomtale_worker.health_server import WorkerHealthServicer
 from loomtale_worker.model_manager import ModelManager
 from loomtale_worker.servicers import (
@@ -83,7 +85,7 @@ def build_server(bearer_token: str, manager: ModelManager) -> grpc.aio.Server:
 
 async def serve(bind_addr: str, bearer_token: str) -> None:
     assert_offline_env()
-    manager = ModelManager(EngineRegistry())
+    manager = ModelManager(build_registry(models_dir()))
     server = build_server(bearer_token, manager)
     server.add_insecure_port(bind_addr)
     await server.start()

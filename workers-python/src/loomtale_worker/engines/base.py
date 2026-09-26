@@ -1,6 +1,7 @@
-"""Engine protocol every real backend (phases 9a-9c) implements. Empty
-until then: the registry (registry.py) starts with no engines, so every
-call routes to the honest engine_not_installed failure path.
+"""Engine protocol every backend hosted by this worker implements (see
+catalog.py for the registered engines). An engine whose weights are not
+on disk reports installed() False, so every call to it routes to the
+honest engine_not_installed failure path.
 """
 
 from __future__ import annotations

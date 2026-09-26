@@ -34,7 +34,9 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
                 license=e.license,
                 installed=e.installed(),
                 loaded=(self._manager.resident_name == e.name),
-                vram_held_mb=0,
+                vram_held_mb=(
+                    self._manager.resident_vram_mb if self._manager.resident_name == e.name else 0
+                ),
             )
             for e in self._manager.registry.list()
         ]
