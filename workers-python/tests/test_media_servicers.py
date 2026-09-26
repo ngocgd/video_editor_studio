@@ -275,7 +275,11 @@ async def test_missing_engine_fails_before_any_input_is_downloaded(monkeypatch):
 
 @pytest.mark.parametrize(
     ("status_code", "grpc_code"),
-    [(403, grpc.StatusCode.INVALID_ARGUMENT), (503, grpc.StatusCode.UNAVAILABLE)],
+    [
+        (403, grpc.StatusCode.UNAVAILABLE),
+        (404, grpc.StatusCode.INVALID_ARGUMENT),
+        (503, grpc.StatusCode.UNAVAILABLE),
+    ],
 )
 async def test_input_download_failures_map_to_status_codes(monkeypatch, status_code, grpc_code):
     async def failing_download(url, **_kw):
@@ -291,6 +295,31 @@ async def test_input_download_failures_map_to_status_codes(monkeypatch, status_c
                 tts_request(reference_url="http://minio/ref", consent="granted"), FakeContext()
             )
         )
+    assert exc.value.code == grpc_code
+    assert str(status_code) in exc.value.details
+
+
+@pytest.mark.parametrize(
+    ("status_code", "grpc_code"),
+    [
+        # An expired presigned PUT: a retry with a fresh URL succeeds.
+        (403, grpc.StatusCode.UNAVAILABLE),
+        (429, grpc.StatusCode.UNAVAILABLE),
+        (400, grpc.StatusCode.INVALID_ARGUMENT),
+        (413, grpc.StatusCode.INVALID_ARGUMENT),
+        (500, grpc.StatusCode.UNAVAILABLE),
+    ],
+)
+async def test_output_upload_http_failures_map_to_status_codes(monkeypatch, status_code, grpc_code):
+    async def rejecting_upload(url, data, **_kw):
+        request = httpx.Request("PUT", url)
+        raise httpx.HTTPStatusError(
+            "failed", request=request, response=httpx.Response(status_code, request=request)
+        )
+
+    monkeypatch.setattr(transfer, "upload", rejecting_upload)
+    with pytest.raises(AbortSignal) as exc:
+        await collect(tts_servicer(FakeTTS()).Synthesize(tts_request(), FakeContext()))
     assert exc.value.code == grpc_code
     assert str(status_code) in exc.value.details
 

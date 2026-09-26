@@ -108,6 +108,15 @@ type CharacterVoice struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type DraftStepApplication struct {
+	StepID       pgtype.UUID        `json:"step_id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	DraftID      pgtype.UUID        `json:"draft_id"`
+	DraftVersion int64              `json:"draft_version"`
+	AppliedBy    pgtype.UUID        `json:"applied_by"`
+	AppliedAt    pgtype.Timestamptz `json:"applied_at"`
+}
+
 type Episode struct {
 	ID                       pgtype.UUID        `json:"id"`
 	TenantID                 pgtype.UUID        `json:"tenant_id"`
@@ -307,6 +316,14 @@ type PipelineStepDep struct {
 	DependsOnStepID pgtype.UUID `json:"depends_on_step_id"`
 }
 
+type QuotaLedger struct {
+	Project   string             `json:"project"`
+	PtDate    pgtype.Date        `json:"pt_date"`
+	Bucket    string             `json:"bucket"`
+	Units     int32              `json:"units"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type RateLimitBucket struct {
 	BucketKey string             `json:"bucket_key"`
 	Tokens    float32            `json:"tokens"`
@@ -462,4 +479,33 @@ type WorkerStatus struct {
 	ResidentRef pgtype.Text        `json:"resident_ref"`
 	Providers   []byte             `json:"providers"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type YoutubeChannel struct {
+	ID                   pgtype.UUID        `json:"id"`
+	TenantID             pgtype.UUID        `json:"tenant_id"`
+	YoutubeChannelID     string             `json:"youtube_channel_id"`
+	Title                string             `json:"title"`
+	ThumbnailUrl         string             `json:"thumbnail_url"`
+	Scopes               []string           `json:"scopes"`
+	ApiProjectAudited    bool               `json:"api_project_audited"`
+	AuditFormDate        pgtype.Date        `json:"audit_form_date"`
+	AuditNote            string             `json:"audit_note"`
+	LongUploadsStatus    string             `json:"long_uploads_status"`
+	EligibilityCheckedAt pgtype.Timestamptz `json:"eligibility_checked_at"`
+	CustomThumbnailsOk   bool               `json:"custom_thumbnails_ok"`
+	Status               string             `json:"status"`
+	ConnectedBy          pgtype.UUID        `json:"connected_by"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type YoutubeOauthState struct {
+	StateHash    []byte             `json:"state_hash"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	SessionID    pgtype.UUID        `json:"session_id"`
+	CodeVerifier string             `json:"code_verifier"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
 }

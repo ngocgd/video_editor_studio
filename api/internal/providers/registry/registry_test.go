@@ -8,8 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	dbgen "loomtale/api/internal/db/gen"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/llm"
+	"loomtale/api/internal/secrets"
 )
 
 type fakeBYOK struct {
@@ -179,5 +181,35 @@ func TestResolveNeverConsultsBYOKForNonKeyBasedProviders(t *testing.T) {
 	}
 	if p.Name() != "ollama" {
 		t.Fatalf("got %q", p.Name())
+	}
+}
+
+// emptySecretsDB answers every single-row query with pgx.ErrNoRows, like a
+// secrets table with no BYOK key for the tenant.
+type emptySecretsDB struct{ dbgen.DBTX }
+
+func (emptySecretsDB) QueryRow(context.Context, string, ...interface{}) pgx.Row {
+	return noSecretRow{}
+}
+
+type noSecretRow struct{}
+
+func (noSecretRow) Scan(...any) error { return pgx.ErrNoRows }
+
+func TestResolveNameFallsBackThroughTheRealSecretsStore(t *testing.T) {
+	r := &Registry{
+		Store:     fakeStore{settings: Settings{Default: "gemini-api"}},
+		Providers: map[string]llm.Provider{"gemini-api": fakeProvider{name: "operator-key"}},
+		BYOK:      &secrets.Store{Queries: dbgen.New(emptySecretsDB{})},
+		Factories: map[string]func(string) llm.Provider{
+			"gemini-api": func(key string) llm.Provider { return fakeProvider{name: "byok:" + key} },
+		},
+	}
+	p, err := r.ResolveName(context.Background(), uuid.New(), "gemini-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Name(); got != "operator-key" {
+		t.Fatalf("expected the operator's adapter for a tenant without a key, got %q", got)
 	}
 }

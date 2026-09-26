@@ -75,7 +75,10 @@ func (p *PullStep) ModelRef(context.Context, pipeline.StepRef) (*pipeline.ModelR
 
 // Run installs the model and keeps model_installs in step with it. A
 // cancelled context means the owner paused the download: the row is
-// already "paused" and the partial files stay for the next resume.
+// already "paused" and the partial files stay for the next resume. A
+// context that hit its deadline is a failed attempt like any other, so
+// the last attempt leaves the row "failed" (and resumable) instead of
+// "downloading" with nothing running.
 func (p *PullStep) Run(ctx context.Context, sc *pipeline.StepContext) (pipeline.Output, error) {
 	if p.Downloader == nil {
 		return nil, errWorkerOnly
@@ -108,14 +111,15 @@ func (p *PullStep) Run(ctx context.Context, sc *pipeline.StepContext) (pipeline.
 	}
 
 	sc.Log(fmt.Sprintf("installing %s (%d files, %d bytes)", name, len(e.Files), e.SizeBytes()))
-	err := p.Downloader.Install(ctx, e, progress)
-	if ctx.Err() != nil {
+	installErr := p.Downloader.Install(ctx, e, progress)
+	out := pullOutcome(name, ctx.Err(), installErr, sc.Attempt())
+	if out.paused {
 		sc.Log("download paused or cancelled; partial files kept for resume")
-		return nil, ctx.Err()
+		return nil, out.err
 	}
-	if err != nil {
+	if err := out.err; err != nil {
 		sc.Log("install failed: " + err.Error())
-		if class, _ := pipeline.Classify(err); class == pipeline.ClassPermanent || sc.Attempt() >= pipeline.MaxTransientAttempts {
+		if out.markFailed {
 			failCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			_ = p.Store.Queries.MarkModelInstallFailed(failCtx, dbgen.MarkModelInstallFailedParams{Name: name, Error: idconv.ToPgText(truncate(err.Error(), 500))})
@@ -127,6 +131,37 @@ func (p *PullStep) Run(ctx context.Context, sc *pipeline.StepContext) (pipeline.
 	}
 	sc.Log("installed and verified " + name)
 	return pipeline.Output{"model": name, "bytes": e.SizeBytes()}, nil
+}
+
+// pullResult is what Run does with the end of one download attempt.
+type pullResult struct {
+	// paused: the owner paused the pull (or the worker is stopping);
+	// the row is left alone and the partial files stay.
+	paused bool
+	// markFailed: this attempt is the last one, so the row must leave
+	// "downloading" for "failed", from which Install resumes.
+	markFailed bool
+	err        error
+}
+
+// pullOutcome classifies the end of a download attempt. Only a
+// cancellation counts as a pause: a deadline means the attempt ran out
+// of time, which is retried like a transient error and fails the row on
+// the last attempt.
+func pullOutcome(name string, ctxErr, installErr error, attempt int) pullResult {
+	switch {
+	case errors.Is(ctxErr, context.Canceled):
+		return pullResult{paused: true, err: ctxErr}
+	case ctxErr != nil:
+		installErr = fmt.Errorf("models: download of %s ran out of time; partial files are kept and installing again resumes it: %w", name, ctxErr)
+	case installErr == nil:
+		return pullResult{}
+	}
+	class, _ := pipeline.Classify(installErr)
+	return pullResult{
+		markFailed: class == pipeline.ClassPermanent || attempt >= pipeline.MaxTransientAttempts,
+		err:        installErr,
+	}
 }
 
 // LoadStep makes a model resident on the GPU. The GPU executor calls

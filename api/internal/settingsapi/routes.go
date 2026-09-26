@@ -133,12 +133,17 @@ func (h *SettingsAPI) TestLLMSettings(ctx context.Context, request gen.TestLLMSe
 	if sess.UserID != uuid.Nil {
 		createdBy = &sess.UserID
 	}
+	started := time.Now()
 	ok, detail, err := h.Probe.Check(testCtx, info.ID, createdBy, providerName)
 	if err != nil {
 		return nil, err
 	}
+	// The round trip is reported for a reached provider either way, so the
+	// settings card can show how slow a failing provider is too.
+	latencyMs := int(time.Since(started).Milliseconds())
+	result := gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: ok, LatencyMs: &latencyMs}
 	if !ok {
-		return fail(detail)
+		result.Detail = &detail
 	}
-	return gen.TestLLMSettings200JSONResponse{Provider: providerName, Ok: true}, nil
+	return result, nil
 }

@@ -87,7 +87,10 @@ func TestClaudeCLIStatusComesFromTheWorker(t *testing.T) {
 	if !status.Authenticated {
 		return
 	}
-	testResp := sess.do(http.MethodPost, "/settings/llm/test", map[string]any{"provider": "claude-cli"})
+	// The server bounds this call at 30s and a probe can queue behind
+	// in-flight generations inside the sidecar, so wait longer than that
+	// rather than timing out a healthy provider on a busy stack.
+	testResp := sess.doWithin(45*time.Second, http.MethodPost, "/settings/llm/test", map[string]any{"provider": "claude-cli"})
 	requireStatus(t, testResp, http.StatusOK)
 	var result struct {
 		Ok     bool    `json:"ok"`

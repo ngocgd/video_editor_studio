@@ -217,11 +217,17 @@ services:
       ARGON2_MAX_CONCURRENCY: "4"
       # Per-client-IP request budget; a local e2e run (every spec from one
       # browser) may raise it through the environment, never .env edits.
-      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-100}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-600}
       API_MEDIA_RATE_LIMIT_PER_MINUTE: ${API_MEDIA_RATE_LIMIT_PER_MINUTE:-1200}
       APP_MODE: ${APP_MODE:-local}
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_OAUTH_REDIRECT_URL: ${GOOGLE_OAUTH_REDIRECT_URL:-}
+      GOOGLE_CLIENT_SECRET_PATH: ${GOOGLE_CLIENT_SECRET_PATH:-}
+      YOUTUBE_QUOTA_PROJECT: ${YOUTUBE_QUOTA_PROJECT:-default}
+      YOUTUBE_QUOTA_DAILY_LIMIT: ${YOUTUBE_QUOTA_DAILY_LIMIT:-10000}
+      YOUTUBE_QUOTA_COST_INSERT: ${YOUTUBE_QUOTA_COST_INSERT:-1600}
       # Go's runtime honors this automatically (no code needed): leaves
       # headroom under the container's 512m cgroup limit so a burst of
       # concurrent argon2 work triggers more aggressive GC instead of an

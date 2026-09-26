@@ -56,6 +56,14 @@ paths:
     $ref: paths/settings_llm.yaml#/putLLMApiKey
   /settings/llm/cli-status:
     $ref: paths/settings_llm.yaml#/getClaudeCliStatus
+  /channels:
+    $ref: paths/channels.yaml#/channelsCollection
+  /channels/connect:
+    $ref: paths/channels.yaml#/connectChannel
+  /channels/oauth/callback:
+    $ref: paths/channels.yaml#/oauthCallback
+  /channels/{id}:
+    $ref: paths/channels.yaml#/channelItem
   /series:
     $ref: paths/series.yaml#/seriesCollection
   /series/{id}:

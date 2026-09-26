@@ -1,0 +1,109 @@
+channelsCollection:
+  get:
+    operationId: listYouTubeChannels
+    summary: The tenant's connected YouTube channels and today's quota usage
+    tags: [channels]
+    x-min-role: viewer
+    responses:
+      "200":
+        description: channels, connected ones first
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/channels.yaml#/YouTubeChannelList"
+connectChannel:
+  post:
+    operationId: startYouTubeConnect
+    summary: Start the Google OAuth flow (PKCE, single-use state bound to this session)
+    tags: [channels]
+    x-min-role: owner
+    responses:
+      "200":
+        description: consent URL to navigate to
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/channels.yaml#/YouTubeConnectStart"
+      "503":
+        description: no Google OAuth client is configured on this server
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+oauthCallback:
+  get:
+    operationId: youTubeOAuthCallback
+    summary: Google redirects here after consent; stores the channel and redirects back to Settings
+    description: >-
+      Always answers with a redirect to /settings/youtube carrying
+      connect=ok or connect=error plus a short reason code. Tokens are
+      exchanged server side and never reach the browser.
+    tags: [channels]
+    x-min-role: owner
+    parameters:
+      - name: code
+        in: query
+        schema: { type: string, maxLength: 2048 }
+      - name: state
+        in: query
+        schema: { type: string, maxLength: 256 }
+      - name: error
+        in: query
+        schema: { type: string, maxLength: 256 }
+    responses:
+      "302":
+        description: back to the Settings page
+        headers:
+          Location:
+            required: true
+            schema:
+              type: string
+channelItem:
+  patch:
+    operationId: updateYouTubeChannelAudit
+    summary: Record whether the Google API project passed YouTube's audit (audited)
+    tags: [channels]
+    x-min-role: owner
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/channels.yaml#/YouTubeChannelAuditUpdate"
+    responses:
+      "200":
+        description: channel updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/channels.yaml#/YouTubeChannel"
+      "404":
+        description: channel not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"
+  delete:
+    operationId: disconnectYouTubeChannel
+    summary: Revoke the channel's token at Google, delete it and mark the channel disconnected (audited)
+    tags: [channels]
+    x-min-role: owner
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      "204":
+        description: disconnected
+      "404":
+        description: channel not found in this tenant
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/problem.yaml#/Problem"

@@ -26,6 +26,10 @@ const splitTokenBudget = 100_000
 // scene plus one speaker per quoted line.
 const splitMaxTokens = 16_000
 
+// maxReportedNames bounds the unrecognised speaker names kept in a split
+// step's output.
+const maxReportedNames = 20
+
 // SplitInput is the llm.scene_split step input.
 type SplitInput struct {
 	Lang        string `json:"lang"`
@@ -246,6 +250,6 @@ func (h *SplitHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pipel
 	sc.Progress(100, 0)
 	return pipeline.Output{
 		"provider": providerName, "sceneCount": res.Total, "keptCount": res.Kept, "droppedCount": res.Dropped,
-		"unrecognisedSpeakers": unrecognised, "tainted": tainted,
+		"unrecognisedSpeakers": unrecognised, "unrecognisedNames": UnrecognisedNames(drafts, maxReportedNames), "tainted": tainted,
 	}, nil
 }

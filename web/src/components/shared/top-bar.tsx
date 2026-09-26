@@ -12,6 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings/voices": "Voice presets",
   "/settings/styles": "Image styles",
   "/settings/account": "Account settings",
+  "/settings/youtube": "YouTube channels",
 };
 
 /** Top bar (guidelines §6): 44px, breadcrumb, `Ctrl K` search, user menu. */
