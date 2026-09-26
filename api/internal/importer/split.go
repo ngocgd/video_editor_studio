@@ -80,7 +80,7 @@ func Split(text string, preset SplitPreset) (chapters []Chapter, usedPreset Spli
 
 func wholeTextChapter(text string) []Chapter {
 	runes := []rune(text)
-	return []Chapter{{Index: 1, Title: "", CharStart: 0, CharEnd: len(runes), WordCount: wordCount(text)}}
+	return []Chapter{{Index: 1, Title: "", CharStart: 0, CharEnd: len(runes), WordCount: WordCount(text)}}
 }
 
 func splitWithPattern(text string, pattern *regexp.Regexp) []Chapter {
@@ -106,7 +106,7 @@ func splitWithPattern(text string, pattern *regexp.Regexp) []Chapter {
 			Title:     title,
 			CharStart: startRune,
 			CharEnd:   endRune,
-			WordCount: wordCount(string(runes[startRune:endRune])),
+			WordCount: WordCount(string(runes[startRune:endRune])),
 		})
 	}
 	return chapters
@@ -125,12 +125,4 @@ func byteOffsetToRuneOffset(s string) map[int]int {
 	}
 	m[len(s)] = runeIdx
 	return m
-}
-
-// wordCount is a whitespace-based count for Latin-script text; for CJK
-// text without spaces it degrades to counting runs of non-space
-// characters, which is a coarse but stable proxy used consistently
-// everywhere word_count is stored.
-func wordCount(s string) int {
-	return len(strings.Fields(s))
 }
