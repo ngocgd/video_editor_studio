@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"io"
 	"net/http"
 	"os"
@@ -590,4 +591,61 @@ func TestSceneRollupStaysFastAt400Scenes(t *testing.T) {
 	if len(list.Items) != 400 {
 		t.Fatalf("listed %d", len(list.Items))
 	}
+}
+
+func TestVoiceCloneNeedsAuditedConsentAndScenesStayInTheirTenant(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		missingEnv(t, "ffmpeg", "the toolbox image ships ffmpeg for the lavfi fixtures")
+	}
+	f := newStoryboardFixture(t, dialogueDraft)
+	sess := f.sess
+	wav := lavfi(t, "voice.wav", "-f", "lavfi", "-i", "sine=frequency=220:duration=2:sample_rate=24000", "-ac", "1", "-c:a", "pcm_s16le")
+	refID := uploadMedia(t, sess, "audio", "audio/wav", "voice.wav", wav)
+
+	body := map[string]any{"name": "Cloned", "engine": "chatterbox", "refAudioAssetId": refID}
+	requireStatus(t, sess.do(http.MethodPost, "/settings/voice-presets", body), http.StatusUnprocessableEntity)
+	body["consent"] = true
+	var preset struct {
+		ID        string `json:"id"`
+		Consented bool   `json:"consented"`
+	}
+	sessionJSON(t, sess.do(http.MethodPost, "/settings/voice-presets", body), http.StatusCreated, &preset)
+	if !preset.Consented {
+		t.Fatal("the preset must record the consent")
+	}
+	var audits int
+	if err := ownerPool(t).QueryRow(context.Background(),
+		`SELECT count(*) FROM audit_log WHERE action = 'voice_reference_consented' AND target_id = $1 AND tenant_id = $2`, preset.ID, f.fx.TenantID,
+	).Scan(&audits); err != nil {
+		t.Fatal(err)
+	}
+	if audits != 1 {
+		t.Fatalf("expected one consent audit entry, got %d", audits)
+	}
+	// An image is not a voice reference.
+	img := uploadMedia(t, sess, "image", "image/png", "x.png", testPNG(8, 8, color.RGBA{R: 1, G: 2, B: 3, A: 255}))
+	requireStatus(t, sess.do(http.MethodPost, "/settings/voice-presets", map[string]any{"name": "Bad", "engine": "chatterbox", "refAudioAssetId": img, "consent": true}), http.StatusUnprocessableEntity)
+	// A preset in use cannot be deleted.
+	sessionJSON(t, sess.do(http.MethodPut, "/characters/"+f.linMo+"/voices/en", map[string]any{"engine": "chatterbox", "voicePresetId": preset.ID}), http.StatusOK, nil)
+	requireStatus(t, sess.do(http.MethodDelete, "/settings/voice-presets/"+preset.ID, nil), http.StatusConflict)
+
+	sessionJSON(t, sess.do(http.MethodPost, "/episodes/"+f.episodeID+"/scenes/split", map[string]any{"lang": "en", "mode": "paragraphs"}), http.StatusOK, nil)
+	sceneID := listScenes(t, sess, f.episodeID, "all").Items[0].ID
+
+	q := dbgen.New(ownerPool(t))
+	other := createFixtureUser(t, q, "storyboard-other", uniqueEmail("storyboard-other"), "owner")
+	intruder := login(t, other.Email, other.Password)
+	requireStatus(t, intruder.do(http.MethodGet, "/episodes/"+f.episodeID+"/scenes?lang=en", nil), http.StatusNotFound)
+	requireStatus(t, intruder.do(http.MethodPatch, "/scenes/"+sceneID, map[string]any{"expectedVersion": 0, "imagePrompt": "x"}), http.StatusNotFound)
+	requireStatus(t, intruder.do(http.MethodPost, "/scenes/"+sceneID+"/regenerate", map[string]any{"kind": "image"}), http.StatusNotFound)
+	requireStatus(t, intruder.do(http.MethodGet, "/series/"+f.seriesID+"/characters", nil), http.StatusNotFound)
+	requireStatus(t, intruder.do(http.MethodPut, "/characters/"+f.linMo+"/voices/en", map[string]any{"engine": "chatterbox"}), http.StatusNotFound)
+	requireStatus(t, intruder.do(http.MethodGet, "/assets/"+refID+"/variants/original", nil), http.StatusNotFound)
+	// Another tenant's character can never become a speaker or a scene character.
+	var foreignChar struct{ ID string `json:"id"` }
+	otherSeries := createSeries(t, intruder)
+	sessionJSON(t, intruder.do(http.MethodPost, "/series/"+otherSeries+"/characters", map[string]any{"names": map[string]string{"orig": "", "en": "Spy", "vi": ""}}), http.StatusCreated, &foreignChar)
+	scene := listScenes(t, sess, f.episodeID, "all").Items[0]
+	requireStatus(t, sess.do(http.MethodPatch, "/scenes/"+sceneID, map[string]any{"expectedVersion": scene.Version, "characterIds": []string{foreignChar.ID}}), http.StatusBadRequest)
 }
