@@ -30,8 +30,8 @@ const enqueueSamples = 5
 func TestEnqueue300StepsWithDepsMeetsLatencyBudget(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("perf-leaf", pipeline.QueueCPU))
-	registry.Register(succeedsImmediately("perf-dependent", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("perf-leaf", testQueue))
+	registry.Register(succeedsImmediately("perf-dependent", testQueue))
 	engine, _ := pipelineEngine(t, registry)
 	// A real per-scene stage registers a meaningful duration estimate
 	// (phase 9), which is what actually bounds how many separate River
@@ -89,7 +89,7 @@ func TestEnqueue300StepsWithDepsMeetsLatencyBudget(t *testing.T) {
 func TestProgressWritesAreThrottledToOncePerSecond(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "throttle-check", queue: pipeline.QueueCPU, run: func(_ context.Context, sc *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "throttle-check", queue: testQueue, run: func(_ context.Context, sc *pipeline.StepContext) (pipeline.Output, error) {
 		for i := 0; i < 50; i++ {
 			sc.Progress(i, 0)
 		}

@@ -33,12 +33,12 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 	queries := dbgen.New(pool)
 
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "sched-batch", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "sched-batch", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		time.Sleep(chunkStepDuration)
 		return pipeline.Output{}, nil
 	}})
 	interactiveStarted := make(chan time.Time, 1)
-	registry.Register(&fakeHandler{kind: "sched-interactive", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "sched-interactive", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		interactiveStarted <- time.Now()
 		return pipeline.Output{}, nil
 	}})
@@ -60,7 +60,7 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 	river.AddWorker(workers, &pipeline.StepWorker{Engine: engine})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
-		Queues:               map[string]river.QueueConfig{pipeline.QueueCPU: {MaxWorkers: 1}},
+		Queues:               map[string]river.QueueConfig{testQueue: {MaxWorkers: 1}},
 		Workers:              workers,
 		RescueStuckJobsAfter: pipeline.RescueStuckJobsAfter,
 	})
@@ -77,7 +77,7 @@ func TestInteractiveStepWaitsAtMostOneChunkBehindBatch(t *testing.T) {
 	// client's single cpu worker slot is not contended by unrelated
 	// leftover jobs it has no handler for.
 	if _, err := pool.Exec(context.Background(),
-		`DELETE FROM river_job WHERE queue = $1 AND state IN ('available', 'scheduled', 'retryable')`, pipeline.QueueCPU,
+		`DELETE FROM river_job WHERE queue = $1 AND state IN ('available', 'scheduled', 'retryable')`, testQueue,
 	); err != nil {
 		t.Fatalf("clear leftover cpu jobs: %v", err)
 	}

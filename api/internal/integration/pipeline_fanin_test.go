@@ -21,8 +21,8 @@ import (
 func TestFanInConcurrentDepCompletionEnqueuesDependentExactlyOnce(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("fanin-leaf", pipeline.QueueCPU))
-	registry.Register(succeedsImmediately("fanin-join", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("fanin-leaf", testQueue))
+	registry.Register(succeedsImmediately("fanin-join", testQueue))
 	engine, pool := pipelineEngine(t, registry)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "fanin-tenant")
@@ -81,10 +81,10 @@ func TestFanInConcurrentDepCompletionEnqueuesDependentExactlyOnce(t *testing.T) 
 func TestBatchPartialFailureMarksOnlyTheFailedStep(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "batch-ok", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "batch-ok", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		return pipeline.Output{}, nil
 	}})
-	registry.Register(&fakeHandler{kind: "batch-bad", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "batch-bad", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		return nil, pipeline.ErrValidation
 	}})
 	engine, pool := pipelineEngine(t, registry)

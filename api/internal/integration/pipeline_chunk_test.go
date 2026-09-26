@@ -33,7 +33,7 @@ func TestDispatchClaimsChunkStepsLazilyOneAtATime(t *testing.T) {
 	releaseFirst := make(chan struct{})
 
 	registry := pipeline.NewRegistry()
-	registry.Register(&fakeHandler{kind: "chunk-lazy", queue: pipeline.QueueCPU, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
+	registry.Register(&fakeHandler{kind: "chunk-lazy", queue: testQueue, run: func(context.Context, *pipeline.StepContext) (pipeline.Output, error) {
 		if callCount.Add(1) == 1 {
 			close(firstStarted)
 			<-releaseFirst
@@ -106,7 +106,7 @@ func TestDispatchClaimsChunkStepsLazilyOneAtATime(t *testing.T) {
 func TestDispatchSnoozesInsteadOfDestroyingAnUnregisteredKind(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registryWithHandler := pipeline.NewRegistry()
-	registryWithHandler.Register(succeedsImmediately("unregistered-elsewhere", pipeline.QueueCPU))
+	registryWithHandler.Register(succeedsImmediately("unregistered-elsewhere", testQueue))
 	engine, pool := pipelineEngine(t, registryWithHandler)
 	q := ownerQueries(t)
 	tenantID := pipelineFixtureTenant(t, q, "unregistered-kind-tenant")

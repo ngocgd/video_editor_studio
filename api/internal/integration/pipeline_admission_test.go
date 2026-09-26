@@ -52,7 +52,7 @@ func TestQuotaCheckEnforcesConfiguredLimit(t *testing.T) {
 func TestEnqueueRejectsOverQuotaRunWithNoRowsWritten(t *testing.T) {
 	skipIfAPIUnreachable(t)
 	registry := pipeline.NewRegistry()
-	registry.Register(succeedsImmediately("admission-step", pipeline.QueueCPU))
+	registry.Register(succeedsImmediately("admission-step", testQueue))
 	pool := appPool(t)
 	ownerP := ownerPool(t)
 	tenantID := pipelineFixtureTenant(t, dbgen.New(ownerP), "admission-tenant")
