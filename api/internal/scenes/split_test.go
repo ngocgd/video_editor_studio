@@ -92,6 +92,64 @@ func TestMentionedRespectsWordBoundaries(t *testing.T) {
 	}
 }
 
+func TestResolveAcceptsCopiedRosterLines(t *testing.T) {
+	idx := testIndex()
+	for name, want := range map[string]uuid.UUID{
+		"Lin Mo / 林默 / Lâm Mặc":                            linMo,
+		"Lin Mo / 林默 / Lâm Mặc (disciple)":                 linMo,
+		"- Elder Qiu / 邱长老 / Trưởng lão Khâu (sect elder)": elderQiu,
+		"Lin Mo (disciple)":                                linMo,
+		"林默 (Lin Mo)":                                      linMo,
+		"邱长老（Elder Qiu）":                                   elderQiu,
+		"lin mo/林默":                                        linMo,
+	} {
+		if id, ok := idx.Resolve(name); !ok || id != want {
+			t.Errorf("%q -> %v %v, want %v", name, id, ok, want)
+		}
+	}
+	for _, name := range []string{"Lin Mo / Elder Qiu", "Lin Mo (Elder Qiu)", "Su Yao (disciple)", "/"} {
+		if id, ok := idx.Resolve(name); ok {
+			t.Errorf("%q must not resolve, got %v", name, id)
+		}
+	}
+}
+
+func TestNormalizeLLMSplitResolvesRosterStyleNames(t *testing.T) {
+	sp := buildSplitPrompt([]Paragraph{
+		para("p-a", `"Kneel," Elder Qiu said.`),
+		para("p-b", `Lin Mo knelt. "Yes, Elder."`),
+	})
+	out := decodeSplit(t, `{
+		"scenes": [
+			{"start": "P1", "imagePrompt": "an elder", "characters": ["Elder Qiu / 邱长老 / Trưởng lão Khâu (sect elder)"]},
+			{"start": "P2", "imagePrompt": "a kneeling disciple", "characters": ["Lin Mo (disciple)"]}
+		],
+		"speakers": [
+			{"quote": "Q1", "speaker": "Elder Qiu / 邱长老 / Trưởng lão Khâu (sect elder)"},
+			{"quote": "Q2", "speaker": "Lin Mo (disciple)"}
+		]
+	}`)
+	drafts, unrecognised := NormalizeLLMSplit(sp, out, testIndex(), "en")
+	if unrecognised != 0 || len(drafts) != 2 {
+		t.Fatalf("unrecognised = %d, drafts = %+v", unrecognised, drafts)
+	}
+	if s := drafts[0].Segments[0]; s.SpeakerCharacterID == nil || *s.SpeakerCharacterID != elderQiu {
+		t.Fatalf("Q1 = %+v", drafts[0].Segments)
+	}
+	var q2 *uuid.UUID
+	for _, s := range drafts[1].Segments {
+		if s.SpeakerCharacterID != nil {
+			q2 = s.SpeakerCharacterID
+		}
+	}
+	if q2 == nil || *q2 != linMo {
+		t.Fatalf("Q2 = %+v", drafts[1].Segments)
+	}
+	if !slices.Contains(drafts[0].CharacterIDs, elderQiu) || !slices.Contains(drafts[1].CharacterIDs, linMo) {
+		t.Fatalf("characters = %v / %v", drafts[0].CharacterIDs, drafts[1].CharacterIDs)
+	}
+}
+
 func para(id, text string) Paragraph { return Paragraph{ID: id, Text: text} }
 
 func words(n int) string { return strings.TrimSpace(strings.Repeat("word ", n)) }
