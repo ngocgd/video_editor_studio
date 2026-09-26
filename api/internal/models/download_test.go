@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"loomtale/api/internal/pipeline"
 )
@@ -54,6 +55,9 @@ type fakeHub struct {
 	ignoreRange bool
 	ranges      []string
 	requests    int
+	// beforeServe, when set, runs after a request is recorded and before
+	// it is answered, so a test can hold a download mid-flight.
+	beforeServe func()
 }
 
 func (h *fakeHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +65,11 @@ func (h *fakeHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.requests++
 	h.ranges = append(h.ranges, r.Header.Get("Range"))
 	ignoreRange := h.ignoreRange
+	beforeServe := h.beforeServe
 	h.mu.Unlock()
+	if beforeServe != nil {
+		beforeServe()
+	}
 	// /<repo>/resolve/<rev>/<remote>
 	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/"), "/resolve/", 2)
 	if len(parts) != 2 {
@@ -347,5 +355,55 @@ func TestCheckHostMatchesSubdomainsOnly(t *testing.T) {
 		if err := d.checkHost(bad); err == nil {
 			t.Fatalf("%s should be refused", bad)
 		}
+	}
+}
+
+func TestConcurrentInstallsOfOneFileDownloadItOnce(t *testing.T) {
+	f := newFixture(t)
+	f.entry.Files = f.entry.Files[:1]
+	release := make(chan struct{})
+	var once sync.Once
+	firstStarted := make(chan struct{})
+	f.hub.beforeServe = func() {
+		once.Do(func() {
+			close(firstStarted)
+			<-release
+		})
+	}
+
+	errs := make(chan error, 2)
+	go func() { errs <- f.d.Install(context.Background(), f.entry, nil) }()
+	<-firstStarted
+	go func() { errs <- f.d.Install(context.Background(), f.entry, nil) }()
+	// Give the second pull time to reach the lock (or, without one, to
+	// open the same .part and send its own request).
+	time.Sleep(3 * stagingLockPoll)
+	close(release)
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if _, requests := f.hub.stats(); requests != 1 {
+		t.Fatalf("hub saw %d requests, want 1: the second pull must wait for the first and reuse its verified file", requests)
+	}
+	if string(f.readFinal(t, "diffusion_models/a.safetensors")) != string(f.data["a.safetensors"]) {
+		t.Fatal("a.safetensors content mismatch")
+	}
+}
+
+func TestStagingLockWaitEndsWithTheContext(t *testing.T) {
+	path := filepath.Join(t.TempDir(), stagingDir, "x.lock")
+	unlock, err := lockStaging(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*stagingLockPoll)
+	defer cancel()
+	if _, err := lockStaging(ctx, path); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("second lock err = %v, want the context deadline", err)
 	}
 }

@@ -53,6 +53,7 @@ func TestLoginRejectsWrongPassword(t *testing.T) {
 	fx := createFixtureUser(t, q, "auth-flow-badpw-tenant", uniqueEmail("badpw"), "owner")
 
 	body := map[string]string{"email": fx.Email, "password": "totally-wrong-password"}
+	isolateLoginIPBudget(t)
 	resp := doUnauthenticated(t, http.MethodPost, "/auth/login", body)
 	requireStatus(t, resp, http.StatusUnauthorized)
 }
@@ -144,4 +145,3 @@ func TestOldCookieRejectedAfterSwitchTenant(t *testing.T) {
 	meResp := sess.do(http.MethodGet, "/auth/me", nil)
 	requireStatus(t, meResp, http.StatusUnauthorized)
 }
-

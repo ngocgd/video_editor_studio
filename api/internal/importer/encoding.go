@@ -40,7 +40,8 @@ var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 // DecodeText detects raw's encoding and returns its UTF-8 text plus the
 // encoding name that was used. Detection order: UTF-16 BOM (unambiguous),
 // UTF-8 (valid and not GB18030-only-decodable garbage), then GB18030 (a
-// superset of GBK) as the CJK fallback. An input that decodes to invalid
+// superset of GBK) as the CJK fallback, accepted only when the result is
+// mostly Han ideographs. An input that decodes to invalid
 // UTF-8 or contains an implausible density of the Unicode replacement
 // character under every attempted encoding is reported as
 // ErrUndetectedEncoding rather than guessed.
@@ -65,11 +66,24 @@ func DecodeText(raw []byte) (text string, encodingName string, err error) {
 		return string(body), EncodingUTF8, nil
 	}
 
-	if decoded, derr := simplifiedchinese.GB18030.NewDecoder().Bytes(raw); derr == nil && utf8.Valid(decoded) && looksPlausible(string(decoded)) {
+	if decoded, derr := simplifiedchinese.GB18030.NewDecoder().Bytes(raw); derr == nil && utf8.Valid(decoded) && looksPlausible(string(decoded)) && looksChinese(string(decoded)) {
 		return string(decoded), EncodingGB18030, nil
 	}
 
 	return "", "", ErrUndetectedEncoding
+}
+
+// gb18030MinCJKRatio is the share of letters that must be Han ideographs
+// before a non-UTF-8 upload is accepted as GB18030. GB18030 decodes almost
+// any byte stream without error: Windows-1252 or Latin-1 prose turns each
+// accented letter plus its neighbour into one ideograph, which leaves most
+// letters Latin, while real Chinese prose is overwhelmingly Han.
+const gb18030MinCJKRatio = 0.5
+
+// looksChinese reports whether a GB18030 decoding reads as Chinese prose
+// rather than mojibake from another single-byte encoding.
+func looksChinese(s string) bool {
+	return cjkRatio(s) >= gb18030MinCJKRatio
 }
 
 // looksPlausible rejects text that is technically valid UTF-8 but is
