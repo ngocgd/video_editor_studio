@@ -76,7 +76,10 @@ EXPOSE 8188
 # --disable-api-nodes removes the nodes that call paid external APIs.
 # Models are read from the read-only /app/ComfyUI/models mount; inputs,
 # outputs, temp files and ComfyUI's own user database go to /scratch.
-ENTRYPOINT ["python", "main.py"]
+# ComfyUI refuses to start unless --user-directory already exists, and
+# the scratch volume may be fresh, so the entrypoint creates the four
+# directories before handing over to main.py.
+ENTRYPOINT ["sh", "-c", "mkdir -p /scratch/input /scratch/output /scratch/temp /scratch/user && exec python main.py \"$@\"", "comfyui"]
 CMD ["--listen", "0.0.0.0", "--port", "8188", \
      "--reserve-vram", "1", \
      "--disable-api-nodes", "--disable-auto-launch", \
