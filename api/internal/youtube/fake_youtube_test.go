@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // fakeYouTube is an httptest double of the Data API and the resumable
@@ -39,6 +40,10 @@ type fakeYouTube struct {
 	// insertStatus overrides the session-open answer (with insertBody).
 	insertStatus int
 	insertBody   string
+	// putDelay stalls every data PUT before it is read (a slow uplink).
+	putDelay time.Duration
+	// dropConn closes the connection on every data PUT without answering.
+	dropConn bool
 	// uploads is the channel's uploads playlist: video id -> tags.
 	uploads map[string][]string
 	// persistedBeforeData is set when the session URI was persisted
@@ -151,6 +156,19 @@ func (f *fakeYouTube) done(w http.ResponseWriter) {
 }
 
 func (f *fakeYouTube) put(w http.ResponseWriter, r *http.Request) {
+	if !strings.HasPrefix(r.Header.Get("Content-Range"), "bytes */") {
+		f.mu.Lock()
+		delay, drop := f.putDelay, f.dropConn
+		f.mu.Unlock()
+		if drop {
+			conn, _, err := http.NewResponseController(w).Hijack()
+			if err == nil {
+				_ = conn.Close()
+			}
+			return
+		}
+		time.Sleep(delay)
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.gone {

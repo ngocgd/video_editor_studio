@@ -24,6 +24,8 @@ type Querier interface {
 	ChannelDailySeries(ctx context.Context, arg ChannelDailySeriesParams) ([]ChannelDailySeriesRow, error)
 	// Public watch hours over [from_date, to_date], the YPP 12-month window.
 	ChannelWatchHoursWindow(ctx context.Context, arg ChannelWatchHoursWindowParams) (ChannelWatchHoursWindowRow, error)
+	// Records that a step's result was applied; 0 rows means it already was.
+	ClaimDraftStepApplication(ctx context.Context, arg ClaimDraftStepApplicationParams) (int64, error)
 	// Model installs, verified files and benchmarks. Not tenant-scoped (see
 	// the models migration): one GPU and one models volume per deployment.
 	// Moves a model into "downloading" unless a pull is already running for
@@ -303,7 +305,7 @@ type Querier interface {
 	SupersedeRunTx(ctx context.Context, arg SupersedeRunTxParams) (PipelineRun, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	// Keeps only the newest 50 revisions per draft; called after each insert.
-	TrimDraftRevisions(ctx context.Context, draftID pgtype.UUID) error
+	TrimDraftRevisions(ctx context.Context, arg TrimDraftRevisionsParams) error
 	// version = current_version + 1 is computed by the caller (story.Store)
 	// after loading and CAS-checking the row inside the same transaction, so
 	// the WHERE clause below is the actual optimistic-concurrency fence: a

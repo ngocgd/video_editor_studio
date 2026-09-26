@@ -149,12 +149,8 @@ func TestStreamEventsThroughCaddyDeliversIncrementallyAndRejectsOtherTenant(t *t
 	}
 
 	// A session scoped to any tenant other than the run's owner must never
-	// subscribe to it. Rather than a second /auth/login (LoginPerIP,
-	// api/cmd/api/main.go, is one bucket shared across this whole
-	// package's tests — they all reach the API from the same client IP;
-	// see zz_login_rate_limit_test.go — so a second real login here would
-	// spend budget every later test in the package is counting on),
-	// rotate this same session onto a second tenant fxA also belongs to
+	// subscribe to it. Rather than a second user and login, rotate this
+	// same session onto a second tenant fxA also belongs to
 	// via /auth/switch-tenant: once switched, its active tenant no longer
 	// owns runID, which is exactly as genuine a cross-tenant boundary as
 	// a second, wholly unrelated user would be.

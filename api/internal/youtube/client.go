@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 )
 
 // Official endpoint bases. Tests point them at an httptest double.
@@ -31,6 +32,9 @@ type Client struct {
 	// APIBase and UploadBase default to the official endpoints.
 	APIBase    string
 	UploadBase string
+
+	// chunkDeadline overrides the per-chunk deadline (tests only).
+	chunkDeadline func(n int) time.Duration
 }
 
 func (c *Client) apiBase() string {
@@ -49,6 +53,7 @@ func (c *Client) uploadBase() string {
 
 // transportError wraps a failure to get any HTTP answer at all.
 func transportError(op Op, err error) error {
+	err = redactURL(err)
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
@@ -59,6 +64,18 @@ func transportError(op Op, err error) error {
 		return &APIError{Kind: KindAuth, Reason: ReasonReconnectNeeded, Message: fmt.Sprintf("%s: %v", op, err)}
 	}
 	return &APIError{Kind: KindTransient, Reason: "transport", Message: fmt.Sprintf("%s: %v", op, err)}
+}
+
+// redactURL drops the request URL from a *url.Error, keeping its
+// operation and cause. A resumable session URI is a capability (whoever
+// holds it can write to the upload), so it must never reach error text,
+// logs or stored step errors.
+func redactURL(err error) error {
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		return fmt.Errorf("%s request: %w", ue.Op, ue.Err)
+	}
+	return err
 }
 
 // failure classifies a non-2xx response and, when Google says the daily

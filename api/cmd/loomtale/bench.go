@@ -25,6 +25,7 @@ import (
 //
 //	loomtale bench --suite image-smoke [--out /bench] [--rss-samples /bench/rss.tsv]
 //	loomtale bench --suite tts|align|llm|voice-smoke [--out /bench] [--ollama-model qwen3.5-9b]
+//	loomtale bench --suite vision|train|train-smoke --refs /bench/refs [--out /bench]
 //
 // The image suites need DATABASE_URL, MODELS_DIR and COMFYUI_URL
 // (scripts/bench-image.sh wraps them with the host-side RSS sampler);
@@ -37,11 +38,12 @@ func runBench(ctx context.Context, args []string) error {
 	outDir := fs.String("out", "", "directory to save output images into (optional)")
 	rssSamples := fs.String("rss-samples", "", "file of '<unix_ms> <rss_bytes>' ComfyUI RSS samples written by the host (optional)")
 	ollamaModel := fs.String("ollama-model", os.Getenv("OLLAMA_MODEL"), "manifest LLM to load in Ollama for the llm and voice-smoke suites")
+	refsDir := fs.String("refs", "", "directory of reference images (PNG/JPEG/WebP, e.g. image-suite portraits) for the vision, train and train-smoke suites")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if isVoiceSuite(*suiteName) {
-		return runVoiceBench(ctx, *suiteName, *outDir, *ollamaModel)
+		return runVoiceBench(ctx, *suiteName, *outDir, *ollamaModel, *refsDir)
 	}
 	suite, ok := bench.Suites()[*suiteName]
 	if !ok {

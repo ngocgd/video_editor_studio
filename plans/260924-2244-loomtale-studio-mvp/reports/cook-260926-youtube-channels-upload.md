@@ -39,12 +39,25 @@ Docker was down for this whole run: the engine answers HTTP 500 and `docker_data
 - The PKCE code verifier is stored in plaintext in the state row for at most 10 minutes. It is useless without the authorization code and the client secret.
 - Channel eligibility is read at connect only. The per-publish precheck belongs with publications in the second part.
 
+## Independent review
+
+The independent review (`plans/reports/code-reviewer-260926-1828-youtube-channels-upload-review.md`, round 1 on `112803d`) found one High, two Medium and five Low findings. This run fixed the High and both Medium findings, each with a regression test, and left the Low findings for later.
+
+- **High, the operator's LLM key fallback: fixed** (`32ee61d`). `secrets.Store.Open` now wraps both `secrets.ErrNotFound` and `pgx.ErrNoRows` for a missing secret, so `registry.ResolveName` again falls back to the operator's `anthropic-api` or `gemini-api` adapter for a tenant without its own key. New tests go through the real `secrets.Store` over a database double that has no rows: `TestOpenMissingSecretWrapsNotFoundAndNoRows` and `TestGetMissingLLMKeyKeepsNoRowsContract` in `api/internal/secrets/store_test.go`, and `TestResolveNameFallsBackThroughTheRealSecretsStore` in the registry tests. All three fail without the fix and pass with it.
+- **Medium, the 30-second timeout on upload chunks: fixed** (`9a37ce1`). A data chunk PUT now uses a copy of the base client without its whole-request timeout. The copy keeps the transport, so dialing, TLS and the host allowlist are unchanged. Each chunk is bounded by its own deadline: 2 minutes plus one second per 128 KiB, which assumes an uplink of about 1 Mbit/s (about 4 minutes for a 16 MB chunk). A missed chunk deadline is a transient `upload_chunk_timeout`, and a retry resumes the session. Opening a session, the status query and the cancel keep the base client's timeout. Tests: `TestUploadChunkOutlivesBaseClientTimeout` and `TestUploadChunkDeadlineIsTransient`.
+- **Medium, the session URI in transport errors: fixed** (`9a37ce1`). `transportError` and `sendRange` drop the URL from a `*url.Error` and keep only its operation and cause, including when the caller's context is cancelled. Tests: `TestUploadTransportErrorHidesSessionURI` (the server drops the connection mid-chunk) and `TestCancelledUploadErrorHidesSessionURI`.
+- **Low findings: not addressed in this run**, which was scoped to the Critical, High and Medium findings. These are the `__proto__` reason on the Settings page, channel thumbnails blocked by the CSP, the JSON 401 from the callback without a session, and the unrevoked grant after concurrent reconnects. The fifth Low finding says that the "What shipped" section overstates the upload's dedupe. It is correct: `Client.Upload` returns `upload_session_gone`, and the caller must dedupe by the nonce tag with `FindUploadByTag`. The second part's pipeline step has to do that.
+
+After the fixes, the host run passes again: `go vet ./...` (also with `-tags=integration`), `golangci-lint run ./...` with 0 issues (also with the integration build tag), `go test ./... -count=1` and `scripts/lint-tenant-queries.sh`. No generated code or web file changed. The toolbox run with `-race`, the integration suite and the Playwright spec are still pending, because Docker is still down.
+
 ## Merge notes
 
 - `scripts/lint-tenant-queries.sh` `TENANT_TABLES` is edited by lanes a, c and d. The merge takes the union.
 - `openapi/root.yaml`, `api/cmd/api/*`, `deploy/compose.yml`, `.env.example` and the web route tree were changed as announced on the board. Regenerate the generated code after merging; never hand-merge it.
 
+- Merged into main after main (with the review follow-up fixes and the scoring engines) was merged into the branch. Two conflicts: the generated `server.gen.go` was regenerated with the toolbox, and `TENANT_TABLES` took the union. The toolbox lint and test, the web checks and the integration suite were re-run green on the merged tree before the merge into main.
+
 ## Unresolved questions
 
-- When will Docker be restored? The toolbox, integration and e2e runs, and therefore the merge, wait on it.
+- The migration version 20260927300000 sorts before 20260927400000, which main already had. Fresh databases apply both in order, but a development database that already applied the later version needs goose's allow-missing mode (or a reset) to pick this one up. Is that acceptable for the MVP?
 - Which Google Cloud project and OAuth consent screen (testing or published) will the live check use? In testing mode refresh tokens expire after 7 days, and the UI then shows the reconnect state.

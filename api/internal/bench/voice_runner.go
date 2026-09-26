@@ -15,7 +15,9 @@ import (
 	"loomtale/api/internal/db/idconv"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/align"
+	"loomtale/api/internal/providers/train"
 	"loomtale/api/internal/providers/tts"
+	"loomtale/api/internal/providers/vision"
 	"loomtale/api/internal/speechrate"
 )
 
@@ -45,12 +47,16 @@ const (
 	clipGapS                = 0.3
 )
 
-// VoiceRunner drives the Python worker's TTS and Align engines through
-// the residency manager, storing audio in a Sink and one
-// model_benchmarks row per case.
+// VoiceRunner drives the Python worker's engines (TTS and Align; Vision
+// and Train for the vision, train and train-smoke suites) through the
+// residency manager, storing inputs and outputs in a Sink and one
+// model_benchmarks row per case. Only the clients a suite uses need to
+// be set.
 type VoiceRunner struct {
 	TTS       *tts.Client
 	Align     *align.Client
+	Vision    *vision.Client
+	Train     *train.Client
 	Residency pipeline.ModelResidency
 	Queries   dbgen.Querier
 	Sink      *Sink

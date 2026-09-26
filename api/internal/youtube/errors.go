@@ -28,6 +28,7 @@ const (
 	ReasonRenderChanged         = "render_changed_since_approval"
 	ReasonUploadSessionGone     = "upload_session_gone"
 	ReasonReconnectNeeded       = "reconnect_needed"
+	ReasonChunkTimeout          = "upload_chunk_timeout"
 )
 
 // APIError is every non-success answer from Google, classified.

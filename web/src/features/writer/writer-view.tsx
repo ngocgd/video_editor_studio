@@ -39,6 +39,9 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
   const [selection, setSelection] = useState<WriterSelection>(NO_SELECTION);
   const [applyError, setApplyError] = useState<string | null>(null);
   const proposalContainerRef = useRef<HTMLDivElement | null>(null);
+  // True while an accept request is in flight, so a second Tab or click
+  // cannot send the same step again before the first answer arrives.
+  const applyingRef = useRef(false);
   // The last request, so Retry repeats it exactly (including a beat id).
   const lastRunRef = useRef<{ body: AiActionRequest; originalText: string } | null>(null);
 
@@ -97,8 +100,15 @@ export function WriterView({ seriesId, episodeId }: { seriesId: string; episodeI
     // The server applies the step's own text and taint: replacing the
     // selection, or adding after it for Continue/expand-beat, or appending
     // to the other language's draft for Translate.
+    if (applyingRef.current) return;
+    applyingRef.current = true;
     const target = proposal.action === "translate" ? otherLang(lang) : lang;
-    const error = await draft.applyStep({ stepId: proposal.stepId, paragraphIds: proposal.paragraphIds }, target);
+    let error: string | null | undefined;
+    try {
+      error = await draft.applyStep({ stepId: proposal.stepId, paragraphIds: proposal.paragraphIds }, target);
+    } finally {
+      applyingRef.current = false;
+    }
     if (error) {
       setApplyError(error);
       return;

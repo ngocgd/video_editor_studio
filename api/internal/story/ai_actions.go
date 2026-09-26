@@ -34,10 +34,10 @@ const deltaFlushInterval = 100 * time.Millisecond
 // nonce-fenced storyctx.Context, calls Stream/Generate, and stores a
 // structured result. One instance is registered per kind (see Register).
 type AIActionHandler struct {
-	kind      string
-	action    registry.Action
+	kind        string
+	action      registry.Action
 	templateKey string
-	schema    string // non-empty for schema-constrained outputs (outline, bible_seed)
+	schema      string // non-empty for schema-constrained outputs (outline, bible_seed)
 
 	Registry *registry.Registry
 	Queries  *dbgen.Queries
@@ -129,9 +129,9 @@ func (h *AIActionHandler) runBibleSeed(ctx context.Context, sc *pipeline.StepCon
 		return nil, err
 	}
 
-	var raw map[string]string
-	if err := json.Unmarshal([]byte(resp.Text), &raw); err != nil {
-		return nil, fmt.Errorf("story: parse bible_seed response: %w", err)
+	raw, err := bibleSeedSections(resp.Text)
+	if err != nil {
+		return nil, err
 	}
 
 	// One atomic update per section, so an edit someone saves meanwhile to
@@ -154,9 +154,18 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 	if err != nil {
 		return nil, err
 	}
-	idx, err := h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
-	if err != nil {
-		return nil, err
+	// The run planned this step's episode number at enqueue; a step without
+	// one (enqueued before numbers were planned) takes the next free number.
+	var in OutlineInput
+	if err := sc.Input(&in); err != nil {
+		return nil, fmt.Errorf("story: decode outline input: %w", err)
+	}
+	idx := in.EpisodeIdx
+	if idx < 1 {
+		idx, err = h.Queries.NextEpisodeIdx(ctx, dbgen.NextEpisodeIdxParams{TenantID: idconv.ToPg(tenantID), SeriesID: idconv.ToPg(seriesID)})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	built := storyctx.Build(h.templateKey, storyctx.BuildRequest{
@@ -184,15 +193,7 @@ func (h *AIActionHandler) runOutline(ctx context.Context, sc *pipeline.StepConte
 		return nil, err
 	}
 
-	episode, err := h.Queries.CreateEpisode(ctx, dbgen.CreateEpisodeParams{
-		ID:       idconv.ToPg(idconv.NewV7()),
-		TenantID: idconv.ToPg(tenantID),
-		SeriesID: idconv.ToPg(seriesID),
-		Idx:      idx,
-		Title:    fmt.Sprintf("Episode %d", idx),
-		Outline:  outlineJSON,
-		Status:   "outlined",
-	})
+	episode, err := insertOutlinedEpisode(ctx, h.Queries, tenantID, seriesID, idx, outlineJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +285,7 @@ func (h *AIActionHandler) runEpisodeAction(ctx context.Context, sc *pipeline.Ste
 		TokenBudget:  defaultTokenBudget,
 	})
 
-	resp, err := h.stream(ctx, sc, provider, built)
+	resp, err := h.stream(ctx, sc, provider, built, episodeOutputTokenCap(targetText))
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +355,7 @@ func (h *AIActionHandler) runTranslate(ctx context.Context, sc *pipeline.StepCon
 		TokenBudget:        defaultTokenBudget,
 	})
 
-	resp, err := h.stream(ctx, sc, provider, built)
+	resp, err := h.stream(ctx, sc, provider, built, episodeOutputTokenCap(targetText))
 	if err != nil {
 		return nil, err
 	}
@@ -420,8 +421,9 @@ func paragraphsFromText(text string, tainted bool) []Paragraph {
 
 // stream runs provider.Stream with the deltaFlushInterval progress
 // heuristic shared by every episode action (interactive rewrite/continue/
-// expand_beat and import-triggered translate alike).
-func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, provider llm.Provider, built storyctx.Context) (llm.Response, error) {
+// expand_beat and import-triggered translate alike). maxTokens caps the
+// reply; see episodeOutputTokenCap.
+func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, provider llm.Provider, built storyctx.Context, maxTokens int) (llm.Response, error) {
 	var mu sync.Mutex
 	var buffer strings.Builder
 	lastFlush := time.Now()
@@ -438,7 +440,7 @@ func (h *AIActionHandler) stream(ctx context.Context, sc *pipeline.StepContext, 
 			sc.Progress(progressFromLength(n), 0)
 		}
 	}
-	return provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: 4000}, onDelta)
+	return provider.Stream(ctx, llm.Request{System: built.System, Data: built.Data, MaxTokens: maxTokens}, onDelta)
 }
 
 // findBeat returns the beat with id beatID from outlineJSON (episodes.

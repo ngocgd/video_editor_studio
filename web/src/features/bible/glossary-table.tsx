@@ -9,7 +9,22 @@ export interface GlossaryTerm {
   vi: string;
 }
 
-/** Parses the glossary section's JSON-encoded content; an empty/invalid string renders an empty table instead of crashing (phase 6 requirement). */
+/**
+ * Whether the glossary content can be edited as a table: empty, or a JSON
+ * array. Anything else (prose a person saved through the API) is edited as
+ * text instead, because the table would show it empty and saving would
+ * replace it with an empty list.
+ */
+export function isGlossaryTable(content: string): boolean {
+  if (!content.trim()) return true;
+  try {
+    return Array.isArray(JSON.parse(content));
+  } catch {
+    return false;
+  }
+}
+
+/** Parses the glossary section's JSON-encoded content; an empty/invalid string renders an empty table instead of crashing. */
 export function parseGlossary(content: string): GlossaryTerm[] {
   if (!content.trim()) return [];
   try {
