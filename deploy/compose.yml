@@ -266,11 +266,15 @@ services:
       MASTER_KEY_PATH: /run/secrets/master_key
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}
+      FFMPEG_PATH: /usr/local/bin/ffmpeg
     healthcheck:
       test: ["CMD", "/usr/local/bin/worker", "healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 10
+    # Media and voice steps stage their inputs and ffmpeg outputs in a
+    # per-step temp dir; the root filesystem stays read-only.
+    tmpfs: ["/tmp:size=1g,mode=1777"]
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
