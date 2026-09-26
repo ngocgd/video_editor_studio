@@ -4,39 +4,55 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
-// statusTimeout bounds the /healthz probe so GetClaudeCliStatus never
-// hangs the settings page waiting on a stuck sidecar.
+// statusTimeout bounds the /healthz probe so a stuck sidecar never
+// stalls the caller (the worker's status heartbeat).
 const statusTimeout = 5 * time.Second
 
-// Status probes the sidecar's GET /healthz, the only status surface it
-// exposes today (see api/cmd/llmcli/handler.go's handleHealthz): a 200
-// response means installed and authenticated (the sidecar's own startup
-// self-check already verified the binary and, unless host-fallback mode
-// is used, a real OAuth token); a non-200 response means it is reachable
-// but unhealthy (its body is the disabled reason); a transport error
-// means unreachable. The sidecar does not report a version string over
-// HTTP, so Status never returns one.
-func (p *Provider) Status(ctx context.Context) (installed, authenticated bool, detail string, err error) {
-	req, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, p.BaseURL+"/healthz", nil)
-	if reqErr != nil {
-		return false, false, "", reqErr
-	}
+// versionHeader is the header the sidecar's /healthz sets to the claude
+// CLI version banner (see api/cmd/llmcli/handler.go).
+const versionHeader = "X-Claude-CLI-Version"
+
+// CLIStatus is the sidecar's health as seen by a caller on llm_net.
+type CLIStatus struct {
+	// Installed is true when the sidecar answered at all, even if it is
+	// currently unhealthy.
+	Installed bool
+	// Authenticated is true only on a healthy response: the sidecar's
+	// startup self-check verified the pinned binary, its no-tools flag
+	// surface and, outside host-fallback mode, a configured OAuth token.
+	Authenticated bool
+	// Version is the CLI's version banner, when the sidecar reports it.
+	Version string
+	// Detail explains an unhealthy state (the sidecar's disabled reason).
+	Detail string
+}
+
+// Status probes the sidecar's GET /healthz. A transport error means the
+// sidecar is unreachable and is returned as err.
+func (p *Provider) Status(ctx context.Context) (CLIStatus, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, statusTimeout)
 	defer cancel()
-	req = req.WithContext(timeoutCtx)
+	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, p.BaseURL+"/healthz", nil)
+	if err != nil {
+		return CLIStatus{}, err
+	}
 
-	resp, doErr := p.Client.Do(req)
-	if doErr != nil {
-		return false, false, "", doErr
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		return CLIStatus{}, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 
+	status := CLIStatus{Installed: true, Version: strings.TrimSpace(resp.Header.Get(versionHeader))}
 	if resp.StatusCode == http.StatusOK {
-		return true, true, "", nil
+		status.Authenticated = true
+		return status, nil
 	}
-	return true, false, string(body), nil
+	status.Detail = strings.TrimSpace(string(body))
+	return status, nil
 }

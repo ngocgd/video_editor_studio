@@ -163,3 +163,26 @@ func TestHandleRunSendsHeadersBeforeSlowCLIFinishes(t *testing.T) {
 		t.Fatalf("result line = %+v", last)
 	}
 }
+
+func TestHandleHealthzReportsVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		disabled string
+		want     int
+	}{
+		{"healthy", "", http.StatusOK},
+		{"disabled", "no token", http.StatusServiceUnavailable},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := &handler{version: "2.1.282 (Claude Code)", disabledReason: tc.disabled}
+			rec := httptest.NewRecorder()
+			h.handleHealthz(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+			if got := rec.Header().Get(versionHeader); got != "2.1.282 (Claude Code)" {
+				t.Fatalf("version header = %q", got)
+			}
+		})
+	}
+}

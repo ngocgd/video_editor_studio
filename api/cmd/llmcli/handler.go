@@ -28,8 +28,13 @@ type streamLine struct {
 	OutTokens int     `json:"out_tokens,omitempty"`
 }
 
+// versionHeader carries the claude CLI version banner on /healthz, so
+// the worker's status probe can report it alongside the health state.
+const versionHeader = "X-Claude-CLI-Version"
+
 type handler struct {
 	runner         *runner
+	version        string
 	model          string
 	systemPrompt   string
 	oauthToken     string
@@ -38,6 +43,9 @@ type handler struct {
 }
 
 func (h *handler) handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	if h.version != "" {
+		w.Header().Set(versionHeader, h.version)
+	}
 	if h.disabledReason != "" {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = w.Write([]byte(h.disabledReason))
