@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -312,7 +313,11 @@ func run() error {
 	if cfg.RateLimitPerMinute <= 0 {
 		return fmt.Errorf("API_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.RateLimitPerMinute)
 	}
+	if cfg.MediaRateLimitPerMinute <= 0 {
+		return fmt.Errorf("API_MEDIA_RATE_LIMIT_PER_MINUTE must be positive, got %d", cfg.MediaRateLimitPerMinute)
+	}
 	generalLimiter := ratelimit.NewMemory(float64(cfg.RateLimitPerMinute), float64(cfg.RateLimitPerMinute)/60)
+	mediaLimiter := ratelimit.NewMemory(float64(cfg.MediaRateLimitPerMinute), float64(cfg.MediaRateLimitPerMinute)/60)
 	headers := secheaders.Config{MediaOrigin: cfg.MediaOrigin, PublicURL: cfg.PublicURL}
 	sessionMW := authpkg.Middleware(authpkg.Store{}, queries)
 	csrfMW := csrf.Middleware(csrfPepper, authpkg.CSRFLookup, allowedOrigins, csrfRejected)
@@ -323,7 +328,7 @@ func run() error {
 	r.Use(httpx.RealIP(cfg.TrustedProxyCIDRs))
 	r.Use(headers.Middleware)
 	r.Use(httpx.MaxBodyMiddleware)
-	r.Use(generalLimiter.Middleware(httpx.ClientIP, tooManyRequests))
+	r.Use(ratelimit.SplitMiddleware(generalLimiter, mediaLimiter, isAssetVariantRequest, httpx.ClientIP, tooManyRequests))
 	r.Use(httpx.WithRequestMiddleware)
 	r.Use(httpx.AccessLogMiddleware)
 	r.Use(sessionMW)
@@ -363,6 +368,15 @@ func run() error {
 		}
 	}
 	return nil
+}
+
+// assetVariantPath is GET /api/v1/assets/{id}/variants/{variant}.
+var assetVariantPath = regexp.MustCompile(`^/api/v1/assets/[^/]+/variants/[^/]+$`)
+
+// isAssetVariantRequest selects the media redirects that draw from the
+// media rate-limit bucket.
+func isAssetVariantRequest(r *http.Request) bool {
+	return (r.Method == http.MethodGet || r.Method == http.MethodHead) && assetVariantPath.MatchString(r.URL.Path)
 }
 
 func tooManyRequests(w http.ResponseWriter, _ *http.Request) {

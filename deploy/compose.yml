@@ -218,6 +218,7 @@ services:
       # Per-client-IP request budget; a local e2e run (every spec from one
       # browser) may raise it through the environment, never .env edits.
       API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-100}
+      API_MEDIA_RATE_LIMIT_PER_MINUTE: ${API_MEDIA_RATE_LIMIT_PER_MINUTE:-1200}
       APP_MODE: ${APP_MODE:-local}
       ANTHROPIC_API_KEY_PATH: ${ANTHROPIC_API_KEY_PATH:-}
       GEMINI_API_KEY_PATH: ${GEMINI_API_KEY_PATH:-}

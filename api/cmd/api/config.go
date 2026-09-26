@@ -37,6 +37,13 @@ type config struct {
 	// raise it, because the whole suite reaches the API from one IP.
 	RateLimitPerMinute int `env:"API_RATE_LIMIT_PER_MINUTE" envDefault:"100"`
 
+	// MediaRateLimitPerMinute is the separate per-client-IP budget of the
+	// asset variant redirects. A storyboard page loads one per image tile
+	// and audio clip (hundreds per episode), each a single indexed lookup
+	// and a local URL signature, so they get their own larger bucket
+	// instead of starving the general one, which login also draws from.
+	MediaRateLimitPerMinute int `env:"API_MEDIA_RATE_LIMIT_PER_MINUTE" envDefault:"1200"`
+
 	// AppMode gates the claude-cli provider (local-only per the
 	// contract): "saas" disables it entirely, any other value (default
 	// "local") leaves it available.
