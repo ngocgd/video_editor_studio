@@ -45,8 +45,10 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
     async def LoadModel(self, request, context):  # noqa: N802
         try:
             held_mb = await self._manager.load(request.engine)
-        except EngineNotInstalledError:
-            await abort_engine_not_installed(context, request.engine)
+        except EngineNotInstalledError as exc:
+            # The message says why (unknown engine, weights missing, or
+            # the image lacks the engine's runtime).
+            await abort_engine_not_installed(context, str(exc) or request.engine)
         except GpuOomError as exc:
             await abort_gpu_oom(context, str(exc))
         return worker_pb2.LoadModelResponse(loaded=True, vram_held_mb=held_mb)
