@@ -17,9 +17,34 @@ services:
   minio:
     networks: [loomtale_core, loomtale_gpu]
 
+  # One-shot: hands the models volume to the non-root uid the worker and
+  # the operator CLI run as (distroless "nonroot", 65532), so model pulls
+  # can write it. Files stay world-readable for comfyui (uid 10001) and
+  # pyworker, which mount it read-only.
+  models-init:
+    image: busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+    mem_limit: 64m
+    network_mode: none
+    command: ["sh", "-c", "chown -R 65532:65532 /models && chmod -R u+rwX,go+rX,go-w /models"]
+    volumes:
+      - loomtale_models:/models
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
+    restart: "no"
+
   worker:
     networks: [loomtale_core, loomtale_llm, loomtale_gpu]
     secrets: [pyworker_bearer_token]
+    depends_on:
+      models-init:
+        condition: service_completed_successfully
+    # The only long-running service that mounts the models volume
+    # writable: models.pull downloads here (the worker is on
+    # loomtale_core, which has egress, and only fetches pinned files from
+    # Hugging Face). Every GPU container mounts it read-only.
+    volumes:
+      - loomtale_models:/models
     deploy:
       resources:
         reservations:
@@ -35,18 +60,21 @@ services:
       COMFYUI_URL: http://comfyui:8188
       PYWORKER_ADDR: pyworker:9090
       PYWORKER_BEARER_TOKEN_PATH: /run/secrets/pyworker_bearer_token
+      MODELS_DIR: /models
 
-  # Blackwell (sm_120) + Qwen-Image-Edit smoke spike (phase 1b), hardened
-  # by phase 4's network isolation; phase 9a further hardens the image
-  # itself (read_only rootfs, resource limits tuned from this spike's
-  # measurements). Not started by `make up`; run explicitly with
-  # `docker compose -f deploy/compose.yml -f deploy/compose.gpu.yml up -d comfyui`.
+  # ComfyUI image engine (scene, thumbnail and character sheet
+  # workflows). Pinned CUDA base, ComfyUI commit, custom node commit and
+  # Python packages (see its Dockerfile); non-root, read-only root
+  # filesystem, offline, models read-only, no host port, reachable only
+  # from the worker (and the operator CLI) on loomtale_gpu.
   comfyui:
     build:
       context: ..
       dockerfile: deploy/docker/comfyui.Dockerfile
-    image: loomtale/comfyui-spike:local
+    image: loomtale/comfyui:local
     mem_limit: 10g
+    pids_limit: 512
+    restart: unless-stopped
     networks: [loomtale_gpu]
     deploy:
       resources:
@@ -61,12 +89,23 @@ services:
       TRANSFORMERS_OFFLINE: "1"
     volumes:
       - loomtale_models:/app/ComfyUI/models:ro
+      # Inputs, outputs, temp files and ComfyUI's user database: a disk
+      # volume, not tmpfs, so generated images never count against the
+      # container's RAM limit.
+      - comfyui_scratch:/scratch
+    read_only: true
+    tmpfs: ["/tmp:size=256m"]
     # No published ports, including on loopback: loomtale_gpu (internal)
     # already blocks NAT/port-forwarding for this service, and only the
     # worker joins it besides comfyui/ollama/pyworker themselves.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    restart: "no"
 
   # Required service (no profile): the local-default LLM backend per the
   # contract, with no model pulled until phase 9b's models.pull step.
@@ -138,6 +177,32 @@ services:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
+  # Operator CLI (`loomtale models pull|remove|list`, `loomtale bench`):
+  # run on demand with `docker compose ... --profile cli run --rm cli
+  # <subcommand>`. Same image and user as the api; it joins the GPU
+  # network to reach ComfyUI for benchmarks and mounts the models volume
+  # writable for pulls, like the worker.
+  cli:
+    profiles: ["cli"]
+    image: loomtale/api:local
+    entrypoint: ["/usr/local/bin/loomtale"]
+    mem_limit: 512m
+    networks: [loomtale_core, loomtale_gpu]
+    depends_on:
+      models-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env, see .env.example}@postgres:5432/loomtale?sslmode=disable
+      MODELS_DIR: /models
+      COMFYUI_URL: http://comfyui:8188
+      RENDER_RESERVE_MB: "1024"
+    volumes:
+      - loomtale_models:/models
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: "no"
+
 networks:
   # Internal (no egress): comfyui, ollama and pyworker sit here with no
   # host ports; only the Go worker joins it besides them, so these three
@@ -158,3 +223,4 @@ volumes:
   # separate from loomtale_models so Ollama's writes can never place a
   # file (including a pickle-capable .ckpt) somewhere ComfyUI loads from.
   ollama_models:
+  comfyui_scratch:
