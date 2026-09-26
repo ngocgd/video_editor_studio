@@ -2,8 +2,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getDraftOptions, getDraftQueryKey } from "../../api/gen/@tanstack/react-query.gen";
-import { getDraft, patchDraft } from "../../api/gen/sdk.gen";
-import type { EpisodeDraft, TargetLanguage } from "../../api/gen/types.gen";
+import { ApiError } from "../../api/client";
+import { applyDraftStep, createDraft, getDraft, patchDraft } from "../../api/gen/sdk.gen";
+import type { ApplyDraftStepRequest, EpisodeDraft, TargetLanguage } from "../../api/gen/types.gen";
 import { DraftAutosaveQueue, type SaveStatus } from "./draft-autosave-queue";
 import type { DiffParagraph } from "./paragraph-diff";
 
@@ -87,14 +88,37 @@ export function useDraft(episodeId: string, lang: TargetLanguage) {
   /** Debounced autosave of the editor's own edits. */
   const edit = useCallback((current: DiffParagraph[]) => queueRef.current?.edit(current), []);
 
-  /** Replaces the whole document (an accepted AI proposal), saves it at once and reloads the editor. */
-  const replace = useCallback(
-    (next: DiffParagraph[]) => {
-      if (!queueRef.current) return;
-      queueRef.current.replace(next);
-      reseed(next);
+  /** Creates this language's (empty) draft; the editor mounts once it arrives. */
+  const create = useCallback(async () => {
+    const draft = (await createDraft({ path: { id: episodeId, lang }, throwOnError: true })).data;
+    queryClient.setQueryData(getDraftQueryKey({ path: { id: episodeId, lang } }), draft);
+  }, [episodeId, lang, queryClient]);
+
+  /**
+   * Applies a finished AI action step on the server, which stores its text
+   * with the step's provenance and taint. Pending edits are saved first so
+   * the server applies the step to what the editor shows; the editor then
+   * reloads from the returned draft. `draftLang` is the draft the step
+   * writes into (a translation goes to the other language's draft).
+   * Resolves to an error message, or null on success.
+   */
+  const applyStep = useCallback(
+    async (body: ApplyDraftStepRequest, draftLang: TargetLanguage): Promise<string | null> => {
+      const queue = queueRef.current;
+      if (queue && !(await queue.settle())) return "Your latest edits are not saved yet, so the AI result was not applied. Try again once the draft shows Saved.";
+      try {
+        const draft = (await applyDraftStep({ path: { id: episodeId, lang: draftLang }, body, throwOnError: true })).data;
+        queryClient.setQueryData(getDraftQueryKey({ path: { id: episodeId, lang: draftLang } }), draft);
+        if (draftLang === lang && queueRef.current) {
+          queueRef.current.reset(draft);
+          reseed(toDiffParagraphs(draft));
+        }
+        return null;
+      } catch (error) {
+        return error instanceof ApiError ? error.message : "Could not apply the AI result.";
+      }
     },
-    [reseed],
+    [episodeId, lang, queryClient, reseed],
   );
 
   /** The editor's latest paragraphs, including edits not yet saved. */
@@ -122,7 +146,8 @@ export function useDraft(episodeId: string, lang: TargetLanguage) {
     isLoading: draftQuery.isLoading || (draftQuery.data !== undefined && seed === null),
     current,
     edit,
-    replace,
+    create,
+    applyStep,
     status,
     conflict: status === "conflict",
     reloadLatest,

@@ -85,6 +85,21 @@ test("series -> writer -> import -> settings/llm", async ({ page }) => {
   await expect(page.getByText("A new paragraph after the split.")).toBeVisible();
   await expect(importedLine).toBeVisible();
 
+  // A manually created episode has no draft until the writer creates one.
+  const manualEpisodeId = await page.evaluate(async (id) => {
+    const csrf = (await (await fetch("/api/v1/auth/csrf")).json()) as { token: string };
+    const res = await fetch(`/api/v1/episodes?seriesId=${id}`, { method: "POST", headers: { "X-CSRF-Token": csrf.token } });
+    return ((await res.json()) as { id: string }).id;
+  }, seriesId);
+  await page.goto(`/projects/${seriesId}/episodes/${manualEpisodeId}`);
+  await page.getByRole("button", { name: "Create EN draft" }).click();
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("The first line of a fresh draft.");
+  await expect(page.getByText("Unsaved changes")).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible({ timeout: 10_000 });
+  await page.reload();
+  await expect(page.getByText("The first line of a fresh draft.")).toBeVisible();
+
   await page.goto("/settings/llm");
   await expect(page.getByRole("heading", { name: "LLM providers" })).toBeVisible();
   await expect(page.getByText(/no api key configured|unavailable/i).first()).toBeVisible();

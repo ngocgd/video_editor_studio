@@ -10,18 +10,23 @@ import type { AiProposal } from "./use-ai-action";
 
 const MAX_INSTRUCTION_LENGTH = 500;
 
-type ToolbarAction = Extract<AiActionRequest["action"], "rewrite" | "expand" | "shorten" | "continue">;
+type ToolbarAction = Extract<AiActionRequest["action"], "rewrite" | "expand" | "shorten" | "tone" | "continue" | "translate">;
 
-const ACTIONS: { action: ToolbarAction; label: string; keys?: string }[] = [
-  { action: "rewrite", label: "Rewrite", keys: "Ctrl⇧R" },
-  { action: "expand", label: "Expand" },
-  { action: "shorten", label: "Shorten" },
-  { action: "continue", label: "Continue", keys: "Ctrl↵" },
+/** `needsSelection`: the action replaces selected text, so it is off with only a caret. */
+const ACTIONS: { action: ToolbarAction; label: string; keys?: string; needsSelection: boolean }[] = [
+  { action: "rewrite", label: "Rewrite", keys: "Ctrl⇧R", needsSelection: true },
+  { action: "expand", label: "Expand", needsSelection: true },
+  { action: "shorten", label: "Shorten", needsSelection: true },
+  { action: "tone", label: "Make it tenser", needsSelection: true },
+  { action: "continue", label: "Continue", keys: "Ctrl↵", needsSelection: false },
+  { action: "translate", label: "Translate", needsSelection: false },
 ];
 
 /**
  * Quiet floating toolbar on text selection (guidelines §7): Rewrite / Expand
- * / Shorten / Continue plus an optional instruction. Simplification (noted
+ * / Shorten / Tone need a selection; Continue works from the caret and
+ * Translate from the selection or the whole draft. Plus an optional
+ * instruction. Simplification (noted
  * in the phase report): rendered docked below the selection rather than as
  * inline ProseMirror decorations, to ship correctness within the phase's
  * time budget; the phase doc explicitly allows this trade-off.
@@ -29,6 +34,7 @@ const ACTIONS: { action: ToolbarAction; label: string; keys?: string }[] = [
 export function AiToolbar({
   disabled,
   disabledReason,
+  hasSelection,
   onAction,
   proposal,
   onAccept,
@@ -37,6 +43,7 @@ export function AiToolbar({
 }: {
   disabled: boolean;
   disabledReason?: string;
+  hasSelection: boolean;
   onAction: (action: ToolbarAction, instruction?: string) => void;
   proposal: AiProposal | null;
   onAccept: () => void;
@@ -78,10 +85,10 @@ export function AiToolbar({
 
   return (
     <div role="toolbar" aria-label="AI actions on selection" className="flex flex-col gap-2 rounded-md border border-border bg-popover p-2 shadow-[var(--shadow-overlay)]">
-      <div className="flex items-center gap-1">
-        <WandSparkles size={14} strokeWidth={1.75} aria-hidden="true" className="text-primary-text" />
+      <div className="flex flex-wrap items-center gap-1">
+        <WandSparkles size={14} strokeWidth={1.75} aria-hidden="true" className="shrink-0 text-primary-text" />
         {ACTIONS.map((a) => (
-          <Button key={a.action} variant="ghost" size="sm" disabled={disabled} onClick={() => onAction(a.action, instruction.trim() || undefined)}>
+          <Button key={a.action} variant="ghost" size="sm" disabled={disabled || (a.needsSelection && !hasSelection)} onClick={() => onAction(a.action, instruction.trim() || undefined)}>
             {a.label}
             {a.keys && <Kbd>{a.keys}</Kbd>}
           </Button>

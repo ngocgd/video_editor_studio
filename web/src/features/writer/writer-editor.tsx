@@ -10,6 +10,8 @@ import { ParagraphWithId } from "./paragraph-with-id-extension";
 export interface WriterSelection {
   paragraphIds: string[];
   text: string;
+  /** The paragraph holding the caret (or the selection's end), the anchor for Continue. */
+  caretParagraphId?: string;
 }
 
 /**
@@ -44,16 +46,17 @@ export function WriterEditor({
       onParagraphsChange(extractParagraphs(ed));
     },
     onSelectionUpdate: ({ editor: ed }) => {
-      const { from, to, empty } = ed.state.selection;
+      const { from, to, empty, $to } = ed.state.selection;
+      const caretParagraphId = $to.parent.type.name === "paragraph" ? (($to.parent.attrs.id as string | null) ?? undefined) : undefined;
       if (empty) {
-        onSelectionChange({ paragraphIds: [], text: "" });
+        onSelectionChange({ paragraphIds: [], text: "", caretParagraphId });
         return;
       }
       const ids = new Set<string>();
       ed.state.doc.nodesBetween(from, to, (node) => {
         if (node.type.name === "paragraph" && node.attrs.id) ids.add(node.attrs.id as string);
       });
-      onSelectionChange({ paragraphIds: [...ids], text: ed.state.doc.textBetween(from, to, "\n") });
+      onSelectionChange({ paragraphIds: [...ids], text: ed.state.doc.textBetween(from, to, "\n"), caretParagraphId });
     },
   });
 

@@ -172,6 +172,21 @@ describe("DraftAutosaveQueue", () => {
     expect(queue.dirty).toBe(false);
   });
 
+  it("settles once pending edits are stored, and reports a failing save", async () => {
+    const seed = draft(1, [["p1", "a"]]);
+    const server = fakeServer(seed);
+    const { queue } = makeQueue(server, seed);
+
+    queue.edit([{ id: "p1", text: "typed" }]);
+    await expect(queue.settle()).resolves.toBe(true);
+    expect(server.current.paragraphs[0].text).toBe("typed");
+
+    server.failNextWith(new ApiError({ title: "Service Unavailable", status: 503 }));
+    queue.edit([{ id: "p1", text: "more" }]);
+    await expect(queue.settle()).resolves.toBe(false);
+    expect(queue.dirty).toBe(true);
+  });
+
   it("drops local edits on reset", async () => {
     const seed = draft(1, [["p1", "a"]]);
     const server = fakeServer(seed);

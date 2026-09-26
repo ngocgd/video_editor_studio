@@ -41,6 +41,7 @@ export class DraftAutosaveQueue {
   private attempt = 0;
   private status: SaveStatus = "saved";
   private stopped = false;
+  private pending: Promise<void> | null = null;
 
   constructor(
     seed: EpisodeDraft,
@@ -79,6 +80,20 @@ export class DraftAutosaveQueue {
     return this.local;
   }
 
+  /**
+   * Saves pending edits and resolves true once the server holds everything
+   * the editor has, or false when a save is failing or conflicting (the
+   * edits stay queued).
+   */
+  async settle(): Promise<boolean> {
+    for (;;) {
+      if (this.status === "conflict" || this.status === "retrying") return false;
+      this.flush();
+      if (!this.inFlight) return !this.dirty;
+      await this.pending;
+    }
+  }
+
   /** Saves pending edits now instead of waiting for the debounce. */
   flush(): void {
     this.clearDebounce();
@@ -94,7 +109,7 @@ export class DraftAutosaveQueue {
     }
     this.inFlight = true;
     this.setStatus("saving");
-    this.opts.send(this.base.version, ops).then(
+    this.pending = this.opts.send(this.base.version, ops).then(
       (draft) => {
         this.inFlight = false;
         this.attempt = 0;
