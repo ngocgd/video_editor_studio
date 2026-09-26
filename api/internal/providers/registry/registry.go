@@ -174,15 +174,23 @@ func (r *Registry) Resolve(ctx context.Context, tenantID uuid.UUID, action Actio
 		return nil, "", err
 	}
 	name := settings.ProviderFor(action)
+	p, err := r.ResolveName(ctx, tenantID, name)
+	return p, name, err
+}
 
+// ResolveName returns the adapter for one named provider on behalf of
+// tenantID, with the same BYOK-first rule as Resolve. The Settings test
+// probe uses it to call exactly the provider the owner picked, whatever
+// the tenant's current default is.
+func (r *Registry) ResolveName(ctx context.Context, tenantID uuid.UUID, name string) (llm.Provider, error) {
 	if r.BYOK != nil && r.Factories != nil {
 		if factory, ok := r.Factories[name]; ok {
 			key, err := r.BYOK.Get(ctx, tenantID, name)
 			switch {
 			case err == nil && key != "":
-				return factory(key), name, nil
+				return factory(key), nil
 			case err != nil && !errors.Is(err, pgx.ErrNoRows):
-				return nil, name, fmt.Errorf("registry: byok lookup for %q: %w", name, err)
+				return nil, fmt.Errorf("registry: byok lookup for %q: %w", name, err)
 			}
 			// pgx.ErrNoRows (or an empty key): the tenant has not
 			// configured their own key for this provider; fall through
@@ -192,9 +200,9 @@ func (r *Registry) Resolve(ctx context.Context, tenantID uuid.UUID, action Actio
 
 	p, ok := r.Providers[name]
 	if !ok {
-		return nil, name, fmt.Errorf("%w: %q", ErrProviderNotConfigured, name)
+		return nil, fmt.Errorf("%w: %q", ErrProviderNotConfigured, name)
 	}
-	return p, name, nil
+	return p, nil
 }
 
 // QueueFor implements the queue half of pipeline.StepHandler for an LLM
