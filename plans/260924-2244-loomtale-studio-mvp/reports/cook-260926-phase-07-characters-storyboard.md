@@ -162,9 +162,18 @@ Still to run once Docker is back:
 1. `scripts/tb.sh gen lint test` and a host `git diff --exit-code` on the generated paths.
 2. Under the heavy lock, `heavy-verify.sh`: the integration suite (it includes the two re-split tests and the Cache-Control assertion), Playwright with the default rate limit (the H2 acceptance test), and the live claude-cli split with `-timeout 45m`.
 
+## Review round 4: fixes
+
+The fourth review (`plans/reports/code-reviewer-260926-1757-phase-07-characters-storyboard-review.md`) found no code defects. Its two blocking items are both about Docker. Their outcomes at 17:59 local on `a4473f9` follow.
+
+| Item | Outcome | Commits |
+|---|---|---|
+| 1. Docker engine down because its data disk is attached to Windows | **Still blocked.** Freeing space on C: (327 GB are free now) does not help. `docker info` still answers 500 on `dockerDesktopLinuxEngine`. `Get-DiskImage` still reports `docker_data.vhdx` as attached, and `Get-Disk` still lists it as disk 1 (read-only, online). Docker Desktop has been running since 17:29. This session is not elevated, so it cannot run `Dismount-DiskImage`, and detaching the disk affects every lane, so it needs the user. The user has to run these steps in an elevated PowerShell: quit Docker Desktop, run `Dismount-DiskImage -ImagePath 'C:\Users\ADMIN\AppData\Local\Docker\wsl\disk\docker_data.vhdx'`, run `wsl --shutdown`, and start Docker Desktop again. | none |
+| 2. The Docker-only checks have not run on HEAD | **Still pending**, because they depend on item 1. HEAD has not changed since the fourth review, and the host checks were green there: gen with no drift, vet, golangci-lint, the tenant lints, go test, pytest and the web checks. So they were not repeated. Once Docker is back, the order is: `scripts/tb.sh gen lint test` (with -race). Then the heavy script under the lock runs the integration suite (including `TestResplitAfterANarrationEditNeedsConfirmation`), Playwright with `--workers=1` and the live claude-cli split. Then main is merged in, the two sides are reconciled, and the same checks run again. The merge, and the success criteria for the split, per-scene stale marking and the 60 fps grid and timeline, wait on these checks. | none |
+
 ## Unresolved questions
 
-- Docker Desktop needs a restart before verification can finish. Three rounds are now blocked on it. Should the user or the orchestrator do it?
+- Verification cannot finish until the user detaches `docker_data.vhdx` in an elevated PowerShell. A restart alone did not help. Four rounds are now blocked on it.
 - The re-split guard asks for confirmation instead of keeping edited scenes. Is a confirmation enough, or should edited scenes be kept and flagged?
 - Should the rollup's `pipeline_steps_scope_latest_idx` index stay in this phase's migration, since the pipeline tables are owned by phase 3? It is needed for the 60 ms budget.
 - Is 166.76 KB for the authenticated shell acceptable, or should the generated client be split per domain?
