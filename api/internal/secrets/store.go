@@ -101,7 +101,9 @@ func (s *Store) Put(ctx context.Context, tenantID uuid.UUID, kind, ownerRef, pla
 var ErrNotFound = errors.New("secrets: not found")
 
 // Open returns the plaintext secret stored under kind+ownerRef, or an
-// error wrapping ErrNotFound when there is none.
+// error wrapping both ErrNotFound and pgx.ErrNoRows when there is none:
+// callers that predate ErrNotFound (the LLM provider registry falls back
+// to the operator's key on pgx.ErrNoRows) keep working.
 func (s *Store) Open(ctx context.Context, tenantID uuid.UUID, kind, ownerRef string) (string, error) {
 	row, err := s.Queries.GetSecret(ctx, dbgen.GetSecretParams{
 		TenantID: idconv.ToPg(tenantID),
@@ -109,7 +111,7 @@ func (s *Store) Open(ctx context.Context, tenantID uuid.UUID, kind, ownerRef str
 		OwnerRef: ownerRef,
 	})
 	if isNoRows(err) {
-		return "", fmt.Errorf("secrets: get %s: %w", kind, ErrNotFound)
+		return "", fmt.Errorf("secrets: get %s: %w (%w)", kind, ErrNotFound, err)
 	}
 	if err != nil {
 		return "", fmt.Errorf("secrets: get: %w", err)
