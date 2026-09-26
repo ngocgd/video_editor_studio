@@ -328,6 +328,7 @@ type Scene struct {
 	Version          int64              `json:"version"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	EditedAt         pgtype.Timestamptz `json:"edited_at"`
 }
 
 type SceneTake struct {

@@ -623,7 +623,7 @@ export const putStoryboardSettings = <ThrowOnError extends boolean = false>(opti
 export const listScenes = <ThrowOnError extends boolean = false>(options: Options<ListScenesData, ThrowOnError>): RequestResult<ListScenesResponses, ListScenesErrors, ThrowOnError> => (options.client ?? client).get<ListScenesResponses, ListScenesErrors, ThrowOnError>({ url: '/episodes/{id}/scenes', ...options });
 
 /**
- * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes
+ * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
  */
 export const splitScenes = <ThrowOnError extends boolean = false>(options: Options<SplitScenesData, ThrowOnError>): RequestResult<SplitScenesResponses, SplitScenesErrors, ThrowOnError> => (options.client ?? client).post<SplitScenesResponses, SplitScenesErrors, ThrowOnError>({
     url: '/episodes/{id}/scenes/split',

@@ -2254,7 +2254,7 @@ paths:
   /episodes/{id}/scenes/split:
     post:
       operationId: splitScenes
-      summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes
+      summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
       tags:
         - storyboard
       x-min-role: editor
@@ -2290,6 +2290,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '409':
+          description: the split would delete edited scenes or takes and discardWork was not set; nothing changed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/SceneSplitConflict'
         '422':
           description: no draft for this language, or it is empty
           content:
@@ -4648,6 +4654,10 @@ components:
           type: integer
           minimum: 5
           maximum: 600
+        discardWork:
+          type: boolean
+          default: false
+          description: Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
     SceneSplitResult:
       type: object
       required:
@@ -4665,6 +4675,9 @@ components:
         keptCount:
           type: integer
           description: Scenes whose narration was unchanged, kept with their takes.
+        droppedCount:
+          type: integer
+          description: Old scenes the paragraph split deleted, with their takes.
         unrecognisedSpeakers:
           type: integer
         runId:
@@ -4673,6 +4686,29 @@ components:
         stepId:
           type: string
           format: uuid
+    SceneSplitConflict:
+      description: A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+      type: object
+      required:
+        - title
+        - status
+        - detail
+        - droppedCount
+        - editedCount
+        - takeCount
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        droppedCount:
+          type: integer
+        editedCount:
+          type: integer
+        takeCount:
+          type: integer
     TakeKind:
       type: string
       enum:

@@ -891,6 +891,10 @@ export type SceneSplitRequest = {
     mode: 'paragraphs' | 'llm';
     cadenceMinS?: number;
     cadenceMaxS?: number;
+    /**
+     * Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.
+     */
+    discardWork?: boolean;
 };
 
 export type SceneSplitResult = {
@@ -900,9 +904,25 @@ export type SceneSplitResult = {
      * Scenes whose narration was unchanged, kept with their takes.
      */
     keptCount: number;
+    /**
+     * Old scenes the paragraph split deleted, with their takes.
+     */
+    droppedCount?: number;
     unrecognisedSpeakers?: number;
     runId?: string;
     stepId?: string;
+};
+
+/**
+ * A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+ */
+export type SceneSplitConflict = {
+    title: string;
+    status: number;
+    detail: string;
+    droppedCount: number;
+    editedCount: number;
+    takeCount: number;
 };
 
 export type TakeKind = 'image' | 'voice' | 'align';
@@ -2998,6 +3018,10 @@ export type SplitScenesErrors = {
      * episode not found in this tenant
      */
     404: Problem;
+    /**
+     * the split would delete edited scenes or takes and discardWork was not set; nothing changed
+     */
+    409: SceneSplitConflict;
     /**
      * no draft for this language, or it is empty
      */

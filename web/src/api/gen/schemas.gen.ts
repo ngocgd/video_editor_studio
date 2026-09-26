@@ -2970,6 +2970,11 @@ export const SceneSplitRequestSchema = {
             type: 'integer',
             minimum: 5,
             maximum: 600
+        },
+        discardWork: {
+            type: 'boolean',
+            default: false,
+            description: 'Confirms that the split may delete scenes a person edited and scenes with takes. Without it such a split answers 409 and changes nothing.'
         }
     }
 } as const;
@@ -2996,6 +3001,10 @@ export const SceneSplitResultSchema = {
             type: 'integer',
             description: 'Scenes whose narration was unchanged, kept with their takes.'
         },
+        droppedCount: {
+            type: 'integer',
+            description: 'Old scenes the paragraph split deleted, with their takes.'
+        },
         unrecognisedSpeakers: {
             type: 'integer'
         },
@@ -3006,6 +3015,39 @@ export const SceneSplitResultSchema = {
         stepId: {
             type: 'string',
             format: 'uuid'
+        }
+    }
+} as const;
+
+export const SceneSplitConflictSchema = {
+    description: 'A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.',
+    type: 'object',
+    required: [
+        'title',
+        'status',
+        'detail',
+        'droppedCount',
+        'editedCount',
+        'takeCount'
+    ],
+    properties: {
+        title: {
+            type: 'string'
+        },
+        status: {
+            type: 'integer'
+        },
+        detail: {
+            type: 'string'
+        },
+        droppedCount: {
+            type: 'integer'
+        },
+        editedCount: {
+            type: 'integer'
+        },
+        takeCount: {
+            type: 'integer'
         }
     }
 } as const;

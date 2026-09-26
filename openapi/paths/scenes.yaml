@@ -115,7 +115,7 @@ episodeScenes:
 episodeSceneSplit:
   post:
     operationId: splitScenes
-    summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes
+    summary: Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
     tags: [storyboard]
     x-min-role: editor
     parameters:
@@ -150,6 +150,12 @@ episodeSceneSplit:
           application/problem+json:
             schema:
               $ref: "../schemas/problem.yaml#/Problem"
+      "409":
+        description: the split would delete edited scenes or takes and discardWork was not set; nothing changed
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/scenes.yaml#/SceneSplitConflict"
       "422":
         description: no draft for this language, or it is empty
         content:

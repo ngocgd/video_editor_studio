@@ -1630,7 +1630,7 @@ export const listScenesInfiniteOptions = (options: Options<ListScenesData>) => {
 };
 
 /**
- * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes
+ * Split the draft into scenes by paragraphs (synchronous) or with the LLM (a step); scenes whose narration is unchanged keep their takes, and deleting edited scenes or takes needs discardWork
  */
 export const splitScenesMutation = (options?: Partial<Options<SplitScenesData>>): UseMutationOptions<SplitScenesResponse, SplitScenesError, Options<SplitScenesData>> => {
     const mutationOptions: UseMutationOptions<SplitScenesResponse, SplitScenesError, Options<SplitScenesData>> = {

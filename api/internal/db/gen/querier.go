@@ -207,6 +207,9 @@ type Querier interface {
 	ListPinnedCharacterProfiles(ctx context.Context, arg ListPinnedCharacterProfilesParams) ([]ListPinnedCharacterProfilesRow, error)
 	ListRunSteps(ctx context.Context, arg ListRunStepsParams) ([]PipelineStep, error)
 	ListScenes(ctx context.Context, arg ListScenesParams) ([]Scene, error)
+	// The scenes a re-split replaces, locked against a concurrent edit, with
+	// whether a person edited each one and how many takes it holds.
+	ListScenesForResplit(ctx context.Context, arg ListScenesForResplitParams) ([]ListScenesForResplitRow, error)
 	ListSeries(ctx context.Context, arg ListSeriesParams) ([]Series, error)
 	ListTakes(ctx context.Context, arg ListTakesParams) ([]ListTakesRow, error)
 	ListVoicePresets(ctx context.Context, tenantID pgtype.UUID) ([]VoicePreset, error)

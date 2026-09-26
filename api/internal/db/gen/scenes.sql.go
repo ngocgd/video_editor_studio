@@ -51,7 +51,7 @@ func (q *Queries) DeleteScenesExcept(ctx context.Context, arg DeleteScenesExcept
 }
 
 const getScene = `-- name: GetScene :one
-SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at FROM scenes WHERE tenant_id = $1 AND id = $2
+SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at FROM scenes WHERE tenant_id = $1 AND id = $2
 `
 
 type GetSceneParams struct {
@@ -82,12 +82,13 @@ func (q *Queries) GetScene(ctx context.Context, arg GetSceneParams) (Scene, erro
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }
 
 const getScenesByIDs = `-- name: GetScenesByIDs :many
-SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at FROM scenes WHERE tenant_id = $1 AND id = ANY($2::uuid[]) ORDER BY idx
+SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at FROM scenes WHERE tenant_id = $1 AND id = ANY($2::uuid[]) ORDER BY idx
 `
 
 type GetScenesByIDsParams struct {
@@ -124,6 +125,7 @@ func (q *Queries) GetScenesByIDs(ctx context.Context, arg GetScenesByIDsParams) 
 			&i.Version,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EditedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -164,7 +166,7 @@ INSERT INTO scenes (id, tenant_id, episode_id, lang, idx, paragraph_ids, narrati
                     character_ids, image_style_id, duration_ms, text_hash, tainted)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
         $10, $11, $12, $13, $14)
-RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at
+RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at
 `
 
 type InsertSceneParams struct {
@@ -222,12 +224,13 @@ func (q *Queries) InsertScene(ctx context.Context, arg InsertSceneParams) (Scene
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }
 
 const listScenes = `-- name: ListScenes :many
-SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at FROM scenes WHERE tenant_id = $1 AND episode_id = $2 AND lang = $3 ORDER BY idx
+SELECT id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at FROM scenes WHERE tenant_id = $1 AND episode_id = $2 AND lang = $3 ORDER BY idx
 `
 
 type ListScenesParams struct {
@@ -265,6 +268,56 @@ func (q *Queries) ListScenes(ctx context.Context, arg ListScenesParams) ([]Scene
 			&i.Version,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EditedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listScenesForResplit = `-- name: ListScenesForResplit :many
+SELECT s.id, s.text_hash, (s.edited_at IS NOT NULL)::boolean AS edited,
+       (SELECT count(*) FROM scene_takes t WHERE t.tenant_id = s.tenant_id AND t.scene_id = s.id)::integer AS take_count
+FROM scenes s
+WHERE s.tenant_id = $1 AND s.episode_id = $2 AND s.lang = $3
+ORDER BY s.idx
+FOR UPDATE OF s
+`
+
+type ListScenesForResplitParams struct {
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	EpisodeID pgtype.UUID `json:"episode_id"`
+	Lang      string      `json:"lang"`
+}
+
+type ListScenesForResplitRow struct {
+	ID        pgtype.UUID `json:"id"`
+	TextHash  string      `json:"text_hash"`
+	Edited    bool        `json:"edited"`
+	TakeCount int32       `json:"take_count"`
+}
+
+// The scenes a re-split replaces, locked against a concurrent edit, with
+// whether a person edited each one and how many takes it holds.
+func (q *Queries) ListScenesForResplit(ctx context.Context, arg ListScenesForResplitParams) ([]ListScenesForResplitRow, error) {
+	rows, err := q.db.Query(ctx, listScenesForResplit, arg.TenantID, arg.EpisodeID, arg.Lang)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListScenesForResplitRow
+	for rows.Next() {
+		var i ListScenesForResplitRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TextHash,
+			&i.Edited,
+			&i.TakeCount,
 		); err != nil {
 			return nil, err
 		}
@@ -280,7 +333,7 @@ const resplitKeepScene = `-- name: ResplitKeepScene :one
 UPDATE scenes
 SET idx = $1, paragraph_ids = $2, tainted = $3, version = version + 1, updated_at = now()
 WHERE tenant_id = $4 AND id = $5
-RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at
+RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at
 `
 
 type ResplitKeepSceneParams struct {
@@ -322,12 +375,13 @@ func (q *Queries) ResplitKeepScene(ctx context.Context, arg ResplitKeepScenePara
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }
 
 const sceneRollup = `-- name: SceneRollup :many
-SELECT s.id, s.tenant_id, s.episode_id, s.lang, s.idx, s.paragraph_ids, s.narration, s.segments, s.image_prompt, s.character_ids, s.motion_preset, s.image_style_id, s.duration_ms, s.duration_measured, s.text_hash, s.tainted, s.version, s.created_at, s.updated_at,
+SELECT s.id, s.tenant_id, s.episode_id, s.lang, s.idx, s.paragraph_ids, s.narration, s.segments, s.image_prompt, s.character_ids, s.motion_preset, s.image_style_id, s.duration_ms, s.duration_measured, s.text_hash, s.tainted, s.version, s.created_at, s.updated_at, s.edited_at,
     img.j AS image_step, voi.j AS voice_step, ali.j AS align_step,
     timg.j AS image_take, tvoi.j AS voice_take, tali.j AS align_take
 FROM scenes s
@@ -400,6 +454,7 @@ type SceneRollupRow struct {
 	Version          int64              `json:"version"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	EditedAt         pgtype.Timestamptz `json:"edited_at"`
 	ImageStep        []byte             `json:"image_step"`
 	VoiceStep        []byte             `json:"voice_step"`
 	AlignStep        []byte             `json:"align_step"`
@@ -441,6 +496,7 @@ func (q *Queries) SceneRollup(ctx context.Context, arg SceneRollupParams) ([]Sce
 			&i.Version,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EditedAt,
 			&i.ImageStep,
 			&i.VoiceStep,
 			&i.AlignStep,
@@ -462,7 +518,7 @@ const setSceneMeasuredDuration = `-- name: SetSceneMeasuredDuration :one
 UPDATE scenes
 SET duration_ms = $1, duration_measured = true, version = version + 1, updated_at = now()
 WHERE tenant_id = $2 AND id = $3
-RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at
+RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at
 `
 
 type SetSceneMeasuredDurationParams struct {
@@ -494,6 +550,7 @@ func (q *Queries) SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeas
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }
@@ -501,7 +558,7 @@ func (q *Queries) SetSceneMeasuredDuration(ctx context.Context, arg SetSceneMeas
 const touchScene = `-- name: TouchScene :one
 UPDATE scenes SET version = version + 1, updated_at = now()
 WHERE tenant_id = $1 AND id = $2
-RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at
+RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at
 `
 
 type TouchSceneParams struct {
@@ -532,6 +589,7 @@ func (q *Queries) TouchScene(ctx context.Context, arg TouchSceneParams) (Scene, 
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }
@@ -541,9 +599,9 @@ UPDATE scenes
 SET narration = $1, segments = $2, image_prompt = $3, character_ids = $4,
     motion_preset = $5, image_style_id = $6, text_hash = $7,
     duration_ms = CASE WHEN duration_measured THEN duration_ms ELSE $8 END,
-    version = version + 1, updated_at = now()
+    version = version + 1, edited_at = now(), updated_at = now()
 WHERE tenant_id = $9 AND id = $10 AND version = $11
-RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at
+RETURNING id, tenant_id, episode_id, lang, idx, paragraph_ids, narration, segments, image_prompt, character_ids, motion_preset, image_style_id, duration_ms, duration_measured, text_hash, tainted, version, created_at, updated_at, edited_at
 `
 
 type UpdateSceneEditParams struct {
@@ -596,6 +654,7 @@ func (q *Queries) UpdateSceneEdit(ctx context.Context, arg UpdateSceneEditParams
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EditedAt,
 	)
 	return i, err
 }

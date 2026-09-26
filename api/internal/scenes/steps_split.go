@@ -31,6 +31,10 @@ type SplitInput struct {
 	Lang        string `json:"lang"`
 	CadenceMinS int    `json:"cadenceMinS"`
 	CadenceMaxS int    `json:"cadenceMaxS"`
+	// DiscardWork confirms that the split may delete edited scenes and
+	// takes. Without it, work made while the step ran fails the step
+	// instead of being deleted.
+	DiscardWork bool `json:"discardWork"`
 }
 
 // splitSource is a draft and the series' characters, ready to split.
@@ -104,20 +108,36 @@ func cadenceOr(c Cadence, minS, maxS int) Cadence {
 	return c
 }
 
-// SplitByParagraphsNow is the synchronous paragraph split.
-func (s *Service) SplitByParagraphsNow(ctx context.Context, tenantID, episodeID uuid.UUID, lang string, minS, maxS int) (SplitResult, error) {
+// SplitByParagraphsNow is the synchronous paragraph split. Without
+// discardWork it refuses (a *DropsWorkError) to delete edited scenes or
+// takes.
+func (s *Service) SplitByParagraphsNow(ctx context.Context, tenantID, episodeID uuid.UUID, lang string, minS, maxS int, discardWork bool) (SplitResult, error) {
 	src, err := loadSplitSource(ctx, s.Queries, tenantID, episodeID, lang)
 	if err != nil {
 		return SplitResult{}, err
 	}
 	drafts := SplitByParagraphs(src.Paragraphs, src.Index, cadenceOr(src.Settings.Cadence, minS, maxS), lang)
-	return s.ApplySplit(ctx, tenantID, episodeID, lang, drafts, src.Settings.ImageStyleID)
+	return s.ApplySplit(ctx, tenantID, episodeID, lang, drafts, src.Settings.ImageStyleID, discardWork)
 }
 
-// EnqueueLLMSplit queues llm.scene_split at interactive priority.
+// EnqueueLLMSplit queues llm.scene_split at interactive priority. The
+// drafts are not known until the model answers, so without
+// in.DiscardWork it refuses up front when any current scene is edited or
+// holds takes, with every scene counted as at risk.
 func (s *Service) EnqueueLLMSplit(ctx context.Context, tenantID uuid.UUID, createdBy *uuid.UUID, episodeID uuid.UUID, in SplitInput) (uuid.UUID, uuid.UUID, error) {
 	if _, err := loadSplitSource(ctx, s.Queries, tenantID, episodeID, in.Lang); err != nil {
 		return uuid.Nil, uuid.Nil, err
+	}
+	if !in.DiscardWork {
+		rows, err := s.Queries.ListScenesForResplit(ctx, dbgen.ListScenesForResplitParams{
+			TenantID: idconv.ToPg(tenantID), EpisodeID: idconv.ToPg(episodeID), Lang: in.Lang,
+		})
+		if err != nil {
+			return uuid.Nil, uuid.Nil, err
+		}
+		if risk := RiskOfAll(existingScenes(rows)); risk.LosesWork() {
+			return uuid.Nil, uuid.Nil, &DropsWorkError{Risk: risk, UpperBound: true}
+		}
 	}
 	input, err := json.Marshal(in)
 	if err != nil {
@@ -214,10 +234,18 @@ func (h *SplitHandler) Run(ctx context.Context, sc *pipeline.StepContext) (pipel
 		return nil, fmt.Errorf("scenes: parse scene split reply: %w", err)
 	}
 	drafts, unrecognised := NormalizeLLMSplit(prompt, out, src.Index, in.Lang)
-	res, err := h.Service.ApplySplit(ctx, sc.Tenant(), sc.ScopeID(), in.Lang, drafts, src.Settings.ImageStyleID)
+	res, err := h.Service.ApplySplit(ctx, sc.Tenant(), sc.ScopeID(), in.Lang, drafts, src.Settings.ImageStyleID, in.DiscardWork)
+	if errors.Is(err, ErrDropsWork) {
+		// Scenes were edited or got takes while the model ran: keep them
+		// and let the user split again with a confirmation.
+		return nil, fmt.Errorf("%w: %v", pipeline.ErrValidation, err)
+	}
 	if err != nil {
 		return nil, err
 	}
 	sc.Progress(100, 0)
-	return pipeline.Output{"provider": providerName, "sceneCount": res.Total, "keptCount": res.Kept, "unrecognisedSpeakers": unrecognised, "tainted": tainted}, nil
+	return pipeline.Output{
+		"provider": providerName, "sceneCount": res.Total, "keptCount": res.Kept, "droppedCount": res.Dropped,
+		"unrecognisedSpeakers": unrecognised, "tainted": tainted,
+	}, nil
 }

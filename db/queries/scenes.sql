@@ -34,6 +34,16 @@ SET idx = @idx, paragraph_ids = @paragraph_ids, tainted = @tainted, version = ve
 WHERE tenant_id = @tenant_id AND id = @id
 RETURNING *;
 
+-- name: ListScenesForResplit :many
+-- The scenes a re-split replaces, locked against a concurrent edit, with
+-- whether a person edited each one and how many takes it holds.
+SELECT s.id, s.text_hash, (s.edited_at IS NOT NULL)::boolean AS edited,
+       (SELECT count(*) FROM scene_takes t WHERE t.tenant_id = s.tenant_id AND t.scene_id = s.id)::integer AS take_count
+FROM scenes s
+WHERE s.tenant_id = @tenant_id AND s.episode_id = @episode_id AND s.lang = @lang
+ORDER BY s.idx
+FOR UPDATE OF s;
+
 -- name: DeleteScenesExcept :many
 -- Drops the scenes a re-split did not keep (their takes cascade).
 DELETE FROM scenes
@@ -46,7 +56,7 @@ UPDATE scenes
 SET narration = @narration, segments = @segments, image_prompt = @image_prompt, character_ids = @character_ids,
     motion_preset = @motion_preset, image_style_id = @image_style_id, text_hash = @text_hash,
     duration_ms = CASE WHEN duration_measured THEN duration_ms ELSE @estimated_duration_ms END,
-    version = version + 1, updated_at = now()
+    version = version + 1, edited_at = now(), updated_at = now()
 WHERE tenant_id = @tenant_id AND id = @id AND version = @expected_version
 RETURNING *;
 

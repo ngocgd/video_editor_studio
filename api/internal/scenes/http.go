@@ -240,18 +240,21 @@ func (h *ScenesAPI) SplitScenes(ctx context.Context, req gen.SplitScenesRequestO
 	if minS > 0 && maxS > 0 && minS > maxS {
 		return gen.SplitScenes422ApplicationProblemPlusJSONResponse(problem(http.StatusUnprocessableEntity, "cadenceMinS must not exceed cadenceMaxS")), nil
 	}
+	discard := req.Body.DiscardWork != nil && *req.Body.DiscardWork
 	if req.Body.Mode == gen.SceneSplitRequestModeParagraphs {
-		res, err := h.Service.SplitByParagraphsNow(ctx, info.ID, req.Id, lang, minS, maxS)
+		res, err := h.Service.SplitByParagraphsNow(ctx, info.ID, req.Id, lang, minS, maxS, discard)
 		if resp, done := splitError(err); done {
 			return resp, nil
 		}
 		if err != nil {
 			return nil, err
 		}
-		unrec := res.Unrecognised
-		return gen.SplitScenes200JSONResponse{Mode: gen.SceneSplitResultModeParagraphs, SceneCount: res.Total, KeptCount: res.Kept, UnrecognisedSpeakers: &unrec}, nil
+		unrec, dropped := res.Unrecognised, res.Dropped
+		return gen.SplitScenes200JSONResponse{
+			Mode: gen.SceneSplitResultModeParagraphs, SceneCount: res.Total, KeptCount: res.Kept, DroppedCount: &dropped, UnrecognisedSpeakers: &unrec,
+		}, nil
 	}
-	runID, stepID, err := h.Service.EnqueueLLMSplit(ctx, info.ID, creator(ctx), req.Id, SplitInput{Lang: lang, CadenceMinS: minS, CadenceMaxS: maxS})
+	runID, stepID, err := h.Service.EnqueueLLMSplit(ctx, info.ID, creator(ctx), req.Id, SplitInput{Lang: lang, CadenceMinS: minS, CadenceMaxS: maxS, DiscardWork: discard})
 	if resp, done := splitError(err); done {
 		return resp, nil
 	}
@@ -262,6 +265,12 @@ func (h *ScenesAPI) SplitScenes(ctx context.Context, req gen.SplitScenesRequestO
 }
 
 func splitError(err error) (gen.SplitScenesResponseObject, bool) {
+	if drops := (*DropsWorkError)(nil); errors.As(err, &drops) {
+		return gen.SplitScenes409ApplicationProblemPlusJSONResponse(gen.SceneSplitConflict{
+			Title: "the split would delete edited scenes or takes", Status: http.StatusConflict, Detail: drops.Error(),
+			DroppedCount: drops.Risk.Dropped, EditedCount: drops.Risk.Edited, TakeCount: drops.Risk.Takes,
+		}), true
+	}
 	switch {
 	case errors.Is(err, ErrNotFound):
 		return gen.SplitScenes404ApplicationProblemPlusJSONResponse(problem(http.StatusNotFound, "episode not found")), true

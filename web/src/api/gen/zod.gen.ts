@@ -908,16 +908,30 @@ export const zSceneSplitRequest = z.object({
     lang: zSceneLanguage,
     mode: z.enum(['paragraphs', 'llm']),
     cadenceMinS: z.number().int().gte(5).lte(300).optional(),
-    cadenceMaxS: z.number().int().gte(5).lte(600).optional()
+    cadenceMaxS: z.number().int().gte(5).lte(600).optional(),
+    discardWork: z.boolean().optional().default(false)
 });
 
 export const zSceneSplitResult = z.object({
     mode: z.enum(['paragraphs', 'llm']),
     sceneCount: z.number().int(),
     keptCount: z.number().int(),
+    droppedCount: z.number().int().optional(),
     unrecognisedSpeakers: z.number().int().optional(),
     runId: z.string().uuid().optional(),
     stepId: z.string().uuid().optional()
+});
+
+/**
+ * A problem body for a split that would delete edited scenes or takes. For an LLM split the counts cover every current scene, because the new scenes are not known yet.
+ */
+export const zSceneSplitConflict = z.object({
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    droppedCount: z.number().int(),
+    editedCount: z.number().int(),
+    takeCount: z.number().int()
 });
 
 export const zTakeKind = z.enum([

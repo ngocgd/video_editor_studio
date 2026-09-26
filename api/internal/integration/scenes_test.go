@@ -336,14 +336,23 @@ func TestStoryboardSplitStepsStaleAndTakes(t *testing.T) {
 	}
 
 	// Re-split: every scene whose narration is unchanged keeps its id and
-	// takes; only the edited scene is replaced. Run in-process so the
-	// split's own Changed event reaches this registry too.
-	res, err := service.SplitByParagraphsNow(context.Background(), tenantID, uuid.MustParse(f.episodeID), "en", 0, 0)
+	// takes; only the edited scene is replaced, and only once confirmed,
+	// because it carries an edit and takes. Run in-process so the split's
+	// own Changed event reaches this registry too.
+	_, err = service.SplitByParagraphsNow(context.Background(), tenantID, uuid.MustParse(f.episodeID), "en", 0, 0, false)
+	var drops *scenes.DropsWorkError
+	if !errors.As(err, &drops) || drops.Risk.Dropped != 1 || drops.Risk.Edited != 1 || drops.Risk.Takes < 3 {
+		t.Fatalf("an unconfirmed re-split must refuse to drop the edited scene: %v %+v", err, drops)
+	}
+	if len(events) != 2 {
+		t.Fatalf("a refused re-split emitted events: %+v", events)
+	}
+	res, err := service.SplitByParagraphsNow(context.Background(), tenantID, uuid.MustParse(f.episodeID), "en", 0, 0, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Kept != res.Total-1 {
-		t.Fatalf("re-split kept %d of %d", res.Kept, res.Total)
+	if res.Kept != res.Total-1 || res.Dropped != 1 {
+		t.Fatalf("re-split kept %d of %d, dropped %d", res.Kept, res.Total, res.Dropped)
 	}
 	if len(events) != 3 || events[2].Reason != "split" || len(events[2].SceneIDs) != res.Total {
 		t.Fatalf("events after re-split = %+v", events)
@@ -355,6 +364,59 @@ func TestStoryboardSplitStepsStaleAndTakes(t *testing.T) {
 	if state, _, _ := resplit.Items[1].pip("image"); state != "done" {
 		t.Fatalf("the kept scene lost its image take: %s", state)
 	}
+}
+
+// A re-split after a narration edit would drop the edited scene: the API
+// refuses with the counts and changes nothing until the user confirms,
+// for the paragraph split and (up front, as an upper bound) the LLM one.
+func TestResplitAfterANarrationEditNeedsConfirmation(t *testing.T) {
+	skipIfAPIUnreachable(t)
+	f := newStoryboardFixture(t, dialogueDraft)
+	sess := f.sess
+	splitURL := "/episodes/" + f.episodeID + "/scenes/split"
+
+	sessionJSON(t, sess.do(http.MethodPost, splitURL, map[string]any{"lang": "en", "mode": "paragraphs"}), http.StatusOK, nil)
+	before := listScenes(t, sess, f.episodeID, "all")
+	s0 := before.Items[0]
+	edited := s0.Narration + " A hand-fixed line."
+	sessionJSON(t, sess.do(http.MethodPatch, "/scenes/"+s0.ID, map[string]any{"expectedVersion": s0.Version, "narration": edited, "imagePrompt": "a hand-written prompt"}), http.StatusOK, nil)
+
+	type conflict struct {
+		Status       int    `json:"status"`
+		Detail       string `json:"detail"`
+		DroppedCount int    `json:"droppedCount"`
+		EditedCount  int    `json:"editedCount"`
+		TakeCount    int    `json:"takeCount"`
+	}
+	var paragraphs conflict
+	sessionJSON(t, sess.do(http.MethodPost, splitURL, map[string]any{"lang": "en", "mode": "paragraphs"}), http.StatusConflict, &paragraphs)
+	if paragraphs.DroppedCount != 1 || paragraphs.EditedCount != 1 || paragraphs.TakeCount != 0 || !strings.Contains(paragraphs.Detail, "1 edited scenes") {
+		t.Fatalf("paragraph re-split conflict = %+v", paragraphs)
+	}
+	var llmSplit conflict
+	sessionJSON(t, sess.do(http.MethodPost, splitURL, map[string]any{"lang": "en", "mode": "llm"}), http.StatusConflict, &llmSplit)
+	if llmSplit.DroppedCount != len(before.Items) || llmSplit.EditedCount != 1 || !strings.Contains(llmSplit.Detail, "up to") {
+		t.Fatalf("LLM re-split conflict = %+v", llmSplit)
+	}
+
+	// Nothing changed: the edited scene and its manual prompt are intact.
+	after := listScenes(t, sess, f.episodeID, "all")
+	if len(after.Items) != len(before.Items) || after.Items[0].ID != s0.ID || after.Items[0].Narration != edited {
+		t.Fatal("a refused re-split changed the scenes")
+	}
+
+	// Confirmed: the edited scene is replaced by the paragraph's own text.
+	var done struct{ SceneCount, KeptCount, DroppedCount int }
+	sessionJSON(t, sess.do(http.MethodPost, splitURL, map[string]any{"lang": "en", "mode": "paragraphs", "discardWork": true}), http.StatusOK, &done)
+	if done.DroppedCount != 1 || done.KeptCount != done.SceneCount-1 {
+		t.Fatalf("confirmed re-split = %+v", done)
+	}
+	final := listScenes(t, sess, f.episodeID, "all")
+	if final.Items[0].ID == s0.ID || final.Items[0].Narration != s0.Narration {
+		t.Fatal("the confirmed re-split did not replace the edited scene")
+	}
+	// With no edits or takes left, a re-split needs no confirmation.
+	sessionJSON(t, sess.do(http.MethodPost, splitURL, map[string]any{"lang": "en", "mode": "paragraphs"}), http.StatusOK, nil)
 }
 
 // countingResidency records every model switch.

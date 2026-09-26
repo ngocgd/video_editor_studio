@@ -122,14 +122,16 @@ func decodeTake(raw []byte) *TakeInfo {
 
 // SplitResult is what an applied split changed.
 type SplitResult struct {
-	Total, Kept, Unrecognised int
+	Total, Kept, Dropped, Unrecognised int
 }
 
 // ApplySplit replaces an episode language's scenes with drafts in one
 // transaction. A scene whose narration hash matches an existing scene
 // keeps that row (id, edits and every take) and only moves position;
-// all other old scenes are deleted with their takes.
-func (s *Service) ApplySplit(ctx context.Context, tenantID, episodeID uuid.UUID, lang string, drafts []Draft, styleID *uuid.UUID) (SplitResult, error) {
+// all other old scenes are deleted with their takes. When that would
+// delete an edited scene or any take and discardWork is false, nothing
+// changes and the error is a *DropsWorkError with the counts.
+func (s *Service) ApplySplit(ctx context.Context, tenantID, episodeID uuid.UUID, lang string, drafts []Draft, styleID *uuid.UUID, discardWork bool) (SplitResult, error) {
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return SplitResult{}, err
@@ -138,22 +140,27 @@ func (s *Service) ApplySplit(ctx context.Context, tenantID, episodeID uuid.UUID,
 	q := s.Queries.WithTx(tx)
 	tid, eid := idconv.ToPg(tenantID), idconv.ToPg(episodeID)
 
-	existing, err := q.ListScenes(ctx, dbgen.ListScenesParams{TenantID: tid, EpisodeID: eid, Lang: lang})
+	rows, err := q.ListScenesForResplit(ctx, dbgen.ListScenesForResplitParams{TenantID: tid, EpisodeID: eid, Lang: lang})
 	if err != nil {
 		return SplitResult{}, err
 	}
+	existing := existingScenes(rows)
 	hashes := make([]string, len(existing))
 	for i, sc := range existing {
 		hashes[i] = sc.TextHash
 	}
 	plan := PlanResplit(hashes, drafts)
+	risk := RiskOf(existing, plan)
+	if risk.LosesWork() && !discardWork {
+		return SplitResult{}, &DropsWorkError{Risk: risk}
+	}
 
-	res := SplitResult{Total: len(drafts)}
+	res := SplitResult{Total: len(drafts), Dropped: risk.Dropped}
 	keep := make([]uuid.UUID, 0, len(drafts))
 	for i, d := range drafts {
 		hash := TextHash(d.Narration)
 		if k := plan[i]; k >= 0 {
-			old := existing[k]
+			old := rows[k]
 			if _, err := q.ResplitKeepScene(ctx, dbgen.ResplitKeepSceneParams{
 				Idx: int32(i + 1), ParagraphIds: d.ParagraphIDs, Tainted: d.Tainted, TenantID: tid, ID: old.ID,
 			}); err != nil {
@@ -190,6 +197,16 @@ func (s *Service) ApplySplit(ctx context.Context, tenantID, episodeID uuid.UUID,
 	}
 	s.Hooks.Emit(ctx, Changed{TenantID: tenantID, EpisodeID: episodeID, Lang: lang, SceneIDs: keep, Reason: "split"})
 	return res, nil
+}
+
+// existingScenes is the part of the locked rows that the re-split plan
+// and its drop risk read.
+func existingScenes(rows []dbgen.ListScenesForResplitRow) []ExistingScene {
+	out := make([]ExistingScene, len(rows))
+	for i, r := range rows {
+		out[i] = ExistingScene{TextHash: r.TextHash, Edited: r.Edited, TakeCount: int(r.TakeCount)}
+	}
+	return out
 }
 
 // PlanResplit decides which existing scene (by position in existing)
