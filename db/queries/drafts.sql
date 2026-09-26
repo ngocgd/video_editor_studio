@@ -61,3 +61,9 @@ SELECT * FROM episode_draft_revisions
 WHERE tenant_id = @tenant_id AND draft_id = @draft_id
 ORDER BY version DESC
 LIMIT @page_limit;
+
+-- name: ClaimDraftStepApplication :execrows
+-- Records that a step's result was applied; 0 rows means it already was.
+INSERT INTO draft_step_applications (step_id, tenant_id, draft_id, draft_version, applied_by)
+VALUES (@step_id, @tenant_id, @draft_id, @draft_version, @applied_by)
+ON CONFLICT (step_id) DO NOTHING;
