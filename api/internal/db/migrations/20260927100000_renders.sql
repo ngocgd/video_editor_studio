@@ -40,6 +40,10 @@ CREATE TABLE render_manifests (
     scenes jsonb NOT NULL,
     hash text NOT NULL,
     run_id uuid REFERENCES pipeline_runs (id) ON DELETE SET NULL,
+    -- Set when a scene edit superseded the previous render run: the UI
+    -- says "Render restarted after edit (N segments reused)".
+    restarted_after_edit boolean NOT NULL DEFAULT false,
+    reused_segments integer NOT NULL DEFAULT 0 CHECK (reused_segments >= 0),
     created_by uuid REFERENCES users (id) ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT render_manifests_tenant_id_id_key UNIQUE (tenant_id, id),

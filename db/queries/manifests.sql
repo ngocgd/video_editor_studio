@@ -16,8 +16,8 @@ WHERE s.tenant_id = @tenant_id AND s.episode_id = @episode_id AND s.lang = @lang
 ORDER BY s.idx;
 
 -- name: InsertRenderManifest :one
-INSERT INTO render_manifests (id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, created_by)
-VALUES (@id, @tenant_id, @episode_id, @lang, @settings, @settings_hash, @scenes, @hash, @created_by)
+INSERT INTO render_manifests (id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, restarted_after_edit, reused_segments, created_by)
+VALUES (@id, @tenant_id, @episode_id, @lang, @settings, @settings_hash, @scenes, @hash, @restarted_after_edit, @reused_segments, @created_by)
 RETURNING *;
 
 -- name: InsertManifestSegments :exec

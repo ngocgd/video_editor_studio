@@ -334,17 +334,19 @@ type Render struct {
 }
 
 type RenderManifest struct {
-	ID           pgtype.UUID        `json:"id"`
-	TenantID     pgtype.UUID        `json:"tenant_id"`
-	EpisodeID    pgtype.UUID        `json:"episode_id"`
-	Lang         string             `json:"lang"`
-	Settings     []byte             `json:"settings"`
-	SettingsHash string             `json:"settings_hash"`
-	Scenes       []byte             `json:"scenes"`
-	Hash         string             `json:"hash"`
-	RunID        pgtype.UUID        `json:"run_id"`
-	CreatedBy    pgtype.UUID        `json:"created_by"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ID                 pgtype.UUID        `json:"id"`
+	TenantID           pgtype.UUID        `json:"tenant_id"`
+	EpisodeID          pgtype.UUID        `json:"episode_id"`
+	Lang               string             `json:"lang"`
+	Settings           []byte             `json:"settings"`
+	SettingsHash       string             `json:"settings_hash"`
+	Scenes             []byte             `json:"scenes"`
+	Hash               string             `json:"hash"`
+	RunID              pgtype.UUID        `json:"run_id"`
+	RestartedAfterEdit bool               `json:"restarted_after_edit"`
+	ReusedSegments     int32              `json:"reused_segments"`
+	CreatedBy          pgtype.UUID        `json:"created_by"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 }
 
 type RenderManifestSegment struct {

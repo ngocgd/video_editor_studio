@@ -54,6 +54,9 @@ type FreezeRequest struct {
 	EpisodeID uuid.UUID
 	Lang      string
 	CreatedBy *uuid.UUID
+	// AfterEdit marks a manifest frozen because a scene edit superseded
+	// the running render.
+	AfterEdit bool
 }
 
 // Frozen is a new manifest and the run rendering it.
@@ -131,12 +134,11 @@ func (f *Freezer) Freeze(ctx context.Context, req FreezeRequest) (Frozen, error)
 	if err != nil {
 		return Frozen{}, err
 	}
-	if err := f.insertManifest(ctx, req, manifestID, m, pins); err != nil {
-		return Frozen{}, err
-	}
-
 	specs, reused, err := stepSpecs(planned, cachedHashes, manifestID, m.Hash())
 	if err != nil {
+		return Frozen{}, err
+	}
+	if err := f.insertManifest(ctx, req, manifestID, m, pins, reused); err != nil {
 		return Frozen{}, err
 	}
 	if _, err := f.Engine.Enqueue(ctx, req.TenantID, pipeline.RunSpec{
@@ -153,7 +155,7 @@ func (f *Freezer) Freeze(ctx context.Context, req FreezeRequest) (Frozen, error)
 
 // insertManifest writes the manifest and its pinned cache entries in one
 // transaction, so TTL cleanup never sees one without the other.
-func (f *Freezer) insertManifest(ctx context.Context, req FreezeRequest, id uuid.UUID, m Manifest, pins []string) error {
+func (f *Freezer) insertManifest(ctx context.Context, req FreezeRequest, id uuid.UUID, m Manifest, pins []string, reused int) error {
 	settingsJSON, err := json.Marshal(m.Settings)
 	if err != nil {
 		return err
@@ -171,6 +173,7 @@ func (f *Freezer) insertManifest(ctx context.Context, req FreezeRequest, id uuid
 	if _, err := qtx.InsertRenderManifest(ctx, dbgen.InsertRenderManifestParams{
 		ID: idconv.ToPg(id), TenantID: idconv.ToPg(req.TenantID), EpisodeID: idconv.ToPg(req.EpisodeID), Lang: req.Lang,
 		Settings: settingsJSON, SettingsHash: m.SettingsHash(), Scenes: scenesJSON, Hash: m.Hash(), CreatedBy: idconv.ToPgPtr(req.CreatedBy),
+		RestartedAfterEdit: req.AfterEdit, ReusedSegments: int32(reused), //nolint:gosec // bounded by the scene count
 	}); err != nil {
 		return err
 	}

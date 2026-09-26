@@ -92,7 +92,7 @@ func (q *Queries) GetEpisodeForRender(ctx context.Context, arg GetEpisodeForRend
 }
 
 const getRenderManifest = `-- name: GetRenderManifest :one
-SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, created_by, created_at FROM render_manifests WHERE tenant_id = $1 AND id = $2
+SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, restarted_after_edit, reused_segments, created_by, created_at FROM render_manifests WHERE tenant_id = $1 AND id = $2
 `
 
 type GetRenderManifestParams struct {
@@ -113,6 +113,8 @@ func (q *Queries) GetRenderManifest(ctx context.Context, arg GetRenderManifestPa
 		&i.Scenes,
 		&i.Hash,
 		&i.RunID,
+		&i.RestartedAfterEdit,
+		&i.ReusedSegments,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -120,7 +122,7 @@ func (q *Queries) GetRenderManifest(ctx context.Context, arg GetRenderManifestPa
 }
 
 const getRenderManifestByRun = `-- name: GetRenderManifestByRun :one
-SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, created_by, created_at FROM render_manifests WHERE tenant_id = $1 AND run_id = $2
+SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, restarted_after_edit, reused_segments, created_by, created_at FROM render_manifests WHERE tenant_id = $1 AND run_id = $2
 `
 
 type GetRenderManifestByRunParams struct {
@@ -141,6 +143,8 @@ func (q *Queries) GetRenderManifestByRun(ctx context.Context, arg GetRenderManif
 		&i.Scenes,
 		&i.Hash,
 		&i.RunID,
+		&i.RestartedAfterEdit,
+		&i.ReusedSegments,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -165,21 +169,23 @@ func (q *Queries) InsertManifestSegments(ctx context.Context, arg InsertManifest
 }
 
 const insertRenderManifest = `-- name: InsertRenderManifest :one
-INSERT INTO render_manifests (id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, created_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, created_by, created_at
+INSERT INTO render_manifests (id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, restarted_after_edit, reused_segments, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, restarted_after_edit, reused_segments, created_by, created_at
 `
 
 type InsertRenderManifestParams struct {
-	ID           pgtype.UUID `json:"id"`
-	TenantID     pgtype.UUID `json:"tenant_id"`
-	EpisodeID    pgtype.UUID `json:"episode_id"`
-	Lang         string      `json:"lang"`
-	Settings     []byte      `json:"settings"`
-	SettingsHash string      `json:"settings_hash"`
-	Scenes       []byte      `json:"scenes"`
-	Hash         string      `json:"hash"`
-	CreatedBy    pgtype.UUID `json:"created_by"`
+	ID                 pgtype.UUID `json:"id"`
+	TenantID           pgtype.UUID `json:"tenant_id"`
+	EpisodeID          pgtype.UUID `json:"episode_id"`
+	Lang               string      `json:"lang"`
+	Settings           []byte      `json:"settings"`
+	SettingsHash       string      `json:"settings_hash"`
+	Scenes             []byte      `json:"scenes"`
+	Hash               string      `json:"hash"`
+	RestartedAfterEdit bool        `json:"restarted_after_edit"`
+	ReusedSegments     int32       `json:"reused_segments"`
+	CreatedBy          pgtype.UUID `json:"created_by"`
 }
 
 func (q *Queries) InsertRenderManifest(ctx context.Context, arg InsertRenderManifestParams) (RenderManifest, error) {
@@ -192,6 +198,8 @@ func (q *Queries) InsertRenderManifest(ctx context.Context, arg InsertRenderMani
 		arg.SettingsHash,
 		arg.Scenes,
 		arg.Hash,
+		arg.RestartedAfterEdit,
+		arg.ReusedSegments,
 		arg.CreatedBy,
 	)
 	var i RenderManifest
@@ -205,6 +213,8 @@ func (q *Queries) InsertRenderManifest(ctx context.Context, arg InsertRenderMani
 		&i.Scenes,
 		&i.Hash,
 		&i.RunID,
+		&i.RestartedAfterEdit,
+		&i.ReusedSegments,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -212,7 +222,7 @@ func (q *Queries) InsertRenderManifest(ctx context.Context, arg InsertRenderMani
 }
 
 const latestRenderManifest = `-- name: LatestRenderManifest :one
-SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, created_by, created_at FROM render_manifests
+SELECT id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, restarted_after_edit, reused_segments, created_by, created_at FROM render_manifests
 WHERE tenant_id = $1 AND episode_id = $2 AND lang = $3
 ORDER BY created_at DESC, id DESC
 LIMIT 1
@@ -237,6 +247,8 @@ func (q *Queries) LatestRenderManifest(ctx context.Context, arg LatestRenderMani
 		&i.Scenes,
 		&i.Hash,
 		&i.RunID,
+		&i.RestartedAfterEdit,
+		&i.ReusedSegments,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -320,7 +332,7 @@ func (q *Queries) ListManifestSceneInputs(ctx context.Context, arg ListManifestS
 const setManifestRun = `-- name: SetManifestRun :one
 UPDATE render_manifests SET run_id = $1
 WHERE tenant_id = $2 AND id = $3
-RETURNING id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, created_by, created_at
+RETURNING id, tenant_id, episode_id, lang, settings, settings_hash, scenes, hash, run_id, restarted_after_edit, reused_segments, created_by, created_at
 `
 
 type SetManifestRunParams struct {
@@ -342,6 +354,8 @@ func (q *Queries) SetManifestRun(ctx context.Context, arg SetManifestRunParams) 
 		&i.Scenes,
 		&i.Hash,
 		&i.RunID,
+		&i.RestartedAfterEdit,
+		&i.ReusedSegments,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
