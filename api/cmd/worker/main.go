@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -28,6 +29,8 @@ import (
 	"loomtale/api/internal/obs"
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/providers/bootstrap"
+	"loomtale/api/internal/providers/llmcheck"
+	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/storage"
 	"loomtale/api/internal/story"
@@ -110,12 +113,18 @@ func run() error {
 	for _, h := range story.Handlers(llmRegistry, queries) {
 		registry.Register(h)
 	}
+	for _, h := range llmcheck.Handlers(llmRegistry) {
+		registry.Register(h)
+	}
 
 	residency, probe, residencyManager, err := buildResidency(ctx, cfg)
 	if err != nil {
 		return err
 	}
-	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager)
+	saasMode := strings.EqualFold(cfg.AppMode, "saas")
+	startWorkerStatusHeartbeat(ctx, queries, probe, residencyManager, func(ctx context.Context) map[string]workerstatus.ProviderInfo {
+		return llmProviderStatus(ctx, llmRegistry.Providers, saasMode)
+	})
 
 	// A worker must never enable a queue no registered handler actually
 	// resolves to: claiming a step it cannot run destroys it (the CAS

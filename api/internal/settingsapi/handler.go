@@ -30,10 +30,10 @@ type SettingsAPI struct {
 	// key (kind="llm_api_key" in the envelope-encrypted secrets table),
 	// without ever returning the key itself.
 	Secrets SecretsChecker
-	// WorkerStatus supplies Ollama's real availability (the process that
-	// actually calls it, per the phase review): this process's own
-	// Registry.Providers only ever contains claude-cli/anthropic-api/
-	// gemini-api, never ollama (that adapter lives in cmd/worker).
+	// WorkerStatus supplies every provider's availability and the claude
+	// CLI status: the worker runs every llm.* step and is the only
+	// process on llm_net, so this process's own adapters say nothing
+	// about what will actually work.
 	WorkerStatus workerStatusReader
 	// TestRateLimit bounds POST /settings/llm/test per tenant (decision:
 	// 5/min), since it spends real provider tokens/quota synchronously.
@@ -42,10 +42,14 @@ type SettingsAPI struct {
 	// value fails PutLLMApiKey with an internal error rather than
 	// panicking; every real wiring (cmd/api/main.go) sets it.
 	SecretsWrite SecretsWriter
-	// ClaudeCLI reports the llm-cli sidecar's status (GetClaudeCliStatus).
-	// A nil value degrades GetClaudeCliStatus to installed:false rather
-	// than erroring, since the sidecar is host-dependent.
-	ClaudeCLI ClaudeCLIStatusChecker
+	// Probe runs the Test button's probe in the worker (see llmcheck).
+	// A nil value reports the probe as unavailable.
+	Probe ProviderProber
+}
+
+// ProviderProber runs one provider probe on behalf of a tenant.
+type ProviderProber interface {
+	Check(ctx context.Context, tenantID uuid.UUID, createdBy *uuid.UUID, provider string) (ok bool, detail string, err error)
 }
 
 // settingsStore is the subset of *registry.Store this package depends
@@ -116,13 +120,77 @@ func fromActionOverrides(o gen.LLMActionOverrides) map[string]string {
 	return out
 }
 
+// workerView is the worker's latest heartbeat, reduced to what the
+// availability rules need.
+type workerView struct {
+	fresh     bool
+	providers map[string]workerstatus.ProviderInfo
+}
+
+func (h *SettingsAPI) workerView(ctx context.Context) workerView {
+	if h.WorkerStatus == nil {
+		return workerView{}
+	}
+	ws, err := h.WorkerStatus.Get(ctx)
+	if err != nil {
+		return workerView{}
+	}
+	return workerView{fresh: ws.Fresh, providers: ws.Providers}
+}
+
+// availability decides whether the worker can run name for this tenant:
+// either the worker reports the provider available from its own config
+// (and, for claude-cli, a healthy sidecar), or the provider takes a
+// tenant key and the tenant has stored one (the worker builds that
+// adapter per call from the same secrets). The reason explains a "no".
+func (h *SettingsAPI) availability(name string, w workerView, keyConfigured bool) (bool, string) {
+	if !w.fresh {
+		return false, "worker offline: no recent worker heartbeat, so no LLM step can run"
+	}
+	info, reported := w.providers[name]
+	if reported && info.Available {
+		return true, ""
+	}
+	if keyConfigured && h.takesTenantKey(name) {
+		return true, ""
+	}
+	switch {
+	case reported && info.DisabledReason != "":
+		return false, info.DisabledReason
+	case name == registry.ProviderOllama:
+		return false, "ollama has no model configured (see OLLAMA_MODEL) or the GPU worker is off"
+	case h.takesTenantKey(name):
+		return false, "no API key configured for this provider"
+	default:
+		return false, "provider not configured on the worker"
+	}
+}
+
+// takesTenantKey reports whether name can run on a tenant's own key.
+func (h *SettingsAPI) takesTenantKey(name string) bool {
+	if h.Registry == nil {
+		return false
+	}
+	_, ok := h.Registry.Factories[name]
+	return ok
+}
+
+// keyConfigured reports whether the tenant stored a key for name.
+func (h *SettingsAPI) keyConfigured(ctx context.Context, tenantID, name string) (configured, known bool) {
+	if h.Secrets == nil {
+		return false, false
+	}
+	configured, err := h.Secrets.Configured(ctx, tenantID, name)
+	if err != nil {
+		return false, false
+	}
+	return configured, true
+}
+
 // providerStatuses reports every known provider name (registry.KnownProviders,
 // not just the ones this process happens to have adapters for), plus any
-// extra name a tenant's own settings reference. Availability for
-// ollama comes from WorkerStatus (the worker is the process that
-// actually calls it); every other provider's availability comes from
-// this process's own Registry.Providers, since those adapters really do
-// live and get called here.
+// extra name a tenant's own settings reference, with availability as the
+// worker sees it (see availability).
 func (h *SettingsAPI) providerStatuses(ctx context.Context, tenantID string, s registry.Settings) []gen.ProviderStatus {
 	names := map[string]struct{}{}
 	for _, name := range registry.KnownProviders {
@@ -133,41 +201,18 @@ func (h *SettingsAPI) providerStatuses(ctx context.Context, tenantID string, s r
 		names[v] = struct{}{}
 	}
 
-	var workerProviders map[string]workerstatus.ProviderInfo
-	var workerFresh bool
-	if h.WorkerStatus != nil {
-		if ws, err := h.WorkerStatus.Get(ctx); err == nil {
-			workerProviders = ws.Providers
-			workerFresh = ws.Fresh
-		}
-	}
-
+	w := h.workerView(ctx)
 	statuses := make([]gen.ProviderStatus, 0, len(names))
 	for name := range names {
 		status := gen.ProviderStatus{Name: name}
-		if name == registry.ProviderOllama {
-			status.Available = workerFresh && workerProviders[registry.ProviderOllama].Available
-			if !status.Available {
-				reason := "worker_offline or ollama has no model configured (see OLLAMA_MODEL)"
-				if workerFresh {
-					if info, ok := workerProviders[registry.ProviderOllama]; ok && info.DisabledReason != "" {
-						reason = info.DisabledReason
-					}
-				}
-				status.DisabledReason = &reason
-			}
-		} else {
-			_, available := h.Registry.Providers[name]
-			status.Available = available
-			if !available {
-				reason := "no adapter constructed for this provider (missing API key, disabled in saas mode, or self-check failed)"
-				status.DisabledReason = &reason
-			}
+		configured, known := h.keyConfigured(ctx, tenantID, name)
+		if known {
+			status.Configured = &configured
 		}
-		if h.Secrets != nil {
-			if configured, err := h.Secrets.Configured(ctx, tenantID, name); err == nil {
-				status.Configured = &configured
-			}
+		available, reason := h.availability(name, w, configured)
+		status.Available = available
+		if !available {
+			status.DisabledReason = &reason
 		}
 		statuses = append(statuses, status)
 	}

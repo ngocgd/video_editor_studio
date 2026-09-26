@@ -50,6 +50,7 @@ exec docker run --rm \
     -w /src/api \
     -e CGO_ENABLED=1 \
     -e CI="${CI:-}" \
+    -e LLMCLI_EXPECTED="${LLMCLI_EXPECTED:-}" \
     -e API_BASE_URL="http://web:8080/api/v1" \
     -e OWNER_DATABASE_URL="postgres://loomtale_owner:${POSTGRES_OWNER_PASSWORD:?set in .env}@postgres:5432/loomtale?sslmode=disable" \
     -e DATABASE_URL="postgres://loomtale_app:${POSTGRES_APP_PASSWORD:?set in .env}@postgres:5432/loomtale?sslmode=disable" \

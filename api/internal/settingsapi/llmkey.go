@@ -23,16 +23,6 @@ type SecretsWriter interface {
 	PutLLMAPIKey(ctx context.Context, tenantID uuid.UUID, provider, plaintext string) error
 }
 
-// ClaudeCLIStatusChecker abstracts the llm-cli sidecar's status surface.
-type ClaudeCLIStatusChecker interface {
-	// Status reports the sidecar's reachability. installed is true when
-	// the sidecar answered at all (even if currently unhealthy);
-	// authenticated is true only on a healthy response. detail explains
-	// an unhealthy or unreachable state; version is empty (the sidecar's
-	// /healthz surface does not report one).
-	Status(ctx context.Context) (installed, authenticated bool, detail string, err error)
-}
-
 // PutLLMApiKey implements gen.StrictServerInterface: writes a BYOK
 // provider API key, envelope-encrypted, write-only (never read back).
 func (h *SettingsAPI) PutLLMApiKey(ctx context.Context, request gen.PutLLMApiKeyRequestObject) (gen.PutLLMApiKeyResponseObject, error) {
@@ -57,23 +47,37 @@ func (h *SettingsAPI) PutLLMApiKey(ctx context.Context, request gen.PutLLMApiKey
 	return gen.PutLLMApiKey204Response{}, nil
 }
 
-// GetClaudeCliStatus implements gen.StrictServerInterface. When the
-// sidecar is unreachable this degrades gracefully to installed:false with
-// an explanatory detail, never an error, since the sidecar is
-// host-dependent per the phase 4 notes.
+// GetClaudeCliStatus implements gen.StrictServerInterface from the
+// worker's heartbeat: the llm-cli sidecar is on llm_net, which only the
+// worker joins, so the worker probes its /healthz and reports the
+// result. It never errors: an offline worker or a missing sidecar is
+// reported as installed:false with the reason.
 func (h *SettingsAPI) GetClaudeCliStatus(ctx context.Context, _ gen.GetClaudeCliStatusRequestObject) (gen.GetClaudeCliStatusResponseObject, error) {
-	if h.ClaudeCLI == nil {
-		detail := "llm-cli sidecar not configured"
-		return gen.GetClaudeCliStatus200JSONResponse{Installed: false, Authenticated: false, ToolsDisabled: true, Detail: &detail}, nil
+	resp := gen.GetClaudeCliStatus200JSONResponse{ToolsDisabled: true}
+	w := h.workerView(ctx)
+	if !w.fresh {
+		detail := "worker offline: the claude CLI status is reported by the worker"
+		resp.Detail = &detail
+		return resp, nil
 	}
-	installed, authenticated, detail, err := h.ClaudeCLI.Status(ctx)
-	if err != nil {
-		reachDetail := "llm-cli sidecar not reachable"
-		return gen.GetClaudeCliStatus200JSONResponse{Installed: false, Authenticated: false, ToolsDisabled: true, Detail: &reachDetail}, nil
+	info, ok := w.providers[claudeCLIProvider]
+	if !ok || info.CLI == nil {
+		detail := "the worker did not report the llm-cli sidecar"
+		resp.Detail = &detail
+		return resp, nil
 	}
-	resp := gen.GetClaudeCliStatus200JSONResponse{Installed: installed, Authenticated: authenticated, ToolsDisabled: true}
-	if detail != "" {
+	resp.Installed = info.CLI.Installed
+	resp.Authenticated = info.CLI.Authenticated
+	if info.CLI.Version != "" {
+		version := info.CLI.Version
+		resp.Version = &version
+	}
+	if info.CLI.Detail != "" {
+		detail := info.CLI.Detail
 		resp.Detail = &detail
 	}
 	return resp, nil
 }
+
+// claudeCLIProvider is the provider name the worker reports the sidecar under.
+const claudeCLIProvider = "claude-cli"

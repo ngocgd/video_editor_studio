@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"loomtale/api/internal/httpapi/gen"
+	"loomtale/api/internal/providers/workerstatus"
 )
 
 type fakeSecretsWriter struct {
@@ -19,16 +20,6 @@ func (f *fakeSecretsWriter) PutLLMAPIKey(_ context.Context, _ uuid.UUID, _, plai
 	f.calls++
 	f.lastKey = plaintext
 	return f.returnErr
-}
-
-type fakeClaudeCLIStatus struct {
-	installed, authenticated bool
-	detail                   string
-	err                      error
-}
-
-func (f fakeClaudeCLIStatus) Status(context.Context) (bool, bool, string, error) {
-	return f.installed, f.authenticated, f.detail, f.err
 }
 
 func TestPutLLMApiKeyRejectsUnknownProvider(t *testing.T) {
@@ -103,8 +94,20 @@ func TestPutLLMApiKeyResponseNeverContainsTheKey(t *testing.T) {
 	}
 }
 
-func TestGetClaudeCliStatusHealthy(t *testing.T) {
-	h := &SettingsAPI{ClaudeCLI: fakeClaudeCLIStatus{installed: true, authenticated: true}}
+func cliWorker(fresh bool, info workerstatus.ProviderInfo) fakeWorkerStatus {
+	return fakeWorkerStatus{status: workerstatus.Status{
+		Fresh:     fresh,
+		Providers: map[string]workerstatus.ProviderInfo{"claude-cli": info},
+	}}
+}
+
+// The claude CLI status comes from the worker's heartbeat: the api has
+// no network path to the llm-cli sidecar.
+func TestGetClaudeCliStatusHealthyFromWorker(t *testing.T) {
+	h := &SettingsAPI{WorkerStatus: cliWorker(true, workerstatus.ProviderInfo{
+		Available: true,
+		CLI:       &workerstatus.CLIInfo{Installed: true, Authenticated: true, Version: "2.1.282 (Claude Code)"},
+	})}
 	resp, err := h.GetClaudeCliStatus(ctxWithTenant(), gen.GetClaudeCliStatusRequestObject{})
 	if err != nil {
 		t.Fatal(err)
@@ -116,34 +119,35 @@ func TestGetClaudeCliStatusHealthy(t *testing.T) {
 	if !status.Installed || !status.Authenticated || !status.ToolsDisabled {
 		t.Fatalf("unexpected status: %+v", status)
 	}
-}
-
-func TestGetClaudeCliStatusDegradesGracefullyWhenUnreachable(t *testing.T) {
-	h := &SettingsAPI{ClaudeCLI: fakeClaudeCLIStatus{err: context.DeadlineExceeded}}
-	resp, err := h.GetClaudeCliStatus(ctxWithTenant(), gen.GetClaudeCliStatusRequestObject{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	status, ok := resp.(gen.GetClaudeCliStatus200JSONResponse)
-	if !ok {
-		t.Fatalf("expected 200, got %#v", resp)
-	}
-	if status.Installed || status.Authenticated {
-		t.Fatalf("expected installed:false, authenticated:false when unreachable, got %+v", status)
-	}
-	if status.Detail == nil || *status.Detail == "" {
-		t.Fatal("expected a detail explaining the sidecar is not reachable")
+	if status.Version == nil || *status.Version != "2.1.282 (Claude Code)" {
+		t.Fatalf("version = %v", status.Version)
 	}
 }
 
-func TestGetClaudeCliStatusNilCheckerDegradesGracefully(t *testing.T) {
-	h := &SettingsAPI{}
-	resp, err := h.GetClaudeCliStatus(ctxWithTenant(), gen.GetClaudeCliStatusRequestObject{})
-	if err != nil {
-		t.Fatal(err)
+func TestGetClaudeCliStatusReportsUnhealthySidecar(t *testing.T) {
+	h := &SettingsAPI{WorkerStatus: cliWorker(true, workerstatus.ProviderInfo{
+		CLI: &workerstatus.CLIInfo{Installed: true, Detail: "no CLAUDE_CODE_OAUTH_TOKEN configured"},
+	})}
+	resp, _ := h.GetClaudeCliStatus(ctxWithTenant(), gen.GetClaudeCliStatusRequestObject{})
+	status := resp.(gen.GetClaudeCliStatus200JSONResponse)
+	if !status.Installed || status.Authenticated || status.Detail == nil || *status.Detail == "" {
+		t.Fatalf("unexpected status: %+v", status)
 	}
-	status, ok := resp.(gen.GetClaudeCliStatus200JSONResponse)
-	if !ok || status.Installed {
-		t.Fatalf("expected installed:false with no ClaudeCLI dependency configured, got %#v", resp)
+}
+
+func TestGetClaudeCliStatusDegradesGracefullyWhenWorkerOffline(t *testing.T) {
+	for name, h := range map[string]*SettingsAPI{
+		"stale heartbeat": {WorkerStatus: cliWorker(false, workerstatus.ProviderInfo{Available: true, CLI: &workerstatus.CLIInfo{Installed: true, Authenticated: true}})},
+		"no status":       {WorkerStatus: fakeWorkerStatus{err: workerstatus.ErrNoStatus}},
+		"not wired":       {},
+	} {
+		resp, err := h.GetClaudeCliStatus(ctxWithTenant(), gen.GetClaudeCliStatusRequestObject{})
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		status, ok := resp.(gen.GetClaudeCliStatus200JSONResponse)
+		if !ok || status.Installed || status.Authenticated || status.Detail == nil {
+			t.Fatalf("%s: expected installed:false with a detail, got %#v", name, resp)
+		}
 	}
 }

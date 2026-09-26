@@ -35,13 +35,12 @@ import (
 	"loomtale/api/internal/pipeline"
 	"loomtale/api/internal/pipelineapi"
 	"loomtale/api/internal/providers/bootstrap"
-	"loomtale/api/internal/providers/llm/claudecli"
+	"loomtale/api/internal/providers/llmcheck"
 	"loomtale/api/internal/providers/workerstatus"
 	"loomtale/api/internal/quota"
 	"loomtale/api/internal/ratelimit"
 	"loomtale/api/internal/rbac"
 	"loomtale/api/internal/secheaders"
-	"loomtale/api/internal/secretstr"
 	"loomtale/api/internal/secrets"
 	"loomtale/api/internal/settingsapi"
 	"loomtale/api/internal/sse"
@@ -171,6 +170,9 @@ func run() error {
 	for _, handler := range story.Handlers(llmRegistry, queries) {
 		stepRegistry.Register(handler)
 	}
+	for _, handler := range llmcheck.Handlers(llmRegistry) {
+		stepRegistry.Register(handler)
+	}
 	engine := pipeline.NewEngine(pool.Pool, queries, riverClient, stepRegistry, []pipeline.AdmissionCheck{quotaChecker.Check}, nil)
 	hub := sse.NewHub(pool.Pool)
 	hubCtx, stopHub := context.WithCancel(context.Background())
@@ -203,8 +205,6 @@ func run() error {
 			allowedOrigins[o] = true
 		}
 	}
-
-	claudeCLIStatus := claudecli.New(cfg.LLMCLIURL, secretstr.String(""), bootstrap.TimeoutHTTPClient(), false)
 
 	srv := &server{
 		Handler: &health.Handler{
@@ -251,7 +251,7 @@ func run() error {
 			WorkerStatus:  &workerstatus.Store{Queries: queries},
 			TestRateLimit: ratelimit.NewDBBucket(queries, 5, 5.0/60),
 			SecretsWrite:  secretsStore,
-			ClaudeCLI:     claudeCLIStatus,
+			Probe:         &llmcheck.Runner{Engine: engine, Queries: queries},
 		},
 		StoryAPI: &story.StoryAPI{
 			Pool:     pool,

@@ -43,6 +43,19 @@ type GPU struct {
 type ProviderInfo struct {
 	Available      bool   `json:"available"`
 	DisabledReason string `json:"disabled_reason,omitempty"`
+	// CLI is set only for claude-cli: the llm-cli sidecar sits on
+	// llm_net, which only the worker joins, so the worker probes it and
+	// the api reads the result here.
+	CLI *CLIInfo `json:"cli,omitempty"`
+}
+
+// CLIInfo is the claude CLI status the worker observed on the llm-cli
+// sidecar's /healthz.
+type CLIInfo struct {
+	Installed     bool   `json:"installed"`
+	Authenticated bool   `json:"authenticated"`
+	Version       string `json:"version,omitempty"`
+	Detail        string `json:"detail,omitempty"`
 }
 
 // Status is one worker's full reported state.

@@ -165,10 +165,26 @@ func TestGetLLMSettingsOllamaUnavailableWhenWorkerStatusStale(t *testing.T) {
 	}
 }
 
+type fakeProber struct {
+	calls    int
+	provider string
+	ok       bool
+	detail   string
+}
+
+func (f *fakeProber) Check(_ context.Context, _ uuid.UUID, _ *uuid.UUID, provider string) (bool, string, error) {
+	f.calls++
+	f.provider = provider
+	return f.ok, f.detail, nil
+}
+
+func freshWorker(providers map[string]workerstatus.ProviderInfo) fakeWorkerStatus {
+	return fakeWorkerStatus{status: workerstatus.Status{Fresh: true, Providers: providers}}
+}
+
 func TestTestLLMSettingsRateLimited(t *testing.T) {
 	h := &SettingsAPI{
 		Store:         &fakeStore{settings: registry.Settings{Default: "claude-cli"}},
-		Registry:      &registry.Registry{Providers: map[string]llm.Provider{"claude-cli": fakeProvider{name: "claude-cli"}}},
 		TestRateLimit: fakeRateLimiter{allow: false},
 	}
 	resp, err := h.TestLLMSettings(ctxWithTenant(), gen.TestLLMSettingsRequestObject{})
@@ -180,11 +196,16 @@ func TestTestLLMSettingsRateLimited(t *testing.T) {
 	}
 }
 
-func TestTestLLMSettingsRunsConfiguredProvider(t *testing.T) {
+// The probe runs in the worker, even though this process has no
+// claude-cli adapter of its own.
+func TestTestLLMSettingsProbesAvailableProviderInTheWorker(t *testing.T) {
+	prober := &fakeProber{ok: true}
 	h := &SettingsAPI{
 		Store:         &fakeStore{settings: registry.Settings{Default: "claude-cli"}},
-		Registry:      &registry.Registry{Providers: map[string]llm.Provider{"claude-cli": fakeProvider{name: "claude-cli"}}},
+		Registry:      &registry.Registry{Providers: map[string]llm.Provider{}},
+		WorkerStatus:  freshWorker(map[string]workerstatus.ProviderInfo{"claude-cli": {Available: true}}),
 		TestRateLimit: fakeRateLimiter{allow: true},
+		Probe:         prober,
 	}
 	resp, err := h.TestLLMSettings(ctxWithTenant(), gen.TestLLMSettingsRequestObject{})
 	if err != nil {
@@ -194,20 +215,92 @@ func TestTestLLMSettingsRunsConfiguredProvider(t *testing.T) {
 	if !ok || !result.Ok {
 		t.Fatalf("expected a successful test result, got %#v", resp)
 	}
+	if prober.calls != 1 || prober.provider != "claude-cli" {
+		t.Fatalf("probe calls=%d provider=%q", prober.calls, prober.provider)
+	}
 }
 
-func TestTestLLMSettingsReportsUnconfiguredProvider(t *testing.T) {
+func TestTestLLMSettingsReportsProbeFailure(t *testing.T) {
+	prober := &fakeProber{ok: false, detail: "claudecli: not logged in"}
 	h := &SettingsAPI{
-		Store:         &fakeStore{settings: registry.Settings{Default: "gemini-api"}},
-		Registry:      &registry.Registry{Providers: map[string]llm.Provider{}},
+		Store:         &fakeStore{settings: registry.Settings{Default: "claude-cli"}},
+		WorkerStatus:  freshWorker(map[string]workerstatus.ProviderInfo{"claude-cli": {Available: true}}),
 		TestRateLimit: fakeRateLimiter{allow: true},
+		Probe:         prober,
 	}
-	resp, err := h.TestLLMSettings(ctxWithTenant(), gen.TestLLMSettingsRequestObject{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp, _ := h.TestLLMSettings(ctxWithTenant(), gen.TestLLMSettingsRequestObject{})
 	result := resp.(gen.TestLLMSettings200JSONResponse)
-	if result.Ok {
-		t.Fatal("expected ok=false for an unconfigured provider")
+	if result.Ok || result.Detail == nil || *result.Detail != "claudecli: not logged in" {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+}
+
+// A provider the worker cannot run fails fast with the worker's reason
+// instead of enqueuing a probe that would never finish.
+func TestTestLLMSettingsFailsFastForUnavailableProvider(t *testing.T) {
+	prober := &fakeProber{ok: true}
+	h := &SettingsAPI{
+		Store: &fakeStore{settings: registry.Settings{Default: "ollama"}},
+		WorkerStatus: freshWorker(map[string]workerstatus.ProviderInfo{
+			"ollama": {DisabledReason: "no model configured"},
+		}),
+		TestRateLimit: fakeRateLimiter{allow: true},
+		Probe:         prober,
+	}
+	resp, _ := h.TestLLMSettings(ctxWithTenant(), gen.TestLLMSettingsRequestObject{})
+	result := resp.(gen.TestLLMSettings200JSONResponse)
+	if result.Ok || result.Detail == nil || *result.Detail != "no model configured" {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+	if prober.calls != 0 {
+		t.Fatal("an unavailable provider must not be probed")
+	}
+}
+
+func TestGetLLMSettingsClaudeCLIAvailabilityComesFromWorkerStatus(t *testing.T) {
+	h := &SettingsAPI{
+		Store:    &fakeStore{settings: registry.Settings{Default: "claude-cli"}},
+		Registry: &registry.Registry{Providers: map[string]llm.Provider{}},
+		WorkerStatus: freshWorker(map[string]workerstatus.ProviderInfo{
+			"claude-cli": {Available: true},
+		}),
+	}
+	resp, _ := h.GetLLMSettings(ctxWithTenant(), gen.GetLLMSettingsRequestObject{})
+	for _, p := range resp.(gen.GetLLMSettings200JSONResponse).Providers {
+		switch p.Name {
+		case "claude-cli":
+			if !p.Available {
+				t.Fatal("claude-cli must be available when the worker reports it healthy")
+			}
+		case "gemini-api":
+			if p.Available || p.DisabledReason == nil {
+				t.Fatal("gemini-api has no key anywhere and must be unavailable with a reason")
+			}
+		}
+	}
+}
+
+type fakeSecretsChecker map[string]bool
+
+func (f fakeSecretsChecker) Configured(_ context.Context, _ string, provider string) (bool, error) {
+	return f[provider], nil
+}
+
+// A tenant's own key makes a key-based provider available: the worker
+// builds that adapter per call from the same encrypted secrets.
+func TestGetLLMSettingsTenantKeyMakesProviderAvailable(t *testing.T) {
+	h := &SettingsAPI{
+		Store: &fakeStore{settings: registry.Settings{Default: "claude-cli"}},
+		Registry: &registry.Registry{Factories: map[string]func(string) llm.Provider{
+			"anthropic-api": func(string) llm.Provider { return fakeProvider{name: "anthropic-api"} },
+		}},
+		Secrets:      fakeSecretsChecker{"anthropic-api": true},
+		WorkerStatus: freshWorker(map[string]workerstatus.ProviderInfo{}),
+	}
+	resp, _ := h.GetLLMSettings(ctxWithTenant(), gen.GetLLMSettingsRequestObject{})
+	for _, p := range resp.(gen.GetLLMSettings200JSONResponse).Providers {
+		if p.Name == "anthropic-api" && !p.Available {
+			t.Fatal("anthropic-api with a stored tenant key must be available")
+		}
 	}
 }
