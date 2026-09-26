@@ -20,6 +20,8 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"loomtale/api/internal/analytics"
+	"loomtale/api/internal/analyticsapi"
 	"loomtale/api/internal/assetsapi"
 	"loomtale/api/internal/auditapi"
 	authpkg "loomtale/api/internal/auth"
@@ -219,6 +221,7 @@ func run() error {
 	for _, handler := range library.Handlers(library.Deps{Queries: queries}) {
 		stepRegistry.Register(handler)
 	}
+	stepRegistry.Register(&analytics.ExplainHandler{Registry: llmRegistry})
 	admission := []pipeline.AdmissionCheck{quotaChecker.Check}
 	var disk *diskguard.Watermark
 	if cfg.DiskGuardPath != "" {
@@ -342,6 +345,17 @@ func run() error {
 			Secrets: secretsStore,
 			OAuth:   googleOAuth,
 			Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
+		},
+		AnalyticsAPI: &analyticsapi.AnalyticsAPI{
+			Queries:    queries,
+			Aggregator: &analytics.Aggregator{Pool: pool.Pool, Queries: queries},
+			Clients: &analytics.OAuthClients{
+				OAuth:   googleOAuth,
+				Secrets: secretsStore,
+				Ledger:  &youtube.Ledger{Store: queries, Config: cfg.YouTubeQuota},
+			},
+			Jobs:   riverClient,
+			Engine: engine,
 		},
 	}
 

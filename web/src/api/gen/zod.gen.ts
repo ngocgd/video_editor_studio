@@ -357,6 +357,171 @@ export const zYouTubeChannelAuditUpdate = z.object({
     auditNote: z.string().max(2000).optional()
 });
 
+/**
+ * Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+ */
+export const zAnalyticsSyncState = z.object({
+    status: z.enum([
+        'idle',
+        'running',
+        'failed'
+    ]),
+    analyticsThrough: z.string().date().optional(),
+    reachThrough: z.string().date().optional(),
+    lastStartedAt: z.string().datetime().optional(),
+    lastFinishedAt: z.string().datetime().optional(),
+    lastError: z.string(),
+    subscriberCount: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
+});
+
+export const zAnalyticsWindow = z.object({
+    from: z.string().date(),
+    to: z.string().date()
+});
+
+/**
+ * Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+ */
+export const zUnavailable = z.record(z.string());
+
+export const zAnalyticsChannelDay = z.object({
+    date: z.string().date(),
+    views: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    watchHours: z.number().optional(),
+    subscribersGained: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    subscribersLost: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    unavailable: zUnavailable
+});
+
+/**
+ * Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+ */
+export const zYppProgress = z.object({
+    watchHours: z.number(),
+    watchHoursTarget: z.number().int(),
+    windowFrom: z.string().date(),
+    windowTo: z.string().date(),
+    daysMissing: z.number().int(),
+    subscribers: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    subscribersTarget: z.number().int()
+});
+
+export const zAnalyticsOverview = z.object({
+    sync: zAnalyticsSyncState,
+    window: zAnalyticsWindow,
+    days: z.array(zAnalyticsChannelDay),
+    ypp: zYppProgress
+});
+
+export const zAnalyticsSyncQueued = z.object({
+    queued: z.boolean()
+});
+
+export const zAnalyticsSuggestion = z.object({
+    videoId: z.string(),
+    rule: z.string(),
+    version: z.number().int(),
+    title: z.string(),
+    evidence: z.record(z.unknown()),
+    dismissed: z.boolean(),
+    updatedAt: z.string().datetime()
+});
+
+export const zAnalyticsSuggestionList = z.object({
+    items: z.array(zAnalyticsSuggestion)
+});
+
+export const zAnalyticsSuggestionUpdate = z.object({
+    videoId: z.string().max(11),
+    rule: z.string().max(64),
+    dismissed: z.boolean()
+});
+
+export const zAnalyticsExplanation = z.object({
+    id: z.string().uuid(),
+    status: z.enum([
+        'pending',
+        'queued',
+        'running',
+        'done',
+        'failed',
+        'canceled'
+    ]),
+    text: z.string().optional(),
+    provider: z.string().optional(),
+    model: z.string().optional(),
+    costUsd: z.number().optional(),
+    error: z.string().optional()
+});
+
+/**
+ * A tracked video's totals over the window; an absent metric was not available from the API on any day.
+ */
+export const zAnalyticsVideoRow = z.object({
+    videoId: z.string(),
+    title: z.string(),
+    source: z.enum(['publication', 'manual']),
+    durationSeconds: z.number().int().optional(),
+    publishedAt: z.string().datetime().optional(),
+    views: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    watchHours: z.number().optional(),
+    averageViewPercentage: z.number().optional(),
+    averageViewDuration: z.number().optional(),
+    subscribersGained: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    impressions: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    ctr: z.number().optional()
+});
+
+export const zAnalyticsVideoPage = z.object({
+    items: z.array(zAnalyticsVideoRow),
+    total: z.number().int(),
+    nextCursor: z.string().optional(),
+    window: zAnalyticsWindow,
+    sync: zAnalyticsSyncState
+});
+
+export const zTrackedVideo = z.object({
+    videoId: z.string(),
+    channelId: z.string().uuid(),
+    title: z.string(),
+    source: z.enum(['publication', 'manual']),
+    durationSeconds: z.number().int().optional(),
+    publishedAt: z.string().datetime().optional(),
+    createdAt: z.string().datetime()
+});
+
+export const zAnalyticsVideoDay = z.object({
+    date: z.string().date(),
+    views: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    watchHours: z.number().optional(),
+    averageViewDuration: z.number().optional(),
+    averageViewPercentage: z.number().optional(),
+    subscribersGained: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    impressions: z.coerce.bigint().min(BigInt('-9223372036854775808'), { message: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { message: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    ctr: z.number().optional(),
+    unavailable: zUnavailable
+});
+
+export const zRetentionPoint = z.object({
+    elapsedRatio: z.number(),
+    audienceWatchRatio: z.number().optional(),
+    relativeRetentionPerformance: z.number().optional()
+});
+
+export const zAnalyticsVideoDetail = z.object({
+    video: zTrackedVideo,
+    window: zAnalyticsWindow,
+    sync: zAnalyticsSyncState,
+    days: z.array(zAnalyticsVideoDay),
+    retention: z.array(zRetentionPoint),
+    retentionSyncedAt: z.string().datetime().optional()
+});
+
+export const zTrackVideoRequest = z.object({
+    channelId: z.string().uuid(),
+    video: z.string().min(11).max(512)
+});
+
 export const zTargetLanguage = z.enum(['en', 'vi']);
 
 export const zSeries = z.object({
@@ -1295,6 +1460,26 @@ export const zCleanupStarted = z.object({
 });
 
 /**
+ * Loomtale id of a connected YouTube channel.
+ */
+export const zAnalyticsChannelId = z.string().uuid();
+
+/**
+ * First day of the window (inclusive). Windows span at most 366 days.
+ */
+export const zAnalyticsFrom = z.string().date();
+
+/**
+ * Last day of the window (inclusive).
+ */
+export const zAnalyticsTo = z.string().date();
+
+/**
+ * YouTube video id.
+ */
+export const zAnalyticsVideoId = z.string().regex(/^[A-Za-z0-9_-]{11}$/);
+
+/**
  * process is alive
  */
 export const zGetHealthzResponse = zHealthStatus;
@@ -1531,6 +1716,123 @@ export const zUpdateYouTubeChannelAuditPath = z.object({
  * channel updated
  */
 export const zUpdateYouTubeChannelAuditResponse = zYouTubeChannel;
+
+export const zGetAnalyticsOverviewPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zGetAnalyticsOverviewQuery = z.object({
+    from: z.string().date().optional(),
+    to: z.string().date().optional()
+});
+
+/**
+ * overview
+ */
+export const zGetAnalyticsOverviewResponse = zAnalyticsOverview;
+
+export const zSyncAnalyticsChannelPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * sync queued, or already queued or running
+ */
+export const zSyncAnalyticsChannelResponse = zAnalyticsSyncQueued;
+
+export const zListAnalyticsSuggestionsPath = z.object({
+    id: z.string().uuid()
+});
+
+export const zListAnalyticsSuggestionsQuery = z.object({
+    videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),
+    includeDismissed: z.boolean().optional().default(false)
+});
+
+/**
+ * suggestions
+ */
+export const zListAnalyticsSuggestionsResponse = zAnalyticsSuggestionList;
+
+export const zUpdateAnalyticsSuggestionBody = zAnalyticsSuggestionUpdate;
+
+export const zUpdateAnalyticsSuggestionPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * updated
+ */
+export const zUpdateAnalyticsSuggestionResponse = z.void();
+
+export const zExplainAnalyticsChannelPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * explanation queued
+ */
+export const zExplainAnalyticsChannelResponse = zAnalyticsExplanation;
+
+export const zGetAnalyticsExplanationPath = z.object({
+    id: z.string().uuid()
+});
+
+/**
+ * explanation
+ */
+export const zGetAnalyticsExplanationResponse = zAnalyticsExplanation;
+
+export const zListAnalyticsVideosQuery = z.object({
+    channelId: z.string().uuid(),
+    sort: z.enum([
+        'views',
+        'watchTime',
+        'ctr',
+        'averageViewPercentage',
+        'published'
+    ]).optional().default('views'),
+    order: z.enum(['asc', 'desc']).optional().default('desc'),
+    cursor: z.string().max(64).optional(),
+    limit: z.number().int().gte(1).lte(200).optional().default(50),
+    from: z.string().date().optional(),
+    to: z.string().date().optional()
+});
+
+/**
+ * one page of videos
+ */
+export const zListAnalyticsVideosResponse = zAnalyticsVideoPage;
+
+export const zGetAnalyticsVideoPath = z.object({
+    videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/)
+});
+
+export const zGetAnalyticsVideoQuery = z.object({
+    from: z.string().date().optional(),
+    to: z.string().date().optional()
+});
+
+/**
+ * video detail
+ */
+export const zGetAnalyticsVideoResponse = zAnalyticsVideoDetail;
+
+export const zTrackAnalyticsVideoBody = zTrackVideoRequest;
+
+/**
+ * video tracked (or already tracked on this channel)
+ */
+export const zTrackAnalyticsVideoResponse = zTrackedVideo;
+
+export const zUntrackAnalyticsVideoPath = z.object({
+    videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/)
+});
+
+/**
+ * no longer tracked
+ */
+export const zUntrackAnalyticsVideoResponse = z.void();
 
 export const zListSeriesQuery = z.object({
     cursor: z.string().optional(),

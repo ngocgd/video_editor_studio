@@ -4,6 +4,7 @@ import { EmptyState } from "../../components/shared/empty-state";
 import { InlineError } from "../../components/shared/inline-error";
 import { InspectorSection } from "../../components/shared/inspector-panel";
 import { JobProgress } from "../../components/shared/job-progress";
+import { DashboardChannelWidgets } from "../analytics/dashboard-channel-widgets";
 import { gpuQueuePosition, useCancelStep, useGpuStatus, useJobs, useRetryStep } from "../jobs/use-jobs";
 
 function StatValue({ label, value }: { label: string; value: number }) {
@@ -100,6 +101,8 @@ export function DashboardView() {
           </div>
         </InspectorSection>
       )}
+
+      <DashboardChannelWidgets />
     </div>
   );
 }
