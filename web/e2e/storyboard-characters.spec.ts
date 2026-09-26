@@ -55,7 +55,7 @@ test("storyboard at 450 scenes, scene edit, characters, voices and styles", asyn
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
   await login(page);
 
-  const series = await api<{ id: string }>(page, "POST", "/series", { title: `Storyboard E2E ${Date.now()}`, targetLanguages: ["en"], targetEpisodeMinutes: 180, plannedEpisodeCount: 1 });
+  const series = await api<{ id: string }>(page, "POST", "/series", { title: `Storyboard E2E ${Date.now()}`, targetLanguages: ["en"], targetEpisodeMinutes: 120, plannedEpisodeCount: 1 });
   const style = await api<{ id: string }>(page, "POST", "/settings/image-styles", { name: `Ink wash ${Date.now()}`, baseModel: "z-image-turbo", stylePrompt: "ink wash painting, xianxia" });
   await api(page, "PUT", `/series/${series.id}/storyboard-settings`, { imageStyleId: style.id, cadenceMinS: 20, cadenceMaxS: 40, segmentGapMs: 150 });
   for (const [en, orig] of [["Lin Mo", "林默"], ["Elder Qiu", "邱长老"]]) {
