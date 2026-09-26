@@ -69,8 +69,9 @@ test-runner container can't reach the host's published `127.0.0.1:9000`.
   load.
 
 Benchmarks run against a GPU stack through the `cli` service:
-`PROJECT=<project> scripts/bench-voice.sh voice-smoke|tts|align|llm` (the `tts` suite also stores
-each voice's measured words per minute) and `scripts/bench-image.sh` for the image suites.
+`PROJECT=<project> scripts/bench-voice.sh voice-smoke|tts|align|llm|vision|train|train-smoke` (the
+`tts` suite also stores each voice's measured words per minute; the vision and LoRA training suites
+read reference images from `REFS`, default `<out-dir>/refs`) and `scripts/bench-image.sh` for the image suites.
 
 ## Repository layout
 

@@ -354,6 +354,168 @@ models:
         size: 85
         licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
 
+  # Character-consistency scoring: DINOv2 embeddings, cosine similarity
+  # of a scene take to the character's approved refs. The repository's
+  # pytorch_model.bin (a pickle) is never listed.
+  - name: dinov2-base
+    task: score
+    title: Character consistency score
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/facebook/dinov2-base
+      verified: "2026-09-26"
+    source:
+      repo: facebook/dinov2-base
+      revision: f9e44c814b77203eaa57a6bdbbd535f21ede1415
+    vram_mb: 1024
+    files:
+      - path: vision/dinov2-base/model.safetensors
+        remote: model.safetensors
+        sha256: d73036b56966966d07975d696bde331762f37297e2f095de8cea0040c3aa0841
+        size: 346345912
+      - path: vision/dinov2-base/config.json
+        remote: config.json
+        git_sha1: 5df0129f878aa42d71fa74d27a50f382d13ed71e
+        size: 548
+      - path: vision/dinov2-base/preprocessor_config.json
+        remote: preprocessor_config.json
+        git_sha1: ff5b47c2edcd1d3556d63c01a65d93b58b9efce1
+        size: 436
+
+  # Depth maps for parallax. Only the Small checkpoint is Apache-2.0; the
+  # Base and Large ones are non-commercial and must never be added.
+  - name: depth-anything-v2-small
+    task: depth
+    title: Depth maps for parallax
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf
+      verified: "2026-09-26"
+    source:
+      repo: depth-anything/Depth-Anything-V2-Small-hf
+      revision: 5426e4f0f36572d16453bbda7a8389317b1bef99
+    vram_mb: 1024
+    files:
+      - path: vision/depth-anything-v2-small/model.safetensors
+        remote: model.safetensors
+        sha256: 3152477ce0d8d6978d76b995120de97cb5b928701fd0f817769f59e249a16b70
+        size: 99173660
+      - path: vision/depth-anything-v2-small/config.json
+        remote: config.json
+        git_sha1: 9207d3a304e86517dab21638c559d8b3195d41b6
+        size: 950
+      - path: vision/depth-anything-v2-small/preprocessor_config.json
+        remote: preprocessor_config.json
+        git_sha1: a7822a90a0e91a14d50d1996953bac8f389a4377
+        size: 775
+
+  # LoRA training base for the scene model: the diffusers-format
+  # Z-Image-Turbo repository (ai-toolkit, MIT, cannot train on the
+  # ComfyUI int8 split files the scene workflow loads) plus the
+  # de-distillation training adapter ai-toolkit merges in while
+  # training so a short character run keeps the turbo speed.
+  - name: z-image-turbo-trainer
+    task: lora
+    title: Character LoRA training
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/Tongyi-MAI/Z-Image-Turbo
+      verified: "2026-09-26"
+    source:
+      repo: Tongyi-MAI/Z-Image-Turbo
+      revision: f332072aa78be7aecdf3ee76d5c247082da564a6
+    vram_mb: 11500
+    files:
+      - path: train/z-image-turbo/model_index.json
+        remote: model_index.json
+        git_sha1: 570c63a7c5580f63d0a8ed622324f50015dcf914
+        size: 467
+      - path: train/z-image-turbo/scheduler/scheduler_config.json
+        remote: scheduler/scheduler_config.json
+        git_sha1: 2349bc43351afa730341d07dd44fce4ace1c4257
+        size: 173
+      - path: train/z-image-turbo/text_encoder/config.json
+        remote: text_encoder/config.json
+        git_sha1: e49eccdc32f36da9c09cfa0e737084f9e0105e5e
+        size: 726
+      - path: train/z-image-turbo/text_encoder/generation_config.json
+        remote: text_encoder/generation_config.json
+        git_sha1: 20a8a9156fc8c3f25295ca067f61fdf120d517c5
+        size: 239
+      - path: train/z-image-turbo/text_encoder/model-00001-of-00003.safetensors
+        remote: text_encoder/model-00001-of-00003.safetensors
+        sha256: 328a91d3122359d5547f9d79521205bc0a46e1f79a792dfe650e99fc2d651223
+        size: 3957900840
+      - path: train/z-image-turbo/text_encoder/model-00002-of-00003.safetensors
+        remote: text_encoder/model-00002-of-00003.safetensors
+        sha256: 6cd087b316306a68c562436b5492edbcf6e16c6dba3a1308279caa5a58e21ca5
+        size: 3987450520
+      - path: train/z-image-turbo/text_encoder/model-00003-of-00003.safetensors
+        remote: text_encoder/model-00003-of-00003.safetensors
+        sha256: 7ca841ee75b9c61267c0c6148fd8d096d3d21b6d3e161256a9b878154f91fc52
+        size: 99630640
+      - path: train/z-image-turbo/text_encoder/model.safetensors.index.json
+        remote: text_encoder/model.safetensors.index.json
+        git_sha1: 95c0a0059df040d75dc6c396b174382cf61d2f91
+        size: 32819
+      - path: train/z-image-turbo/tokenizer/merges.txt
+        remote: tokenizer/merges.txt
+        git_sha1: 31349551d90c7606f325fe0f11bbb8bd5fa0d7c7
+        size: 1671853
+      - path: train/z-image-turbo/tokenizer/tokenizer.json
+        remote: tokenizer/tokenizer.json
+        sha256: aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4
+        size: 11422654
+      - path: train/z-image-turbo/tokenizer/tokenizer_config.json
+        remote: tokenizer/tokenizer_config.json
+        git_sha1: 417d038a63fa3de29cfde265caedae14d1a58d92
+        size: 9732
+      - path: train/z-image-turbo/tokenizer/vocab.json
+        remote: tokenizer/vocab.json
+        git_sha1: 4783fe10ac3adce15ac8f358ef5462739852c569
+        size: 2776833
+      - path: train/z-image-turbo/transformer/config.json
+        remote: transformer/config.json
+        git_sha1: c579190a5e03d602a2fd9647221c9d0d9441f150
+        size: 473
+      - path: train/z-image-turbo/transformer/diffusion_pytorch_model-00001-of-00003.safetensors
+        remote: transformer/diffusion_pytorch_model-00001-of-00003.safetensors
+        sha256: 95facd593e2549e8252acb571c653d57f7ddb7f1060d4e81712f152555a88804
+        size: 9973693184
+      - path: train/z-image-turbo/transformer/diffusion_pytorch_model-00002-of-00003.safetensors
+        remote: transformer/diffusion_pytorch_model-00002-of-00003.safetensors
+        sha256: a4bbe43ee184a1fb5af4b412d27555f532893bdc3165b1149e304ed82b5d7015
+        size: 9973714824
+      - path: train/z-image-turbo/transformer/diffusion_pytorch_model-00003-of-00003.safetensors
+        remote: transformer/diffusion_pytorch_model-00003-of-00003.safetensors
+        sha256: aba4e37a590e63210878160a718d916d80398f4e1f78ab6c9b2b2a00d92769fa
+        size: 4672282880
+      - path: train/z-image-turbo/transformer/diffusion_pytorch_model.safetensors.index.json
+        remote: transformer/diffusion_pytorch_model.safetensors.index.json
+        git_sha1: a3cadc1ed28e334ef58d4e6bbda107e25168ef47
+        size: 48969
+      - path: train/z-image-turbo/vae/config.json
+        remote: vae/config.json
+        git_sha1: 894fa30ac1950cef422189d2d4cef11043c62875
+        size: 805
+      - path: train/z-image-turbo/vae/diffusion_pytorch_model.safetensors
+        remote: vae/diffusion_pytorch_model.safetensors
+        sha256: f5b59a26851551b67ae1fe58d32e76486e1e812def4696a4bea97f16604d40a3
+        size: 167666902
+      - path: train/z-image-turbo/training-adapter/zimage_turbo_training_adapter_v2.safetensors
+        repo: ostris/zimage_turbo_training_adapter
+        revision: 654cd1bf8b3589d9442cb1c5e35221879e1af4f3
+        remote: zimage_turbo_training_adapter_v2.safetensors
+        sha256: 20a541d3e016ab8de0da076321b48b6cd9b3ffd072d9df830a068220ab2265f6
+        size: 340194488
+        licence: {spdx: Apache-2.0, url: https://huggingface.co/ostris/zimage_turbo_training_adapter, verified: "2026-09-26"}
+
   # Local default LLM candidates (Ollama). The worker imports the GGUF
   # offline with models/ollama/<name>.Modelfile; phase sign-off picks the
   # default from the llm benchmark.

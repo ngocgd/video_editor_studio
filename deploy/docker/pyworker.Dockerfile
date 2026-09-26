@@ -1,9 +1,9 @@
 # The Python gRPC worker. Without build arguments the image is small and
 # framework-free: every engine is listed and answers an honest
 # engine_not_installed. PYWORKER_EXTRAS adds engine runtimes from the
-# locked extras (space-separated: "tts-en tts-vi align"); tts-en and align
-# bring the CUDA 12.8 PyTorch wheels (several GB), so a GPU deployment
-# builds with all three and a CI or laptop build without.
+# locked extras (space-separated: "tts-en tts-vi align vision"); tts-en, align
+# and vision bring the CUDA 12.8 PyTorch wheels (several GB), so a GPU
+# deployment adds all four and a CI or laptop image goes without.
 FROM python@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 AS build
 ARG PYWORKER_EXTRAS=""
 WORKDIR /src
