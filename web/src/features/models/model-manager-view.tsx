@@ -138,7 +138,7 @@ export function ModelManagerView() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-sm font-semibold">Model manager</h1>
+        <h2 className="text-sm font-semibold">Model manager</h2>
         <p className="text-xs text-text-2">Commercial-use licences only. One GPU model loaded at a time.</p>
         <span className="grow" />
         {query.data?.budgetMb != null && (
