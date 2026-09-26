@@ -354,6 +354,65 @@ models:
         size: 85
         licence: {spdx: Apache-2.0, url: https://huggingface.co/facebook/wav2vec2-base-960h, verified: "2026-09-26"}
 
+  # Character-consistency scoring: DINOv2 embeddings, cosine similarity
+  # of a scene take to the character's approved refs. The repository's
+  # pytorch_model.bin (a pickle) is never listed.
+  - name: dinov2-base
+    task: score
+    title: Character consistency score
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/facebook/dinov2-base
+      verified: "2026-09-26"
+    source:
+      repo: facebook/dinov2-base
+      revision: f9e44c814b77203eaa57a6bdbbd535f21ede1415
+    vram_mb: 1024
+    files:
+      - path: vision/dinov2-base/model.safetensors
+        remote: model.safetensors
+        sha256: d73036b56966966d07975d696bde331762f37297e2f095de8cea0040c3aa0841
+        size: 346345912
+      - path: vision/dinov2-base/config.json
+        remote: config.json
+        git_sha1: 5df0129f878aa42d71fa74d27a50f382d13ed71e
+        size: 548
+      - path: vision/dinov2-base/preprocessor_config.json
+        remote: preprocessor_config.json
+        git_sha1: ff5b47c2edcd1d3556d63c01a65d93b58b9efce1
+        size: 436
+
+  # Depth maps for parallax. Only the Small checkpoint is Apache-2.0; the
+  # Base and Large ones are non-commercial and must never be added.
+  - name: depth-anything-v2-small
+    task: depth
+    title: Depth maps for parallax
+    engine: pyworker
+    workflows: []
+    licence:
+      spdx: Apache-2.0
+      url: https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf
+      verified: "2026-09-26"
+    source:
+      repo: depth-anything/Depth-Anything-V2-Small-hf
+      revision: 5426e4f0f36572d16453bbda7a8389317b1bef99
+    vram_mb: 1024
+    files:
+      - path: vision/depth-anything-v2-small/model.safetensors
+        remote: model.safetensors
+        sha256: 3152477ce0d8d6978d76b995120de97cb5b928701fd0f817769f59e249a16b70
+        size: 99173660
+      - path: vision/depth-anything-v2-small/config.json
+        remote: config.json
+        git_sha1: 9207d3a304e86517dab21638c559d8b3195d41b6
+        size: 950
+      - path: vision/depth-anything-v2-small/preprocessor_config.json
+        remote: preprocessor_config.json
+        git_sha1: a7822a90a0e91a14d50d1996953bac8f389a4377
+        size: 775
+
   # Local default LLM candidates (Ollama). The worker imports the GGUF
   # offline with models/ollama/<name>.Modelfile; phase sign-off picks the
   # default from the llm benchmark.
