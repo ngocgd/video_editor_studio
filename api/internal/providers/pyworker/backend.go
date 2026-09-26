@@ -32,6 +32,21 @@ func (b *Backend) Load(ctx context.Context, model string) (int64, error) {
 	return held, err
 }
 
+// Probe implements residency.Prober via ListEngines.
+func (b *Backend) Probe(ctx context.Context) (bool, []string) {
+	engines, err := b.Client.ListEngines(ctx)
+	if err != nil {
+		return false, nil
+	}
+	loaded := []string{}
+	for _, e := range engines {
+		if e.Loaded {
+			loaded = append(loaded, e.Name)
+		}
+	}
+	return true, loaded
+}
+
 func (b *Backend) Resident(ctx context.Context, model string) (bool, error) {
 	engines, err := b.Client.ListEngines(ctx)
 	if err != nil {

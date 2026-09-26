@@ -43,6 +43,14 @@ type Backend interface {
 	Resident(ctx context.Context, model string) (bool, error)
 }
 
+// Prober is optionally implemented by a Backend to report, from the
+// backend's own status endpoint, whether it answers and which models it
+// holds. The worker's status heartbeat publishes this for /gpu and the
+// Model manager.
+type Prober interface {
+	Probe(ctx context.Context) (reachable bool, loaded []string)
+}
+
 // Manager implements pipeline.ModelResidency and pipeline.GpuProbe.
 type Manager struct {
 	Probe    pipeline.GpuProbe

@@ -38,4 +38,9 @@ type config struct {
 	ComfyUIURL         string `env:"COMFYUI_URL" envDefault:"http://comfyui:8188"`
 	PyworkerAddr       string `env:"PYWORKER_ADDR" envDefault:"pyworker:9090"`
 	PyworkerTokenPath  string `env:"PYWORKER_BEARER_TOKEN_PATH" envDefault:""`
+
+	// ModelsDir is the models volume, mounted read-write only into this
+	// worker (compose.gpu.yml). Empty disables the models.pull step:
+	// the base stack has no models volume to download into.
+	ModelsDir string `env:"MODELS_DIR" envDefault:""`
 }
