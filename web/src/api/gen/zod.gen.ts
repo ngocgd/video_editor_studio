@@ -788,9 +788,9 @@ export const zStepAccepted = z.object({
 });
 
 export const zLoraTrainRequest = z.object({
-    datasetAssetIds: z.array(z.string().uuid()).max(200).optional(),
-    steps: z.number().int().gte(100).lte(10000).optional(),
-    rank: z.number().int().gte(4).lte(128).optional()
+    datasetAssetIds: z.array(z.string().uuid()).min(4).max(64).optional(),
+    steps: z.number().int().gte(100).lte(4000).optional(),
+    rank: z.number().int().gte(4).lte(64).optional()
 });
 
 export const zVoicePreviewRequest = z.object({

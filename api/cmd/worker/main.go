@@ -146,7 +146,7 @@ func run() error {
 	sceneService := &scenes.Service{Pool: pool.Pool, Queries: queries, Hooks: &scenes.Hooks{}}
 	sceneDeps := scenes.StepDeps{Service: sceneService, Storage: internalStore, Comfy: clients.Comfy, Runner: ffmpegRunner, LLM: llmRegistry, SceneWorkflow: scenes.SceneWorkflows(manifest)}
 	sheetModel, sheetWorkflow := scenes.SheetModel(manifest)
-	charDeps := characters.StepDeps{Queries: queries, Storage: internalStore, Scenes: sceneService, Comfy: clients.Comfy, SheetModel: sheetModel, SheetWorkflow: sheetWorkflow}
+	charDeps := characters.StepDeps{Queries: queries, Storage: internalStore, Scenes: sceneService, Comfy: clients.Comfy, SheetModel: sheetModel, SheetWorkflow: sheetWorkflow, ModelsDir: cfg.ModelsDir}
 	if clients.Pyworker != nil {
 		sceneDeps.TTS = tts.New(workerv1.NewTTSClient(clients.Pyworker))
 		sceneDeps.Align = align.New(workerv1.NewAlignClient(clients.Pyworker))

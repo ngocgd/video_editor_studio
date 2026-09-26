@@ -4360,19 +4360,22 @@ components:
       properties:
         datasetAssetIds:
           type: array
-          maxItems: 200
+          minItems: 4
+          maxItems: 64
           items:
             type: string
             format: uuid
-          description: Defaults to every approved reference image.
+          description: PNG, JPEG or WebP images. Defaults to the approved reference images (up to 64).
         steps:
           type: integer
           minimum: 100
-          maximum: 10000
+          maximum: 4000
+          description: Defaults to 1500.
         rank:
           type: integer
           minimum: 4
-          maximum: 128
+          maximum: 64
+          description: Defaults to 16.
     VoicePreviewRequest:
       type: object
       required:
