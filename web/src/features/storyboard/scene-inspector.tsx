@@ -7,7 +7,7 @@ import { PipelinePips } from "../../components/shared/pipeline-pips";
 import { formatTimecode } from "../../lib/format";
 import { MOTION_LABELS, MOTION_PRESETS, toPipelinePips } from "./storyboard-model";
 import { TakesStrip } from "./takes-strip";
-import { useRegenerate, useSelectTake, useTakes, useUpdateScene } from "./use-scenes";
+import { assetUrl, useRegenerate, useSelectTake, useTakes, useUpdateScene } from "./use-scenes";
 
 function charName(c: Character | undefined, lang: string): string {
   if (!c) return "Unknown";
@@ -24,6 +24,7 @@ export function SceneInspector({
   styles,
   editingNarration,
   onEditingNarrationChange,
+  previewAssetId,
 }: {
   episodeId: string;
   scene: Scene | undefined;
@@ -31,6 +32,8 @@ export function SceneInspector({
   styles: ImageStyle[];
   editingNarration: boolean;
   onEditingNarrationChange: (editing: boolean) => void;
+  /** The scene's 540p proxy from the latest render of this language, if any. */
+  previewAssetId?: string;
 }) {
   const update = useUpdateScene(episodeId);
   const regenerate = useRegenerate(episodeId);
@@ -228,6 +231,16 @@ export function SceneInspector({
         <span className="text-2xs text-muted-foreground">
           Press <kbd className="font-mono">M</kbd> to cycle. FFmpeg motion, no GPU slot needed.
         </span>
+      </InspectorSection>
+      <InspectorSection title="Render preview">
+        {previewAssetId ? (
+          <>
+            <video key={previewAssetId} src={assetUrl(previewAssetId)} controls preload="metadata" className="aspect-video w-full rounded-md bg-black" aria-label={`Scene ${scene.idx} render preview`} />
+            <span className="text-2xs text-muted-foreground">From the latest render; edits since then show after the next render.</span>
+          </>
+        ) : (
+          <span className="text-xs text-text-2">No render of this scene yet.</span>
+        )}
       </InspectorSection>
       {(update.error || regenerate.error) && (
         <p role="alert" className="text-xs text-destructive">
