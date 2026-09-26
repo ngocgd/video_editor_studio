@@ -93,6 +93,75 @@ func (e AiActionResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for AnalyticsExplanationStatus.
+const (
+	AnalyticsExplanationStatusCanceled AnalyticsExplanationStatus = "canceled"
+	AnalyticsExplanationStatusDone     AnalyticsExplanationStatus = "done"
+	AnalyticsExplanationStatusFailed   AnalyticsExplanationStatus = "failed"
+	AnalyticsExplanationStatusPending  AnalyticsExplanationStatus = "pending"
+	AnalyticsExplanationStatusQueued   AnalyticsExplanationStatus = "queued"
+	AnalyticsExplanationStatusRunning  AnalyticsExplanationStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AnalyticsExplanationStatus enum.
+func (e AnalyticsExplanationStatus) Valid() bool {
+	switch e {
+	case AnalyticsExplanationStatusCanceled:
+		return true
+	case AnalyticsExplanationStatusDone:
+		return true
+	case AnalyticsExplanationStatusFailed:
+		return true
+	case AnalyticsExplanationStatusPending:
+		return true
+	case AnalyticsExplanationStatusQueued:
+		return true
+	case AnalyticsExplanationStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AnalyticsSyncStateStatus.
+const (
+	AnalyticsSyncStateStatusFailed  AnalyticsSyncStateStatus = "failed"
+	AnalyticsSyncStateStatusIdle    AnalyticsSyncStateStatus = "idle"
+	AnalyticsSyncStateStatusRunning AnalyticsSyncStateStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AnalyticsSyncStateStatus enum.
+func (e AnalyticsSyncStateStatus) Valid() bool {
+	switch e {
+	case AnalyticsSyncStateStatusFailed:
+		return true
+	case AnalyticsSyncStateStatusIdle:
+		return true
+	case AnalyticsSyncStateStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AnalyticsVideoRowSource.
+const (
+	AnalyticsVideoRowSourceManual      AnalyticsVideoRowSource = "manual"
+	AnalyticsVideoRowSourcePublication AnalyticsVideoRowSource = "publication"
+)
+
+// Valid indicates whether the value is a known member of the AnalyticsVideoRowSource enum.
+func (e AnalyticsVideoRowSource) Valid() bool {
+	switch e {
+	case AnalyticsVideoRowSourceManual:
+		return true
+	case AnalyticsVideoRowSourcePublication:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AssetStatus.
 const (
 	AssetStatusFailed  AssetStatus = "failed"
@@ -612,6 +681,24 @@ func (e TargetLanguage) Valid() bool {
 	}
 }
 
+// Defines values for TrackedVideoSource.
+const (
+	TrackedVideoSourceManual      TrackedVideoSource = "manual"
+	TrackedVideoSourcePublication TrackedVideoSource = "publication"
+)
+
+// Valid indicates whether the value is a known member of the TrackedVideoSource enum.
+func (e TrackedVideoSource) Valid() bool {
+	switch e {
+	case TrackedVideoSourceManual:
+		return true
+	case TrackedVideoSourcePublication:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for YouTubeChannelLongUploadsStatus.
 const (
 	Allowed    YouTubeChannelLongUploadsStatus = "allowed"
@@ -657,6 +744,51 @@ func (e YouTubeChannelStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListAnalyticsVideosParamsSort.
+const (
+	AverageViewPercentage ListAnalyticsVideosParamsSort = "averageViewPercentage"
+	Ctr                   ListAnalyticsVideosParamsSort = "ctr"
+	Published             ListAnalyticsVideosParamsSort = "published"
+	Views                 ListAnalyticsVideosParamsSort = "views"
+	WatchTime             ListAnalyticsVideosParamsSort = "watchTime"
+)
+
+// Valid indicates whether the value is a known member of the ListAnalyticsVideosParamsSort enum.
+func (e ListAnalyticsVideosParamsSort) Valid() bool {
+	switch e {
+	case AverageViewPercentage:
+		return true
+	case Ctr:
+		return true
+	case Published:
+		return true
+	case Views:
+		return true
+	case WatchTime:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAnalyticsVideosParamsOrder.
+const (
+	Asc  ListAnalyticsVideosParamsOrder = "asc"
+	Desc ListAnalyticsVideosParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListAnalyticsVideosParamsOrder enum.
+func (e ListAnalyticsVideosParamsOrder) Valid() bool {
+	switch e {
+	case Asc:
+		return true
+	case Desc:
+		return true
+	default:
+		return false
+	}
+}
+
 // AiActionRequest defines model for AiActionRequest.
 type AiActionRequest struct {
 	Action AiActionRequestAction `json:"action"`
@@ -689,6 +821,175 @@ type AiActionResult struct {
 
 // AiActionResultStatus defines model for AiActionResult.Status.
 type AiActionResultStatus string
+
+// AnalyticsChannelDay defines model for AnalyticsChannelDay.
+type AnalyticsChannelDay struct {
+	Date              openapi_types.Date `json:"date"`
+	SubscribersGained *int64             `json:"subscribersGained,omitempty"`
+	SubscribersLost   *int64             `json:"subscribersLost,omitempty"`
+
+	// Unavailable Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+	Unavailable Unavailable `json:"unavailable"`
+	Views       *int64      `json:"views,omitempty"`
+	WatchHours  *float64    `json:"watchHours,omitempty"`
+}
+
+// AnalyticsExplanation defines model for AnalyticsExplanation.
+type AnalyticsExplanation struct {
+	CostUsd  *float64                   `json:"costUsd,omitempty"`
+	Error    *string                    `json:"error,omitempty"`
+	Id       openapi_types.UUID         `json:"id"`
+	Model    *string                    `json:"model,omitempty"`
+	Provider *string                    `json:"provider,omitempty"`
+	Status   AnalyticsExplanationStatus `json:"status"`
+
+	// Text The explanation as plain text (render it as text, never as HTML or Markdown).
+	Text *string `json:"text,omitempty"`
+}
+
+// AnalyticsExplanationStatus defines model for AnalyticsExplanation.Status.
+type AnalyticsExplanationStatus string
+
+// AnalyticsOverview defines model for AnalyticsOverview.
+type AnalyticsOverview struct {
+	Days []AnalyticsChannelDay `json:"days"`
+
+	// Sync Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+	Sync   AnalyticsSyncState `json:"sync"`
+	Window AnalyticsWindow    `json:"window"`
+
+	// Ypp Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+	Ypp YPPProgress `json:"ypp"`
+}
+
+// AnalyticsSuggestion defines model for AnalyticsSuggestion.
+type AnalyticsSuggestion struct {
+	Dismissed bool `json:"dismissed"`
+
+	// Evidence The numbers the rule compared.
+	Evidence map[string]interface{} `json:"evidence"`
+
+	// Rule Rule name, e.g. low_ctr, weak_hook, split_long_video, upload_cadence_gap.
+	Rule string `json:"rule"`
+
+	// Title What to try, from the rule (fixed server text).
+	Title     string    `json:"title"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	// Version Version of the rule that produced the suggestion.
+	Version int `json:"version"`
+
+	// VideoId The video the suggestion is about; empty for a channel-level suggestion.
+	VideoId string `json:"videoId"`
+}
+
+// AnalyticsSuggestionList defines model for AnalyticsSuggestionList.
+type AnalyticsSuggestionList struct {
+	Items []AnalyticsSuggestion `json:"items"`
+}
+
+// AnalyticsSuggestionUpdate defines model for AnalyticsSuggestionUpdate.
+type AnalyticsSuggestionUpdate struct {
+	Dismissed bool   `json:"dismissed"`
+	Rule      string `json:"rule"`
+
+	// VideoId Empty for a channel-level suggestion.
+	VideoId string `json:"videoId"`
+}
+
+// AnalyticsSyncQueued defines model for AnalyticsSyncQueued.
+type AnalyticsSyncQueued struct {
+	// Queued False when a sync of the channel was already queued or running.
+	Queued bool `json:"queued"`
+}
+
+// AnalyticsSyncState Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+type AnalyticsSyncState struct {
+	AnalyticsThrough *openapi_types.Date `json:"analyticsThrough,omitempty"`
+
+	// LastError Last failure or partial-sync note; empty when the last sync was clean.
+	LastError      string                   `json:"lastError"`
+	LastFinishedAt *time.Time               `json:"lastFinishedAt,omitempty"`
+	LastStartedAt  *time.Time               `json:"lastStartedAt,omitempty"`
+	ReachThrough   *openapi_types.Date      `json:"reachThrough,omitempty"`
+	Status         AnalyticsSyncStateStatus `json:"status"`
+
+	// SubscriberCount Channel subscriber count at the last sync (absent when hidden or not synced).
+	SubscriberCount *int64 `json:"subscriberCount,omitempty"`
+}
+
+// AnalyticsSyncStateStatus defines model for AnalyticsSyncState.Status.
+type AnalyticsSyncStateStatus string
+
+// AnalyticsVideoDay defines model for AnalyticsVideoDay.
+type AnalyticsVideoDay struct {
+	AverageViewDuration   *float64           `json:"averageViewDuration,omitempty"`
+	AverageViewPercentage *float64           `json:"averageViewPercentage,omitempty"`
+	Ctr                   *float64           `json:"ctr,omitempty"`
+	Date                  openapi_types.Date `json:"date"`
+	Impressions           *int64             `json:"impressions,omitempty"`
+	SubscribersGained     *int64             `json:"subscribersGained,omitempty"`
+
+	// Unavailable Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+	Unavailable Unavailable `json:"unavailable"`
+	Views       *int64      `json:"views,omitempty"`
+	WatchHours  *float64    `json:"watchHours,omitempty"`
+}
+
+// AnalyticsVideoDetail defines model for AnalyticsVideoDetail.
+type AnalyticsVideoDetail struct {
+	Days []AnalyticsVideoDay `json:"days"`
+
+	// Retention Lifetime audience retention curve; empty until the first sync that covers the video.
+	Retention         []RetentionPoint `json:"retention"`
+	RetentionSyncedAt *time.Time       `json:"retentionSyncedAt,omitempty"`
+
+	// Sync Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+	Sync   AnalyticsSyncState `json:"sync"`
+	Video  TrackedVideo       `json:"video"`
+	Window AnalyticsWindow    `json:"window"`
+}
+
+// AnalyticsVideoPage defines model for AnalyticsVideoPage.
+type AnalyticsVideoPage struct {
+	Items      []AnalyticsVideoRow `json:"items"`
+	NextCursor *string             `json:"nextCursor,omitempty"`
+
+	// Sync Sync state of one channel. analyticsThrough and reachThrough are the "data through" dates of the Analytics API and the reach report; they are absent before the first data arrives.
+	Sync   AnalyticsSyncState `json:"sync"`
+	Total  int                `json:"total"`
+	Window AnalyticsWindow    `json:"window"`
+}
+
+// AnalyticsVideoRow A tracked video's totals over the window; an absent metric was not available from the API on any day.
+type AnalyticsVideoRow struct {
+	// AverageViewDuration Seconds.
+	AverageViewDuration   *float64 `json:"averageViewDuration,omitempty"`
+	AverageViewPercentage *float64 `json:"averageViewPercentage,omitempty"`
+
+	// Ctr Impressions click-through rate as a fraction (0.05 = 5%), weighted by impressions.
+	Ctr             *float64 `json:"ctr,omitempty"`
+	DurationSeconds *int     `json:"durationSeconds,omitempty"`
+
+	// Impressions Thumbnail impressions from the reach report.
+	Impressions       *int64                  `json:"impressions,omitempty"`
+	PublishedAt       *time.Time              `json:"publishedAt,omitempty"`
+	Source            AnalyticsVideoRowSource `json:"source"`
+	SubscribersGained *int64                  `json:"subscribersGained,omitempty"`
+	Title             string                  `json:"title"`
+	VideoId           string                  `json:"videoId"`
+	Views             *int64                  `json:"views,omitempty"`
+	WatchHours        *float64                `json:"watchHours,omitempty"`
+}
+
+// AnalyticsVideoRowSource defines model for AnalyticsVideoRow.Source.
+type AnalyticsVideoRowSource string
+
+// AnalyticsWindow defines model for AnalyticsWindow.
+type AnalyticsWindow struct {
+	From openapi_types.Date `json:"from"`
+	To   openapi_types.Date `json:"to"`
+}
 
 // ApplyDraftStepRequest Applies a done AI action step's output to this draft. The server reads the step's stored action, text and taint rather than trusting the client's copy: rewrite/expand/shorten/tone/translate replace paragraphIds; continue/expand_beat insert the step's text as new paragraphs after afterParagraphId (or the last of paragraphIds, or the end of the draft when neither is set), never deleting anything.
 type ApplyDraftStepRequest struct {
@@ -1213,6 +1514,15 @@ type ReadyStatus struct {
 // ReadyStatusStatus defines model for ReadyStatus.Status.
 type ReadyStatusStatus string
 
+// RetentionPoint defines model for RetentionPoint.
+type RetentionPoint struct {
+	AudienceWatchRatio *float64 `json:"audienceWatchRatio,omitempty"`
+
+	// ElapsedRatio Position in the video, 0 to 1.
+	ElapsedRatio                 float64  `json:"elapsedRatio"`
+	RelativeRetentionPerformance *float64 `json:"relativeRetentionPerformance,omitempty"`
+}
+
 // Role defines model for Role.
 type Role string
 
@@ -1313,6 +1623,45 @@ type TenantMembership struct {
 	TenantName string             `json:"tenantName"`
 }
 
+// TrackVideoRequest defines model for TrackVideoRequest.
+type TrackVideoRequest struct {
+	ChannelId openapi_types.UUID `json:"channelId"`
+
+	// Video A YouTube video URL (watch, youtu.be, shorts, embed or live) or an 11-character video id.
+	Video string `json:"video"`
+}
+
+// TrackedVideo defines model for TrackedVideo.
+type TrackedVideo struct {
+	ChannelId       openapi_types.UUID `json:"channelId"`
+	CreatedAt       time.Time          `json:"createdAt"`
+	DurationSeconds *int               `json:"durationSeconds,omitempty"`
+	PublishedAt     *time.Time         `json:"publishedAt,omitempty"`
+	Source          TrackedVideoSource `json:"source"`
+	Title           string             `json:"title"`
+	VideoId         string             `json:"videoId"`
+}
+
+// TrackedVideoSource defines model for TrackedVideo.Source.
+type TrackedVideoSource string
+
+// Unavailable Why a metric is missing, keyed by the YouTube API metric name (e.g. views, impressions). A metric listed here is absent from its row, never 0.
+type Unavailable map[string]string
+
+// YPPProgress Progress towards the YouTube Partner Program over the 365 days ending at the newest synced day.
+type YPPProgress struct {
+	// DaysMissing Days of the window with no synced watch time; the total is a lower bound while this is above 0.
+	DaysMissing       int    `json:"daysMissing"`
+	Subscribers       *int64 `json:"subscribers,omitempty"`
+	SubscribersTarget int    `json:"subscribersTarget"`
+
+	// WatchHours Public watch hours over the window (Shorts views excluded by YouTube's own rule are not separated here).
+	WatchHours       float64            `json:"watchHours"`
+	WatchHoursTarget int                `json:"watchHoursTarget"`
+	WindowFrom       openapi_types.Date `json:"windowFrom"`
+	WindowTo         openapi_types.Date `json:"windowTo"`
+}
+
 // YouTubeChannel A YouTube channel connected through Google OAuth. Tokens never appear here.
 type YouTubeChannel struct {
 	// ApiProjectAudited Manual toggle, set once the Google API project passed YouTube's audit. Until then every upload stays private.
@@ -1380,6 +1729,73 @@ type YouTubeQuota struct {
 	Used     int       `json:"used"`
 }
 
+// AnalyticsChannelId defines model for analyticsChannelId.
+type AnalyticsChannelId = openapi_types.UUID
+
+// AnalyticsFrom defines model for analyticsFrom.
+type AnalyticsFrom = openapi_types.Date
+
+// AnalyticsTo defines model for analyticsTo.
+type AnalyticsTo = openapi_types.Date
+
+// AnalyticsVideoId defines model for analyticsVideoId.
+type AnalyticsVideoId = string
+
+// AnalyticsBadRequest defines model for analyticsBadRequest.
+type AnalyticsBadRequest = Problem
+
+// AnalyticsChannelNotFound defines model for analyticsChannelNotFound.
+type AnalyticsChannelNotFound = Problem
+
+// AnalyticsVideoNotFound defines model for analyticsVideoNotFound.
+type AnalyticsVideoNotFound = Problem
+
+// GetAnalyticsOverviewParams defines parameters for GetAnalyticsOverview.
+type GetAnalyticsOverviewParams struct {
+	// From First day of the window (inclusive). Windows span at most 366 days.
+	From *AnalyticsFrom `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Last day of the window (inclusive).
+	To *AnalyticsTo `form:"to,omitempty" json:"to,omitempty"`
+}
+
+// ListAnalyticsSuggestionsParams defines parameters for ListAnalyticsSuggestions.
+type ListAnalyticsSuggestionsParams struct {
+	// VideoId Only this video's suggestions.
+	VideoId          *string `form:"videoId,omitempty" json:"videoId,omitempty"`
+	IncludeDismissed *bool   `form:"includeDismissed,omitempty" json:"includeDismissed,omitempty"`
+}
+
+// ListAnalyticsVideosParams defines parameters for ListAnalyticsVideos.
+type ListAnalyticsVideosParams struct {
+	ChannelId openapi_types.UUID              `form:"channelId" json:"channelId"`
+	Sort      *ListAnalyticsVideosParamsSort  `form:"sort,omitempty" json:"sort,omitempty"`
+	Order     *ListAnalyticsVideosParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+	Cursor    *string                         `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit     *int                            `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// From First day of the window (inclusive). Windows span at most 366 days.
+	From *AnalyticsFrom `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Last day of the window (inclusive).
+	To *AnalyticsTo `form:"to,omitempty" json:"to,omitempty"`
+}
+
+// ListAnalyticsVideosParamsSort defines parameters for ListAnalyticsVideos.
+type ListAnalyticsVideosParamsSort string
+
+// ListAnalyticsVideosParamsOrder defines parameters for ListAnalyticsVideos.
+type ListAnalyticsVideosParamsOrder string
+
+// GetAnalyticsVideoParams defines parameters for GetAnalyticsVideo.
+type GetAnalyticsVideoParams struct {
+	// From First day of the window (inclusive). Windows span at most 366 days.
+	From *AnalyticsFrom `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Last day of the window (inclusive).
+	To *AnalyticsTo `form:"to,omitempty" json:"to,omitempty"`
+}
+
 // ListAssetsParams defines parameters for ListAssets.
 type ListAssetsParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -1443,6 +1859,12 @@ type ListSeriesParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// UpdateAnalyticsSuggestionJSONRequestBody defines body for UpdateAnalyticsSuggestion for application/json ContentType.
+type UpdateAnalyticsSuggestionJSONRequestBody = AnalyticsSuggestionUpdate
+
+// TrackAnalyticsVideoJSONRequestBody defines body for TrackAnalyticsVideo for application/json ContentType.
+type TrackAnalyticsVideoJSONRequestBody = TrackVideoRequest
+
 // PresignAssetJSONRequestBody defines body for PresignAsset for application/json ContentType.
 type PresignAssetJSONRequestBody = PresignRequest
 
@@ -1502,6 +1924,36 @@ type TestLLMSettingsJSONRequestBody = LLMSettingsTestRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ExplainAnalyticsChannel Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+	// (POST /analytics/channels/{id}/explain)
+	ExplainAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId)
+	// GetAnalyticsOverview A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+	// (GET /analytics/channels/{id}/overview)
+	GetAnalyticsOverview(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params GetAnalyticsOverviewParams)
+	// ListAnalyticsSuggestions The channel's suggestions, each with its rule version and evidence
+	// (GET /analytics/channels/{id}/suggestions)
+	ListAnalyticsSuggestions(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params ListAnalyticsSuggestionsParams)
+	// UpdateAnalyticsSuggestion Dismiss or restore one suggestion
+	// (PATCH /analytics/channels/{id}/suggestions)
+	UpdateAnalyticsSuggestion(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId)
+	// SyncAnalyticsChannel Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+	// (POST /analytics/channels/{id}/sync)
+	SyncAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId)
+	// GetAnalyticsExplanation The state of an explanation and, once done, its text, provider and cost
+	// (GET /analytics/explanations/{id})
+	GetAnalyticsExplanation(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// TrackAnalyticsVideo Track an existing public video of a connected channel (by URL or id)
+	// (POST /analytics/tracked-videos)
+	TrackAnalyticsVideo(w http.ResponseWriter, r *http.Request)
+	// UntrackAnalyticsVideo Stop tracking a manually added video and drop its synced metrics
+	// (DELETE /analytics/tracked-videos/{videoId})
+	UntrackAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId)
+	// ListAnalyticsVideos The channel's tracked videos with totals over a window, sorted and paginated
+	// (GET /analytics/videos)
+	ListAnalyticsVideos(w http.ResponseWriter, r *http.Request, params ListAnalyticsVideosParams)
+	// GetAnalyticsVideo A tracked video's daily series over a window and its retention curve
+	// (GET /analytics/videos/{videoId})
+	GetAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId, params GetAnalyticsVideoParams)
 	// ListAssets Cursor-paginated list of the active tenant's assets
 	// (GET /assets)
 	ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams)
@@ -1686,6 +2138,66 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// ExplainAnalyticsChannel Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+// (POST /analytics/channels/{id}/explain)
+func (_ Unimplemented) ExplainAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAnalyticsOverview A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+// (GET /analytics/channels/{id}/overview)
+func (_ Unimplemented) GetAnalyticsOverview(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params GetAnalyticsOverviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListAnalyticsSuggestions The channel's suggestions, each with its rule version and evidence
+// (GET /analytics/channels/{id}/suggestions)
+func (_ Unimplemented) ListAnalyticsSuggestions(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params ListAnalyticsSuggestionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateAnalyticsSuggestion Dismiss or restore one suggestion
+// (PATCH /analytics/channels/{id}/suggestions)
+func (_ Unimplemented) UpdateAnalyticsSuggestion(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SyncAnalyticsChannel Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+// (POST /analytics/channels/{id}/sync)
+func (_ Unimplemented) SyncAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAnalyticsExplanation The state of an explanation and, once done, its text, provider and cost
+// (GET /analytics/explanations/{id})
+func (_ Unimplemented) GetAnalyticsExplanation(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// TrackAnalyticsVideo Track an existing public video of a connected channel (by URL or id)
+// (POST /analytics/tracked-videos)
+func (_ Unimplemented) TrackAnalyticsVideo(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UntrackAnalyticsVideo Stop tracking a manually added video and drop its synced metrics
+// (DELETE /analytics/tracked-videos/{videoId})
+func (_ Unimplemented) UntrackAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListAnalyticsVideos The channel's tracked videos with totals over a window, sorted and paginated
+// (GET /analytics/videos)
+func (_ Unimplemented) ListAnalyticsVideos(w http.ResponseWriter, r *http.Request, params ListAnalyticsVideosParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAnalyticsVideo A tracked video's daily series over a window and its retention curve
+// (GET /analytics/videos/{videoId})
+func (_ Unimplemented) GetAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId, params GetAnalyticsVideoParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ListAssets Cursor-paginated list of the active tenant's assets
 // (GET /assets)
@@ -2051,6 +2563,426 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ExplainAnalyticsChannel operation middleware
+func (siw *ServerInterfaceWrapper) ExplainAnalyticsChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnalyticsChannelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExplainAnalyticsChannel(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAnalyticsOverview operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnalyticsChannelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAnalyticsOverviewParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAnalyticsOverview(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAnalyticsSuggestions operation middleware
+func (siw *ServerInterfaceWrapper) ListAnalyticsSuggestions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnalyticsChannelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAnalyticsSuggestionsParams
+
+	// ------------- Optional query parameter "videoId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "videoId", r.URL.Query(), &params.VideoId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "videoId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "videoId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "includeDismissed" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "includeDismissed", r.URL.Query(), &params.IncludeDismissed, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "includeDismissed"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "includeDismissed", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAnalyticsSuggestions(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAnalyticsSuggestion operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAnalyticsSuggestion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnalyticsChannelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAnalyticsSuggestion(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SyncAnalyticsChannel operation middleware
+func (siw *ServerInterfaceWrapper) SyncAnalyticsChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnalyticsChannelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SyncAnalyticsChannel(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAnalyticsExplanation operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsExplanation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAnalyticsExplanation(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TrackAnalyticsVideo operation middleware
+func (siw *ServerInterfaceWrapper) TrackAnalyticsVideo(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TrackAnalyticsVideo(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UntrackAnalyticsVideo operation middleware
+func (siw *ServerInterfaceWrapper) UntrackAnalyticsVideo(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "videoId" -------------
+	var videoId AnalyticsVideoId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "videoId", chi.URLParam(r, "videoId"), &videoId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "videoId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UntrackAnalyticsVideo(w, r, videoId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAnalyticsVideos operation middleware
+func (siw *ServerInterfaceWrapper) ListAnalyticsVideos(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAnalyticsVideosParams
+
+	// ------------- Required query parameter "channelId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "channelId", r.URL.Query(), &params.ChannelId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "channelId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAnalyticsVideos(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAnalyticsVideo operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsVideo(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "videoId" -------------
+	var videoId AnalyticsVideoId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "videoId", chi.URLParam(r, "videoId"), &videoId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "videoId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAnalyticsVideoParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAnalyticsVideo(w, r, videoId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAssets operation middleware
 func (siw *ServerInterfaceWrapper) ListAssets(w http.ResponseWriter, r *http.Request) {
@@ -3833,6 +4765,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/channels/{id}", wrapper.UpdateYouTubeChannelAudit)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/analytics/channels/{id}/overview", wrapper.GetAnalyticsOverview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/analytics/channels/{id}/sync", wrapper.SyncAnalyticsChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/analytics/channels/{id}/suggestions", wrapper.ListAnalyticsSuggestions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/analytics/channels/{id}/suggestions", wrapper.UpdateAnalyticsSuggestion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/analytics/channels/{id}/explain", wrapper.ExplainAnalyticsChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/analytics/explanations/{id}", wrapper.GetAnalyticsExplanation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/analytics/videos", wrapper.ListAnalyticsVideos)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/analytics/videos/{videoId}", wrapper.GetAnalyticsVideo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/analytics/tracked-videos", wrapper.TrackAnalyticsVideo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/analytics/tracked-videos/{videoId}", wrapper.UntrackAnalyticsVideo)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/series", wrapper.ListSeries)
 	})
 	r.Group(func(r chi.Router) {
@@ -3918,6 +4880,542 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 
 	return r
+}
+
+type AnalyticsBadRequestApplicationProblemPlusJSONResponse Problem
+
+type AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse Problem
+
+type AnalyticsVideoNotFoundApplicationProblemPlusJSONResponse Problem
+
+type ExplainAnalyticsChannelRequestObject struct {
+	Id AnalyticsChannelId `json:"id"`
+}
+
+type ExplainAnalyticsChannelResponseObject interface {
+	VisitExplainAnalyticsChannelResponse(w http.ResponseWriter) error
+}
+
+type ExplainAnalyticsChannel202JSONResponse AnalyticsExplanation
+
+func (response ExplainAnalyticsChannel202JSONResponse) VisitExplainAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExplainAnalyticsChannel404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ExplainAnalyticsChannel404ApplicationProblemPlusJSONResponse) VisitExplainAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExplainAnalyticsChannel409ApplicationProblemPlusJSONResponse Problem
+
+func (response ExplainAnalyticsChannel409ApplicationProblemPlusJSONResponse) VisitExplainAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExplainAnalyticsChannel429ApplicationProblemPlusJSONResponse Problem
+
+func (response ExplainAnalyticsChannel429ApplicationProblemPlusJSONResponse) VisitExplainAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsOverviewRequestObject struct {
+	Id     AnalyticsChannelId `json:"id"`
+	Params GetAnalyticsOverviewParams
+}
+
+type GetAnalyticsOverviewResponseObject interface {
+	VisitGetAnalyticsOverviewResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsOverview200JSONResponse AnalyticsOverview
+
+func (response GetAnalyticsOverview200JSONResponse) VisitGetAnalyticsOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsOverview400ApplicationProblemPlusJSONResponse struct {
+	AnalyticsBadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GetAnalyticsOverview400ApplicationProblemPlusJSONResponse) VisitGetAnalyticsOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsOverview404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetAnalyticsOverview404ApplicationProblemPlusJSONResponse) VisitGetAnalyticsOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnalyticsSuggestionsRequestObject struct {
+	Id     AnalyticsChannelId `json:"id"`
+	Params ListAnalyticsSuggestionsParams
+}
+
+type ListAnalyticsSuggestionsResponseObject interface {
+	VisitListAnalyticsSuggestionsResponse(w http.ResponseWriter) error
+}
+
+type ListAnalyticsSuggestions200JSONResponse AnalyticsSuggestionList
+
+func (response ListAnalyticsSuggestions200JSONResponse) VisitListAnalyticsSuggestionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnalyticsSuggestions404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListAnalyticsSuggestions404ApplicationProblemPlusJSONResponse) VisitListAnalyticsSuggestionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAnalyticsSuggestionRequestObject struct {
+	Id   AnalyticsChannelId `json:"id"`
+	Body *UpdateAnalyticsSuggestionJSONRequestBody
+}
+
+type UpdateAnalyticsSuggestionResponseObject interface {
+	VisitUpdateAnalyticsSuggestionResponse(w http.ResponseWriter) error
+}
+
+type UpdateAnalyticsSuggestion204Response struct {
+}
+
+func (response UpdateAnalyticsSuggestion204Response) VisitUpdateAnalyticsSuggestionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UpdateAnalyticsSuggestion404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateAnalyticsSuggestion404ApplicationProblemPlusJSONResponse) VisitUpdateAnalyticsSuggestionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SyncAnalyticsChannelRequestObject struct {
+	Id AnalyticsChannelId `json:"id"`
+}
+
+type SyncAnalyticsChannelResponseObject interface {
+	VisitSyncAnalyticsChannelResponse(w http.ResponseWriter) error
+}
+
+type SyncAnalyticsChannel202JSONResponse AnalyticsSyncQueued
+
+func (response SyncAnalyticsChannel202JSONResponse) VisitSyncAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SyncAnalyticsChannel404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SyncAnalyticsChannel404ApplicationProblemPlusJSONResponse) VisitSyncAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SyncAnalyticsChannel409ApplicationProblemPlusJSONResponse Problem
+
+func (response SyncAnalyticsChannel409ApplicationProblemPlusJSONResponse) VisitSyncAnalyticsChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsExplanationRequestObject struct {
+	Id openapi_types.UUID `json:"id"`
+}
+
+type GetAnalyticsExplanationResponseObject interface {
+	VisitGetAnalyticsExplanationResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsExplanation200JSONResponse AnalyticsExplanation
+
+func (response GetAnalyticsExplanation200JSONResponse) VisitGetAnalyticsExplanationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsExplanation404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAnalyticsExplanation404ApplicationProblemPlusJSONResponse) VisitGetAnalyticsExplanationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideoRequestObject struct {
+	Body *TrackAnalyticsVideoJSONRequestBody
+}
+
+type TrackAnalyticsVideoResponseObject interface {
+	VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error
+}
+
+type TrackAnalyticsVideo201JSONResponse TrackedVideo
+
+func (response TrackAnalyticsVideo201JSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideo400ApplicationProblemPlusJSONResponse struct {
+	AnalyticsBadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response TrackAnalyticsVideo400ApplicationProblemPlusJSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideo404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response TrackAnalyticsVideo404ApplicationProblemPlusJSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideo409ApplicationProblemPlusJSONResponse Problem
+
+func (response TrackAnalyticsVideo409ApplicationProblemPlusJSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideo422ApplicationProblemPlusJSONResponse Problem
+
+func (response TrackAnalyticsVideo422ApplicationProblemPlusJSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TrackAnalyticsVideo502ApplicationProblemPlusJSONResponse Problem
+
+func (response TrackAnalyticsVideo502ApplicationProblemPlusJSONResponse) VisitTrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UntrackAnalyticsVideoRequestObject struct {
+	VideoId AnalyticsVideoId `json:"videoId"`
+}
+
+type UntrackAnalyticsVideoResponseObject interface {
+	VisitUntrackAnalyticsVideoResponse(w http.ResponseWriter) error
+}
+
+type UntrackAnalyticsVideo204Response struct {
+}
+
+func (response UntrackAnalyticsVideo204Response) VisitUntrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UntrackAnalyticsVideo404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsVideoNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UntrackAnalyticsVideo404ApplicationProblemPlusJSONResponse) VisitUntrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UntrackAnalyticsVideo409ApplicationProblemPlusJSONResponse Problem
+
+func (response UntrackAnalyticsVideo409ApplicationProblemPlusJSONResponse) VisitUntrackAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnalyticsVideosRequestObject struct {
+	Params ListAnalyticsVideosParams
+}
+
+type ListAnalyticsVideosResponseObject interface {
+	VisitListAnalyticsVideosResponse(w http.ResponseWriter) error
+}
+
+type ListAnalyticsVideos200JSONResponse AnalyticsVideoPage
+
+func (response ListAnalyticsVideos200JSONResponse) VisitListAnalyticsVideosResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnalyticsVideos400ApplicationProblemPlusJSONResponse struct {
+	AnalyticsBadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ListAnalyticsVideos400ApplicationProblemPlusJSONResponse) VisitListAnalyticsVideosResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnalyticsVideos404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsChannelNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListAnalyticsVideos404ApplicationProblemPlusJSONResponse) VisitListAnalyticsVideosResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsVideoRequestObject struct {
+	VideoId AnalyticsVideoId `json:"videoId"`
+	Params  GetAnalyticsVideoParams
+}
+
+type GetAnalyticsVideoResponseObject interface {
+	VisitGetAnalyticsVideoResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsVideo200JSONResponse AnalyticsVideoDetail
+
+func (response GetAnalyticsVideo200JSONResponse) VisitGetAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsVideo400ApplicationProblemPlusJSONResponse struct {
+	AnalyticsBadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GetAnalyticsVideo400ApplicationProblemPlusJSONResponse) VisitGetAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsVideo404ApplicationProblemPlusJSONResponse struct {
+	AnalyticsVideoNotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetAnalyticsVideo404ApplicationProblemPlusJSONResponse) VisitGetAnalyticsVideoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type ListAssetsRequestObject struct {
@@ -6042,6 +7540,36 @@ func (response RetryStep409ApplicationProblemPlusJSONResponse) VisitRetryStepRes
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ExplainAnalyticsChannel Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+	// (POST /analytics/channels/{id}/explain)
+	ExplainAnalyticsChannel(ctx context.Context, request ExplainAnalyticsChannelRequestObject) (ExplainAnalyticsChannelResponseObject, error)
+	// GetAnalyticsOverview A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+	// (GET /analytics/channels/{id}/overview)
+	GetAnalyticsOverview(ctx context.Context, request GetAnalyticsOverviewRequestObject) (GetAnalyticsOverviewResponseObject, error)
+	// ListAnalyticsSuggestions The channel's suggestions, each with its rule version and evidence
+	// (GET /analytics/channels/{id}/suggestions)
+	ListAnalyticsSuggestions(ctx context.Context, request ListAnalyticsSuggestionsRequestObject) (ListAnalyticsSuggestionsResponseObject, error)
+	// UpdateAnalyticsSuggestion Dismiss or restore one suggestion
+	// (PATCH /analytics/channels/{id}/suggestions)
+	UpdateAnalyticsSuggestion(ctx context.Context, request UpdateAnalyticsSuggestionRequestObject) (UpdateAnalyticsSuggestionResponseObject, error)
+	// SyncAnalyticsChannel Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+	// (POST /analytics/channels/{id}/sync)
+	SyncAnalyticsChannel(ctx context.Context, request SyncAnalyticsChannelRequestObject) (SyncAnalyticsChannelResponseObject, error)
+	// GetAnalyticsExplanation The state of an explanation and, once done, its text, provider and cost
+	// (GET /analytics/explanations/{id})
+	GetAnalyticsExplanation(ctx context.Context, request GetAnalyticsExplanationRequestObject) (GetAnalyticsExplanationResponseObject, error)
+	// TrackAnalyticsVideo Track an existing public video of a connected channel (by URL or id)
+	// (POST /analytics/tracked-videos)
+	TrackAnalyticsVideo(ctx context.Context, request TrackAnalyticsVideoRequestObject) (TrackAnalyticsVideoResponseObject, error)
+	// UntrackAnalyticsVideo Stop tracking a manually added video and drop its synced metrics
+	// (DELETE /analytics/tracked-videos/{videoId})
+	UntrackAnalyticsVideo(ctx context.Context, request UntrackAnalyticsVideoRequestObject) (UntrackAnalyticsVideoResponseObject, error)
+	// ListAnalyticsVideos The channel's tracked videos with totals over a window, sorted and paginated
+	// (GET /analytics/videos)
+	ListAnalyticsVideos(ctx context.Context, request ListAnalyticsVideosRequestObject) (ListAnalyticsVideosResponseObject, error)
+	// GetAnalyticsVideo A tracked video's daily series over a window and its retention curve
+	// (GET /analytics/videos/{videoId})
+	GetAnalyticsVideo(ctx context.Context, request GetAnalyticsVideoRequestObject) (GetAnalyticsVideoResponseObject, error)
 	// ListAssets Cursor-paginated list of the active tenant's assets
 	// (GET /assets)
 	ListAssets(ctx context.Context, request ListAssetsRequestObject) (ListAssetsResponseObject, error)
@@ -6260,6 +7788,281 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ExplainAnalyticsChannel operation middleware
+func (sh *strictHandler) ExplainAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	var request ExplainAnalyticsChannelRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExplainAnalyticsChannel(ctx, request.(ExplainAnalyticsChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExplainAnalyticsChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExplainAnalyticsChannelResponseObject); ok {
+		if err := validResponse.VisitExplainAnalyticsChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsOverview operation middleware
+func (sh *strictHandler) GetAnalyticsOverview(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params GetAnalyticsOverviewParams) {
+	var request GetAnalyticsOverviewRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsOverview(ctx, request.(GetAnalyticsOverviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsOverview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAnalyticsOverviewResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsOverviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAnalyticsSuggestions operation middleware
+func (sh *strictHandler) ListAnalyticsSuggestions(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId, params ListAnalyticsSuggestionsParams) {
+	var request ListAnalyticsSuggestionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAnalyticsSuggestions(ctx, request.(ListAnalyticsSuggestionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAnalyticsSuggestions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAnalyticsSuggestionsResponseObject); ok {
+		if err := validResponse.VisitListAnalyticsSuggestionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAnalyticsSuggestion operation middleware
+func (sh *strictHandler) UpdateAnalyticsSuggestion(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	var request UpdateAnalyticsSuggestionRequestObject
+
+	request.Id = id
+
+	var body UpdateAnalyticsSuggestionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAnalyticsSuggestion(ctx, request.(UpdateAnalyticsSuggestionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAnalyticsSuggestion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAnalyticsSuggestionResponseObject); ok {
+		if err := validResponse.VisitUpdateAnalyticsSuggestionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SyncAnalyticsChannel operation middleware
+func (sh *strictHandler) SyncAnalyticsChannel(w http.ResponseWriter, r *http.Request, id AnalyticsChannelId) {
+	var request SyncAnalyticsChannelRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SyncAnalyticsChannel(ctx, request.(SyncAnalyticsChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SyncAnalyticsChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SyncAnalyticsChannelResponseObject); ok {
+		if err := validResponse.VisitSyncAnalyticsChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsExplanation operation middleware
+func (sh *strictHandler) GetAnalyticsExplanation(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	var request GetAnalyticsExplanationRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsExplanation(ctx, request.(GetAnalyticsExplanationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsExplanation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAnalyticsExplanationResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsExplanationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TrackAnalyticsVideo operation middleware
+func (sh *strictHandler) TrackAnalyticsVideo(w http.ResponseWriter, r *http.Request) {
+	var request TrackAnalyticsVideoRequestObject
+
+	var body TrackAnalyticsVideoJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TrackAnalyticsVideo(ctx, request.(TrackAnalyticsVideoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TrackAnalyticsVideo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TrackAnalyticsVideoResponseObject); ok {
+		if err := validResponse.VisitTrackAnalyticsVideoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UntrackAnalyticsVideo operation middleware
+func (sh *strictHandler) UntrackAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId) {
+	var request UntrackAnalyticsVideoRequestObject
+
+	request.VideoId = videoId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UntrackAnalyticsVideo(ctx, request.(UntrackAnalyticsVideoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UntrackAnalyticsVideo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UntrackAnalyticsVideoResponseObject); ok {
+		if err := validResponse.VisitUntrackAnalyticsVideoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAnalyticsVideos operation middleware
+func (sh *strictHandler) ListAnalyticsVideos(w http.ResponseWriter, r *http.Request, params ListAnalyticsVideosParams) {
+	var request ListAnalyticsVideosRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAnalyticsVideos(ctx, request.(ListAnalyticsVideosRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAnalyticsVideos")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAnalyticsVideosResponseObject); ok {
+		if err := validResponse.VisitListAnalyticsVideosResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsVideo operation middleware
+func (sh *strictHandler) GetAnalyticsVideo(w http.ResponseWriter, r *http.Request, videoId AnalyticsVideoId, params GetAnalyticsVideoParams) {
+	var request GetAnalyticsVideoRequestObject
+
+	request.VideoId = videoId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsVideo(ctx, request.(GetAnalyticsVideoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsVideo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAnalyticsVideoResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsVideoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAssets operation middleware
@@ -7909,178 +9712,230 @@ func (sh *strictHandler) RetryStep(w http.ResponseWriter, r *http.Request, id op
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"8/8DAAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

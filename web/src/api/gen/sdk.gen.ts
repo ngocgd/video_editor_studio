@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, DisconnectYouTubeChannelData, DisconnectYouTubeChannelErrors, DisconnectYouTubeChannelResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, ListYouTubeChannelsData, ListYouTubeChannelsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StartYouTubeConnectData, StartYouTubeConnectErrors, StartYouTubeConnectResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, UnloadModelsData, UnloadModelsResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditErrors, UpdateYouTubeChannelAuditResponses, YouTubeOAuthCallbackData } from './types.gen';
+import type { ApplyDraftStepData, ApplyDraftStepErrors, ApplyDraftStepResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CancelStepData, CancelStepErrors, CancelStepResponses, CommitImportData, CommitImportErrors, CommitImportResponses, CreateAiActionData, CreateAiActionErrors, CreateAiActionResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateEpisodeData, CreateEpisodeErrors, CreateEpisodeResponses, CreateImportData, CreateImportErrors, CreateImportResponses, CreateRunData, CreateRunErrors, CreateRunResponses, CreateSeriesData, CreateSeriesErrors, CreateSeriesResponses, DisconnectYouTubeChannelData, DisconnectYouTubeChannelErrors, DisconnectYouTubeChannelResponses, ExplainAnalyticsChannelData, ExplainAnalyticsChannelErrors, ExplainAnalyticsChannelResponses, FinalizeAssetData, FinalizeAssetErrors, FinalizeAssetResponses, GenerateSeriesData, GenerateSeriesErrors, GenerateSeriesResponses, GetAiActionResultData, GetAiActionResultErrors, GetAiActionResultResponses, GetAnalyticsExplanationData, GetAnalyticsExplanationErrors, GetAnalyticsExplanationResponses, GetAnalyticsOverviewData, GetAnalyticsOverviewErrors, GetAnalyticsOverviewResponses, GetAnalyticsVideoData, GetAnalyticsVideoErrors, GetAnalyticsVideoResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetBibleData, GetBibleErrors, GetBibleResponses, GetClaudeCliStatusData, GetClaudeCliStatusResponses, GetCsrfData, GetCsrfResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetGpuStatusData, GetGpuStatusResponses, GetHealthzData, GetHealthzResponses, GetImportData, GetImportErrors, GetImportResponses, GetLlmSettingsData, GetLlmSettingsResponses, GetMeData, GetMeResponses, GetReadyzData, GetReadyzErrors, GetReadyzResponses, GetRunData, GetRunErrors, GetRunResponses, GetSeriesData, GetSeriesErrors, GetSeriesResponses, GetStepLogData, GetStepLogErrors, GetStepLogResponses, InstallModelData, InstallModelErrors, InstallModelResponses, ListAnalyticsSuggestionsData, ListAnalyticsSuggestionsErrors, ListAnalyticsSuggestionsResponses, ListAnalyticsVideosData, ListAnalyticsVideosErrors, ListAnalyticsVideosResponses, ListAssetsData, ListAssetsResponses, ListAuditData, ListAuditResponses, ListEpisodesData, ListEpisodesResponses, ListImportsData, ListImportsResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListModelsData, ListModelsResponses, ListRunStepsData, ListRunStepsErrors, ListRunStepsResponses, ListSeriesData, ListSeriesResponses, ListYouTubeChannelsData, ListYouTubeChannelsResponses, LoadModelData, LoadModelErrors, LoadModelResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, PatchDraftData, PatchDraftErrors, PatchDraftResponses, PauseModelInstallData, PauseModelInstallErrors, PauseModelInstallResponses, PresignAssetData, PresignAssetErrors, PresignAssetResponses, PreviewImportData, PreviewImportErrors, PreviewImportResponses, PutLlmApiKeyData, PutLlmApiKeyErrors, PutLlmApiKeyResponses, PutLlmSettingsData, PutLlmSettingsErrors, PutLlmSettingsResponses, RetryStepData, RetryStepErrors, RetryStepResponses, StartYouTubeConnectData, StartYouTubeConnectErrors, StartYouTubeConnectResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, SwitchTenantData, SwitchTenantErrors, SwitchTenantResponses, SyncAnalyticsChannelData, SyncAnalyticsChannelErrors, SyncAnalyticsChannelResponses, TestLlmSettingsData, TestLlmSettingsErrors, TestLlmSettingsResponses, TrackAnalyticsVideoData, TrackAnalyticsVideoErrors, TrackAnalyticsVideoResponses, UnloadModelsData, UnloadModelsResponses, UntrackAnalyticsVideoData, UntrackAnalyticsVideoErrors, UntrackAnalyticsVideoResponses, UpdateAnalyticsSuggestionData, UpdateAnalyticsSuggestionErrors, UpdateAnalyticsSuggestionResponses, UpdateBibleSectionData, UpdateBibleSectionErrors, UpdateBibleSectionResponses, UpdateEpisodeData, UpdateEpisodeErrors, UpdateEpisodeResponses, UpdateSeriesData, UpdateSeriesErrors, UpdateSeriesResponses, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditErrors, UpdateYouTubeChannelAuditResponses, YouTubeOAuthCallbackData } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -230,6 +230,78 @@ export const updateYouTubeChannelAudit = <ThrowOnError extends boolean = false>(
         ...options.headers
     }
 });
+
+/**
+ * A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+ *
+ * Reads only the pre-aggregated daily tables. The window defaults to the 28 days ending at the newest synced day. A metric YouTube did not provide is absent with its reason in `unavailable`, never 0.
+ */
+export const getAnalyticsOverview = <ThrowOnError extends boolean = false>(options: Options<GetAnalyticsOverviewData, ThrowOnError>): RequestResult<GetAnalyticsOverviewResponses, GetAnalyticsOverviewErrors, ThrowOnError> => (options.client ?? client).get<GetAnalyticsOverviewResponses, GetAnalyticsOverviewErrors, ThrowOnError>({ url: '/analytics/channels/{id}/overview', ...options });
+
+/**
+ * Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+ */
+export const syncAnalyticsChannel = <ThrowOnError extends boolean = false>(options: Options<SyncAnalyticsChannelData, ThrowOnError>): RequestResult<SyncAnalyticsChannelResponses, SyncAnalyticsChannelErrors, ThrowOnError> => (options.client ?? client).post<SyncAnalyticsChannelResponses, SyncAnalyticsChannelErrors, ThrowOnError>({ url: '/analytics/channels/{id}/sync', ...options });
+
+/**
+ * The channel's suggestions, each with its rule version and evidence
+ */
+export const listAnalyticsSuggestions = <ThrowOnError extends boolean = false>(options: Options<ListAnalyticsSuggestionsData, ThrowOnError>): RequestResult<ListAnalyticsSuggestionsResponses, ListAnalyticsSuggestionsErrors, ThrowOnError> => (options.client ?? client).get<ListAnalyticsSuggestionsResponses, ListAnalyticsSuggestionsErrors, ThrowOnError>({ url: '/analytics/channels/{id}/suggestions', ...options });
+
+/**
+ * Dismiss or restore one suggestion
+ */
+export const updateAnalyticsSuggestion = <ThrowOnError extends boolean = false>(options: Options<UpdateAnalyticsSuggestionData, ThrowOnError>): RequestResult<UpdateAnalyticsSuggestionResponses, UpdateAnalyticsSuggestionErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAnalyticsSuggestionResponses, UpdateAnalyticsSuggestionErrors, ThrowOnError>({
+    url: '/analytics/channels/{id}/suggestions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+ *
+ * Sends only aggregated numbers and the rule findings (no titles or other text from YouTube) to the provider configured for summaries. Poll GET /analytics/explanations/{id} for the answer, which is plain text.
+ */
+export const explainAnalyticsChannel = <ThrowOnError extends boolean = false>(options: Options<ExplainAnalyticsChannelData, ThrowOnError>): RequestResult<ExplainAnalyticsChannelResponses, ExplainAnalyticsChannelErrors, ThrowOnError> => (options.client ?? client).post<ExplainAnalyticsChannelResponses, ExplainAnalyticsChannelErrors, ThrowOnError>({ url: '/analytics/channels/{id}/explain', ...options });
+
+/**
+ * The state of an explanation and, once done, its text, provider and cost
+ */
+export const getAnalyticsExplanation = <ThrowOnError extends boolean = false>(options: Options<GetAnalyticsExplanationData, ThrowOnError>): RequestResult<GetAnalyticsExplanationResponses, GetAnalyticsExplanationErrors, ThrowOnError> => (options.client ?? client).get<GetAnalyticsExplanationResponses, GetAnalyticsExplanationErrors, ThrowOnError>({ url: '/analytics/explanations/{id}', ...options });
+
+/**
+ * The channel's tracked videos with totals over a window, sorted and paginated
+ *
+ * Lists videos published by this app plus videos added for tracking. Videos whose sort metric is not available sort last.
+ */
+export const listAnalyticsVideos = <ThrowOnError extends boolean = false>(options: Options<ListAnalyticsVideosData, ThrowOnError>): RequestResult<ListAnalyticsVideosResponses, ListAnalyticsVideosErrors, ThrowOnError> => (options.client ?? client).get<ListAnalyticsVideosResponses, ListAnalyticsVideosErrors, ThrowOnError>({ url: '/analytics/videos', ...options });
+
+/**
+ * A tracked video's daily series over a window and its retention curve
+ */
+export const getAnalyticsVideo = <ThrowOnError extends boolean = false>(options: Options<GetAnalyticsVideoData, ThrowOnError>): RequestResult<GetAnalyticsVideoResponses, GetAnalyticsVideoErrors, ThrowOnError> => (options.client ?? client).get<GetAnalyticsVideoResponses, GetAnalyticsVideoErrors, ThrowOnError>({ url: '/analytics/videos/{videoId}', ...options });
+
+/**
+ * Track an existing public video of a connected channel (by URL or id)
+ *
+ * Looks the video up with the Data API (1 quota unit) and checks it belongs to the channel. Its metrics arrive with the next sync.
+ */
+export const trackAnalyticsVideo = <ThrowOnError extends boolean = false>(options: Options<TrackAnalyticsVideoData, ThrowOnError>): RequestResult<TrackAnalyticsVideoResponses, TrackAnalyticsVideoErrors, ThrowOnError> => (options.client ?? client).post<TrackAnalyticsVideoResponses, TrackAnalyticsVideoErrors, ThrowOnError>({
+    url: '/analytics/tracked-videos',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Stop tracking a manually added video and drop its synced metrics
+ */
+export const untrackAnalyticsVideo = <ThrowOnError extends boolean = false>(options: Options<UntrackAnalyticsVideoData, ThrowOnError>): RequestResult<UntrackAnalyticsVideoResponses, UntrackAnalyticsVideoErrors, ThrowOnError> => (options.client ?? client).delete<UntrackAnalyticsVideoResponses, UntrackAnalyticsVideoErrors, ThrowOnError>({ url: '/analytics/tracked-videos/{videoId}', ...options });
 
 /**
  * Cursor-paginated list of the active tenant's series

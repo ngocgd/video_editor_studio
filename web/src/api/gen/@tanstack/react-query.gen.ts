@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, disconnectYouTubeChannel, finalizeAsset, generateSeries, getAiActionResult, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, installModel, listAssets, listAudit, listEpisodes, listImports, listJobs, listModels, listRunSteps, listSeries, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, startYouTubeConnect, switchTenant, testLlmSettings, unloadModels, updateBibleSection, updateEpisode, updateSeries, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
-import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, UnloadModelsData, UnloadModelsResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
+import { applyDraftStep, cancelRun, cancelStep, commitImport, createAiAction, createDraft, createEpisode, createImport, createRun, createSeries, disconnectYouTubeChannel, explainAnalyticsChannel, finalizeAsset, generateSeries, getAiActionResult, getAnalyticsExplanation, getAnalyticsOverview, getAnalyticsVideo, getAsset, getBible, getClaudeCliStatus, getCsrf, getDraft, getEpisode, getGpuStatus, getHealthz, getImport, getLlmSettings, getMe, getReadyz, getRun, getSeries, getStepLog, installModel, listAnalyticsSuggestions, listAnalyticsVideos, listAssets, listAudit, listEpisodes, listImports, listJobs, listModels, listRunSteps, listSeries, listYouTubeChannels, loadModel, login, logout, type Options, patchDraft, pauseModelInstall, presignAsset, previewImport, putLlmApiKey, putLlmSettings, retryStep, startYouTubeConnect, switchTenant, syncAnalyticsChannel, testLlmSettings, trackAnalyticsVideo, unloadModels, untrackAnalyticsVideo, updateAnalyticsSuggestion, updateBibleSection, updateEpisode, updateSeries, updateYouTubeChannelAudit, youTubeOAuthCallback } from '../sdk.gen';
+import type { ApplyDraftStepData, ApplyDraftStepError, ApplyDraftStepResponse, CancelRunData, CancelRunError, CancelRunResponse, CancelStepData, CancelStepError, CancelStepResponse, CommitImportData, CommitImportError, CommitImportResponse, CreateAiActionData, CreateAiActionError, CreateAiActionResponse, CreateDraftData, CreateDraftError, CreateDraftResponse, CreateEpisodeData, CreateEpisodeError, CreateEpisodeResponse, CreateImportData, CreateImportError, CreateImportResponse, CreateRunData, CreateRunError, CreateRunResponse, CreateSeriesData, CreateSeriesError, CreateSeriesResponse, DisconnectYouTubeChannelData, DisconnectYouTubeChannelError, DisconnectYouTubeChannelResponse, ExplainAnalyticsChannelData, ExplainAnalyticsChannelError, ExplainAnalyticsChannelResponse, FinalizeAssetData, FinalizeAssetError, FinalizeAssetResponse, GenerateSeriesData, GenerateSeriesError, GenerateSeriesResponse, GetAiActionResultData, GetAiActionResultError, GetAiActionResultResponse, GetAnalyticsExplanationData, GetAnalyticsExplanationError, GetAnalyticsExplanationResponse, GetAnalyticsOverviewData, GetAnalyticsOverviewError, GetAnalyticsOverviewResponse, GetAnalyticsVideoData, GetAnalyticsVideoError, GetAnalyticsVideoResponse, GetAssetData, GetAssetError, GetAssetResponse, GetBibleData, GetBibleError, GetBibleResponse, GetClaudeCliStatusData, GetClaudeCliStatusResponse, GetCsrfData, GetCsrfResponse, GetDraftData, GetDraftError, GetDraftResponse, GetEpisodeData, GetEpisodeError, GetEpisodeResponse, GetGpuStatusData, GetGpuStatusResponse, GetHealthzData, GetHealthzResponse, GetImportData, GetImportError, GetImportResponse, GetLlmSettingsData, GetLlmSettingsResponse, GetMeData, GetMeResponse, GetReadyzData, GetReadyzError, GetReadyzResponse, GetRunData, GetRunError, GetRunResponse, GetSeriesData, GetSeriesError, GetSeriesResponse, GetStepLogData, GetStepLogError, GetStepLogResponse, InstallModelData, InstallModelError, InstallModelResponse, ListAnalyticsSuggestionsData, ListAnalyticsSuggestionsError, ListAnalyticsSuggestionsResponse, ListAnalyticsVideosData, ListAnalyticsVideosError, ListAnalyticsVideosResponse, ListAssetsData, ListAssetsResponse, ListAuditData, ListAuditResponse, ListEpisodesData, ListEpisodesResponse, ListImportsData, ListImportsResponse, ListJobsData, ListJobsError, ListJobsResponse, ListModelsData, ListModelsResponse, ListRunStepsData, ListRunStepsError, ListRunStepsResponse, ListSeriesData, ListSeriesResponse, ListYouTubeChannelsData, ListYouTubeChannelsResponse, LoadModelData, LoadModelError, LoadModelResponse, LoginData, LoginError, LoginResponse2, LogoutData, LogoutResponse, PatchDraftData, PatchDraftError, PatchDraftResponse, PauseModelInstallData, PauseModelInstallError, PauseModelInstallResponse, PresignAssetData, PresignAssetError, PresignAssetResponse, PreviewImportData, PreviewImportError, PreviewImportResponse, PutLlmApiKeyData, PutLlmApiKeyError, PutLlmApiKeyResponse, PutLlmSettingsData, PutLlmSettingsError, PutLlmSettingsResponse, RetryStepData, RetryStepError, RetryStepResponse, StartYouTubeConnectData, StartYouTubeConnectError, StartYouTubeConnectResponse, SwitchTenantData, SwitchTenantError, SwitchTenantResponse, SyncAnalyticsChannelData, SyncAnalyticsChannelError, SyncAnalyticsChannelResponse, TestLlmSettingsData, TestLlmSettingsError, TestLlmSettingsResponse, TrackAnalyticsVideoData, TrackAnalyticsVideoError, TrackAnalyticsVideoResponse, UnloadModelsData, UnloadModelsResponse, UntrackAnalyticsVideoData, UntrackAnalyticsVideoError, UntrackAnalyticsVideoResponse, UpdateAnalyticsSuggestionData, UpdateAnalyticsSuggestionError, UpdateAnalyticsSuggestionResponse, UpdateBibleSectionData, UpdateBibleSectionError, UpdateBibleSectionResponse, UpdateEpisodeData, UpdateEpisodeError, UpdateEpisodeResponse, UpdateSeriesData, UpdateSeriesError, UpdateSeriesResponse, UpdateYouTubeChannelAuditData, UpdateYouTubeChannelAuditError, UpdateYouTubeChannelAuditResponse, YouTubeOAuthCallbackData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -723,6 +723,221 @@ export const updateYouTubeChannelAuditMutation = (options?: Partial<Options<Upda
     const mutationOptions: UseMutationOptions<UpdateYouTubeChannelAuditResponse, UpdateYouTubeChannelAuditError, Options<UpdateYouTubeChannelAuditData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await updateYouTubeChannelAudit({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAnalyticsOverviewQueryKey = (options: Options<GetAnalyticsOverviewData>) => createQueryKey('getAnalyticsOverview', options);
+
+/**
+ * A channel's daily totals over a window, its sync state and its YouTube Partner Program progress
+ *
+ * Reads only the pre-aggregated daily tables. The window defaults to the 28 days ending at the newest synced day. A metric YouTube did not provide is absent with its reason in `unavailable`, never 0.
+ */
+export const getAnalyticsOverviewOptions = (options: Options<GetAnalyticsOverviewData>) => queryOptions<GetAnalyticsOverviewResponse, GetAnalyticsOverviewError, GetAnalyticsOverviewResponse, ReturnType<typeof getAnalyticsOverviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAnalyticsOverview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAnalyticsOverviewQueryKey(options)
+});
+
+/**
+ * Queue an analytics sync of the channel now (deduplicated with a sync already queued)
+ */
+export const syncAnalyticsChannelMutation = (options?: Partial<Options<SyncAnalyticsChannelData>>): UseMutationOptions<SyncAnalyticsChannelResponse, SyncAnalyticsChannelError, Options<SyncAnalyticsChannelData>> => {
+    const mutationOptions: UseMutationOptions<SyncAnalyticsChannelResponse, SyncAnalyticsChannelError, Options<SyncAnalyticsChannelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await syncAnalyticsChannel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAnalyticsSuggestionsQueryKey = (options: Options<ListAnalyticsSuggestionsData>) => createQueryKey('listAnalyticsSuggestions', options);
+
+/**
+ * The channel's suggestions, each with its rule version and evidence
+ */
+export const listAnalyticsSuggestionsOptions = (options: Options<ListAnalyticsSuggestionsData>) => queryOptions<ListAnalyticsSuggestionsResponse, ListAnalyticsSuggestionsError, ListAnalyticsSuggestionsResponse, ReturnType<typeof listAnalyticsSuggestionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAnalyticsSuggestions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAnalyticsSuggestionsQueryKey(options)
+});
+
+/**
+ * Dismiss or restore one suggestion
+ */
+export const updateAnalyticsSuggestionMutation = (options?: Partial<Options<UpdateAnalyticsSuggestionData>>): UseMutationOptions<UpdateAnalyticsSuggestionResponse, UpdateAnalyticsSuggestionError, Options<UpdateAnalyticsSuggestionData>> => {
+    const mutationOptions: UseMutationOptions<UpdateAnalyticsSuggestionResponse, UpdateAnalyticsSuggestionError, Options<UpdateAnalyticsSuggestionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateAnalyticsSuggestion({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Ask the tenant's LLM to explain the channel's numbers (aggregates only, runs in the worker)
+ *
+ * Sends only aggregated numbers and the rule findings (no titles or other text from YouTube) to the provider configured for summaries. Poll GET /analytics/explanations/{id} for the answer, which is plain text.
+ */
+export const explainAnalyticsChannelMutation = (options?: Partial<Options<ExplainAnalyticsChannelData>>): UseMutationOptions<ExplainAnalyticsChannelResponse, ExplainAnalyticsChannelError, Options<ExplainAnalyticsChannelData>> => {
+    const mutationOptions: UseMutationOptions<ExplainAnalyticsChannelResponse, ExplainAnalyticsChannelError, Options<ExplainAnalyticsChannelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await explainAnalyticsChannel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAnalyticsExplanationQueryKey = (options: Options<GetAnalyticsExplanationData>) => createQueryKey('getAnalyticsExplanation', options);
+
+/**
+ * The state of an explanation and, once done, its text, provider and cost
+ */
+export const getAnalyticsExplanationOptions = (options: Options<GetAnalyticsExplanationData>) => queryOptions<GetAnalyticsExplanationResponse, GetAnalyticsExplanationError, GetAnalyticsExplanationResponse, ReturnType<typeof getAnalyticsExplanationQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAnalyticsExplanation({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAnalyticsExplanationQueryKey(options)
+});
+
+export const listAnalyticsVideosQueryKey = (options: Options<ListAnalyticsVideosData>) => createQueryKey('listAnalyticsVideos', options);
+
+/**
+ * The channel's tracked videos with totals over a window, sorted and paginated
+ *
+ * Lists videos published by this app plus videos added for tracking. Videos whose sort metric is not available sort last.
+ */
+export const listAnalyticsVideosOptions = (options: Options<ListAnalyticsVideosData>) => queryOptions<ListAnalyticsVideosResponse, ListAnalyticsVideosError, ListAnalyticsVideosResponse, ReturnType<typeof listAnalyticsVideosQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAnalyticsVideos({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAnalyticsVideosQueryKey(options)
+});
+
+export const listAnalyticsVideosInfiniteQueryKey = (options: Options<ListAnalyticsVideosData>): QueryKey<Options<ListAnalyticsVideosData>> => createQueryKey('listAnalyticsVideos', options, true);
+
+/**
+ * The channel's tracked videos with totals over a window, sorted and paginated
+ *
+ * Lists videos published by this app plus videos added for tracking. Videos whose sort metric is not available sort last.
+ */
+export const listAnalyticsVideosInfiniteOptions = (options: Options<ListAnalyticsVideosData>) => {
+    const opts = infiniteQueryOptions<ListAnalyticsVideosResponse, ListAnalyticsVideosError, InfiniteData<ListAnalyticsVideosResponse>, QueryKey<Options<ListAnalyticsVideosData>>, string | Pick<QueryKey<Options<ListAnalyticsVideosData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAnalyticsVideosData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAnalyticsVideos({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAnalyticsVideosInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getAnalyticsVideoQueryKey = (options: Options<GetAnalyticsVideoData>) => createQueryKey('getAnalyticsVideo', options);
+
+/**
+ * A tracked video's daily series over a window and its retention curve
+ */
+export const getAnalyticsVideoOptions = (options: Options<GetAnalyticsVideoData>) => queryOptions<GetAnalyticsVideoResponse, GetAnalyticsVideoError, GetAnalyticsVideoResponse, ReturnType<typeof getAnalyticsVideoQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAnalyticsVideo({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAnalyticsVideoQueryKey(options)
+});
+
+/**
+ * Track an existing public video of a connected channel (by URL or id)
+ *
+ * Looks the video up with the Data API (1 quota unit) and checks it belongs to the channel. Its metrics arrive with the next sync.
+ */
+export const trackAnalyticsVideoMutation = (options?: Partial<Options<TrackAnalyticsVideoData>>): UseMutationOptions<TrackAnalyticsVideoResponse, TrackAnalyticsVideoError, Options<TrackAnalyticsVideoData>> => {
+    const mutationOptions: UseMutationOptions<TrackAnalyticsVideoResponse, TrackAnalyticsVideoError, Options<TrackAnalyticsVideoData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await trackAnalyticsVideo({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop tracking a manually added video and drop its synced metrics
+ */
+export const untrackAnalyticsVideoMutation = (options?: Partial<Options<UntrackAnalyticsVideoData>>): UseMutationOptions<UntrackAnalyticsVideoResponse, UntrackAnalyticsVideoError, Options<UntrackAnalyticsVideoData>> => {
+    const mutationOptions: UseMutationOptions<UntrackAnalyticsVideoResponse, UntrackAnalyticsVideoError, Options<UntrackAnalyticsVideoData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await untrackAnalyticsVideo({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
